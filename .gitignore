@@ -1,0 +1,27 @@
+# General C++ exclusion
+*.o
+*.so
+
+# General Python exclusion
+*.pyc
+
+# Swap files
+*.swp
+
+# General data file exclusions
+*.txt
+*.root
+*.log
+log*
+lib/*
+*.txt
+Makefile
+__pycache__
+*.cmake
+CMakeFiles/**
+*/CMakeFiles/**
+build/**
+.vscode/**
+
+# inclusive directories
+!CMakeLists.txt
