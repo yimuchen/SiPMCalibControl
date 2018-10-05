@@ -17,9 +17,10 @@
 extern void init_printer( const std::string& dev );
 
 /**
- * @brief Getting the printer return string.
+ * @brief Getting the printer return string. (std::wstring corresponds to
+ * python3's str, while std::string corresponds to byte.)
  */
-extern std::string get_printer_out();
+extern std::wstring get_printer_out();
 
 /**
  * @brief sending raw g-code command to terminal.

@@ -72,6 +72,13 @@ class set(cmdbase.controlcmd):
       calibsession.printerdev = arg.printerdev
       gcode.init_printer( arg.printerdev )
 
+      cfgstr = "MINTEMP"
+      gcode.pass_gcode("M503\n")
+      while "MINTEMP" in cfgstr :
+        cfgstr = gcode.get_printer_out()
+      print( cfgstr )
+
+
 
 class get(cmdbase.controlcmd):
   """

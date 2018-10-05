@@ -1,5 +1,6 @@
 #include "gcode_stream.hpp"
 #include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
 #include <cmath>
 #include <iostream>
 
@@ -21,7 +22,7 @@ init_printer( const std::string& dev )
 {
   static const int speed = B115200;
   struct termios tty;
-  std::string awkstr;
+  std::wstring awkstr;
 
   printerIO = open( dev.c_str(), O_RDWR | O_NOCTTY | O_SYNC );
   if( printerIO < 0 ){
@@ -57,24 +58,28 @@ init_printer( const std::string& dev )
   if( tcsetattr( printerIO, TCSANOW, &tty ) != 0 ){
     throw std::runtime_error(
       ( boost::format( "Error setting terminos: %s" )
-            % strerror( errno ) ).str()
+        % strerror( errno ) ).str()
       );
   }
 
+  std::cout << "Printer wake up in 5 seconds...." << std::endl;
+  usleep( 5e6 );
+  pass_gcode( "G28\n" );
+
   do {
     // Send to home in the x-y direction.
-    pass_gcode( "G28 X Y\n" );
     awkstr = get_printer_out();
-  } while( awkstr.find("ok") == std::string::npos );
+    // usleep(1e4);
+  } while( awkstr.find( L"ok" ) == std::string::npos );
 
   return;
 }
 
 
-std::string
+std::wstring
 get_printer_out()
 {
-  static const unsigned buffersize = 256 ;
+  static const unsigned buffersize = 256;
   char buffer[buffersize];
   int rdlen;
 
@@ -83,19 +88,27 @@ get_printer_out()
     buffer[rdlen] = 1;
   } else if( rdlen < 0 ){
     throw std::runtime_error(
-      (boost::format( "Error reading printer output: %s" )
-            % strerror(errno) ).str()
-    );
+      ( boost::format( "Error reading printer output: %s" )
+        % strerror( errno ) ).str()
+      );
   }
 
-  return buffer;
+  // Char array to wstring conversion.
+  std::vector<char> v( buffer, buffer+rdlen );
+  std::string str( v.begin(), v.end() );
+  std::wstring ans( str.begin(), str.end() );
+
+  return ans;
 }
 
 void
 pass_gcode( const std::string& gcode )
 {
+  std::string pstring = gcode;
+  boost::trim_right( pstring );
   std::cout << boost::format( "Passing code [%s] to usb terminal [%s]" )
-    % gcode % printerIO
+    % pstring // Stripping newline character
+    % printerIO
             << std::endl;
 
   write( printerIO, gcode.c_str(), gcode.length() );
@@ -109,16 +122,25 @@ move_to_position(
   float z
   )
 {
+  static const float xspeed = 300.0/13 ;
+  static const float yspeed = 300.0/13 ;
+  static const float zspeed = 100.0/22.0 ;
   std::string retstr;
   std::string gcode;
 
   if( x == x ){// NAN Checking!
-    gcode   = ( boost::format( "G0 X%f\n" ) % x ).str();
+    gcode = ( boost::format( "G0 X%f\n" ) % x ).str();
+    pass_gcode( gcode );
+    usleep( x / xspeed * 1e6 );
   }
   if( y == y ){// NAN Checking!
-    gcode   = ( boost::format( "G0 Y%f\n" ) % y ).str();
+    gcode = ( boost::format( "G0 Y%f\n" ) % y ).str();
+    pass_gcode( gcode );
+    usleep( y / yspeed * 1e6 );
   }
   if( z == z ){// NAN Checking!
-    gcode   = ( boost::format( "G0 Z%f\n" ) % z ).str();
+    gcode = ( boost::format( "G0 Z%f\n" ) % z ).str();
+    pass_gcode( gcode );
+    usleep( z / zspeed * 1e6 );
   }
 }
