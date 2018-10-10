@@ -1,9 +1,7 @@
 #!/bin/env python
 import python.cmdbase as cmdbase
 import python.motioncmd as motioncmd
-import python.measurecmd as measurecmd
-import python.session as session
-import python.gcodestream as gcode
+import python.getset as getset
 import argparse
 import copy
 import sys
@@ -11,9 +9,9 @@ import sys
 if __name__ == '__main__':
   cmd = cmdbase.controlterm([
     motioncmd.moveto,
-    measurecmd.measure, # multi-flash capability
-    session.set,
-    session.get,
+    motioncmd.movespeed,
+    getset.set,
+    getset.get,
     ])
 
   """

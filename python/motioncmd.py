@@ -1,6 +1,5 @@
 import python.cmdbase as cmdbase
-import python.gcodestream as gcodestream
-import python.session as session
+import python.gcoder as gcoder
 import argparse
 
 
@@ -28,17 +27,18 @@ class moveto(cmdbase.controlcmd):
     arg=cmdbase.controlcmd.parse(self,line)
 
     if arg.chip :
-      if not session.calibsession.get_chipposition(arg.chip):
+      if not self.cmd.board.has_chip(arg.chip):
         print("""Warning chip of ID is not defined in board type! Not using chip ID to change target position""")
-        session.calibsession.opchip = None
+        self.cmd.board.opchip = -1
       else:
         if arg.x or arg.y:
           print("Warning! Overriding user defined x,y with chip coordinates!")
-        [arg.x, arg.y]= session.calibsession.get_chipposition(arg.chip)
-        session.calibsession.opchip = arg.chip
-        arg.__delattr__('chip')
+      arg.x = self.cmd.board.get_chip_x(arg.chip)
+      arg.y = self.cmd.board.get_chip_y(arg.chip)
+      self.cmd.board.opchip = arg.chip
+      arg.__delattr__('chip')
     else:
-      session.calibsession.opchip = None
+      self.cmd.board.opchip = -1
 
     ## Filling with NAN for no motion.
     if not arg.x : arg.x = float('nan')
@@ -50,5 +50,29 @@ class moveto(cmdbase.controlcmd):
     return arg
 
   def run(self,arg):
-    gcodestream.move_to_position(arg.x, arg.y, arg.z )
+    self.cmd.gcoder.move_to_position(arg.x, arg.y, arg.z )
 
+class movespeed(cmdbase.controlcmd):
+  """
+  Setting the motion speed of the gantry x-y-z motors. Units in mm/s.
+  """
+  def __init__(self):
+    cmdbase.controlcmd.__init__(self)
+    self.parser.add_argument('-x',type=float,
+      help='motion speed of gantry in x axis ')
+    self.parser.add_argument('-y',type=float,
+      help='motion speed of gantry in y axis ')
+    self.parser.add_argument('-z',type=float,
+      help='motion speed of gantry in z axis ')
+
+  def parse(self,line):
+    arg = cmdbase.controlcmd.parse(self,line)
+    # Filling with NAN for missing settings.
+    if not arg.x :  arg.x = float('nan')
+    if not arg.y :  arg.y = float('nan')
+    if not arg.z :  arg.z = float('nan')
+
+    return arg
+
+  def run(self,arg):
+    self.cmd.gcoder.set_speed_limit(arg.x,arg.y,arg.z)

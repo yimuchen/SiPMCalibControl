@@ -1,9 +1,11 @@
-## g-code streaming part
-FILE(GLOB GCODE_SRC gcode/*.cc)
-add_library(GCode SHARED ${GCODE_SRC})
+INCLUDE_DIRECTORIES(gcoder/ session/ board/)
 
-FILE(GLOB TDAQ_SRC tdaq/*.cc)
-add_library(TDaQ SHARED ${TDAQ_SRC})
+## g-code streaming part
+FILE(GLOB GCODER_SRC gcoder/*.cc)
+add_library(GCoder SHARED ${GCODER_SRC})
+
+FILE(GLOB BOARD_SRC board/*.cc)
+add_library(Board SHARED ${BOARD_SRC})
 
 ## All other stuff in the boost directory
 find_package(PythonLibs   3 REQUIRED)
@@ -13,12 +15,12 @@ find_package(Boost          REQUIRED COMPONENTS python3)
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
 LINK_LIBRARIES(${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
 
-add_library(gcodestream SHARED boost/gcodestream.cc )
-set_target_properties(gcodestream PROPERTIES PREFIX "../python/")
-target_include_directories(gcodestream PRIVATE gcode/)
-target_link_libraries(gcodestream ${Boost_LIBRARIES} GCode)
+add_library(gcoder SHARED boost/gcoder.cc )
+set_target_properties(gcoder PROPERTIES PREFIX "../python/")
+target_include_directories(gcoder PRIVATE gcoder/)
+target_link_libraries(gcoder ${Boost_LIBRARIES} GCoder)
 
-add_library(tdaq SHARED boost/tdaq.cc )
-set_target_properties(tdaq PROPERTIES PREFIX "../python/")
-target_include_directories(tdaq PRIVATE tdaq/)
-target_link_libraries(tdaq ${Boost_LIBRARIES} TDaQ)
+add_library(board SHARED boost/board.cc )
+set_target_properties(board PROPERTIES PREFIX "../python/")
+target_include_directories(board PRIVATE board/)
+target_link_libraries(board ${Boost_LIBRARIES} Board)

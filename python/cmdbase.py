@@ -1,3 +1,5 @@
+import python.gcoder as gcoder
+import python.board  as board
 import cmd
 import sys
 import os
@@ -20,6 +22,8 @@ class controlterm( cmd.Cmd ):
 
   def __init__(self,cmdlist):
     cmd.Cmd.__init__(self)
+
+    ## Creating command instances and attaching to associated functions
     for com in cmdlist :
       comname = com.__name__.lower()
       dofunc = "do_" + comname
@@ -29,10 +33,15 @@ class controlterm( cmd.Cmd ):
       self.__setattr__( dofunc, self.__getattribute__(comname).do )
       self.__setattr__( helpfunc, self.__getattribute__(comname).callhelp )
       self.__setattr__( compfunc, self.__getattribute__(comname).complete )
+      self.__getattribute__(comname).cmd = self
 
     # Removing hyphen and slash as completer delimiter, as it messes with
     # command auto completion
     readline.set_completer_delims(' \t\n`~!@#$%^&*()=+[{]}\\|;:\'",<>?')
+
+    ## Creating the gcoder and board instances
+    self.gcoder = gcoder.GCoder()
+    self.board  = board.Board()
 
   def postcmd(self,stop,line):
     print("") # Printing extra empty line for aesthetics
@@ -134,7 +143,6 @@ class controlcmd():
     # Line is the full input line string (including command)
     # start_index is the starting index of the word the cursor is at in the line
     # end_index is the position of the cursor in the line
-
     cmdname   = self.__class__.__name__.lower()
     #while line[start_index-1] == '-': start_index = start_index-1
     textargs   = line[len(cmdname):start_index].strip().split()
@@ -181,8 +189,6 @@ class controlcmd():
     except SystemExit as err :
       raise Exception("")
     return arg
-
-
 
 ## Helper function for globbing
 def globcomp(text):
