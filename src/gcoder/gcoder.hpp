@@ -20,7 +20,11 @@ struct GCoder
   std::wstring get_printer_out();
 
   // Motion functions
-  void pass_gcode( const std::string& gcode );
+  void pass_gcode(
+    const std::string& gcode,
+    const unsigned wait   = 1e3,
+    const unsigned maxtry = 3
+  );
 
   void send_home();
 
@@ -35,8 +39,6 @@ struct GCoder
     float y = std::nanf(""),
     float z = std::nanf("")
     );
-
-  void waitawk();
 
 public:
   int         printer_IO;

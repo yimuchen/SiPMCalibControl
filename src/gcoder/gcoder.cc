@@ -3,6 +3,7 @@
 #include <boost/format.hpp>
 #include <cmath>
 #include <iostream>
+#include <chrono>
 
 // Stuff required for tty input and output
 #include <errno.h>
@@ -84,7 +85,6 @@ GCoder::init_printer( const std::string& dev )
   std::cout << "Waking up printer...." << std::endl;
   usleep( 5e6 );
   // Send to home (with faster speed).
-  set_speed_limit( 300, 300, 300 );
   send_home();
   // Resetting to slower speed for z
   set_speed_limit( 300, 300, 5 );
@@ -117,26 +117,48 @@ GCoder::get_printer_out()
   return ans;
 }
 
-
-void GCoder::send_home()
+void
+GCoder::send_home()
 {
   pass_gcode( "G28\n" );
-  waitawk();
   opx = opy = opz = 0;
 }
 
 void
-GCoder::pass_gcode( const std::string& gcode )
+GCoder::pass_gcode(
+  const std::string& gcode,
+  const unsigned     wait,
+  const unsigned     maxtry )
 {
+  using namespace std::chrono;
+  boost::format printfmt(
+      "Passing code [%s] to usb terminal [%s] (attempt %u) ");
+  std::wstring awkstr ;
   std::string pstring = gcode;
-  boost::trim_right( pstring );
-  std::cout << boost::format( "Passing code [%s] to usb terminal [%s]" )
-    % pstring // Stripping newline character
-    % printer_IO
-            << std::endl;
+  bool  awk = false;
 
-  write( printer_IO, gcode.c_str(), gcode.length() );
-  tcdrain( printer_IO );
+  boost::trim_right( pstring );
+
+  for( unsigned i = 0; i < maxtry && !awk ; ++i ){
+    std::cout << printfmt % pstring % printer_IO % i << std::endl;
+
+    write( printer_IO, gcode.c_str(), gcode.length() );
+    tcdrain( printer_IO );
+
+    high_resolution_clock::time_point t1 = high_resolution_clock::now();
+    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+    do{
+      awkstr = get_printer_out();
+      if( awkstr.find(L"ok") ) { awk = true; }
+    } while ( !awk && duration_cast<microseconds>(t2-t1).count() < wait );
+  }
+
+  if(!awk){
+    std::cout << "Warning! AWK string was not received after ["
+              << maxtry << "] attempts!"
+              << " The message could be dropped or there is something could "
+              << "be wrong with the printer!";
+  }
 }
 
 void
@@ -158,7 +180,6 @@ GCoder::set_speed_limit( float x, float y, float z )
   gcode = ( gcode_fmt %  x % y % z ).str();
 
   pass_gcode( gcode );
-  waitawk();
 
   vx = x;
   vy = y;
@@ -169,7 +190,7 @@ void
 GCoder::move_to_position( float x, float y, float z )
 {
   double wait_time = 0;
-  boost::format gcode_fmt( "G0 %s%.1f\n" );
+  boost::format gcode_fmt( "G0 %s%.2f\n" );
   std::string gcode;
 
   // Velocity on the gantry isn't linear!
@@ -196,14 +217,4 @@ GCoder::move_to_position( float x, float y, float z )
     opz = z;
   }
   return;
-}
-
-void
-GCoder::waitawk()
-{
-  std::wstring awkstr;
-
-  do {
-    awkstr = get_printer_out();
-  } while( awkstr.find( L"ok" ) == std::string::npos );
 }
