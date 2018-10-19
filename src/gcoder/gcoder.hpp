@@ -16,23 +16,24 @@ struct GCoder
   GCoder( const std::string& dev );
   ~GCoder();
 
-  void         init_printer( const std::string& dev );
-  std::wstring get_printer_out();
+  void        init_printer( const std::string& dev );
 
   // Motion functions
-  void pass_gcode(
+  std::string pass_gcode(
     const std::string& gcode,
-    const unsigned wait   = 1e3,
-    const unsigned maxtry = 3
-  );
+    const unsigned     attempt = 0,
+    const unsigned     waitack = 1e4
+    ) const;
 
   void send_home();
+
+  std::wstring get_settings() const;
 
   void set_speed_limit(
     float x = std::nanf(""),
     float y = std::nanf(""),
     float z = std::nanf("")
-  );
+    );
 
   void move_to_position(
     float x = std::nanf(""),
@@ -43,7 +44,7 @@ struct GCoder
 public:
   int         printer_IO;
   float       opx, opy, opz;// current position of the printer
-  float       vx,vy,vz; // Speed of the gantry head.
+  float       vx, vy, vz;// Speed of the gantry head.
   std::string dev_path;
 };
 

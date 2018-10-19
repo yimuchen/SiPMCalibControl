@@ -36,7 +36,10 @@ if __name__ == '__main__':
     prog_parser.print_help()
     sys.exit(0)
 
-  cmd.set.run(args)
+  try:
+    cmd.set.run(args)
+  except Exception as err:
+    print("Warning! There was error in the setup process, program will continue but will most likely misbehave! Use at your own risk!")
+    print("Error message: ", err)
 
-  #print(cmd.moveto)
   cmd.cmdloop()

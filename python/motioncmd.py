@@ -41,9 +41,9 @@ class moveto(cmdbase.controlcmd):
       self.cmd.board.opchip = -1
 
     ## Filling with NAN for no motion.
-    if not arg.x : arg.x = float('nan')
-    if not arg.y : arg.y = float('nan')
-    if not arg.z : arg.z = float('nan')
+    if arg.x == None : arg.x = float('nan')
+    if arg.y == None : arg.y = float('nan')
+    if arg.z == None : arg.z = float('nan')
     if arg.x != arg.x and arg.y != arg.y and arg.z != arg.z:
       raise Exception("""No coordinate specified! exiting command.""")
 

@@ -23,10 +23,7 @@ class set(cmdbase.controlcmd):
       self.cmd.gcoder.init_printer( arg.printerdev )
 
       cfgstr = "MINTEMP"
-      self.cmd.gcoder.pass_gcode("M503\n")
-      while "MINTEMP" in cfgstr :
-        cfgstr = self.cmd.gcoder.get_printer_out()
-      print( cfgstr )
+      print( self.cmd.gcoder.get_settings() )
 
 class get(cmdbase.controlcmd):
   """
