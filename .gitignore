@@ -12,7 +12,6 @@
 *.txt
 *.root
 *.log
-log*
 lib/*
 *.txt
 Makefile

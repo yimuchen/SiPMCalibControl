@@ -1,5 +1,6 @@
 import python.cmdbase as cmdbase
 import python.gcoder as gcoder
+import python.logger as logger
 import argparse
 
 
@@ -45,7 +46,7 @@ class moveto(cmdbase.controlcmd):
     if arg.y == None : arg.y = float('nan')
     if arg.z == None : arg.z = float('nan')
     if arg.x != arg.x and arg.y != arg.y and arg.z != arg.z:
-      raise Exception("""No coordinate specified! exiting command.""")
+      raise Exception("No coordinate specified! exiting command.")
 
     return arg
 

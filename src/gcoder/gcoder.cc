@@ -1,4 +1,6 @@
 #include "gcoder.hpp"
+#include "logger.hpp"
+
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <chrono>
@@ -42,7 +44,6 @@ GCoder::init_printer( const std::string& dev )
 {
   static const int speed = B115200;
   struct termios tty;
-  std::wstring awkstr;
 
   dev_path = dev;
 
@@ -79,17 +80,14 @@ GCoder::init_printer( const std::string& dev )
 
   if( tcsetattr( printer_IO, TCSANOW, &tty ) != 0 ){
     throw std::runtime_error(
-      ( boost::format( "Error setting terminos: %s" )
+      ( boost::format( "Error setting termios: %s" )
         % strerror( errno ) ).str()
       );
   }
 
-  std::cout << "Waking up printer...." << std::endl;
+  printmsg( "Waking up printer...." );
   usleep( 5e6 );
-  // Send to home (with faster speed).
   send_home();
-  // Resetting to slower speed for z
-  set_speed_limit( 300, 300, 5 );
 
   return;
 }
@@ -110,8 +108,9 @@ GCoder::pass_gcode(
   using namespace std::chrono;
 
   // static variables
-  static const unsigned maxtry     = 1e2;
-  static const unsigned buffersize = 65536;
+  static const unsigned    maxtry     = 1e2;
+  static const unsigned    buffersize = 65536;
+  static const std::string msghead  = GREEN("[GCODE-SEND]");
 
   // Readout data
   char buffer[buffersize];
@@ -120,21 +119,20 @@ GCoder::pass_gcode(
   bool awk           = false;
 
   // Pretty output
-  boost::format printfmt(
-    "\rPassing code [%s] to usb terminal [%s] (attempt %u) " );
+  boost::format printfmt( "[%s] to USBTERM[%s] (attempt %u)..." );
   std::string pstring = gcode;
   boost::trim_right( pstring );
+  const std::string printmsg = (printfmt%pstring%printer_IO%attempt).str();
 
   if( attempt >= maxtry ){
-    std::cout << "\nWarning! AWK string was not received after ["
-              << maxtry << "] attempts!"
-              << " The message could be dropped or there is something could "
-              << "be wrong with the printer!";
-    return "";
+    throw std::runtime_error(
+          (boost::format("ACK string was not received after [%d] attempts!"
+               " The message could be dropped or there is something wrong with"
+               " the printer!" )% maxtry).str() );
   }
 
   // Sending output
-  std::cout << printfmt % pstring % printer_IO % attempt << std::flush;
+  update( msghead, printmsg );
   write( printer_IO, gcode.c_str(), gcode.length() );
   tcdrain( printer_IO );
 
@@ -162,7 +160,7 @@ GCoder::pass_gcode(
 
   // Checking output
   if( awk ){
-    std::cout << "...Done!" << std::endl;
+    update( msghead, printmsg+"...Done!" );
     return ackstr;
   } else {
     return pass_gcode( gcode, attempt+1, waitack );
@@ -173,7 +171,6 @@ std::wstring
 GCoder::get_settings() const
 {
   std::string str = pass_gcode( "M503\n" );
-
   return std::wstring( str.begin(), str.end() );
 }
 
@@ -208,12 +205,14 @@ GCoder::move_to_position( float x, float y, float z )
   // Check message of M114 is in:
   // "X:0.00 Y:0.00 Z:100.00 E:0.00 Count X: 0.00 Y:0.00 Z:126.01";
   static const std::string fltregex = "\\d+\\.\\d+";
-  static const std::string wsregex  = "\\w*";
+  static const std::string wsregex  = "\\s*";
   static const std::regex checkfmt(
     ( boost::format(
-      ".*X:.*(%1%).*Y:.*(%1%).*Z:.*(%1%).*X:.*(%1%).*Y:.*(%1%).*Z:.*(%1%).*"
-      ) % fltregex  ).str()
+      ".*X:(%1%) Y:(%1%) Z:(%1%).*"
+      "Count.*X: (%1%) Y:(%1%) Z:(%1%)%2%.*"
+      ) % fltregex % wsregex ).str()
     );
+  static const std::string msghead = GREEN("[GANTRYPOS]");
 
   boost::format move_fmt( "G0 X%.2f Y%.2f Z%.2f\n" );
   std::string gcode;
@@ -227,6 +226,7 @@ GCoder::move_to_position( float x, float y, float z )
 
   gcode = ( move_fmt % opx % opy % opz ).str();
   pass_gcode( gcode );
+  clear_update();
 
   do {
     pass_gcode( "M114\n" );// Getting current position command
@@ -239,17 +239,20 @@ GCoder::move_to_position( float x, float y, float z )
       x   = std::stof( checkmatch[4].str() );
       y   = std::stof( checkmatch[5].str() );
       z   = std::stof( checkmatch[6].str() );
+
+      const std::string msg = ( boost::format(
+        "Target (%.2lf %.2lf %.2lf), Current (%.2lf, %.2lf, %.2lf)..."
+      ) % opx % opy % opz % x % y % z ).str();
+      update( msghead, msg );
+
       if( opx == x && opy == y && opz == z ){
+        update(msghead, msg+"Done!");
         break;
-      } else {
-        std::cout
-          << boost::format( "Gantry in motion Target: [%f %f %f], current [%f %f %f]" )
-          % opx % opy % opz % x % y % z
-          << std::endl;
       }
+
     } else {
-      std::cout << "Error parsing return string ["<< checkmsg
-                << "]["<< checkmatch.size() << "]! Trying again!" << std::endl;
+      printwarn( (boost::format("Couldn't parse string [%s][%u]! Trying again!")
+       % checkmsg % checkmatch.size() ).str() );
     }
   } while( 1 );
 

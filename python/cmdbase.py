@@ -1,5 +1,6 @@
 import python.gcoder as gcoder
 import python.board  as board
+import python.logger as logger
 import cmd
 import sys
 import os
@@ -44,7 +45,7 @@ class controlterm( cmd.Cmd ):
     self.board  = board.Board()
 
   def postcmd(self,stop,line):
-    print("") # Printing extra empty line for aesthetics
+    logger.printmsg("") # Printing extra empty line for aesthetics
 
   def get_names(self):
     """
@@ -69,11 +70,11 @@ class controlterm( cmd.Cmd ):
     not used extensively.
     """
     if len(line.split()) != 1 :
-      print("Please only specify one file!")
+      logger.printerr("Please only specify one file!")
       return
 
     if not os.path.isfile(line):
-      print("Specified file could not be opened!")
+      logger.printerr("Specified file could not be opened!")
       return
 
     with open(line) as f:
@@ -115,17 +116,19 @@ class controlcmd():
     try:
       args=self.parse(line)
     except Exception as err:
-      print("[Error parsing command]")
+      logger.clear_update()
+      logger.printerr(str(err))
       #print(err)
       return
 
     try:
       self.run(args)
     except Exception as err:
-      print("[Error running command]")
-      print(err)
+      logger.clear_update()
+      logger.printerr(str(err))
       return
 
+    logger.clear_update()
     return
 
   """
@@ -186,8 +189,8 @@ class controlcmd():
   def parse(self,line):
     try:
       arg = self.parser.parse_args(line.split())
-    except SystemExit as err :
-      raise Exception("")
+    except SystemExit as err:
+      raise Exception("Cannot parse input")
     return arg
 
 ## Helper function for globbing

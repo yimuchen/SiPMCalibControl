@@ -2,6 +2,7 @@
 import python.cmdbase as cmdbase
 import python.motioncmd as motioncmd
 import python.getset as getset
+import python.logger as logger
 import argparse
 import copy
 import sys
@@ -39,7 +40,7 @@ if __name__ == '__main__':
   try:
     cmd.set.run(args)
   except Exception as err:
-    print("Warning! There was error in the setup process, program will continue but will most likely misbehave! Use at your own risk!")
-    print("Error message: ", err)
+    logger.printerr(str(err))
+    logger.printwarn("There was error in the setup process, program will " "continue but will most likely misbehave! Use at your own risk!")
 
   cmd.cmdloop()
