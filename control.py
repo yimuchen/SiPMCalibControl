@@ -32,6 +32,8 @@ if __name__ == '__main__':
   for action in prog_parser._actions:
     if '-printerdev' in action.option_strings:
       action.default = '/dev/ttyUSB0'
+    if '-camdev' in action.option_string:
+      action.default = '/dev/video0'
 
   args = prog_parser.parse_args()
 
