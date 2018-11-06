@@ -15,6 +15,14 @@ add_dependencies(GCoder Common)
 target_include_directories(GCoder PRIVATE common/)
 target_link_libraries(GCoder Common)
 
+## visual processing part
+FILE(GLOB VISUAL_SRC visual/*.cc)
+add_library(Visual SHARED ${VISUAL_SRC})
+find_package(OpenCV REQUIRED )
+add_dependencies(Visual Common)
+target_include_directories(Visual PRIVATE common/)
+target_link_libraries(Visual ${OpenCV_LIBS} Common)
+
 ## All other stuff in the boost directory
 find_package(PythonLibs   3 REQUIRED)
 find_package(PythonInterp 3 REQUIRED)
@@ -38,4 +46,9 @@ add_dependencies(logger Common)
 set_target_properties(logger PROPERTIES PREFIX "../python/")
 target_include_directories(logger PRIVATE common/)
 target_link_libraries(logger ${Boost_LIBRARIES} Common)
+
+add_library(visual SHARED boost/visual.cc )
+set_target_properties(visual PROPERTIES PREFIX "../python/")
+target_include_directories(visual PRIVATE visual/)
+target_link_libraries(visual ${Boost_LIBRARIES} Visual)
 

@@ -11,6 +11,8 @@ if __name__ == '__main__':
   cmd = cmdbase.controlterm([
     motioncmd.moveto,
     motioncmd.movespeed,
+    motioncmd.findchip,
+    motioncmd.fscan,
     getset.set,
     getset.get,
     ])

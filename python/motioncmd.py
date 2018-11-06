@@ -77,3 +77,30 @@ class movespeed(cmdbase.controlcmd):
 
   def run(self,arg):
     self.cmd.gcoder.set_speed_limit(arg.x,arg.y,arg.z)
+
+
+class findchip(cmdbase.controlcmd):
+  """
+  Finding the absolute chip position closest to current position of the gantry
+  """
+  def __init__(self):
+    cmdbase.controlcmd.__init__(self)
+
+  def parse(self,line):
+    return cmdbase.controlcmd.parse(self,line)
+
+  def run(self,arg):
+    self.cmd.visual.find_chip()
+
+class fscan(cmdbase.controlcmd):
+  """
+  Scanning focus to calibrate z distance
+  """
+  def __init__(self):
+    cmdbase.controlcmd.__init__(self)
+
+  def parse(self,line):
+    return cmdbase.controlcmd.parse(self,line)
+
+  def run(self,arg):
+    self.cmd.visual.scan_focus()

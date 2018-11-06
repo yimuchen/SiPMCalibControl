@@ -1,6 +1,7 @@
 import python.gcoder as gcoder
 import python.board  as board
 import python.logger as logger
+import python.visual as visual
 import cmd
 import sys
 import os
@@ -40,9 +41,10 @@ class controlterm( cmd.Cmd ):
     # command auto completion
     readline.set_completer_delims(' \t\n`~!@#$%^&*()=+[{]}\\|;:\'",<>?')
 
-    ## Creating the gcoder and board instances
+    ## Creating the gcoder/board/camcontrol instances
     self.gcoder = gcoder.GCoder()
     self.board  = board.Board()
+    self.visual = visual.Visual()
 
   def postcmd(self,stop,line):
     logger.printmsg("") # Printing extra empty line for aesthetics
