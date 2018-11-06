@@ -4,10 +4,10 @@
 #include <boost/format.hpp>
 #include <opencv2/imgproc.hpp>
 
-Visual::Visual() {}
+Visual::Visual() :cam(0){}
 Visual::~Visual(){}
 
-Visual::Visual( const std::string& dev )
+Visual::Visual( const std::string& dev ):cam(0)
 {
   init_dev( dev );
 }
@@ -15,6 +15,7 @@ Visual::Visual( const std::string& dev )
 void Visual::init_dev( const std::string& dev )
 {
   dev_path = dev;
+  cam.release();
   cam.open( dev_path );
   if( !cam.isOpened() ){// check if we succeeded
     throw std::runtime_error( "Did not open webcam" );
@@ -33,8 +34,8 @@ Visual::find_chip()
   std::vector<std::vector<cv::Point> > recconts;
   std::vector<cv::Vec4i> hierarchy;
 
-  cv::namedWindow( "orig", 1 );
-  cv::namedWindow( "proc", 1 );
+  cv::namedWindow( "orig" );
+  cv::namedWindow( "proc" );
 
   while( 1 ){
     cam >> img;
