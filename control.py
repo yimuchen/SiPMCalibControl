@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python3
 import python.cmdbase as cmdbase
 import python.motioncmd as motioncmd
 import python.getset as getset
@@ -20,7 +20,7 @@ if __name__ == '__main__':
   """
   Duplicating the session to allow for default override.
   """
-  prog_parser = copy.deepcopy(cmd.set.parser)
+  prog_parser = copy.copy(cmd.set.parser)
 
   # Augmenting help messages
   prog_parser.prog = "control.py"

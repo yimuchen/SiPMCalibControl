@@ -14,16 +14,19 @@ class set(cmdbase.controlcmd):
       help='Setting board type via a configuration json file that lists CHIP_ID with x-y- coordinates.')
     self.parser.add_argument(
       '-printerdev', type=str,
-      help='Device path for the 3d printer. Should be something like /dev/tty<SOMETHING>.'
-    )
+      help='Device path for the 3d printer. Should be something like /dev/tty<SOMETHING>.'  )
+    self.parser.add_argument(
+      '-camdev', type=str,
+      help='Device path for the primary camera, should be something like /dev/video<index>.' )
 
   def run(self,arg):
     if arg.boardtype:
       self.cmd.board.set_boardtype( arg.boardtype.name )
     if arg.printerdev and arg.printerdev != self.cmd.gcoder.dev_path :
       self.cmd.gcoder.init_printer( arg.printerdev )
-
       logger.printmsg( self.cmd.gcoder.get_settings() )
+    if arg.camdev and arg.camdev != self.cmd.visual.dev_path :
+      self.cmd.visual.init_dev(arg.camdev)
 
 class get(cmdbase.controlcmd):
   """
@@ -34,6 +37,7 @@ class get(cmdbase.controlcmd):
     self.parser.add_argument('-boardtype',action='store_true')
     self.parser.add_argument('-opchip',action='store_true')
     self.parser.add_argument('-printerdev', action='store_true')
+    self.parser.add_argument('-camdev', action='store_true')
     self.parser.add_argument('-all',action='store_true')
 
   def run(self,arg):
@@ -43,5 +47,7 @@ class get(cmdbase.controlcmd):
       logger.update( "[OPCHIP ID] ", str(self.cmd.board.op_chip) )
     if arg.printerdev or arg.all:
       logger.update( "[PRINTER DEV] ", str(self.cmd.gcoder.dev_path) )
+    if arg.camdev or arg.all:
+      logger.update( "[CAM DEV]", str(self.cmd.visual.dev_path) )
 
 

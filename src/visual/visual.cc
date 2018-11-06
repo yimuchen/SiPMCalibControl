@@ -3,23 +3,24 @@
 
 #include <boost/format.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/xphoto.hpp>
 
-Visual::Visual() :
-  cam( 0 )// Defaults to /dev/video0
+Visual::Visual() {}
+Visual::~Visual(){}
+
+Visual::Visual( const std::string& dev )
 {
+  init_dev( dev );
+}
+
+void Visual::init_dev( const std::string& dev )
+{
+  dev_path = dev;
+  cam.open( dev_path );
   if( !cam.isOpened() ){// check if we succeeded
     throw std::runtime_error( "Did not open webcam" );
   }
-  // cv::namedWindow( "orig", 1 );
-  // cv::namedWindow( "proc", 1 );
 }
 
-
-Visual::~Visual()
-{
-
-}
 
 static bool      check_rectangle( const std::vector<cv::Point>& cont );
 static cv::Point average( const std::vector<cv::Point>& cont );

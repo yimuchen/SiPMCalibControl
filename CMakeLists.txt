@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.0)
 project(SiPMControl)
 
 ## Compilter settings
 set(CMAKE_CXX_COMPILE_FEATURES cxx_range_for )
 set(CMAKE_CXX_COMPILE_FEATURES cxx_variadic_templates)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options("-Wall")
 
@@ -13,4 +13,3 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/lib )
 
 ## Defining libraries
 add_subdirectory(src)
-
