@@ -1,6 +1,7 @@
 import python.gcoder as gcoder
 import python.board  as board
 import python.logger as logger
+import python.trigger as trigger
 import python.visual as visual
 import cmd
 import sys
@@ -42,9 +43,13 @@ class controlterm( cmd.Cmd ):
     readline.set_completer_delims(' \t\n`~!@#$%^&*()=+[{]}\\|;:\'",<>?')
 
     ## Creating the gcoder/board/camcontrol instances
-    self.gcoder = gcoder.GCoder()
-    self.board  = board.Board()
-    self.visual = visual.Visual()
+    try:
+      self.gcoder = gcoder.GCoder()
+      self.board  = board.Board()
+      self.visual = visual.Visual()
+      self.trigger = trigger.trigger()
+    except Exception as err:
+      logger.printwarn( str(err) )
 
   def postcmd(self,stop,line):
     logger.printmsg("") # Printing extra empty line for aesthetics

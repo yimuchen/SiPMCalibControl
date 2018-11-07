@@ -2,6 +2,7 @@
 import python.cmdbase as cmdbase
 import python.motioncmd as motioncmd
 import python.getset as getset
+import python.digicmd as digicmd
 import python.logger as logger
 import argparse
 import copy
@@ -15,6 +16,7 @@ if __name__ == '__main__':
     motioncmd.fscan,
     getset.set,
     getset.get,
+    digicmd.pulse,
     ])
 
   """
@@ -42,6 +44,7 @@ if __name__ == '__main__':
     sys.exit(0)
 
   try:
+    cmd.trigger.init()
     cmd.set.run(args)
   except Exception as err:
     logger.printerr(str(err))

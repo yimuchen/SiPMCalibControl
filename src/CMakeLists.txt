@@ -1,4 +1,4 @@
-INCLUDE_DIRECTORIES(gcoder/ session/ board/)
+INCLUDE_DIRECTORIES(gcoder/ session/ board/ trigger/)
 
 ## Common stuff
 FILE(GLOB COMMON_SRC common/*.cc)
@@ -22,6 +22,11 @@ find_package(OpenCV REQUIRED )
 add_dependencies(Visual Common)
 target_include_directories(Visual PRIVATE common/)
 target_link_libraries(Visual ${OpenCV_LIBS} Common)
+
+## GPIO part
+FILE(GLOB TRIGGER_SRC trigger/*.cc )
+add_library(Trigger SHARED ${TRIGGER_SRC})
+
 
 ## All other stuff in the boost directory
 find_package(PythonLibs   3 REQUIRED)
@@ -52,3 +57,7 @@ set_target_properties(visual PROPERTIES PREFIX "../python/")
 target_include_directories(visual PRIVATE visual/)
 target_link_libraries(visual ${Boost_LIBRARIES} Visual)
 
+add_library(trigger SHARED boost/trigger.cc)
+set_target_properties(trigger PROPERTIES PREFIX "../python/")
+target_include_directories(trigger PRIVATE trigger/)
+target_link_libraries(trigger ${Boost_LIBRARIES} Trigger)

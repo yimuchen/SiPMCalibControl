@@ -4,10 +4,10 @@
 #include <boost/format.hpp>
 #include <opencv2/imgproc.hpp>
 
-Visual::Visual() :cam(0){}
+Visual::Visual() :cam(){}
 Visual::~Visual(){}
 
-Visual::Visual( const std::string& dev ):cam(0)
+Visual::Visual( const std::string& dev ):cam()
 {
   init_dev( dev );
 }
