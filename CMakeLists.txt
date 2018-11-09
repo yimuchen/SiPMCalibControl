@@ -6,6 +6,7 @@ set(CMAKE_CXX_COMPILE_FEATURES cxx_range_for )
 set(CMAKE_CXX_COMPILE_FEATURES cxx_variadic_templates)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_compile_options("-O3")
 add_compile_options("-Wall")
 
 # General output settings
