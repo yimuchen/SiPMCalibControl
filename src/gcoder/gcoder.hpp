@@ -13,10 +13,10 @@
 struct GCoder
 {
   GCoder();
-  GCoder( const std::string& dev );
+  // GCoder( const std::wstring& dev );
   ~GCoder();
 
-  void        init_printer( const std::string& dev );
+  void init_printer( const std::wstring& dev );
 
   // Motion functions
   std::string pass_gcode(
@@ -42,10 +42,10 @@ struct GCoder
     );
 
 public:
-  int         printer_IO;
-  float       opx, opy, opz;// current position of the printer
-  float       vx, vy, vz;// Speed of the gantry head.
-  std::string dev_path;
+  int          printer_IO;
+  float        opx, opy, opz;// current position of the printer
+  float        vx, vy, vz;// Speed of the gantry head.
+  std::wstring dev_path;
 };
 
 #endif

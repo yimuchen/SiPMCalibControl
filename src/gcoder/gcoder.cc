@@ -23,14 +23,14 @@ GCoder::GCoder() :
   opz( -1 )
 {};
 
-GCoder::GCoder( const std::string& dev ) :
-  printer_IO( -1 ),
-  opx( -1 ),
-  opy( -1 ),
-  opz( -1 )
-{
-  init_printer( dev );
-}
+// GCoder::GCoder( const std::wstring& dev ) :
+//   printer_IO( -1 ),
+//   opx( -1 ),
+//   opy( -1 ),
+//   opz( -1 )
+// {
+//   init_printer( dev );
+// }
 
 GCoder::~GCoder()
 {
@@ -40,14 +40,18 @@ GCoder::~GCoder()
 }
 
 void
-GCoder::init_printer( const std::string& dev )
+GCoder::init_printer( const std::wstring& dev )
 {
   static const int speed = B115200;
   struct termios tty;
 
   dev_path = dev;
 
-  printer_IO = open( dev_path.c_str(), O_RDWR | O_NOCTTY | O_SYNC );
+  char dev_arr[2048];
+
+  std::wcstombs(dev_arr, dev_path.c_str(), dev_path.length() ) ;
+
+  printer_IO = open( dev_arr, O_RDWR | O_NOCTTY | O_SYNC );
   if( printer_IO < 0 ){
     throw std::runtime_error( "Failed opening printer IO" );
   }

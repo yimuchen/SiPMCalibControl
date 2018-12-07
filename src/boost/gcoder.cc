@@ -4,9 +4,9 @@
 BOOST_PYTHON_MODULE( gcoder )
 {
   boost::python::class_<GCoder>( "GCoder" )
+  //.def( boost::python::init<const std::string&>() )
   .def( "init_printer",     &GCoder::init_printer )
   // Hiding functions from python
-  //.def( "get_printer_out",  &GCoder::get_printer_out )
   //.def( "pass_gcode",       &GCoder::pass_gcode )
   .def( "get_settings",     &GCoder::get_settings )
   .def( "set_speed_limit",  &GCoder::set_speed_limit )

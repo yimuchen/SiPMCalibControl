@@ -4,23 +4,33 @@
 #include <boost/format.hpp>
 #include <opencv2/imgproc.hpp>
 
-Visual::Visual() :cam(){}
+#include <chrono>
+#include <thread>
+
+Visual::Visual() : cam(){}
 Visual::~Visual(){}
 
-Visual::Visual( const std::string& dev ):cam()
+Visual::Visual( const std::string& dev ) : cam()
 {
   init_dev( dev );
 }
 
-void Visual::init_dev( const std::string& dev )
+void
+Visual::init_dev( const std::string& dev )
 {
   dev_path = dev;
   cam.release();
   cam.open( dev_path );
   if( !cam.isOpened() ){// check if we succeeded
-    throw std::runtime_error( "Did not open webcam" );
+    throw std::runtime_error( "Cannot open webcam" );
   }
 }
+
+
+// Helper objects for consistant display
+static const cv::Scalar red( 100, 100, 255 );
+static const cv::Scalar white( 255, 255, 255 );
+
 
 
 static bool      check_rectangle( const std::vector<cv::Point>& cont );
@@ -55,8 +65,6 @@ Visual::find_chip()
     recconts.clear();
 
     for( unsigned i = 0; i < contours.size(); i++ ){
-      static const cv::Scalar red( 100, 100, 255 );
-      static const cv::Scalar white( 255, 255, 255 );
 
       const cv::Scalar col = check_rectangle( contours.at( i ) ) ? red : white;
       if( check_rectangle( contours.at( i ) ) ){
@@ -69,7 +77,8 @@ Visual::find_chip()
 
     if( cv::waitKey( 30 ) >= 0 ){ break;}
 
-    std::string result = ( boost::format( "Found [%u] rectangles: " )%recconts.size() ).str();
+    std::string result = (
+      boost::format( "Found [%u] rectangles: " )%recconts.size() ).str();
 
     for( const auto cont : recconts ){
       result += ( boost::format( " (%d,%d)" )
@@ -79,7 +88,7 @@ Visual::find_chip()
 
     update( GREEN( "[FINDCHIP]" ), result );
 
-    cv::imshow( "orig",      img );
+    cv::imshow( "orig", img );
     cv::imshow( "proc", cont_img );
   }
 
@@ -121,32 +130,90 @@ average( const std::vector<cv::Point>& cont )
   return ans;
 }
 
+#include <iostream>
 
 void
 Visual::scan_focus()
 {
-  cv::Mat img, gray_img, lap_img;
+  static const unsigned FRAME_WIDTH  = 1280;
+  static const unsigned FRAME_HEIGHT = 1024;
+  static const unsigned FRAME_COUNT  = 10;
+  static const std::string WIN_NAME  = "FOCUS_SCAN";
 
-  //cam.set( CV_CAP_PROP_AUTOFOCUS, false );
+  // Additional camera settings
+  cam.set( cv::CAP_PROP_FRAME_WIDTH,  FRAME_WIDTH  );
+  cam.set( cv::CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT );
 
-  cv::namedWindow( "img", 1 );
+  // Image containers
+  cv::Mat img, gray_temp, gray_img;
+  cv::Mat work_img, lap_img;
 
-  for( ;; ){
-    if( cv::waitKey( 30 ) >= 0 ){ break;}
+  // Variable containers
+  cv::Scalar mu, sigma;
+  double max_lap = 0, current_lap;
+  unsigned max_pos = 0;
+
+  // Creating display window:
+  cv::namedWindow( WIN_NAME,  1 );
+
+  // Getting an average of frames
+  gray_img = cv::Mat::zeros( FRAME_HEIGHT, FRAME_WIDTH, CV_64F );
+
+  for( unsigned i = 0; i < FRAME_COUNT; ++i ){
     cam >> img;
-    // cam.set( CV_CAP_PROP_FOCUS, i );
-    cv::imshow( "img", img );
-
-    cv::cvtColor( img, gray_img, cv::COLOR_BGR2GRAY );
-
-    cv::Laplacian( gray_img, lap_img, CV_64F,5 );
-    cv::Scalar mu, sigma;
-    cv::meanStdDev( img, mu, sigma );
-
-    double lapvar = sigma.val[0] * sigma.val[0];
-    update( GREEN("[FOCUS-SCAN]"),
-      ( boost::format( "Laplacian %.2lf (%d)" )%lapvar%110 ).str() );
+    cv::cvtColor( img, gray_temp, cv::COLOR_BGR2GRAY );
+    cv::accumulate( gray_temp, gray_img );
+    std::this_thread::sleep_for( // Sleeping between frames
+      std::chrono::milliseconds( int(1e3/cam.get( cv::CAP_PROP_FPS ) ) +1 )
+      );
   }
+
+  gray_img /= FRAME_COUNT;
+
+  // Scanning over rectangular window
+  for( unsigned i = 0; i < FRAME_WIDTH - FRAME_WIDTH/8; ++i ){
+
+    gray_temp = gray_img(
+      cv::Rect( i, FRAME_HEIGHT/4, FRAME_WIDTH/8, FRAME_HEIGHT/2 ) );
+    gray_temp.copyTo( work_img );
+    cv::Laplacian( work_img, lap_img, CV_64F, 5 );
+    cv::meanStdDev( lap_img, mu, sigma );
+    current_lap = sigma.val[0] * sigma.val[0];
+
+    if( current_lap > max_lap ){
+      max_lap = current_lap;
+      max_pos = i;
+    }
+    update( GREEN( "[FOCUS-SCAN]" ),
+      ( boost::format( "Laplacian current/max: %.2lf/%.2lf (%d/%d)" )
+        % current_lap % max_lap % i % max_pos ).str() );
+
+    // Display for debugging
+    gray_temp.convertTo( gray_temp, CV_8U );
+    gray_temp = gray_img;
+    gray_temp.convertTo( gray_temp, CV_8U );
+    cv::rectangle( gray_temp,
+      cv::Point( i, FRAME_HEIGHT/4 ), cv::Point( i+FRAME_WIDTH/8, FRAME_HEIGHT*3/4 ),
+      white,
+      2 );
+    cv::putText( gray_temp,
+      ( boost::format( "%d (%.2lf)" ) % i % current_lap ).str(),
+      cv::Point( i, FRAME_HEIGHT/4 ),
+      cv::FONT_HERSHEY_SIMPLEX,
+      1,
+      white
+      );
+    cv::putText( gray_temp,
+      ( boost::format( "%d (%.2lf)" ) % max_pos % max_lap ).str(),
+      cv::Point( 50, FRAME_HEIGHT*3/4+100 ),
+      cv::FONT_HERSHEY_SIMPLEX,
+      1,
+      white
+      );
+    cv::imshow( WIN_NAME, gray_temp );
+    cv::waitKey( 30 );
+  }
+
 
   cv::destroyAllWindows();
 

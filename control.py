@@ -44,7 +44,7 @@ if __name__ == '__main__':
     sys.exit(0)
 
   try:
-    cmd.trigger.init()
+    # cmd.trigger.init()
     cmd.set.run(args)
   except Exception as err:
     logger.printerr(str(err))

@@ -18,12 +18,13 @@ add_library(Board SHARED ${BOARD_SRC})
 FILE(GLOB GCODER_SRC gcoder/*.cc)
 add_library(GCoder SHARED ${GCODER_SRC})
 add_dependencies(GCoder Common)
+target_link_libraries(GCoder Common )
 
 ## visual processing part
 FILE(GLOB VISUAL_SRC visual/*.cc)
 add_library(Visual SHARED ${VISUAL_SRC})
 add_dependencies(Visual Common)
-target_link_libraries(Visual ${OpenCV_LIBS})
+target_link_libraries(Visual ${OpenCV_LIBS} Common)
 
 ## GPIO part
 FILE(GLOB TRIGGER_SRC trigger/*.cc )
@@ -35,7 +36,9 @@ function(make_boost_python libname depname )
   set_target_properties(${libname} PROPERTIES PREFIX "../python/")
   target_include_directories(${libname} PRIVATE ${libname}/)
   target_include_directories(${libname} PRIVATE ${PYTHON_INCLUDE_DIRS})
-  target_link_libraries(${libname} ${Boost_LIBRARIES} ${depname})
+  target_link_libraries(${libname}
+    ${Boost_LIBRARIES} ${PYTHON_LIBRARIES}
+    ${depname})
 endfunction()
 
 make_boost_python( gcoder GCoder )

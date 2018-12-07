@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options("-O3")
 add_compile_options("-Wall")
+add_compile_options("-Wno-undef")
 
 # General output settings
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/lib )

@@ -22,11 +22,11 @@ class set(cmdbase.controlcmd):
   def run(self,arg):
     if arg.boardtype:
       self.cmd.board.set_boardtype( arg.boardtype.name )
+    if arg.camdev and arg.camdev != self.cmd.visual.dev_path :
+      self.cmd.visual.init_dev(arg.camdev)
     if arg.printerdev and arg.printerdev != self.cmd.gcoder.dev_path :
       self.cmd.gcoder.init_printer( arg.printerdev )
       logger.printmsg( self.cmd.gcoder.get_settings() )
-    if arg.camdev and arg.camdev != self.cmd.visual.dev_path :
-      self.cmd.visual.init_dev(arg.camdev)
 
 class get(cmdbase.controlcmd):
   """
