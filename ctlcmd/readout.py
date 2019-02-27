@@ -1,4 +1,4 @@
-import python.logger as logger
+import cmod.logger as logger
 import numpy as np
 import time
 

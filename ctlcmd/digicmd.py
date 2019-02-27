@@ -1,4 +1,4 @@
-import python.cmdbase as cmdbase
+import ctlcmd.cmdbase as cmdbase
 
 class pulse(cmdbase.controlcmd):
   def __init__(self):

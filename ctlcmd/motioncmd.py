@@ -1,10 +1,10 @@
-import python.cmdbase as cmdbase
-import python.gcoder as gcoder
-import python.logger as logger
-import argparse
+import ctlcmd.cmdbase as cmdbase
+import cmod.gcoder as gcoder
+import cmod.logger as logger
 import numpy as np
-import time
 from scipy.optimize import curve_fit
+import argparse
+import time
 
 
 class moveto(cmdbase.controlcmd):

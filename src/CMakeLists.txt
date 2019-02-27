@@ -33,7 +33,7 @@ add_library(Trigger SHARED ${TRIGGER_SRC})
 ## Boost-python libraries
 function(make_boost_python libname depname )
   add_library(${libname} SHARED boost/${libname}.cc )
-  set_target_properties(${libname} PROPERTIES PREFIX "../python/")
+  set_target_properties(${libname} PROPERTIES PREFIX "../cmod/")
   target_include_directories(${libname} PRIVATE ${libname}/)
   target_include_directories(${libname} PRIVATE ${PYTHON_INCLUDE_DIRS})
   target_link_libraries(${libname}

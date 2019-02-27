@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-import python.cmdbase as cmdbase
-import python.motioncmd as motioncmd
-import python.getset as getset
-import python.digicmd as digicmd
-import python.logger as logger
+import ctlcmd.cmdbase as cmdbase
+import ctlcmd.motioncmd as motioncmd
+import ctlcmd.getset as getset
+import ctlcmd.digicmd as digicmd
+import cmod.logger as logger
 import argparse
 import copy
 import sys

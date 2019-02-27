@@ -1,9 +1,8 @@
-import python.gcoder as gcoder
-import python.board as board
-import python.logger as logger
-import python.trigger as trigger
-import python.visual as visual
-import python.readout as readout
+import cmod.gcoder as gcoder
+import cmod.board as board
+import cmod.logger as logger
+import cmod.trigger as trigger
+import cmod.visual as visual
 import cmd
 import sys
 import os
