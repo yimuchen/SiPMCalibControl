@@ -3,6 +3,8 @@ import cmod.board as board
 import cmod.logger as logger
 import cmod.trigger as trigger
 import cmod.visual as visual
+import cmod.readout as readout
+import cmod.sshfiler as sshfiler
 import cmd
 import sys
 import os
@@ -70,25 +72,31 @@ class controlterm(cmd.Cmd):
       self.board = board.Board()
     except Exception as err:
       logger.printwarn("Error message emitted when setting up Board type")
-      logger.printwarn(str(err))
+      logger.printerr(str(err))
 
     try:
       self.visual = visual.Visual()
     except Exception as err:
       logger.printwarn("Error message emitted when setting up cameras")
-      logger.printwarn(str(err))
+      logger.printerr(str(err))
 
     try:
       self.trigger = trigger.Trigger()
     except Exception as err:
       logger.printwarn("Error message emitted when setting up GPIO interface")
-      logger.printwarn(str(err))
+      logger.printerr(str(err))
 
     try:
       self.readout = readout.readout(self)
     except Exception as err:
-      logger.printwarn("Error messege emitted when setting up I2C interface")
-      logger.printwarn(str(err))
+      logger.printwarn("Error message emitted when setting up I2C interface")
+      logger.printerr(str(err))
+
+    try:
+      self.sshfiler = sshfiler.SSHFiler()
+    except Exception as err:
+      logger.printwarn("Error message emitted when logging to remote host, all files will be saved locally until new login has been provided!")
+      logger.printerr( str(err) )
 
   def postcmd(self, stop, line):
     logger.printmsg("")  # Printing extra empty line for aesthetics

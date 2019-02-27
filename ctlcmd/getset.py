@@ -1,6 +1,7 @@
 import ctlcmd.cmdbase as cmdbase
 import cmod.gcoder as gcoder
 import cmod.logger as logger
+import cmod.sshfiler as sshfiler
 import argparse
 
 class set(cmdbase.controlcmd):
@@ -76,3 +77,16 @@ class getcoord(cmdbase.controlcmd):
   def run(self, arg):
     logger.printmsg("x:{0:.1f} y:{1:.1f} z:{2:.1f}".format(
         self.cmd.gcoder.opx, self.cmd.gcoder.opy, self.cmd.gcoder.opz))
+
+class remotelogin(cmdbase.controlcmd):
+  """
+  Resetting a login setting in case first login failed
+  """
+  def __init__(self):
+    cmdbase.controlcmd.__init__(self)
+
+  def run(self,arg):
+    ## Re-instancing is enough!
+    self.cmd.sshfiler = sshfiler.SSHFiler()
+
+    logger.printmsg(logger.GREEN('Login success!'))

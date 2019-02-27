@@ -5,6 +5,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 import argparse
 import time
+import datetime
 
 
 class moveto(cmdbase.controlcmd):
@@ -41,13 +42,13 @@ class moveto(cmdbase.controlcmd):
 
     if arg.chip:
       if not self.cmd.board.has_chip(arg.chip):
-        print(
-            """Warning chip of ID is not defined in board type! Not using chip ID to change target position"""
+        logger.printwarn(
+            "Chip of ID is not defined in board type! Not using chip ID to change target position"
         )
         self.cmd.board.opchip = -1
       else:
         if arg.x or arg.y:
-          print("Warning! Overriding user defined x,y with chip coordinates!")
+          logger.printwarn("Overriding user defined x,y with chip coordinates!")
       arg.x = self.cmd.board.get_chip_x(arg.chip)
       arg.y = self.cmd.board.get_chip_y(arg.chip)
       self.cmd.board.opchip = arg.chip
@@ -123,7 +124,8 @@ class halign(cmdbase.controlcmd):
         '-d', type=float, default=0.5, help='Horizontal sampling seperation')
     self.parser.add_argument(
         '-f',
-        type=argparse.FileType('w'),
+        type=str,
+        default='halign_<TIMESTAMP>.txt',
         help='Writing x-y scan results to file')
 
   def parse(self, line):
@@ -141,6 +143,13 @@ class halign(cmdbase.controlcmd):
       logger.printwarn(
           ("The vertical position might not put the photosensor within "
            "the field of vision of the camera, camera calibration might fail!"))
+
+    if arg.f == 'halign_<TIMESTAMP>.txt':
+      arg.f = self.cmd.sshfiler.remotefile('halign_{0}.txt'.format(
+          datetime.datetime.now().strftime('%Y%m%d_%H%M%S')))
+    else:
+      arg.f = self.cmd.sshfiler.remotefile(arg.f)
+
     return arg
 
   def run(self, arg):
@@ -160,18 +169,19 @@ class halign(cmdbase.controlcmd):
       lumi.append(lumival)
       unc.append(uncval)
 
+      ## Writing to screen
       logger.update(
           logger.GREEN("[ALIGN]"),
           "x:{0:.1f}, y:{1:.1f}, z:{2:.1f}, L:{3:.2f}, uL:{4:.3f}".format(
               xval, yval, arg.z, lumival, uncval))
-    logger.clear_update()
 
-    ## Flushing contents to file
-    if arg.f:
-      for xval, yval, lumival, uncval in zip(x, y, lumi, unc):
-        arg.f.write("{0:.1f} {1:.1f} {2:.1f} {3:.2f} {4:.3f}\n".format(
-            xval, yval, arg.z, lumival, uncval))
-      arg.f.close()
+      ## Writing to file
+      arg.f.write("{0:.1f} {1:.1f} {2:.1f} {3:.2f} {4:.3f}\n".format(
+          xval, yval, arg.z, lumival, uncval))
+
+    ## Clearing output objects
+    logger.clear_update()
+    arg.f.close()
 
     # Performing fit
     targetx = np.mean(arg.x)
@@ -251,7 +261,10 @@ class zscan(cmdbase.controlcmd):
     self.parser.add_argument(
         '-zsep', type=float, default=5, help='z scanning seperation [mm]')
     self.parser.add_argument(
-        '-f', type=argparse.FileType('w'), help='Writing results to some file')
+        '-f',
+        type=str,
+        default='zscan_<TIMESTAMP>.txt',
+        help='Writing results to some file')
 
   def parse(self, line):
     arg = cmdbase.controlcmd.parse(self, line)
@@ -266,6 +279,12 @@ class zscan(cmdbase.controlcmd):
 
     if not (arg.x and arg.y):
       raise Exception('Please specify both x and y coordinates')
+
+    if arg.f == 'zscan_<TIMESTAMP>.txt':
+      arg.f = self.cmd.sshfiler.remotefile('zscan_{0}.txt'.format(
+          datetime.datetime.now().strftime('%Y%m%d_%H%M%S')))
+    else:
+      arg.f = self.cmd.sshfiler.remotefile(arg.f)
 
     return arg
 
@@ -283,22 +302,19 @@ class zscan(cmdbase.controlcmd):
         pass
 
       lumival, uncval = self.readout.read_adc(sample=100)
-      lumi.append( lumival )
-      unc.append( uncval )
+      lumi.append(lumival)
+      unc.append(uncval)
 
-      logger.update( logger.GREEN("[ZSCAN]"),
-        "z:{0:.1f}, L:{1:.2f}, uL:{2:.3f}".format(
-          z, lumival, uncval ) )
-    logger.clear_update()
-
-    if arg.f:
-      for z,lumival,uncval in zip(zlist,lumi,unc):
-        arg.f.write("{0:.1f} {1:.1f} {2:.1f} {3:.2f} {4:.3f}\n".format(
+      # Writing to screen
+      logger.update(
+          logger.GREEN("[ZSCAN]"), "z:{0:.1f}, L:{1:.2f}, uL:{2:.3f}".format(
+              z, lumival, uncval))
+      # Writing to file
+      arg.f.write("{0:.1f} {1:.1f} {2:.1f} {3:.2f} {4:.3f}\n".format(
             arg.x, arg.y, z, lumival, uncval))
-    else:
-      logger.printmsg( logger.GREEN("[ZSCAN]"),
-        "{0:.1f} {1:.1f} {2:.1f} {3:.2f} {4:.3f}\n".format(
-            arg.x, arg.y, z, lumival, uncval) )
+
+    logger.clear_update()
+    arg.f.close()
 
 
 class showreadout(cmdbase.controlcmd):
@@ -316,8 +332,9 @@ class showreadout(cmdbase.controlcmd):
     val = []
     for i in range(1000):
       val.append(self.adc.read_adc_raw(0))
-      logger.update( logger.GREEN("[READOUT]"),
-          "{0:6d} {1:.2f} {2:.3f}".format(val[-1], np.mean(val), np.std(val)))
+      logger.update(
+          logger.GREEN("[READOUT]"), "{0:6d} {1:.2f} {2:.3f}".format(
+              val[-1], np.mean(val), np.std(val)))
     logger.clear_update()
 
 

@@ -20,6 +20,7 @@ if __name__ == '__main__':
       getset.set,
       getset.get,
       getset.getcoord,
+      getset.remotelogin,
       digicmd.pulse,
   ])
   """

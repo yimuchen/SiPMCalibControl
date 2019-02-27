@@ -2,7 +2,6 @@ import cmod.logger as logger
 import numpy as np
 import time
 
-
 class readout(object):
   """
   Object for defining readout interface
@@ -13,7 +12,7 @@ class readout(object):
     try:
       import Adafruit_ADS1x15
       self.adc = Adafruit_ADS1x15.ADS1115()
-    except Exception as err:
+    except:
       self.adc = None
       logger.printwarn(
           ("You are not working in a I2C compatible environment, Readout "
