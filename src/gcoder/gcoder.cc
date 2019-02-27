@@ -1,13 +1,13 @@
 #include "gcoder.hpp"
 #include "logger.hpp"
 
+#include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <chrono>
 #include <cmath>
 #include <iostream>
 #include <regex>
-#include <algorithm>
 
 // Stuff required for tty input and output
 #include <errno.h>
@@ -23,15 +23,6 @@ GCoder::GCoder() :
   opz( -1 )
 {};
 
-// GCoder::GCoder( const std::wstring& dev ) :
-//   printer_IO( -1 ),
-//   opx( -1 ),
-//   opy( -1 ),
-//   opz( -1 )
-// {
-//   init_printer( dev );
-// }
-
 GCoder::~GCoder()
 {
   if( printer_IO > 0 ){
@@ -40,7 +31,7 @@ GCoder::~GCoder()
 }
 
 void
-GCoder::init_printer( const std::wstring& dev )
+GCoder::InitPrinter( const std::wstring& dev )
 {
   static const int speed = B115200;
   struct termios tty;
@@ -49,7 +40,7 @@ GCoder::init_printer( const std::wstring& dev )
 
   char dev_arr[2048];
 
-  std::wcstombs(dev_arr, dev_path.c_str(), dev_path.length() ) ;
+  std::wcstombs( dev_arr, dev_path.c_str(), dev_path.length() );
 
   printer_IO = open( dev_arr, O_RDWR | O_NOCTTY | O_SYNC );
   if( printer_IO < 0 ){
@@ -91,30 +82,24 @@ GCoder::init_printer( const std::wstring& dev )
 
   printmsg( "Waking up printer...." );
   usleep( 5e6 );
-  send_home();
+  SendHome();
 
   return;
 }
 
-void
-GCoder::send_home()
-{
-  pass_gcode( "G28\n", 0, 4e9 );
-  opx = opy = opz = 0;
-}
-
 std::string
-GCoder::pass_gcode(
+GCoder::RunGcode(
   const std::string& gcode,
   const unsigned     attempt,
-  const unsigned     waitack ) const
+  const unsigned     waitack,
+  const bool         verbose ) const
 {
   using namespace std::chrono;
 
   // static variables
-  static const unsigned    maxtry     = 1e2;
-  static const unsigned    buffersize = 65536;
-  static const std::string msghead  = GREEN("[GCODE-SEND]");
+  static const unsigned maxtry     = 1e2;
+  static const unsigned buffersize = 65536;
+  static const std::string msghead = GREEN( "[GCODE-SEND]" );
 
   // Readout data
   char buffer[buffersize];
@@ -126,17 +111,21 @@ GCoder::pass_gcode(
   boost::format printfmt( "[%s] to USBTERM[%s] (attempt %u)..." );
   std::string pstring = gcode;
   boost::trim_right( pstring );
-  const std::string printmsg = (printfmt%pstring%printer_IO%attempt).str();
+  const std::string printmsg = ( printfmt%pstring%printer_IO%attempt ).str();
+
+  if( printer_IO < 0 ){
+    throw std::runtime_error( "Printer is not available for commands" );
+  }
 
   if( attempt >= maxtry ){
     throw std::runtime_error(
-          (boost::format("ACK string was not received after [%d] attempts!"
-               " The message could be dropped or there is something wrong with"
-               " the printer!" )% maxtry).str() );
+      ( boost::format( "ACK string was not received after [%d] attempts!"
+        " The message could be dropped or there is something wrong with"
+        " the printer!" )% maxtry ).str() );
   }
 
   // Sending output
-  update( msghead, printmsg );
+  if( verbose ){ update( msghead, printmsg ); }
   write( printer_IO, gcode.c_str(), gcode.length() );
   tcdrain( printer_IO );
 
@@ -151,8 +140,8 @@ GCoder::pass_gcode(
     if( readlen > 0 ){
       buffer[readlen] = 1;
       ackstr          = std::string( buffer, buffer+readlen );
-      if( ackstr.find("ok")!= std::string::npos ){
-        awk=true;
+      if( ackstr.find( "ok" ) != std::string::npos ){
+        awk = true;
       }
     } else if( readlen < 0 ){
       throw std::runtime_error(
@@ -160,26 +149,35 @@ GCoder::pass_gcode(
           % strerror( errno ) ).str()
         );
     }
-  } while( !awk && duration_cast<microseconds>(t2-t1).count() < waitack );
+  } while( !awk && duration_cast<microseconds>( t2-t1 ).count() < waitack );
 
   // Checking output
   if( awk ){
-    update( msghead, printmsg+"...Done!" );
+    if( verbose ){ update( msghead, printmsg+"...Done!" ); }
     return ackstr;
   } else {
-    return pass_gcode( gcode, attempt+1, waitack );
+    return RunGcode( gcode, attempt+1, waitack );
   }
 }
 
-std::wstring
-GCoder::get_settings() const
+void
+GCoder::SendHome()
 {
-  std::string str = pass_gcode( "M503\n" );
+  RunGcode( "G28\n", 0, 4e9, true );
+  clear_update();
+  opx = opy = opz = 0;
+}
+
+
+std::wstring
+GCoder::GetSettings() const
+{
+  std::string str = RunGcode( "M503\n" );
   return std::wstring( str.begin(), str.end() );
 }
 
 void
-GCoder::set_speed_limit( float x, float y, float z )
+GCoder::SetSpeedLimit( float x, float y, float z )
 {
   static const float maxv = 300./14.;// Setting the maximum speed
   boost::format gcode_fmt( "M203 X%.2f Y%.2f Z%.2f\n" );
@@ -196,7 +194,7 @@ GCoder::set_speed_limit( float x, float y, float z )
 
   gcode = ( gcode_fmt %  x % y % z ).str();
 
-  pass_gcode( gcode );
+  RunGcode( gcode, false );
 
   vx = x;
   vy = y;
@@ -204,7 +202,7 @@ GCoder::set_speed_limit( float x, float y, float z )
 }
 
 void
-GCoder::move_to_position( float x, float y, float z )
+GCoder::MoveTo( float x, float y, float z, bool verbose )
 {
   // Check message of M114 is in:
   // "X:0.00 Y:0.00 Z:100.00 E:0.00 Count X: 0.00 Y:0.00 Z:126.01";
@@ -216,9 +214,9 @@ GCoder::move_to_position( float x, float y, float z )
       "Count.*X: (%1%) Y:(%1%) Z:(%1%)%2%.*"
       ) % fltregex % wsregex ).str()
     );
-  static const std::string msghead = GREEN("[GANTRYPOS]");
+  static const std::string msghead = GREEN( "[GANTRYPOS]" );
 
-  boost::format move_fmt( "G0 X%.2f Y%.2f Z%.2f\n" );
+  boost::format move_fmt( "G0 X%.1f Y%.1f Z%.1f\n" );
   std::string gcode;
   std::string checkmsg;
   std::smatch checkmatch;
@@ -229,13 +227,13 @@ GCoder::move_to_position( float x, float y, float z )
   opz = z == z ? z : opz;
 
   gcode = ( move_fmt % opx % opy % opz ).str();
-  pass_gcode( gcode );
-  clear_update();
+  RunGcode( gcode, 0, 100, verbose );
+  if( verbose ){ clear_update(); }
 
   do {
-    pass_gcode( "M114\n" );// Getting current position command
-    checkmsg = pass_gcode( "M114\n" );
-    checkmsg.erase(std::remove(checkmsg.begin(), checkmsg.end(), '\n'), checkmsg.end());
+    // Getting current position command
+    checkmsg = RunGcode( "M114\n", 0, 100, verbose );
+    checkmsg.erase( std::remove( checkmsg.begin(), checkmsg.end(), '\n' ), checkmsg.end() );
     if( std::regex_match( checkmsg, checkmatch, checkfmt ) ){
       opx = std::stof( checkmatch[1].str() );
       opy = std::stof( checkmatch[2].str() );
@@ -245,20 +243,35 @@ GCoder::move_to_position( float x, float y, float z )
       z   = std::stof( checkmatch[6].str() );
 
       const std::string msg = ( boost::format(
-        "Target (%.2lf %.2lf %.2lf), Current (%.2lf, %.2lf, %.2lf)..."
-      ) % opx % opy % opz % x % y % z ).str();
-      update( msghead, msg );
+        "Target (%.1lf %.1lf %.1lf), Current (%.1lf, %.1lf, %.1lf)..."
+        ) % opx % opy % opz % x % y % z ).str();
 
-      if( opx == x && opy == y && opz == z ){
-        update(msghead, msg+"Done!");
+      if( verbose ){ update( msghead, msg ); }
+
+      if( MatchCoord( opx, x ) &&
+          MatchCoord( opy, y ) &&
+          MatchCoord( opz, z ) ){
+        if( verbose ){ update( msghead, msg+"Done!" ); }
         break;
       }
 
     } else {
-      printwarn( (boost::format("Couldn't parse string [%s][%u]! Trying again!")
-       % checkmsg % checkmatch.size() ).str() );
+      if( verbose ){
+        printwarn(
+          ( boost::format( "Couldn't parse string [%s][%u]! Trying again!" )
+            % checkmsg % checkmatch.size() ).str() );
+      }
     }
   } while( 1 );
 
   return;
+}
+
+bool
+GCoder::MatchCoord( double x, double y )
+{
+  // Rounding to closes 0.1
+  x = std::round( x * 10 ) / 10;
+  y = std::round( y * 10 ) / 10;
+  return x == y;
 }

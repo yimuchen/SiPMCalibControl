@@ -25,8 +25,8 @@ class set(cmdbase.controlcmd):
     if arg.camdev and arg.camdev != self.cmd.visual.dev_path :
       self.cmd.visual.init_dev(arg.camdev)
     if arg.printerdev and arg.printerdev != self.cmd.gcoder.dev_path :
-      self.cmd.gcoder.init_printer( arg.printerdev )
-      logger.printmsg( self.cmd.gcoder.get_settings() )
+      self.cmd.gcoder.initprinter( arg.printerdev )
+      logger.printmsg( self.cmd.gcoder.getsettings() )
 
 class get(cmdbase.controlcmd):
   """
@@ -42,12 +42,28 @@ class get(cmdbase.controlcmd):
 
   def run(self,arg):
     if arg.boardtype or arg.all :
-      logger.update( "[BOARDTYPE] ", str(self.cmd.board.boardtype) )
+      logger.update( "[BOARDTYPE]", str(self.cmd.board.boardtype) )
     if arg.opchip    or arg.all :
-      logger.update( "[OPCHIP ID] ", str(self.cmd.board.op_chip) )
+      logger.update( "[OPCHIP ID]", str(self.cmd.board.op_chip) )
     if arg.printerdev or arg.all:
-      logger.update( "[PRINTER DEV] ", str(self.cmd.gcoder.dev_path) )
+      logger.update( "[PRINTER DEV]", str(self.cmd.gcoder.dev_path) )
     if arg.camdev or arg.all:
       logger.update( "[CAM DEV]", str(self.cmd.visual.dev_path) )
+    logger.flush_update()
+    logger.clear_update()
 
 
+class getcoord(cmdbase.controlcmd):
+  """
+  Printing current gantry coordinates
+  """
+
+  def __init__(self):
+    cmdbase.controlcmd.__init__(self)
+
+  def run(self,arg):
+    logger.printmsg("x:{0:.1f} y:{1:.1f} z:{2:.1f}".format(
+        self.cmd.gcoder.opx,
+        self.cmd.gcoder.opy,
+        self.cmd.gcoder.opz
+        ))

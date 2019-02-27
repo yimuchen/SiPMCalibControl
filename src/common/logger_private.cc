@@ -5,33 +5,47 @@
 /**
  * @brief Constructor
  */
-logger::logger(){}
+Logger::Logger(){}
 
 /**
  * @brief Destroyer
  */
-logger::~logger(){}
+Logger::~Logger(){}
 
 /**
  * @brief Global logging object
  */
-extern logger Logger;
+extern Logger GlobalLogger;
 
 void
-logger::update( const std::string& key, const std::string& msg )
+Logger::Update( const std::string& key, const std::string& msg )
 {
   screenclear_update();
   _update[key]=msg;
   screenprint_update();
 }
 
-void logger::printmsg( const std::string& msg, const std::string& header )
+void Logger::PrintMessage( const std::string& msg, const std::string& header )
 {
-  std::cout << header << " " << msg << std::endl;
+  if( header != "" ){
+    std::cout << header << " " << std::flush;
+  }
+  std::cout << msg << std::endl;
+}
+
+void Logger::FlushUpdate()
+{
+  Logger::screenprint_update();
 }
 
 
-void logger::screenclear_update()
+void Logger::ClearUpdate()
+{
+  screenclear_update();
+  _update.clear();
+}
+
+void Logger::screenclear_update()
 {
   static const std::string prevline = "\033[A" ;
   for( const auto& p : boost::adaptors::reverse( _update ) ){
@@ -40,14 +54,9 @@ void logger::screenclear_update()
   }
 }
 
-void logger::screenprint_update()
+void Logger::screenprint_update()
 {
   for( const auto& p : _update ){
     std::cout << p.first << " " << p.second << std::endl;
   }
-}
-
-void logger::clear_update()
-{
-  _update.clear();
 }

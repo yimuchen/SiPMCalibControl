@@ -8,19 +8,21 @@
 #include <map>
 #include <string>
 
-class logger
+class Logger
 {
 public:
-  logger();
-  ~logger();
+  Logger();
+  ~Logger();
 
-  void update( const std::string&, const std::string& );
-  void printmsg( const std::string&, const std::string& = "" );
-  void clear_update();
+  void Update( const std::string&, const std::string& );
+  void PrintMessage( const std::string&, const std::string& = "" );
+  void ClearUpdate();
+  void FlushUpdate();
 
 private:
   std::map<std::string, std::string> _update;
   void screenclear_update();
+  void screenflush_update();
   void screenprint_update();
 };
 

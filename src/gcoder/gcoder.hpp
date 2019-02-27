@@ -16,30 +16,36 @@ struct GCoder
   // GCoder( const std::wstring& dev );
   ~GCoder();
 
-  void init_printer( const std::wstring& dev );
+  void InitPrinter( const std::wstring& dev );
 
-  // Motion functions
-  std::string pass_gcode(
+  // Raw motion command setup
+  std::string RunGcode(
     const std::string& gcode,
     const unsigned     attempt = 0,
-    const unsigned     waitack = 1e4
+    const unsigned     waitack = 1e4,
+    const bool         verbose = false
     ) const;
 
-  void send_home();
+  // Abstaction of actual GCode commands
+  void SendHome();
 
-  std::wstring get_settings() const;
+  std::wstring GetSettings() const;
 
-  void set_speed_limit(
+  void SetSpeedLimit(
     float x = std::nanf(""),
     float y = std::nanf(""),
     float z = std::nanf("")
     );
 
-  void move_to_position(
-    float x = std::nanf(""),
-    float y = std::nanf(""),
-    float z = std::nanf("")
+  void MoveTo(
+    float      x       = std::nanf(""),
+    float      y       = std::nanf(""),
+    float      z       = std::nanf(""),
+    const bool verbose = false
     );
+
+  // Floating point comparison.
+  static bool MatchCoord( double x, double y );
 
 public:
   int          printer_IO;

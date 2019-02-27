@@ -3,9 +3,9 @@
 
 BOOST_PYTHON_MODULE( trigger )
 {
-  boost::python::class_<trigger>( "trigger" )
-  .def( "pulse", &trigger::pulse )
-  .def( "init",  &trigger::init)
+  boost::python::class_<Trigger>( "Trigger" )
+  .def( "Pulse", &Trigger::Pulse )
+  .def( "Init",  &Trigger::Init)
   ;
 }
 

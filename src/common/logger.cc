@@ -3,7 +3,7 @@
 #include <regex>
 
 // ** Global object
-logger Logger;
+Logger GlobalLogger;
 
 // Color coding functions
 std::string
@@ -30,29 +30,41 @@ RED( const std::string& str )
 void
 update( const std::string& a, const std::string& b )
 {
-  Logger.update( a, b );
+  GlobalLogger.Update( a, b );
 }
 
 void
 clear_update()
 {
-  Logger.clear_update();
+  GlobalLogger.ClearUpdate();
+}
+
+void
+flush_update()
+{
+  GlobalLogger.FlushUpdate();
+}
+
+void
+printmsg( const std::string& header, const std::string& x )
+{
+  GlobalLogger.PrintMessage( x, header );
 }
 
 void
 printmsg( const std::string& x )
 {
-  Logger.printmsg( x );
+  GlobalLogger.PrintMessage( x );
 }
 
 void
 printwarn( const std::string& x )
 {
-  Logger.printmsg( x, YELLOW( "[WARNING]" ) );
+  GlobalLogger.PrintMessage( x, YELLOW( "[WARNING]" ) );
 }
 
 void
 printerr( const std::string& x )
 {
-  Logger.printmsg( x, RED( "[ERROR]" ) );
+  GlobalLogger.PrintMessage( x, RED( "[ERROR]" ) );
 }

@@ -10,15 +10,18 @@ import sys
 
 if __name__ == '__main__':
   cmd = cmdbase.controlterm([
-    motioncmd.moveto,
-    motioncmd.movespeed,
-    motioncmd.findchip,
-    motioncmd.fscan,
-    getset.set,
-    getset.get,
-    digicmd.pulse,
-    ])
-
+      motioncmd.moveto,
+      motioncmd.movespeed,
+      motioncmd.findchip,
+      motioncmd.fscan,
+      motioncmd.halign,
+      motioncmd.zscan,
+      motioncmd.showreadout,
+      getset.set,
+      getset.get,
+      getset.getcoord,
+      digicmd.pulse,
+  ])
   """
   Duplicating the session to allow for default override.
   """
@@ -27,8 +30,7 @@ if __name__ == '__main__':
   # Augmenting help messages
   prog_parser.prog = "control.py"
   prog_parser.add_argument(
-    '-h','--help',action='store_true',
-    help='print help message and exit')
+      '-h', '--help', action='store_true', help='print help message and exit')
 
   # Overriding default values
   for action in prog_parser._actions:
@@ -39,15 +41,16 @@ if __name__ == '__main__':
 
   args = prog_parser.parse_args()
 
-  if args.help :
+  if args.help:
     prog_parser.print_help()
     sys.exit(0)
 
   try:
-    # cmd.trigger.init()
     cmd.set.run(args)
   except Exception as err:
     logger.printerr(str(err))
-    logger.printwarn("There was error in the setup process, program will " "continue but will most likely misbehave! Use at your own risk!")
+    logger.printwarn(
+        "There was error in the setup process, program will "
+        "continue but will most likely misbehave! Use at your own risk!")
 
   cmd.cmdloop()
