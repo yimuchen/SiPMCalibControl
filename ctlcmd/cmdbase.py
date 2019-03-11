@@ -20,10 +20,14 @@ class controlsession(object):
   """
 
   def __init__(self):
+    ## Stuff for illumination alignment
     self.halign_xval = {}
     self.halign_xunc = {}
     self.halign_yval = {}
     self.halign_yunc = {}
+
+    ## Stuff for visual alignment
+    self.camT = {}
 
 
 class controlterm(cmd.Cmd):
@@ -47,7 +51,7 @@ class controlterm(cmd.Cmd):
       dofunc = "do_" + comname
       helpfunc = "help_" + comname
       compfunc = "complete_" + comname
-      self.__setattr__(comname, com())
+      self.__setattr__(comname, com(self))
       self.__setattr__(dofunc, self.__getattribute__(comname).do)
       self.__setattr__(helpfunc, self.__getattribute__(comname).callhelp)
       self.__setattr__(compfunc, self.__getattribute__(comname).complete)
@@ -59,6 +63,13 @@ class controlterm(cmd.Cmd):
 
     ## Creating session information storage class
     self.session = controlsession()
+
+    self.sshfiler = sshfiler.SSHFiler()
+    try:
+      self.sshfiler.reconnect()
+    except Exception as err:
+      logger.printwarn("Error message emitted when logging to remote host, all files will be saved locally until new login has been provided!")
+      logger.printerr( str(err) )
 
     ## Creating the gcoder/board/camcontrol instances
     try:
@@ -92,11 +103,6 @@ class controlterm(cmd.Cmd):
       logger.printwarn("Error message emitted when setting up I2C interface")
       logger.printerr(str(err))
 
-    try:
-      self.sshfiler = sshfiler.SSHFiler()
-    except Exception as err:
-      logger.printwarn("Error message emitted when logging to remote host, all files will be saved locally until new login has been provided!")
-      logger.printerr( str(err) )
 
   def postcmd(self, stop, line):
     logger.printmsg("")  # Printing extra empty line for aesthetics
@@ -149,16 +155,19 @@ class controlcmd():
   to call for the help and complete functions
   """
 
-  def __init__(self):
+  def __init__(self,cmdsession):
     """
     Initializer declares an argument parser class with the class name as the
     program name and the class doc string as the description string. This
     greatly reduces the verbosity of writing custom commands.
+    Each command will have accession to the cmd session, and by extension,
+    every control object the could potentially be used
     """
     self.parser = argparse.ArgumentParser(
         prog=self.__class__.__name__.lower(),
         description=self.__class__.__doc__,
         add_help=False)
+    self.cmd = cmdsession
 
 
   def do(self, line):

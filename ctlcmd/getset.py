@@ -9,8 +9,8 @@ class set(cmdbase.controlcmd):
   Setting session parameters
   """
 
-  def __init__(self):
-    cmdbase.controlcmd.__init__(self)
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
     self.parser.add_argument(
         '-boardtype',
         type=argparse.FileType(mode='r'),
@@ -32,12 +32,27 @@ class set(cmdbase.controlcmd):
 
   def run(self, arg):
     if arg.boardtype:
-      self.cmd.board.set_boardtype(arg.boardtype.name)
+      try:
+        self.cmd.board.set_boardtype(arg.boardtype.name)
+      except Exception as err:
+        logger.printerr(str(err))
+        logger.printwarn("Board type setting has failed, skipping over setting")
     if arg.camdev and arg.camdev != self.cmd.visual.dev_path:
-      self.cmd.visual.init_dev(arg.camdev)
+      try:
+        self.cmd.visual.init_dev(arg.camdev)
+      except Exception as err:
+        logger.printerr(str(err))
+        logger.printwarn("Initializing webcam has failed, skipping over setting")
     if arg.printerdev and arg.printerdev != self.cmd.gcoder.dev_path:
-      self.cmd.gcoder.initprinter(arg.printerdev)
-      logger.printmsg(self.cmd.gcoder.getsettings())
+      try:
+        self.cmd.gcoder.initprinter(arg.printerdev)
+        printset = self.cmd.gcoder.getsettings()
+        printset = printset.split('\necho:')
+        for line in printset:
+          logger.printmsg(logger.GREEN("[PRINTER]"), line )
+      except Exception as err:
+        logger.printerr(str(err))
+        logger.printwarn("Failed to setup printer, skipping over settings")
 
 
 class get(cmdbase.controlcmd):
@@ -45,8 +60,8 @@ class get(cmdbase.controlcmd):
   Printing out the session parameters, and equipment settings.
   """
 
-  def __init__(self):
-    cmdbase.controlcmd.__init__(self)
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
     self.parser.add_argument('-boardtype', action='store_true')
     self.parser.add_argument('-opchip', action='store_true')
     self.parser.add_argument('-printerdev', action='store_true')
@@ -71,8 +86,8 @@ class getcoord(cmdbase.controlcmd):
   Printing current gantry coordinates
   """
 
-  def __init__(self):
-    cmdbase.controlcmd.__init__(self)
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
 
   def run(self, arg):
     logger.printmsg("x:{0:.1f} y:{1:.1f} z:{2:.1f}".format(
@@ -82,8 +97,8 @@ class remotelogin(cmdbase.controlcmd):
   """
   Resetting a login setting in case first login failed
   """
-  def __init__(self):
-    cmdbase.controlcmd.__init__(self)
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
 
   def run(self,arg):
     ## Re-instancing is enough!

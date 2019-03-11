@@ -3,6 +3,7 @@ import ctlcmd.cmdbase as cmdbase
 import ctlcmd.motioncmd as motioncmd
 import ctlcmd.getset as getset
 import ctlcmd.digicmd as digicmd
+import ctlcmd.viscmd  as viscmd
 import cmod.logger as logger
 import argparse
 import copy
@@ -12,11 +13,13 @@ if __name__ == '__main__':
   cmd = cmdbase.controlterm([
       motioncmd.moveto,
       motioncmd.movespeed,
-      motioncmd.findchip,
-      motioncmd.fscan,
       motioncmd.halign,
-      motioncmd.zscan,
       motioncmd.showreadout,
+      viscmd.visualhscan,
+      viscmd.visualzscan,
+      viscmd.visualmaxsharp,
+      viscmd.visualshowchip,
+      viscmd.visualcenterchip,
       getset.set,
       getset.get,
       getset.getcoord,

@@ -40,10 +40,12 @@ GCoder::InitPrinter( const std::wstring& dev )
 
   char dev_arr[2048];
 
-  std::wcstombs( dev_arr, dev_path.c_str(), dev_path.length() );
+  const int len = std::wcstombs( dev_arr, dev_path.c_str(), dev_path.length() );
+  dev_arr[len] = '\0'; // Manually adding termination string
 
   printer_IO = open( dev_arr, O_RDWR | O_NOCTTY | O_SYNC );
   if( printer_IO < 0 ){
+    printerr( (boost::format("printer io {%d} %s") % printer_IO % dev_arr).str() );
     throw std::runtime_error( "Failed opening printer IO" );
   }
 
@@ -226,6 +228,12 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
   opy = y == y ? y : opy;
   opz = z == z ? z : opz;
 
+  // Rounding to closest 0.1 (precision of gantry system )
+  opx = std::round( opx * 10 ) / 10 ;
+  opy = std::round( opy * 10 ) / 10 ;
+  opz = std::round( opz * 10 ) / 10 ;
+
+  // Running the code
   gcode = ( move_fmt % opx % opy % opz ).str();
   RunGcode( gcode, 0, 100, verbose );
   if( verbose ){ clear_update(); }

@@ -6,6 +6,7 @@ from scipy.optimize import curve_fit
 import argparse
 import time
 import datetime
+import cv2
 
 
 class moveto(cmdbase.controlcmd):
@@ -14,8 +15,8 @@ class moveto(cmdbase.controlcmd):
   x-y-z coordinates. Units for the x-y-z inputs is millimeters.
   """
 
-  def __init__(self):
-    cmdbase.controlcmd.__init__(self)
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
     self.parser.add_argument(
         "-x",
         type=float,
@@ -74,8 +75,8 @@ class movespeed(cmdbase.controlcmd):
   Setting the motion speed of the gantry x-y-z motors. Units in mm/s.
   """
 
-  def __init__(self):
-    cmdbase.controlcmd.__init__(self)
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
     self.parser.add_argument(
         '-x', type=float, help='motion speed of gantry in x axis ')
     self.parser.add_argument(
@@ -104,8 +105,8 @@ class halign(cmdbase.controlcmd):
   hmin = 1
   hmax = 400
 
-  def __init__(self):
-    cmdbase.controlcmd.__init__(self)
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
     self.parser.add_argument(
         '-x', type=float, help="Guestimation of x position of photosensor [mm]")
     self.parser.add_argument(
@@ -139,14 +140,9 @@ class halign(cmdbase.controlcmd):
       logger.printwarn(
           ("The arguments placed will put the gantry past it's limits, "
            "the command will used modified input parameters"))
-    if arg.z < 100:
-      logger.printwarn(
-          ("The vertical position might not put the photosensor within "
-           "the field of vision of the camera, camera calibration might fail!"))
-
     if arg.f == 'halign_<TIMESTAMP>.txt':
       arg.f = self.cmd.sshfiler.remotefile('halign_{0}.txt'.format(
-          datetime.datetime.now().strftime('%Y%m%d_%H%M%S')))
+          datetime.datetime.now().strftime('%Y%m%d_%H00')))
     else:
       arg.f = self.cmd.sshfiler.remotefile(arg.f)
 
@@ -162,7 +158,7 @@ class halign(cmdbase.controlcmd):
       try:
         # Try to move the gantry. Even if it fails there will be fail safes
         # in other classes
-        self.cmd.gcoder.moveto(x, y, arg.z, False)
+        self.cmd.gcoder.moveto(xval, yval, arg.z, False)
       except:
         pass
       lumival, uncval = self.cmd.readout.read_adc()
@@ -211,7 +207,7 @@ class halign(cmdbase.controlcmd):
       logger.printerr("Fit Failed to converge! Check for bad output in file!")
 
     ## Sending gantry to position
-    self.cmd.gcoder.move_to_position(targetx, targety, arg.z, True)
+    self.cmd.gcoder.moveto(targetx, targety, arg.z, True)
 
   def model(xydata, N, x0, y0, z, p):
     x, y = xydata
@@ -238,8 +234,8 @@ class zscan(cmdbase.controlcmd):
   Performing z scanning at a certain x-y coordinate
   """
 
-  def __init__(self):
-    cmdbase.controlcmd.__init__(self)
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
     self.parser.add_argument(
         '-x', type=float, help='specifying the x coordinate explicitly [mm]')
     self.parser.add_argument(
@@ -282,14 +278,14 @@ class zscan(cmdbase.controlcmd):
 
     if arg.f == 'zscan_<TIMESTAMP>.txt':
       arg.f = self.cmd.sshfiler.remotefile('zscan_{0}.txt'.format(
-          datetime.datetime.now().strftime('%Y%m%d_%H%M%S')))
+          datetime.datetime.now().strftime('%Y%m%d_%H00')))
     else:
       arg.f = self.cmd.sshfiler.remotefile(arg.f)
 
     return arg
 
   def run(self, arg):
-    zlist = np.linspace(arg.zmin, arg.zmax, (arg.zmax - arg.zmin) / arg.zsep + 1)
+    zlist = make_z_mesh( arg )
     lumi = []
     unc = []
 
@@ -301,7 +297,7 @@ class zscan(cmdbase.controlcmd):
       except:
         pass
 
-      lumival, uncval = self.readout.read_adc(sample=100)
+      lumival, uncval = self.cmd.readout.read_adc(sample=100)
       lumi.append(lumival)
       unc.append(uncval)
 
@@ -311,10 +307,14 @@ class zscan(cmdbase.controlcmd):
               z, lumival, uncval))
       # Writing to file
       arg.f.write("{0:.1f} {1:.1f} {2:.1f} {3:.2f} {4:.3f}\n".format(
-            arg.x, arg.y, z, lumival, uncval))
+          arg.x, arg.y, z, lumival, uncval))
 
+    logger.flush_update()
     logger.clear_update()
     arg.f.close()
+
+  def make_z_mesh(arg):
+    return np.linspace(arg.zmin, arg.zmax, (arg.zmax - arg.zmin) / arg.zsep + 1)
 
 
 class showreadout(cmdbase.controlcmd):
@@ -322,8 +322,8 @@ class showreadout(cmdbase.controlcmd):
   Continuously display ADC readout
   """
 
-  def __init__(self):
-    cmdbase.controlcmd.__init__(self)
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
 
   def parse(self, line):
     return cmdbase.controlcmd.parse(self, line)
@@ -336,33 +336,3 @@ class showreadout(cmdbase.controlcmd):
           logger.GREEN("[READOUT]"), "{0:6d} {1:.2f} {2:.3f}".format(
               val[-1], np.mean(val), np.std(val)))
     logger.clear_update()
-
-
-class findchip(cmdbase.controlcmd):
-  """
-  Finding the absolute chip position closest to current position of the gantry
-  """
-
-  def __init__(self):
-    cmdbase.controlcmd.__init__(self)
-
-  def parse(self, line):
-    return cmdbase.controlcmd.parse(self, line)
-
-  def run(self, arg):
-    self.cmd.visual.find_chip()
-
-
-class fscan(cmdbase.controlcmd):
-  """
-  Scanning focus to calibrate z distance
-  """
-
-  def __init__(self):
-    cmdbase.controlcmd.__init__(self)
-
-  def parse(self, line):
-    return cmdbase.controlcmd.parse(self, line)
-
-  def run(self, arg):
-    self.cmd.visual.scan_focus()

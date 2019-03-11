@@ -5,8 +5,8 @@
 #ifndef VISUAL_HPP
 #define VISUAL_HPP
 
-#include <opencv2/videoio.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/videoio.hpp>
 
 class Visual
 {
@@ -18,11 +18,17 @@ public:
   void init_dev( const std::string& );
   std::string dev_path;
 
-  void find_chip();
-  void scan_focus();
+  std::pair<double,double> find_chip( const bool );
+  double sharpness( const bool );
+
+  void save_frame( const std::string& filename );
+
+  unsigned frame_width() const ;
+  unsigned frame_height() const;
 
 private:
   cv::VideoCapture cam;
+  void getImg( cv::Mat& );
 };
 
 #endif

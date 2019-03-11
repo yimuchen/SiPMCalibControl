@@ -5,7 +5,13 @@
 #include <opencv2/imgproc.hpp>
 
 #include <chrono>
+#include <iostream>
 #include <thread>
+
+// Helper objects for consistant display
+static const cv::Scalar red( 100, 100, 255 );
+static const cv::Scalar white( 255, 255, 255 );
+
 
 Visual::Visual() : cam(){}
 Visual::~Visual(){}
@@ -24,197 +30,172 @@ Visual::init_dev( const std::string& dev )
   if( !cam.isOpened() ){// check if we succeeded
     throw std::runtime_error( "Cannot open webcam" );
   }
+  // Additional camera settings
+  cam.set( cv::CAP_PROP_FRAME_WIDTH,  1280 );
+  cam.set( cv::CAP_PROP_FRAME_HEIGHT, 1024 );
+  cam.set( cv::CAP_PROP_BUFFERSIZE,      1 );// Reducing buffer for fast capture
 }
 
-
-// Helper objects for consistant display
-static const cv::Scalar red( 100, 100, 255 );
-static const cv::Scalar white( 255, 255, 255 );
-
-
-
-static bool      check_rectangle( const std::vector<cv::Point>& cont );
-static cv::Point average( const std::vector<cv::Point>& cont );
-
-void
-Visual::find_chip()
+unsigned
+Visual::frame_width() const
 {
-  cv::Mat img, gray_img, cont_img;
+  return cam.get( cv::CAP_PROP_FRAME_WIDTH );
+}
+
+unsigned
+Visual::frame_height() const
+{
+  return cam.get( cv::CAP_PROP_FRAME_HEIGHT );
+}
+
+std::pair<double, double>
+Visual::find_chip( const bool monitor )
+{
+  // Magic numbers that will need some method of adjustment
+  static const cv::Size blursize( 5, 5 );
+  static const int minthreshold = 150;
+  static const int maxthreshold = 255;// this doesn't need to change.
+  static const double maxchiplumi = 75;
+  static const int minchipsize = 50;
+  static const double chipratio = 1.4 ;
+
+  // Drawing variables
+  static const std::string winname = "FINDCHIP_MONITOR";
+
+  // Operational variables
+  cv::Mat img, gray_img;
   std::vector<std::vector<cv::Point> > contours;
-  std::vector<std::vector<cv::Point> > recconts;
+  std::vector<std::vector<cv::Point> > hulls;
   std::vector<cv::Vec4i> hierarchy;
 
-  cv::namedWindow( "orig" );
-  cv::namedWindow( "proc" );
+  // Getting image
+  getImg( img );
 
-  while( 1 ){
-    cam >> img;
-    cv::cvtColor( img, gray_img, cv::COLOR_BGR2GRAY );
+  // Standard image processing.
+  cv::cvtColor( img, gray_img, cv::COLOR_BGR2GRAY );
+  cv::blur( gray_img, gray_img, blursize );
+  cv::threshold( gray_img, gray_img,
+    minthreshold, maxthreshold,
+    cv::THRESH_BINARY );
+  cv::findContours( gray_img, contours, hierarchy,
+    cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point( 0, 0 ) );
 
-    cv::GaussianBlur( gray_img, gray_img, cv::Size( 7, 7 ), 1.5, 1.5 );
-    cv::Canny( gray_img, gray_img, 0, 30, 3 );
-    cv::findContours( gray_img, contours, hierarchy,
-      cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point( 0, 0 ) );
+  // Calculating all contour properties
+  for( unsigned i = 0; i < contours.size(); i++ ){
+    // Size and dimesion estimation from bounding rectangle
+    const cv::Rect bound = cv::boundingRect( contours.at( i ) );
+    const double ratio   = (double)bound.height / (double)bound.width;
+    const double size    = std::max( bound.height, bound.width );
+    if( size < minchipsize ){ continue; }// skipping small speckles
+    if( ratio > chipratio
+        || ratio < 1./chipratio ){ continue; }// skipping non-square stuff
 
-    for( auto& cont : contours ){
-      cv::approxPolyDP( cont, cont, 5, true );
-    }
+    // Calculating average color of inside contour
+    cv::Mat mask = cv::Mat::zeros( img.size(), CV_8UC1 );
+    cv::drawContours( mask, contours, i, 255, cv::FILLED );
+    const cv::Scalar meancol = cv::mean( img, mask );
+    const double lumi        = 0.2126*meancol[0]
+                               + 0.7152*meancol[1]
+                               + 0.0722*meancol[2];
 
-    cont_img = cv::Mat::zeros( gray_img.size(), img.type() );
+    // Selection criteria
+    if( lumi > maxchiplumi ){ continue; }// Photosensors are dark.
 
-    recconts.clear();
+    // Generating convect hull
+    std::vector<cv::Point> hull;
+    cv::convexHull( cv::Mat( contours.at( i ) ), hull );
 
-    for( unsigned i = 0; i < contours.size(); i++ ){
+    // Only keeping largest convex hull
+    if( !hulls.empty() ){
+      const cv::Rect boundprev = cv::boundingRect( hulls.back() );
+      const cv::Rect boundpres = cv::boundingRect( hull );
 
-      const cv::Scalar col = check_rectangle( contours.at( i ) ) ? red : white;
-      if( check_rectangle( contours.at( i ) ) ){
-        recconts.push_back( contours.at( i ) );
+      if( boundpres.height * boundpres.width
+          > boundprev.height * boundprev.width ){
+        hulls.pop_back();
       }
-
-      drawContours( cont_img, contours, i, col, 2, 8, hierarchy, 0, cv::Point() );
-
     }
 
-    if( cv::waitKey( 30 ) >= 0 ){ break;}
+    hulls.push_back( hull );
+  }
 
-    std::string result = (
-      boost::format( "Found [%u] rectangles: " )%recconts.size() ).str();
+  // Calculating convexhull position if nothing is found
+  cv::Point center;
+  if( hulls.empty() ){
+    center = cv::Point( -1, -1 );
+  } else {
+    // position calculation of final contour
+    cv::Moments m = cv::moments( hulls.at( 0 ), false );
+    center = cv::Point( m.m10/m.m00, m.m01/m.m00 );
+  }
 
-    for( const auto cont : recconts ){
-      result += ( boost::format( " (%d,%d)" )
-                  % ( average( cont ).x ) %( average( cont ).y )
-                  ).str();
+  // Plotting final calculation results
+  if( monitor ){
+    // Window will be created, if already exists, this function does nothing
+    cv::namedWindow( winname, cv::WINDOW_AUTOSIZE );
+
+    // Generating the image
+    cv::Mat display( img );
+
+    for( unsigned i = 0; i < contours.size(); ++i ){
+      cv::drawContours( display, contours, i, white, 2 );
     }
 
-    update( GREEN( "[FINDCHIP]" ), result );
-
-    cv::imshow( "orig", img );
-    cv::imshow( "proc", cont_img );
-  }
-
-  cv::destroyAllWindows();
-  return;
-}
-
-
-static bool
-check_rectangle( const std::vector<cv::Point>& cont )
-{
-  if( cont.size() != 4 ){ return false; }
-  static const double sumcheck = 0.2;
-  static const double dotcheck = 0.3;
-
-  const cv::Point vec1 = cont.at( 1 ) - cont.at( 0 );
-  const cv::Point vec2 = cont.at( 3 ) - cont.at( 0 );
-  const cv::Point vec3 = cont.at( 2 ) - cont.at( 0 );
-
-  if( cv::norm( vec3-( vec1+vec2 ) ) / cv::norm( vec3 ) > sumcheck ){
-    return false;
-  }
-  if( fabs( vec1.ddot( vec2 ) / cv::norm( vec1 ) / cv::norm( vec2 ) ) > dotcheck ){
-    return false;
-  }
-  return true;
-}
-
-static cv::Point
-average( const std::vector<cv::Point>& cont )
-{
-  cv::Point ans;
-
-  for( const auto& p : cont ){
-    ans += p;
-  }
-
-  ans /= double(cont.size() );
-  return ans;
-}
-
-#include <iostream>
-
-void
-Visual::scan_focus()
-{
-  static const unsigned FRAME_WIDTH  = 1280;
-  static const unsigned FRAME_HEIGHT = 1024;
-  static const unsigned FRAME_COUNT  = 10;
-  static const std::string WIN_NAME  = "FOCUS_SCAN";
-
-  // Additional camera settings
-  cam.set( cv::CAP_PROP_FRAME_WIDTH,  FRAME_WIDTH  );
-  cam.set( cv::CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT );
-
-  // Image containers
-  cv::Mat img, gray_temp, gray_img;
-  cv::Mat work_img, lap_img;
-
-  // Variable containers
-  cv::Scalar mu, sigma;
-  double max_lap = 0, current_lap;
-  unsigned max_pos = 0;
-
-  // Creating display window:
-  cv::namedWindow( WIN_NAME,  1 );
-
-  // Getting an average of frames
-  gray_img = cv::Mat::zeros( FRAME_HEIGHT, FRAME_WIDTH, CV_64F );
-
-  for( unsigned i = 0; i < FRAME_COUNT; ++i ){
-    cam >> img;
-    cv::cvtColor( img, gray_temp, cv::COLOR_BGR2GRAY );
-    cv::accumulate( gray_temp, gray_img );
-    std::this_thread::sleep_for( // Sleeping between frames
-      std::chrono::milliseconds( int(1e3/cam.get( cv::CAP_PROP_FPS ) ) +1 )
-      );
-  }
-
-  gray_img /= FRAME_COUNT;
-
-  // Scanning over rectangular window
-  for( unsigned i = 0; i < FRAME_WIDTH - FRAME_WIDTH/8; ++i ){
-
-    gray_temp = gray_img(
-      cv::Rect( i, FRAME_HEIGHT/4, FRAME_WIDTH/8, FRAME_HEIGHT/2 ) );
-    gray_temp.copyTo( work_img );
-    cv::Laplacian( work_img, lap_img, CV_64F, 5 );
-    cv::meanStdDev( lap_img, mu, sigma );
-    current_lap = sigma.val[0] * sigma.val[0];
-
-    if( current_lap > max_lap ){
-      max_lap = current_lap;
-      max_pos = i;
+    if( hulls.empty() ){
+      cv::putText( display, "NOT FOUND",
+        cv::Point( 50, 100 ),
+        cv::FONT_HERSHEY_SIMPLEX,
+        1, white );
+    } else {
+      cv::drawContours( display, hulls, 0, red, 3 );
+      cv::circle( display, center, 3, red, cv::FILLED );
+      cv::putText( display,
+        ( boost::format( "x:%.1lf y:%.1lf" )%center.x%center.y ).str(),
+        cv::Point( 50, 100 ),
+        cv::FONT_HERSHEY_SIMPLEX,
+        2, white );
     }
-    update( GREEN( "[FOCUS-SCAN]" ),
-      ( boost::format( "Laplacian current/max: %.2lf/%.2lf (%d/%d)" )
-        % current_lap % max_lap % i % max_pos ).str() );
-
-    // Display for debugging
-    gray_temp.convertTo( gray_temp, CV_8U );
-    gray_temp = gray_img;
-    gray_temp.convertTo( gray_temp, CV_8U );
-    cv::rectangle( gray_temp,
-      cv::Point( i, FRAME_HEIGHT/4 ), cv::Point( i+FRAME_WIDTH/8, FRAME_HEIGHT*3/4 ),
-      white,
-      2 );
-    cv::putText( gray_temp,
-      ( boost::format( "%d (%.2lf)" ) % i % current_lap ).str(),
-      cv::Point( i, FRAME_HEIGHT/4 ),
-      cv::FONT_HERSHEY_SIMPLEX,
-      1,
-      white
-      );
-    cv::putText( gray_temp,
-      ( boost::format( "%d (%.2lf)" ) % max_pos % max_lap ).str(),
-      cv::Point( 50, FRAME_HEIGHT*3/4+100 ),
-      cv::FONT_HERSHEY_SIMPLEX,
-      1,
-      white
-      );
-    cv::imshow( WIN_NAME, gray_temp );
+    imshow( winname, display );
     cv::waitKey( 30 );
   }
 
+  return std::pair<double, double>( center.x, center.y );
+}
 
-  cv::destroyAllWindows();
+double
+Visual::sharpness( const bool monitor )
+{
+  // Image containers
+  cv::Mat img, lap;
 
+  // Variable containers
+  cv::Scalar mu, sigma;
+
+  // Getting image converting to gray scale
+  getImg( img );
+  cv::cvtColor( img, img, cv::COLOR_BGR2GRAY );
+
+  // Calculating lagrangian.
+  cv::Laplacian( img, lap, CV_64F, 5 );
+  cv::meanStdDev( lap, mu, sigma );
+  return sigma.val[0] * sigma.val[0];
+}
+
+void
+Visual::getImg( cv::Mat& img )
+{
+  for( unsigned i = 0; i < 2; ++i ){
+    cam >> img;// Flushing multiple frames to image
+    std::this_thread::sleep_for(// Sleeping a full capture frame time
+      std::chrono::milliseconds( 10 )
+      );
+  }
+}
+
+void
+Visual::save_frame( const std::string& filename )
+{
+  cv::Mat img;
+  cam >> img;
+  imwrite( filename, img );
 }
