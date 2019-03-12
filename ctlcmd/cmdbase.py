@@ -21,10 +21,14 @@ class controlsession(object):
 
   def __init__(self):
     ## Stuff for illumination alignment
-    self.halign_xval = {}
-    self.halign_xunc = {}
-    self.halign_yval = {}
-    self.halign_yunc = {}
+    self.lumi_halign_x = {}
+    self.lumi_halign_y = {}
+    self.lumi_halign_xunc = {}
+    self.lumi_halign_yunc = {}
+
+    ## Stuff of visual alignment
+    self.vis_halign_x = {}
+    self.vis_halign_y = {}
 
     ## Stuff for visual alignment
     self.camT = {}

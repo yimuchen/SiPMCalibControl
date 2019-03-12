@@ -180,8 +180,9 @@ class halign(cmdbase.controlcmd):
     arg.f.close()
 
     # Performing fit
-    targetx = np.mean(arg.x)
-    targety = np.mean(arg.y)
+    targetx = arg.x
+    targety = arg.y
+    targetz = self.cmd.gcoder.opz
     p0 = (max(lumi) * (arg.z**2), arg.x, arg.y, arg.z, min(lumi))
     try:
       fitval, fitcorr = curve_fit(
@@ -197,17 +198,19 @@ class halign(cmdbase.controlcmd):
           logger.GREEN("[ALIGN]"), "Fit  z:{0:.2f}+-{1:.3f}".format(
               fitval[3], np.sqrt(fitcorr[3][3])))
 
-      self.cmd.session.halign_xval[arg.z] = fitval[1]
-      self.cmd.session.halign_xunc[arg.z] = np.sqrt(fitcorr[1][1])
-      self.cmd.session.halign_yval[arg.z] = fitval[2]
-      self.cmd.session.halign_yunc[arg.z] = np.sqrt(fitcorr[1][1])
+      if not targetz in self.cmd.session.lumi_halign_x :
+        self.cmd.session.lumi_halign_x[targetz] = fitval[1]
+        self.cmd.session.lumi_halign_y[targetz] = fitval[2]
+        self.cmd.session.lumi_halign_xunc[targetz] = np.sqrt(fitcorr[1][1])
+        self.cmd.session.lumi_halign_yunc[targetz] = np.sqrt(fitcorr[1][1])
       targetx = fitval[1]
       targety = fitval[2]
     except Exception as err:
       logger.printerr("Fit Failed to converge! Check for bad output in file!")
+      raise err
 
     ## Sending gantry to position
-    self.cmd.gcoder.moveto(targetx, targety, arg.z, True)
+    self.cmd.gcoder.moveto(targetx, targety, targetz, True)
 
   def model(xydata, N, x0, y0, z, p):
     x, y = xydata

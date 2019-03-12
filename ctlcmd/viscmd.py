@@ -18,27 +18,34 @@ class visualhscan(cmdbase.controlcmd):
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.parser.add_argument(
-        '-x', type=float, help="Guesstimate of x position of photosensor [mm]")
-    self.parser.add_argument(
-        '-y', type=float, help="Guesstimate of y position of photosensor [mm]")
-    self.parser.add_argument(
-        '-r',
+        '-x',
+        '--guessx',
         type=float,
-        default=20,
-        help="Range to perform x-y scanning from central position [mm]")
+        help="Guesstimate of x position of photosensor [mm]")
     self.parser.add_argument(
-        '-z',
+        '-y',
+        '--guessy',
+        type=float,
+        help="Guesstimate of y position of photosensor [mm]")
+    self.parser.add_argument(
+        '-z', '--scanz',
         type=float,
         default=30,
         help="Height to perform horizontal scan at")
     self.parser.add_argument(
-        '-d', type=float, default=1, help='Horizontal sampling seperation')
+        '-r', '--range',
+        type=float,
+        default=3,
+        help="Range to perform x-y scanning from central position [mm]")
     self.parser.add_argument(
-        '-m',
+        '-d', '--h-distance'
+         type=float, default=0.5, help='Horizontal sampling seperation')
+    self.parser.add_argument(
+        '-m', '--monitor',
         action='store_true',
         help='Whether or not to open the monitoring window (could be slow!!)')
     self.parser.add_argument(
-        '-f',
+        '-f', '--savefile'
         type=str,
         default='vhscan_<ZVAL>_<TIMESTAMP>.txt',
         help='Writing x-y scan results to file')
@@ -46,9 +53,9 @@ class visualhscan(cmdbase.controlcmd):
   def parse(self, line):
     arg = cmdbase.controlcmd.parse(self, line)
     if not arg.x:
-      raise Exception("Need to specify initial x position")
+      arg.x = self.cmd.gcoder.opx
     if not arg.y:
-      raise Exception("Need to specify initial y position")
+      arg.y = self.cmd.gcoder.opy
     if ((arg.x - arg.r < motioncmd.halign.hmin)
         or (arg.x + arg.r > motioncmd.halign.hmax)
         or (arg.y - arg.r < motioncmd.halign.hmin)
@@ -117,9 +124,9 @@ class visualhscan(cmdbase.controlcmd):
 
     ## Saving rounded coordinates
     self.cmd.session.camT[self.cmd.gcoder.opz] = np.array([[fitx[0], fitx[1]],
-                                           [fity[0], fity[1]]])
+                                                           [fity[0], fity[1]]])
     ## Moving back to center
-    self.cmd.gcoder.moveto( arg.x, arg.y,  arg.z, False )
+    self.cmd.gcoder.moveto(arg.x, arg.y, arg.z, False)
 
   def model(xydata, a, b, c):
     x, y = xydata
@@ -161,49 +168,63 @@ class visualcenterchip(cmdbase.controlcmd):
     if not arg.z:
       arg.z = self.cmd.gcoder.opz
     if not arg.z in self.cmd.session.camT:
-      logger.printerr('Motion transformation equation was not found for position z={0:.2f}mm, please run command [visualhscan] first'
+      logger.printerr(
+          'Motion transformation equation was not found for position z={0:.2f}mm, please run command [visualhscan] first'
           .format(arg.z))
-      logger.printerr( "Available coordinates:" + str(self.cmd.session.camT) )
+      logger.printerr("Available coordinates:" + str(self.cmd.session.camT))
       raise Exception('Transformation equation not found')
     return arg
 
   def run(self, arg):
     self.cmd.gcoder.moveto(arg.x, arg.y, arg.z, False)
-    for movetime in range(10): ## Maximum of 10 movements
+    for movetime in range(10):  ## Maximum of 10 movements
       center = None
 
       ## Try to find center for a maximum of 3 times
       for findtime in range(3):
         center = self.cmd.visual.find_chip(False)
-        if center.x > 0 :
-          break;
+        if center.x > 0:
+          break
       ## Early exit if chip is not found.
-      if( center.x < 0 or center.y < 0 ):
-        raise Exception( "Chip lost! Move to center again" )
+      if (center.x < 0 or center.y < 0):
+        raise Exception("Chip lost! Move to center again")
 
       deltaxy = np.array([
           self.cmd.visual.frame_width() / 2 - center.x,
           self.cmd.visual.frame_height() / 2 - center.y
       ])
 
-      ## Early exit if difference from center is small
-      if np.linalg.norm(deltaxy) < 10: break
+      motionxy = np.linalg.solve(self.cmd.session.camT[self.cmd.gcoder.opz],
+                                 deltaxy)
 
-      motionxy = np.linalg.solve(
-          self.cmd.session.camT[self.cmd.gcoder.opz], deltaxy)
+      ## Early exit if difference from center is small
+      if np.linalg.norm(motionxy) < 0.1: break
 
       self.cmd.gcoder.moveto(self.cmd.gcoder.opx + motionxy[0],
                              self.cmd.gcoder.opy + motionxy[1],
                              self.cmd.gcoder.opz, False)
-      time.sleep(0.1) ## Waiting for the gantry to stop moving
+      time.sleep(0.1)  ## Waiting for the gantry to stop moving
 
     center = self.cmd.visual.find_chip(False)
     logger.printmsg(
-      logger.GREEN("[VCENTER]"),
-      "Gantry position: x={0:.1f} y={1:.1f} | Chip FOV position: x={2} y={3}".format(
-        self.cmd.gcoder.opx, self.cmd.gcoder.opy,
-        center.x, center.y  )
-    )
+        logger.GREEN("[VCENTER]"),
+        "Gantry position: x={0:.1f} y={1:.1f} | Chip FOV position: x={2} y={3}".
+        format(self.cmd.gcoder.opx, self.cmd.gcoder.opy, center.x, center.y))
+
+    if self.cmd.gcoder.opz not in self.cmd.session.vis_halign_x:
+      self.cmd.session.vis_halign_x[self.cmd.gcoder.opz] = self.cmd.gcoder.opx
+      self.cmd.session.vis_halign_y[self.cmd.gcoder.opz] = self.cmd.gcoder.opy
+    elif self.cmd.gcoder.opz not in self.cmd.session.lumi_halign_x:
+      deltax = self.cmd.session.vis_halign_x[
+          self.cmd.gcoder.opz] - self.cmd.session.lumi_halign_x[
+              self.cmd.gcoder.opz]
+      deltay = self.cmd.session.vis_halign_y[
+          self.cmd.gcoder.opz] - self.cmd.session.lumi_halign_y[
+              self.cmd.gcoder.opz]
+
+      logger.printmsg(
+          logger.GREEN("[VCENTER]"), "Estimated Lumi center: x={0} y={1}".format(
+              self.cmd.gcoder.opx - deltax, self.cmd.gcoder.opy - deltay))
 
 
 class visualmaxsharp(cmdbase.controlcmd):
@@ -256,7 +277,8 @@ class visualmaxsharp(cmdbase.controlcmd):
               zval, laplace))
     logger.flush_update()
     logger.update(
-        logger.GREEN("[MAX-SHARP]"), "Final z:{0:.1f}".format(self.cmd.gcoder.opz) )
+        logger.GREEN("[MAX-SHARP]"),
+        "Final z:{0:.1f}".format(self.cmd.gcoder.opz))
 
 
 class visualzscan(cmdbase.controlcmd):
