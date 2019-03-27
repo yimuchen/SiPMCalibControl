@@ -14,6 +14,7 @@ BOOST_PYTHON_MODULE( logger )
   boost::python::def( "GREEN",        &GREEN  );
   boost::python::def( "RED",          &RED    );
   boost::python::def( "YELLOW",       &YELLOW );
+  boost::python::def( "CYAN",         &CYAN   );
 
   boost::python::def( "update",       &update            );
   boost::python::def( "clear_update", &clear_update      );

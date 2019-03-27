@@ -48,16 +48,16 @@ Visual::frame_height() const
   return cam.get( cv::CAP_PROP_FRAME_HEIGHT );
 }
 
-std::pair<double, double>
+Visual::ChipResult
 Visual::find_chip( const bool monitor )
 {
   // Magic numbers that will need some method of adjustment
   static const cv::Size blursize( 5, 5 );
-  static const int minthreshold = 150;
-  static const int maxthreshold = 255;// this doesn't need to change.
+  static const int minthreshold   = 150;
+  static const int maxthreshold   = 255;// this doesn't need to change.
   static const double maxchiplumi = 75;
-  static const int minchipsize = 50;
-  static const double chipratio = 1.4 ;
+  static const int minchipsize    = 50;
+  static const double chipratio   = 1.4;
 
   // Drawing variables
   static const std::string winname = "FINDCHIP_MONITOR";
@@ -120,13 +120,23 @@ Visual::find_chip( const bool monitor )
   }
 
   // Calculating convexhull position if nothing is found
-  cv::Point center;
+  Visual::ChipResult ans;
   if( hulls.empty() ){
-    center = cv::Point( -1, -1 );
+    ans = ChipResult{ -1, -1, 0, 0 };
   } else {
     // position calculation of final contour
     cv::Moments m = cv::moments( hulls.at( 0 ), false );
-    center = cv::Point( m.m10/m.m00, m.m01/m.m00 );
+
+    // Maximum distance in contour
+    double distmax = 0;
+
+    for( const auto& p1 : hulls.at( 0 ) ){
+      for( const auto& p2 : hulls.at( 0 ) ){
+        distmax = std::max( distmax, cv::norm( p2-p1 ) );
+      }
+    }
+
+    ans = ChipResult{ m.m10/m.m00, m.m01/m.m00,  m.m00, distmax};
   }
 
   // Plotting final calculation results
@@ -148,9 +158,9 @@ Visual::find_chip( const bool monitor )
         1, white );
     } else {
       cv::drawContours( display, hulls, 0, red, 3 );
-      cv::circle( display, center, 3, red, cv::FILLED );
+      cv::circle( display, cv::Point( ans.x, ans.y ), 3, red, cv::FILLED );
       cv::putText( display,
-        ( boost::format( "x:%.1lf y:%.1lf" )%center.x%center.y ).str(),
+        ( boost::format( "x:%.1lf y:%.1lf" )%ans.x%ans.y ).str(),
         cv::Point( 50, 100 ),
         cv::FONT_HERSHEY_SIMPLEX,
         2, white );
@@ -159,7 +169,7 @@ Visual::find_chip( const bool monitor )
     cv::waitKey( 30 );
   }
 
-  return std::pair<double, double>( center.x, center.y );
+  return ans;
 }
 
 double

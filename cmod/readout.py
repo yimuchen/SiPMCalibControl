@@ -1,4 +1,4 @@
-import cmod.logger as logger
+import cmod.logger as log
 import numpy as np
 import time
 
@@ -14,7 +14,7 @@ class readout(object):
       self.adc = Adafruit_ADS1x15.ADS1115()
     except:
       self.adc = None
-      logger.printwarn(
+      log.printwarn(
           ("You are not working in a I2C compatible environment, Readout "
            "values for ADC will use a predefined model instead"))
 
@@ -42,4 +42,4 @@ class readout(object):
     z0 = 10
 
     D = (x-x0)**2 + (y-y0)**2 + (z+z0)**2
-    return (10000000000 * (z+z0) / D**(3/2)) + 0.0005 + 0.000005 * np.random.random()
+    return (100000 * (z+z0) / D**(3/2)) + 100 + 10 * np.random.random()

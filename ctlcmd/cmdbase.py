@@ -1,6 +1,6 @@
 import cmod.gcoder as gcoder
 import cmod.board as board
-import cmod.logger as logger
+import cmod.logger as log
 import cmod.trigger as trigger
 import cmod.visual as visual
 import cmod.readout as readout
@@ -13,27 +13,6 @@ import readline
 import glob
 
 
-class controlsession(object):
-  """
-  Object for storing session information. Will include storage and read-in
-  function
-  """
-
-  def __init__(self):
-    ## Stuff for illumination alignment
-    self.lumi_halign_x = {}
-    self.lumi_halign_y = {}
-    self.lumi_halign_xunc = {}
-    self.lumi_halign_yunc = {}
-
-    ## Stuff of visual alignment
-    self.vis_halign_x = {}
-    self.vis_halign_y = {}
-
-    ## Stuff for visual alignment
-    self.camT = {}
-
-
 class controlterm(cmd.Cmd):
   """
   Control term is the class for parsing commands and passing the arguments
@@ -44,10 +23,24 @@ class controlterm(cmd.Cmd):
   intro = """
     SiPM Calibration Gantry Control System
     Type help or ? to list commands.\n"""
-  prompt = 'SiPMCalib> '
+  prompt = log.CYAN('SiPMCalib> ')
 
   def __init__(self, cmdlist):
     cmd.Cmd.__init__(self)
+
+    self.sshfiler = sshfiler.SSHFiler()
+    self.gcoder = gcoder.GCoder()
+    self.board = board.Board()
+    self.visual = visual.Visual()
+    self.readout = readout.readout(self)
+
+    ## The following is PI specific! Wrapping up to allow for local testing
+    # on laptop
+    try:
+      self.trigger = trigger.Trigger()
+    except Exception as err:
+      log.printerr("Error message emitted when setting up GPIO interface")
+      log.printerr(str(err))
 
     ## Creating command instances and attaching to associated functions
     for com in cmdlist:
@@ -65,51 +58,8 @@ class controlterm(cmd.Cmd):
     # command auto completion
     readline.set_completer_delims(' \t\n`~!@#$%^&*()=+[{]}\\|;:\'",<>?')
 
-    ## Creating session information storage class
-    self.session = controlsession()
-
-    self.sshfiler = sshfiler.SSHFiler()
-    try:
-      self.sshfiler.reconnect()
-    except Exception as err:
-      logger.printwarn("Error message emitted when logging to remote host, all files will be saved locally until new login has been provided!")
-      logger.printerr( str(err) )
-
-    ## Creating the gcoder/board/camcontrol instances
-    try:
-      self.gcoder = gcoder.GCoder()
-    except Exception as err:
-      logger.printwarn(("Error message emitted when setting up printer "
-                        "interface"))
-      logger.printwarn(str(err))
-
-    try:
-      self.board = board.Board()
-    except Exception as err:
-      logger.printwarn("Error message emitted when setting up Board type")
-      logger.printerr(str(err))
-
-    try:
-      self.visual = visual.Visual()
-    except Exception as err:
-      logger.printwarn("Error message emitted when setting up cameras")
-      logger.printerr(str(err))
-
-    try:
-      self.trigger = trigger.Trigger()
-    except Exception as err:
-      logger.printwarn("Error message emitted when setting up GPIO interface")
-      logger.printerr(str(err))
-
-    try:
-      self.readout = readout.readout(self)
-    except Exception as err:
-      logger.printwarn("Error message emitted when setting up I2C interface")
-      logger.printerr(str(err))
-
-
   def postcmd(self, stop, line):
-    logger.printmsg("")  # Printing extra empty line for aesthetics
+    log.printmsg("")  # Printing extra empty line for aesthetics
 
   def get_names(self):
     """
@@ -134,11 +84,11 @@ class controlterm(cmd.Cmd):
     not used extensively.
     """
     if len(line.split()) != 1:
-      logger.printerr("Please only specify one file!")
+      log.printerr("Please only specify one file!")
       return
 
     if not os.path.isfile(line):
-      logger.printerr("Specified file could not be opened!")
+      log.printerr("Specified file could not be opened!")
       return
 
     with open(line) as f:
@@ -159,7 +109,7 @@ class controlcmd():
   to call for the help and complete functions
   """
 
-  def __init__(self,cmdsession):
+  def __init__(self, cmdsession):
     """
     Initializer declares an argument parser class with the class name as the
     program name and the class doc string as the description string. This
@@ -173,6 +123,14 @@ class controlcmd():
         add_help=False)
     self.cmd = cmdsession
 
+    ## Reference to control objects for all commands
+    self.sshfiler = cmdsession.sshfiler
+    self.gcoder = cmdsession.gcoder
+    self.readout = cmdsession.readout
+    self.board = cmdsession.board
+    self.visual = cmdsession.visual
+    if (hasattr(cmdsession, 'trigger')): # Potentially missing (PI specific)
+      self.trigger = cmdsession.trigger
 
   def do(self, line):
     """
@@ -184,28 +142,23 @@ class controlcmd():
     try:
       args = self.parse(line)
     except Exception as err:
-      logger.clear_update()
-      logger.printerr(str(err))
-      #print(err)
+      self.printerr(str(err))
       return
 
     try:
       self.run(args)
     except Exception as err:
-      logger.clear_update()
-      logger.printerr(str(err))
+      self.printerr(str(err))
       return
 
-    logger.clear_update()
+    log.clear_update()
     return
-
 
   def callhelp(self):
     """
     Printing the help message via the ArgumentParse in built functions.
     """
     self.parser.print_help()
-
 
   def complete(self, text, line, start_index, end_index):
     """
@@ -222,6 +175,11 @@ class controlcmd():
     prevtext = textargs[-1] if len(textargs) else ""
     actions = self.parser._actions
     optstrings = [action.option_strings[0] for action in actions]
+    optstrings.extend([
+        action.option_strings[1]
+        for action in actions
+        if len(action.option_strings) > 1
+    ])
 
     def optwithtext():
       if text:
@@ -229,11 +187,10 @@ class controlcmd():
       else:
         return optstrings
 
-    if prevtext.startswith('-'):
+    if prevtext in optstrings:
       ## If the previous string was already an option
       testact = [
-          action for action in actions if action.option_strings[0] == prevtext
-      ]
+          action for action in actions if prevtext in action.option_strings ]
       if len(testact) != 1:
         return []
       prevact = testact[0]
@@ -241,10 +198,26 @@ class controlcmd():
       if type(prevact.type) == argparse.FileType:
         return globcomp(text)
       else:
-        return [str(prevact.type), "input type"]
+        return ["input type:", type(prevact.type), "" ]
 
     else:
       return optwithtext()
+
+  ## Overloading for less verbose message printing
+  def update(self, text ):
+    log.update( self.LOG , text )
+
+  def printmsg(self,text):
+    log.clear_update()
+    log.printmsg( self.LOG, text )
+
+  def printerr(self,text):
+    log.clear_update()
+    log.printerr( text )
+
+  def printwarn( self, text ):
+    log.clear_update()
+    log.printerr()
 
   #############################
   ## The following functions should be overloaded in the inherited classes

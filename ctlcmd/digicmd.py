@@ -8,4 +8,4 @@ class pulse(cmdbase.controlcmd):
       help='number of times to pulse the signal')
 
   def run(self,arg):
-    self.cmd.trigger.pulse(arg.n)
+    self.trigger.pulse(arg.n)

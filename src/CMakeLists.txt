@@ -4,15 +4,11 @@ find_package(PythonInterp 3 REQUIRED)
 find_package(Boost          REQUIRED COMPONENTS python3)
 find_package(OpenCV         REQUIRED)
 
-INCLUDE_DIRECTORIES(gcoder/ session/ board/ trigger/ common/)
+INCLUDE_DIRECTORIES(gcoder/ session/ trigger/ common/)
 
 ## Common stuff
 FILE(GLOB COMMON_SRC common/*.cc)
 add_library(Common SHARED ${COMMON_SRC})
-
-# Board information storage type
-FILE(GLOB BOARD_SRC board/*.cc)
-add_library(Board SHARED ${BOARD_SRC})
 
 ## g-code streaming part
 FILE(GLOB GCODER_SRC gcoder/*.cc)
@@ -42,7 +38,6 @@ function(make_boost_python libname depname )
 endfunction()
 
 make_boost_python( gcoder GCoder )
-make_boost_python( board Board )
 make_boost_python( logger Common )
 make_boost_python( visual Visual )
 make_boost_python( trigger Trigger )

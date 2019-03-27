@@ -1,0 +1,14 @@
+{
+  "board type": "Static calibration board",
+  "board id": "0",
+  "default coordinate": {
+    "-1": [
+      32.05,
+      104.38
+    ],
+    "0": [
+      112.38,
+      105.65
+    ]
+  }
+}

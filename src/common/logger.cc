@@ -26,6 +26,10 @@ std::string
 RED( const std::string& str )
 { return color( str, 31 ); }
 
+std::string
+CYAN( const std::string& str )
+{ return color(str, 36 ); }
+
 
 void
 update( const std::string& a, const std::string& b )

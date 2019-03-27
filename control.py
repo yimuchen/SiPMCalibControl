@@ -14,6 +14,7 @@ if __name__ == '__main__':
       motioncmd.moveto,
       motioncmd.movespeed,
       motioncmd.halign,
+      motioncmd.zscan,
       motioncmd.showreadout,
       viscmd.visualhscan,
       viscmd.visualzscan,
@@ -23,7 +24,8 @@ if __name__ == '__main__':
       getset.set,
       getset.get,
       getset.getcoord,
-      getset.remotelogin,
+      getset.savecalib,
+      getset.loadcalib,
       digicmd.pulse,
   ])
   """
@@ -42,6 +44,11 @@ if __name__ == '__main__':
       action.default = '/dev/ttyUSB0'
     if '-camdev' in action.option_strings:
       action.default = '/dev/video0'
+    if '-boardtype' in action.option_strings:
+      action.default = 'cfg/static_calib.json'
+    ## Not setting up remote saving for now
+    #if '-remotehost' in action.option_strings:
+    #  action.default = 'hepcms.umd.edu'
 
   args = prog_parser.parse_args()
 
@@ -52,8 +59,8 @@ if __name__ == '__main__':
   try:
     cmd.set.run(args)
   except Exception as err:
-    logger.printerr(str(err))
-    logger.printwarn(
+    log.printerr(str(err))
+    log.printwarn(
         "There was error in the setup process, program will "
         "continue but will most likely misbehave! Use at your own risk!")
 

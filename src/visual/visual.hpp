@@ -18,7 +18,14 @@ public:
   void init_dev( const std::string& );
   std::string dev_path;
 
-  std::pair<double,double> find_chip( const bool );
+  struct ChipResult{
+    double x;
+    double y;
+    double area;
+    double maxmeas;
+  };
+
+  ChipResult find_chip( const bool );
   double sharpness( const bool );
 
   void save_frame( const std::string& filename );
