@@ -221,11 +221,12 @@ def parse_zscan_options(arg):
     minz = min(r[:2])
     maxz = max(r[:2])
     sep = 1 if len(r) == 2 else r[2]
-    arg.zlist.extend(np.linspace(minz, maxz, (maxz - minz) / sep + 1))
-  arg.zlist.sort() ## Returning sorted result
+    arg.zlist.extend(
+        np.linspace(minz, maxz, (maxz - minz) / sep, endpoint=False))
+  arg.zlist.sort()  ## Returning sorted result
 
 
-def timestamp_filename(prefix, arg, add_attributes = []):
+def timestamp_filename(prefix, arg, add_attributes=[]):
   tags = ""
   for attr in add_attributes:
     if hasattr(arg, attr):

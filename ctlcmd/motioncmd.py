@@ -109,11 +109,11 @@ class halign(cmdbase.controlcmd):
 
       ## Writing to screen
       self.update(
-          'x:{0:.1f}, y:{1:.1f}, z:{2:.1f}, Lumi:{3:.2f}+-{4:.3f}'.format(
+          'x:{0:5.1f}, y:{1:5.1f}, z:{2:5.1f}, Lumi:{3:8.5f}+-{4:8.6f}'.format(
               xval, yval, arg.scanz, lumival, uncval))
 
       ## Writing to file
-      arg.savefile.write("{0:.1f} {1:.1f} {2:.1f} {3:.2f} {4:.3f}\n".format(
+      arg.savefile.write("{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n".format(
           xval, yval, arg.scanz, lumival, uncval))
 
     ## Clearing output objects
@@ -205,9 +205,10 @@ class zscan(cmdbase.controlcmd):
       unc.append(uncval)
 
       # Writing to screen
-      self.update("z:{0:.1f}, L:{1:.2f}, uL:{2:.3f}".format(z, lumival, uncval))
+      self.update("z:{0:5.1f}, L:{1:8.5f}, uL:{2:8.6f}".format(
+          z, lumival, uncval))
       # Writing to file
-      arg.savefile.write("{0:.1f} {1:.1f} {2:.1f} {3:.2f} {4:.3f}\n".format(
+      arg.savefile.write("{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n".format(
           arg.x, arg.y, z, lumival, uncval))
 
     arg.savefile.close()
@@ -222,13 +223,31 @@ class showreadout(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
+    self.parser.add_argument('--dumpval', action='store_true')
+    self.parser.add_argument('--nowait', action='store_true')
 
   def parse(self, line):
     return cmdbase.controlcmd.parse(self, line)
 
   def run(self, arg):
     val = []
+
+    #for i in range(10):  ## Ignoring first 10 ouptuts
+    #self.readout.read_adc_raw(0)
+
     for i in range(1000):
       val.append(self.readout.read_adc_raw(0))
-      self.update("{0:f} {1:.2f} {2:.3f}".format(val[-1], np.mean(val),
-                                                 np.std(val)))
+      self.update("Latest: {0:.5f} | Mean: {1:.5f} | STD: {2:.6f}".format(
+          val[-1], np.mean(val), np.std(val)))
+      if arg.nowait: continue
+      time.sleep(1 / 50 * np.random.random())  ## Sleeping for random time
+    meanval = np.mean(val)
+    stdval = np.std(val)
+    valstrip = [x for x in val if abs(x - meanval) < stdval]
+    self.printmsg("RAWVAL | Mean: {0:.5f} | STD: {1:.6f}".format(
+        np.mean(val), np.std(val)))
+    self.printmsg("Update | Mean: {0:.5f} | STD: {1:.6f}".format(
+        np.mean(valstrip), np.std(valstrip)))
+    if arg.dumpval:
+      for v in val:
+        print(v)
