@@ -26,6 +26,33 @@ target_link_libraries(Visual ${OpenCV_LIBS} Common)
 FILE(GLOB TRIGGER_SRC trigger/*.cc )
 add_library(Trigger SHARED ${TRIGGER_SRC})
 
+## PICOSCOPE part
+FILE(GLOB PICO_SRC pico/*.cc)
+find_path( PICO_INCLUDES
+  NAMES libps5000-1.5/ps5000Api.h
+  PATHS /opt/picoscope/include/
+  )
+find_library(PICO_LIBS
+  NAMES ps5000
+  PATHS /opt/picoscope/lib/
+  )
+add_library(Pico SHARED ${PICO_SRC})
+target_include_directories(Pico PUBLIC ${PICO_INCLUDES})
+target_link_libraries(Pico ${PICO_LIBS} Common)
+
+add_executable( mytest.exe testbin/mytest.cc )
+target_include_directories(mytest.exe PRIVATE pico ${PICO_INCLUDES})
+target_link_libraries(mytest.exe Pico)
+#
+# add_executable( picotest.exe pico/picotest.c )
+# target_include_directories(picotest.exe PRIVATE ${PICO_INCLUDES})
+# target_link_libraries(picotest.exe ${PICO_LIBS} Common)
+
+
+
+
+
+
 ## Boost-python libraries
 function(make_boost_python libname depname )
   add_library(${libname} SHARED boost/${libname}.cc )
@@ -37,7 +64,8 @@ function(make_boost_python libname depname )
     ${depname})
 endfunction()
 
-make_boost_python( gcoder GCoder )
-make_boost_python( logger Common )
-make_boost_python( visual Visual )
+make_boost_python( gcoder  GCoder )
+make_boost_python( logger  Common )
+make_boost_python( visual  Visual )
 make_boost_python( trigger Trigger )
+make_boost_python( pico    Pico )
