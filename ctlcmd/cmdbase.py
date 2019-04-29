@@ -5,6 +5,7 @@ import cmod.trigger as trigger
 import cmod.visual as visual
 import cmod.readout as readout
 import cmod.sshfiler as sshfiler
+import cmod.pico as pico
 import cmd
 import sys
 import os
@@ -23,7 +24,7 @@ class controlterm(cmd.Cmd):
   intro = """
     SiPM Calibration Gantry Control System
     Type help or ? to list commands.\n"""
-  prompt = log.CYAN('SiPMCalib> ')
+  prompt = 'SiPMCalib> '
 
   def __init__(self, cmdlist):
     cmd.Cmd.__init__(self)
@@ -32,6 +33,7 @@ class controlterm(cmd.Cmd):
     self.gcoder = gcoder.GCoder()
     self.board = board.Board()
     self.visual = visual.Visual()
+    self.pico = pico.PicoUnit()
     self.readout = readout.readout(self)
 
     ## The following is PI specific! Wrapping up to allow for local testing
@@ -117,10 +119,9 @@ class controlcmd():
     Each command will have accession to the cmd session, and by extension,
     every control object the could potentially be used
     """
-    self.parser = argparse.ArgumentParser(
-        prog=self.__class__.__name__.lower(),
-        description=self.__class__.__doc__,
-        add_help=False)
+    self.parser = argparse.ArgumentParser(prog=self.__class__.__name__.lower(),
+                                          description=self.__class__.__doc__,
+                                          add_help=False)
     self.cmd = cmdsession
 
     ## Reference to control objects for all commands
@@ -129,7 +130,8 @@ class controlcmd():
     self.readout = cmdsession.readout
     self.board = cmdsession.board
     self.visual = cmdsession.visual
-    if (hasattr(cmdsession, 'trigger')): # Potentially missing (PI specific)
+    self.pico = cmdsession.pico
+    if (hasattr(cmdsession, 'trigger')):  # Potentially missing (PI specific)
       self.trigger = cmdsession.trigger
 
   def do(self, line):
@@ -170,52 +172,39 @@ class controlcmd():
     - end_index is the position of the cursor in the line
     """
     cmdname = self.__class__.__name__.lower()
-    #while line[start_index-1] == '-': start_index = start_index-1
     textargs = line[len(cmdname):start_index].strip().split()
     prevtext = textargs[-1] if len(textargs) else ""
-    actions = self.parser._actions
-    optstrings = [action.option_strings[0] for action in actions]
-    optstrings.extend([
-        action.option_strings[1]
-        for action in actions
-        if len(action.option_strings) > 1
-    ])
+    options  = [opt for x in self.parser._actions for opt in x.option_strings]
 
     def optwithtext():
       if text:
-        return [option for option in optstrings if option.startswith(text)]
+        return [x for x in options if x.startswith(text)]
       else:
-        return optstrings
+        return options
 
-    if prevtext in optstrings:
-      ## If the previous string was already an option
-      testact = [
-          action for action in actions if prevtext in action.option_strings ]
-      if len(testact) != 1:
-        return []
-      prevact = testact[0]
-
-      if type(prevact.type) == argparse.FileType:
+    if prevtext in options:
+      action = next( x for x in self.parser._actions
+         if (prevtext in x.option_strings) )
+      if type(action.type) == argparse.FileType:
         return globcomp(text)
       else:
-        return ["input type:", type(prevact.type), "" ]
-
+        return ["input type: " + str(action.type), "Help: "+action.help]
     else:
       return optwithtext()
 
   ## Overloading for less verbose message printing
-  def update(self, text ):
-    log.update( self.LOG , text )
+  def update(self, text):
+    log.update(self.LOG, text)
 
-  def printmsg(self,text):
+  def printmsg(self, text):
     log.clear_update()
-    log.printmsg( self.LOG, text )
+    log.printmsg(self.LOG, text)
 
-  def printerr(self,text):
+  def printerr(self, text):
     log.clear_update()
-    log.printerr( text )
+    log.printerr(text)
 
-  def printwarn( self, text ):
+  def printwarn(self, text):
     log.clear_update()
     log.printerr()
 
@@ -233,6 +222,7 @@ class controlcmd():
     try:
       arg = self.parser.parse_args(line.split())
     except SystemExit as err:
+      self.printerr(str(err))
       raise Exception("Cannot parse input")
     return arg
 

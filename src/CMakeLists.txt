@@ -37,7 +37,7 @@ find_library(PICO_LIBS
   PATHS /opt/picoscope/lib/
   )
 add_library(Pico SHARED ${PICO_SRC})
-target_include_directories(Pico PUBLIC ${PICO_INCLUDES})
+target_include_directories(Pico PRIVATE ${PICO_INCLUDES})
 target_link_libraries(Pico ${PICO_LIBS} Common)
 
 add_executable( mytest.exe testbin/mytest.cc )

@@ -53,9 +53,9 @@ Visual::find_chip( const bool monitor )
 {
   // Magic numbers that will need some method of adjustment
   static const cv::Size blursize( 5, 5 );
-  static const int minthreshold   = 150;
+  static const int minthreshold   = 60;
   static const int maxthreshold   = 255;// this doesn't need to change.
-  static const double maxchiplumi = 75;
+  static const double maxchiplumi = 40;
   static const int minchipsize    = 50;
   static const double chipratio   = 1.4;
 

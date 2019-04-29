@@ -49,7 +49,7 @@ class SSHFiler(paramiko.SSHClient):
       if wipefile:
         return open(filename, 'w')
       else:
-        return open(filename, 'a')
+        return open(filename, 'a+')
 
   def remotefilename(self, filename):
     return str(self.remotepath + filename)

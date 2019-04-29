@@ -1,7 +1,7 @@
 #ifndef PICO_HPP
 #define PICO_HPP
 
-#include <libps5000-1.5/ps5000Api.h>
+// #include <libps5000-1.5/ps5000Api.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -10,29 +10,49 @@ class PicoUnit
 {
 public:
   PicoUnit();
-  PicoUnit( const PicoUnit& ) = delete;
-  PicoUnit( const PicoUnit&& ) = delete;
+  // PicoUnit( const PicoUnit& ) = delete;
+  // PicoUnit( const PicoUnit&& ) = delete;
 
   ~PicoUnit();
 
-  void SetVoltageRange( PS5000_RANGE );
-  void SetTrigger( unsigned delay, int16_t maxwait );
-  void SetBlockNums( unsigned ncaps, unsigned postsamples, unsigned presamples );
+  // Cannot specify serial device?
+  void Init();
+
+  void SetVoltageRange( int newrange );
+  void SetTrigger(
+    const int16_t  channel,
+    const int16_t  direction,
+    const float    level,
+    const unsigned delay,
+    const int16_t  maxwait );
+  void SetBlockNums(
+    const unsigned ncaps,
+    const unsigned postsamples,
+    const unsigned presamples );
   void StartRapidBlock();
   void WaitTillReady();
   bool IsReady();
   void FlushToBuffer();
+
+  int16_t GetBuffer(
+    const int      channel,
+    const unsigned cap,
+    const unsigned sample ) const;
 
   // Conversion method.
   float adc2mv( int16_t adc ) const;
 
   // Debugging methods
   void DumpBuffer() const;
+  void PrintInfo() const;
 
-private:
+public:
   int16_t device;// integer representing device in driver API
 
-  PS5000_RANGE range;
+  int range;
+  uint16_t triggerchannel;
+  uint16_t triggerdirection;
+  float    triggerlevel;
   unsigned triggerdelay;
   uint16_t triggerwait;
 
@@ -44,6 +64,7 @@ private:
   unsigned ncaptures;// Number of block capture for perform per function call
   int runtime;// storing runtime for Rapid block
 
+private:
   std::vector<std::unique_ptr<int16_t[]> > bufferA;
   std::vector<std::unique_ptr<int16_t[]> > bufferB;
   std::unique_ptr<int16_t[]> overflowbuffer;

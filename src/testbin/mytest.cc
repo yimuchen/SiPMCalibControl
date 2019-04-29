@@ -1,14 +1,16 @@
 #include <iostream>
 #include "pico.hpp"
+#include <libps5000-1.5/ps5000Api.h>
 
 int
 main( int argc, char* argv[] )
 {
   PicoUnit pico;
+  pico.Init();
   pico.SetBlockNums( 3, 1000, 10 );
   pico.SetVoltageRange( PS5000_5V );
   ///
-  pico.SetTrigger( 0, 0 );
+  pico.SetTrigger( PS5000_EXTERNAL, RISING, 2000, 0, 0 );
   pico.StartRapidBlock();
   pico.WaitTillReady();
   pico.FlushToBuffer();

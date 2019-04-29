@@ -4,6 +4,7 @@ import ctlcmd.motioncmd as motioncmd
 import ctlcmd.getset as getset
 import ctlcmd.digicmd as digicmd
 import ctlcmd.viscmd  as viscmd
+import ctlcmd.picocmd as picocmd
 import cmod.logger as logger
 import argparse
 import copy
@@ -27,6 +28,8 @@ if __name__ == '__main__':
       getset.savecalib,
       getset.loadcalib,
       digicmd.pulse,
+      picocmd.picoset,
+      picocmd.picorunblock,
   ])
   """
   Duplicating the session to allow for default override.
@@ -46,7 +49,8 @@ if __name__ == '__main__':
       action.default = '/dev/video0'
     if '-boardtype' in action.option_strings:
       action.default = 'cfg/static_calib.json'
-    ## Not setting up remote saving for now
+    if '-picodevice' in action.option_strings:
+      action.default = 'MYSERIAL' # Cannot actually set setting to dummy for now
     #if '-remotehost' in action.option_strings:
     #  action.default = 'hepcms.umd.edu'
 

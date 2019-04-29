@@ -49,7 +49,7 @@ def add_xychip_options(parser):
       '-y',
       type=float,
       help=
-      'Specify the y coordinate explicitly [mm]. If none is give nthe current gantry position will be used.'
+      'Specify the y coordinate explicitly [mm]. If none is given the current gantry position will be used.'
   )
   parser.add_argument(
       '-c',
@@ -232,7 +232,7 @@ def timestamp_filename(prefix, arg, add_attributes=[]):
     if hasattr(arg, attr):
       tags += "_" + attr + str(getattr(arg, attr))
 
-  if arg.chipid.startswith('-'):
+  if not hasattr( arg, 'chipid' ) or arg.chipid.startswith('-'):
     return '{0}{1}_{2}.txt'.format(
         prefix, tags,
         datetime.datetime.now().strftime('%Y%m%d_%H00'))
