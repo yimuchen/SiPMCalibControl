@@ -208,17 +208,19 @@ class controlcmd():
     log.clear_update()
     log.printerr()
 
-  #############################
-  ## The following functions should be overloaded in the inherited classes
-
-  ## Functions that require command specific definitions
   def run(self, args):
+    """
+    Functions that require command specific definitions, should be overwritten in
+    the decendent classes
+    """
     pass
 
-  # Default parsing arguments, overriding the system exits exception to that the
-  # session doesn't end with the user inputs a bad command. Additional parsing
-  # could be achieved by overloading this methods.
   def parse(self, line):
+    """
+    Default parsing arguments, overriding the system exits exception to that the
+    session doesn't end with the user inputs a bad command. Additional parsing
+    could be achieved by overloading this methods.
+    """
     try:
       arg = self.parser.parse_args(line.split())
     except SystemExit as err:

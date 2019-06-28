@@ -49,10 +49,6 @@ target_link_libraries(mytest.exe Pico)
 # target_link_libraries(picotest.exe ${PICO_LIBS} Common)
 
 
-
-
-
-
 ## Boost-python libraries
 function(make_boost_python libname depname )
   add_library(${libname} SHARED boost/${libname}.cc )
@@ -64,8 +60,8 @@ function(make_boost_python libname depname )
     ${depname})
 endfunction()
 
-make_boost_python( gcoder  GCoder )
-make_boost_python( logger  Common )
-make_boost_python( visual  Visual )
+make_boost_python( gcoder  GCoder  )
+make_boost_python( logger  Common  )
+make_boost_python( visual  Visual  )
 make_boost_python( trigger Trigger )
-make_boost_python( pico    Pico )
+make_boost_python( pico    Pico    )

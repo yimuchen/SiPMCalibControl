@@ -122,6 +122,10 @@ class picorunblock(cmdbase.controlcmd):
     self.parser.add_argument('--dumpbuffer',
                              action='store_true',
                              help='Dumping the buffer onto screen')
+    self.parser.add_argument(
+        '--sum',
+        action='store_true',
+        help='Store the sum of the waveform values instead of waveforms itself')
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
@@ -139,22 +143,35 @@ class picorunblock(cmdbase.controlcmd):
           self.pico.postsamples, self.pico.adc2mv(1)))
 
     for i in range(args.numblocks):
-      self.update("Collecting block...[{0:5d}/{1:d}]".format(
+      self.update('Collecting block...[{0:5d}/{1:d}]'.format(
           i,
           args.numblocks,
       ))
       self.pico.startrapidblocks()
       self.pico.waitready()
 
-      # Writing each capture as a single line.
-      for cap in range(self.pico.ncaptures):
-        buf = [
-            "{0:02x}".format(
-                int(self.pico.buffer(0, cap, x) / 256) & (2**8 - 1))
-            for x in range(self.pico.presamples + self.pico.postsamples)
-        ]
-        line = "".join(buf)
-        args.savefile.write(line + "\n")
+      if not args.sum:
+        # Writing each capture as a single line.
+        for cap in range(self.pico.ncaptures):
+          buf = [
+              '{0:02x}'.format(
+                  int(self.pico.buffer(0, cap, x) / 256) & (2**8 - 1))
+              for x in range(self.pico.presamples + self.pico.postsamples)
+          ]
+          line = ''.join(buf)
+          args.savefile.write(line + '\n')
+      else:
+        area = []
+        for cap in range(self.pico.ncaptures):
+          area.append(
+              str(
+                  sum([
+                      int(self.pico.buffer(0, cap, x))
+                      for x in range(self.pico.presamples +
+                                     self.pico.postsamples)
+                  ])))
+        line = ' '.join(area)
+        args.savefile.write(line + '\n')
 
     # Closing
     args.savefile.close()

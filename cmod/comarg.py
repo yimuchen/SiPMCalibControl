@@ -4,7 +4,6 @@ import datetime
 import sys
 import re
 
-
 def prompt(question, default='no'):
   """
     Ask a yes/no question via input() and return their answer.
@@ -37,7 +36,6 @@ def prompt(question, default='no'):
       log.printerr(
           'Please respond with \'yes\' or \'no\' (or \'y\' or \'n\').\n')
 
-
 def add_xychip_options(parser):
   parser.add_argument(
       '-x',
@@ -59,7 +57,6 @@ def add_xychip_options(parser):
       'Specify x-y coordinates via chip id, input negative value to indicate that the chip is a calibration one (so you can still specify coordinates with it)'
   )
   return
-
 
 def add_hscan_options(parser, scanz=35, hrange=20, distance=0.5):
   """
@@ -121,14 +118,14 @@ def parse_xychip_options(arg, cmdsession, add_visoffset=False, raw_coord=False):
       if arg.x or arg.y:
         raise Exception('You can either specify chip-id or x y, not both')
       if not str(arg.chipid) in cmdsession.board.chips():
-        raise Exception('Chip id was not speficied in board type')
+        raise Exception('Chip id was not specified in board type')
       arg.x, arg.y = cmdsession.board.orig_coord[arg.chipid]
     else:
       ## Setting up alias for board
       board = cmdsession.board
 
       if not arg.chipid in board.chips():
-        raise Exception('Chip id was not speficied in board type')
+        raise Exception('Chip id was not specified in board type')
       if raw_coord:
         # Early exit if not specified
         arg.x, arg.y = board.orig_coord[arg.chipid]

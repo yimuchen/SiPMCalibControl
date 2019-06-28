@@ -34,7 +34,7 @@ if __name__ == '__main__':
   """
   Duplicating the session to allow for default override.
   """
-  prog_parser = copy.copy(cmd.set.parser)
+  prog_parser = copy.deepcopy(cmd.set.parser)
 
   # Augmenting help messages
   prog_parser.prog = "control.py"

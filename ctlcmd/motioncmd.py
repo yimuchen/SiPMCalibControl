@@ -1,5 +1,5 @@
 import ctlcmd.cmdbase as cmdbase
-#import cmod.gcoder as gcoder
+import cmod.gcoder as gcoder
 import cmod.logger as log
 import cmod.comarg as comarg
 import numpy as np
@@ -41,12 +41,15 @@ class movespeed(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    self.parser.add_argument(
-        '-x', type=float, help='motion speed of gantry in x axis ')
-    self.parser.add_argument(
-        '-y', type=float, help='motion speed of gantry in y axis ')
-    self.parser.add_argument(
-        '-z', type=float, help='motion speed of gantry in z axis ')
+    self.parser.add_argument('-x',
+                             type=float,
+                             help='motion speed of gantry in x axis ')
+    self.parser.add_argument('-y',
+                             type=float,
+                             help='motion speed of gantry in y axis ')
+    self.parser.add_argument('-z',
+                             type=float,
+                             help='motion speed of gantry in z axis ')
 
   def parse(self, line):
     arg = cmdbase.controlcmd.parse(self, line)
@@ -58,7 +61,7 @@ class movespeed(cmdbase.controlcmd):
     return arg
 
   def run(self, arg):
-    self.gcoder.set_speed_limit(arg.x, arg.y, arg.z, True)
+    self.gcoder.set_speed_limit(arg.x, arg.y, arg.z)
 
 
 class halign(cmdbase.controlcmd):
@@ -122,8 +125,12 @@ class halign(cmdbase.controlcmd):
     # Performing fit
     p0 = (max(lumi) * (arg.scanz**2), arg.x, arg.y, arg.scanz, min(lumi))
     try:
-      fitval, fitcorr = curve_fit(
-          halign.model, np.vstack((x, y)), lumi, p0=p0, sigma=unc, maxfev=10000)
+      fitval, fitcorr = curve_fit(halign.model,
+                                  np.vstack((x, y)),
+                                  lumi,
+                                  p0=p0,
+                                  sigma=unc,
+                                  maxfev=10000)
     except Exception as err:
       self.printerr(('Lumi fit failed to converge, check output stored in file '
                      '%s for collected values').format(arg.savefile.name))
@@ -179,7 +186,7 @@ class zscan(cmdbase.controlcmd):
 
   def parse(self, line):
     arg = cmdbase.controlcmd.parse(self, line)
-    comarg.parse_xychip_options(arg, self.gcoder)
+    comarg.parse_xychip_options(arg, self.cmd)
     comarg.parse_zscan_options(arg)
 
     filename = arg.savefile if arg.savefile != zscan.DEFAULT_SAVEFILE  \
@@ -208,7 +215,8 @@ class zscan(cmdbase.controlcmd):
       self.update("z:{0:5.1f}, L:{1:8.5f}, uL:{2:8.6f}".format(
           z, lumival, uncval))
       # Writing to file
-      arg.savefile.write("{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n".format(
+      arg.savefile.write(
+          "{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n".format(
           arg.x, arg.y, z, lumival, uncval))
 
     arg.savefile.close()
