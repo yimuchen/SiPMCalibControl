@@ -34,25 +34,30 @@ if __name__ == '__main__':
   """
   Duplicating the session to allow for default override.
   """
-  prog_parser = copy.deepcopy(cmd.set.parser)
+  # Weird bug in python 3.4 that doesn't allow deepcopy of argparser
+  #prog_parser = copy.deepcopy(cmd.set.parser)
+  prog_parser = copy.copy( cmd.set.parser )
 
   # Augmenting help messages
   prog_parser.prog = "control.py"
   prog_parser.add_argument(
       '-h', '--help', action='store_true', help='print help message and exit')
 
+  ## Using map to store Default values:
+  default_overide = {
+    '-printerdev' : [ '/dev/ttyUSB0', '' ] ,
+    '-camdev' : [ '/dev/video0', '' ] ,
+    '-boardtype' : ['cfg/static_calib.json', ''],
+    '-picodevice' : ['MYSERIAL',''] , #Cannot actually set. Just dummy for now
+    #'-remotehost' : ['hepcms.umd.edu', '']
+  }
+
   # Overriding default values
   for action in prog_parser._actions:
-    if '-printerdev' in action.option_strings:
-      action.default = '/dev/ttyUSB0'
-    if '-camdev' in action.option_strings:
-      action.default = '/dev/video0'
-    if '-boardtype' in action.option_strings:
-      action.default = 'cfg/static_calib.json'
-    if '-picodevice' in action.option_strings:
-      action.default = 'MYSERIAL' # Cannot actually set setting to dummy for now
-    #if '-remotehost' in action.option_strings:
-    #  action.default = 'hepcms.umd.edu'
+    for option, default in default_overide.items():
+      if option in action.option_strings:
+        default[-1] = action.default
+        action.default = default[0]
 
   args = prog_parser.parse_args()
 
@@ -67,5 +72,11 @@ if __name__ == '__main__':
     log.printwarn(
         "There was error in the setup process, program will "
         "continue but will most likely misbehave! Use at your own risk!")
+
+  ## Resetting default values before entering command space
+  for action in cmd.set.parser._actions :
+    for option, default in default_overide.items() :
+      if option in action.option_strings:
+        action.default = default[-1]
 
   cmd.cmdloop()
