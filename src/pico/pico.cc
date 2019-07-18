@@ -1,4 +1,4 @@
-#include <libps5000-1.5/ps5000Api.h>
+#include <libps5000/ps5000Api.h>
 
 #include "logger.hpp"
 #include "pico.hpp"
@@ -305,6 +305,7 @@ PicoUnit::PrintInfo() const
         % ( i == triggerchannel  ? 'T' : ' ' ) ).str() );
   }
 
+  // Trigger direction
   for( unsigned i = RISING; i <= RISING_OR_FALLING; ++i ){
     printmsg( GREEN( "[PICO]" ),
       ( boost::format( "%25s | %2d (%s) [%c]" )
@@ -318,6 +319,7 @@ PicoUnit::PrintInfo() const
       ).str() );
   }
 
+  // Trigger level
   printmsg( GREEN( "[PICO]" ),
     ( boost::format( "%25s | %.2fmV (ADC:%d)" )
       % "Trigger Level"

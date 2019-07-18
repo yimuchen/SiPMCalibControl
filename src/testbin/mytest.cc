@@ -1,6 +1,6 @@
 #include <iostream>
 #include "pico.hpp"
-#include <libps5000-1.5/ps5000Api.h>
+#include <libps5000/ps5000Api.h>
 
 int
 main( int argc, char* argv[] )
