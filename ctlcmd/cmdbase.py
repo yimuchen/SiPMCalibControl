@@ -231,4 +231,6 @@ class controlcmd():
 
 ## Helper function for globbing
 def globcomp(text):
-  return glob.glob(text + "*")
+  globlist =  glob.glob(text + "*")
+  globlist = [ file + '/' if os.path.isdir(file) else file for file in globlist ]
+  return globlist

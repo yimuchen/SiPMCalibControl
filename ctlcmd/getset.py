@@ -74,7 +74,6 @@ class set(cmdbase.controlcmd):
     if arg.remotepath and arg.remotepath != self.sshfiler.remotepath:
       self.sshfiler.remotepath = arg.remotepath
     if arg.picodevice:
-      print( arg.picodevice )
       try:
         self.pico.init()
       except Exception as err:
