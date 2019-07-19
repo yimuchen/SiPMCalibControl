@@ -1,12 +1,9 @@
 import ctlcmd.cmdbase as cmdbase
-import cmod.gcoder as gcoder
 import cmod.logger as log
 import cmod.comarg as comarg
 import numpy as np
 from scipy.optimize import curve_fit
-import argparse
 import time
-
 
 class moveto(cmdbase.controlcmd):
   """

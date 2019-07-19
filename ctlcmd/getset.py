@@ -1,9 +1,6 @@
 import ctlcmd.cmdbase as cmdbase
-import cmod.gcoder as gcoder
 import cmod.logger as log
-import cmod.sshfiler as sshfiler
 import argparse
-
 
 class set(cmdbase.controlcmd):
   """

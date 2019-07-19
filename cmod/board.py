@@ -1,7 +1,6 @@
 import cmod.logger as logger
 import json
 
-
 class Board(object):
   """
   Class for storing a board type an a list of chip x-y positions

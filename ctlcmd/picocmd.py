@@ -105,7 +105,8 @@ class picoset(cmdbase.controlcmd):
 
 class picorunblock(cmdbase.controlcmd):
   """
-  Initiating a single run block instance. This assumes that the program will finish without user intervension (no program fired triggering)
+  Initiating a single run block instance. This assumes that the program will
+  finish without user intervension (no program fired triggering)
   """
 
   DEFAULT_SAVEFILE = 'picoblock_<TIMESTAMP>.txt'
@@ -152,10 +153,9 @@ class picorunblock(cmdbase.controlcmd):
         self.trigger.pulse(1)
       # self.pico.flushbuffer()
 
-      print( "Finished block collection" )
-      for cap in range(self.pico.ncaptures ):
-        wavesum = 0
-        line = self.pico.waveformstr( 0, cap )
+      print("Finished block collection")
+      for cap in range(self.pico.ncaptures):
+        line = self.pico.waveformstr(0, cap)
         args.savefile.write(line + '\n')
         #args.savefile.flush()
 

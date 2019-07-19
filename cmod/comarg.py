@@ -1,7 +1,6 @@
 import cmod.logger as log
 import numpy as np
 import datetime
-import sys
 import re
 
 def prompt(question, default='no'):
@@ -56,7 +55,6 @@ def add_xychip_options(parser):
       help=
       'Specify x-y coordinates via chip id, input negative value to indicate that the chip is a calibration one (so you can still specify coordinates with it)'
   )
-  return
 
 def add_hscan_options(parser, scanz=35, hrange=20, distance=0.5):
   """
@@ -83,7 +81,6 @@ def add_hscan_options(parser, scanz=35, hrange=20, distance=0.5):
       type=float,
       default=distance,
       help='Horizontal sampling distance [mm]')
-  return
 
 def add_readout_option( parser ):
   parser.add_argument(

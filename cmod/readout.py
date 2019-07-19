@@ -8,7 +8,7 @@ try:
   import adafruit_ads1x15.ads1115 as ads
   import adafruit_ads1x15.ads1x15 as adsset
   from adafruit_ads1x15.analog_in import AnalogIn
-except:
+except Exception as err:
   pass  # Errors will be displayed when constructing the objects
 
 

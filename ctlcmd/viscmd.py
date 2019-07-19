@@ -1,12 +1,9 @@
 import ctlcmd.cmdbase as cmdbase
-import ctlcmd.motioncmd as motioncmd
 import cmod.logger as log
 import cmod.comarg as comarg
 import numpy as np
 from scipy.optimize import curve_fit
-import argparse
 import time
-import datetime
 import cv2
 
 
