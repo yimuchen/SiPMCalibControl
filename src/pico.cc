@@ -6,7 +6,6 @@
 #include <chrono>
 #include <cstdio>
 #include <cstring>
-#include <iostream>
 #include <stdexcept>
 #include <thread>
 
@@ -137,7 +136,9 @@ PicoUnit::SetBlockNums(
   }
 
   if(  post + pre > (unsigned)maxsamples ){
-    std::cout << "Warning! requested samples greater than maximum allowed samples, truncating to maximum" << std::endl;
+    printwarn(
+      "requested samples greater than maximum allowed samples,"
+      "truncating to maximum" );
     post = maxsamples - pre;
   }
   if( ncaptures != ncaps  || presamples + postsamples != pre + post ){
@@ -337,11 +338,11 @@ PicoUnit::PrintInfo() const
   // Printing voltage range information
   for( int i = minrange; i <= maxrange; ++i ){
     sprintf( line, "%25s | [%c] %2d (%5dmV) [Res: %.3fmV]",
-           ( i == minrange ? "Voltage Range index" : "" ),
-           ( i == range ?  'V' : ' ' ),
-           ( i ),
-           ( (int)inputRanges[i] ),
-           ( (float)inputRanges[i] / PS5000_MAX_VALUE * 256 ) );
+      ( i == minrange ? "Voltage Range index" : "" ),
+      ( i == range ?  'V' : ' ' ),
+      ( i ),
+      ( (int)inputRanges[i] ),
+      ( (float)inputRanges[i] / PS5000_MAX_VALUE * 256 ) );
     printmsg( picoinfo, line );
   }
 
@@ -426,4 +427,3 @@ BOOST_PYTHON_MODULE( pico )
   .def_readonly( "triggerwait",      &PicoUnit::triggerwait )
   ;
 }
-

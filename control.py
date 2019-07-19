@@ -35,8 +35,7 @@ if __name__ == '__main__':
   Duplicating the session to allow for default override.
   """
   # Weird bug in python 3.4 that doesn't allow deepcopy of argparser
-  #prog_parser = copy.deepcopy(cmd.set.parser)
-  prog_parser = copy.copy( cmd.set.parser )
+  prog_parser = copy.deepcopy(cmd.set.parser)
 
   # Augmenting help messages
   prog_parser.prog = "control.py"
@@ -45,10 +44,10 @@ if __name__ == '__main__':
 
   ## Using map to store Default values:
   default_overide = {
-    '-printerdev' : [ '/dev/ttyUSB0', '' ] ,
-    '-camdev' : [ '/dev/video0', '' ] ,
-    '-boardtype' : ['cfg/static_calib.json', ''],
-    '-picodevice' : ['MYSERIAL',''] , #Cannot actually set. Just dummy for now
+    '-printerdev' : '/dev/ttyUSB0' ,
+    '-camdev' :     '/dev/video0' ,
+    '-boardtype' :  'cfg/static_calib.json' ,
+    '-picodevice' : 'MYSERIAL' , #Cannot actually set. Just dummy for now
     #'-remotehost' : ['hepcms.umd.edu', '']
   }
 
@@ -56,8 +55,7 @@ if __name__ == '__main__':
   for action in prog_parser._actions:
     for option, default in default_overide.items():
       if option in action.option_strings:
-        default[-1] = action.default
-        action.default = default[0]
+        action.default = default
 
   args = prog_parser.parse_args()
 
@@ -72,11 +70,5 @@ if __name__ == '__main__':
     log.printwarn(
         "There was error in the setup process, program will "
         "continue but will most likely misbehave! Use at your own risk!")
-
-  ## Resetting default values before entering command space
-  for action in cmd.set.parser._actions :
-    for option, default in default_overide.items() :
-      if option in action.option_strings:
-        action.default = default[-1]
 
   cmd.cmdloop()

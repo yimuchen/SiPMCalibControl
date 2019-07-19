@@ -1,6 +1,5 @@
 #include "logger.hpp"
 
-#include <boost/range/adaptor/reversed.hpp>
 #include <cstdio>
 #include <map>
 
@@ -137,7 +136,8 @@ Logger::screenclear_update()
   static const char prevline[] = "\033[A";
   char clearline[1024]         = {0};
 
-  for( const auto& p : boost::adaptors::reverse( _update ) ){
+  for( auto it = _update.rbegin(); it != _update.rend(); ++it ){
+    const auto p = *it;
     const unsigned total_length = p.first.length() + p.second.length() + 1;
 
     for( unsigned i = 0; i < total_length; ++i ){

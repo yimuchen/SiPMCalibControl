@@ -1,12 +1,9 @@
 #include "gcoder.hpp"
 #include "logger.hpp"
 
-#include <algorithm>
-#include <boost/algorithm/string.hpp>
 #include <chrono>
 #include <cmath>
-#include <iostream>
-#include <regex>
+#include <stdexcept>
 
 // Stuff required for tty input and output
 #include <errno.h>
@@ -30,22 +27,18 @@ GCoder::~GCoder()
 }
 
 void
-GCoder::InitPrinter( const std::wstring& dev )
+GCoder::InitPrinter( const std::string& dev )
 {
   static const int speed = B115200;
   struct termios tty;
-  char dev_arr[1024];
   char errormessage[2048];
 
-  dev_path = dev;
+  dev_path   = dev;
+  printer_IO = open( dev.c_str(), O_RDWR | O_NOCTTY | O_SYNC );
 
-  const int len = std::wcstombs( dev_arr, dev_path.c_str(), dev_path.length() );
-  dev_arr[len] = '\0';// Manually adding termination string
-
-  printer_IO = open( dev_arr, O_RDWR | O_NOCTTY | O_SYNC );
   if( printer_IO < 0 ){
     sprintf( errormessage,
-      "Failed to open printer IO [%d] %s", printer_IO, dev_arr );
+      "Failed to open printer IO [%d] %s", printer_IO, dev.c_str() );
     throw std::runtime_error( errormessage  );
   }
 
@@ -109,7 +102,7 @@ GCoder::RunGcode(
 
   // Pretty output
   std::string pstring = gcode;
-  boost::trim_right( pstring );
+  pstring[pstring.length()-1] = '\0'; // Getting rid of trailing new line
 
   sprintf( msg, "[%s] to USBTERM[%d] (attempt %u)...",
     pstring.c_str(), printer_IO, attempt );
@@ -207,12 +200,6 @@ GCoder::SetSpeedLimit( float x, float y, float z )
 void
 GCoder::MoveTo( float x, float y, float z, bool verbose )
 {
-  // Check message of M114 is in:
-  // "X:0.00 Y:0.00 Z:100.00 E:0.00 Count X: 0.00 Y:0.00 Z:126.01";
-  static const std::regex checkfmt(
-    ".*X:(\\d+\\.\\d+) Y:(\\d+\\.\\d+) Z:(\\d+\\.\\d+).*"
-    "Count.*X: (\\d+\\.\\d+) Y:(\\d+\\.\\d+) Z:(\\d+\\.\\d+)\\s*.*"
-    );
   static const std::string msghead = GREEN( "[GANTRYPOS]" );
   static const char move_fmt[]     = "G0 X%.1f Y%.1f Z%.1f\n";
 
@@ -220,8 +207,6 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
   char msg[1024];
   float temp;
   int check;
-  std::string checkmsg;
-  std::smatch checkmatch;
 
   // Setting up target position
   opx = x == x ? x : opx;
@@ -240,10 +225,12 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
 
   do {
     // Getting current position command
-    checkmsg = RunGcode( "M114\n", 0, 100, verbose );
-    check    = sscanf( checkmsg.c_str(),
+    const std::string checkmsg = RunGcode( "M114\n", 0, 100, verbose );
+
+    check = sscanf( checkmsg.c_str(),
       "X:%f Y:%f Z:%f E:%f Count X:%f Y:%f Z:%f",
       &opx, &opy, &opz, &temp, &x, &y, &z );
+
     if( check == 7 ){
       sprintf( msg,
         "Target (%.1lf %.1lf %.1lf), Current (%.1lf, %.1lf, %.1lf)...",

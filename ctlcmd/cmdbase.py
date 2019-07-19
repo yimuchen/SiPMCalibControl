@@ -41,8 +41,10 @@ class controlterm(cmd.Cmd):
     try:
       self.trigger = trigger.Trigger()
     except Exception as err:
-      log.printerr("Error message emitted when setting up GPIO interface")
       log.printerr(str(err))
+      log.printwarn((
+        'Error message emitted when setting up GPIO interface, '
+        'trigger might not work as expected'))
 
     ## Creating command instances and attaching to associated functions
     for com in cmdlist:

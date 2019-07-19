@@ -16,7 +16,7 @@ struct GCoder
   // GCoder( const std::wstring& dev );
   ~GCoder();
 
-  void InitPrinter( const std::wstring& dev );
+  void InitPrinter( const std::string& dev );
 
   // Raw motion command setup
   std::string RunGcode(
@@ -51,7 +51,7 @@ public:
   int          printer_IO;
   float        opx, opy, opz;// current position of the printer
   float        vx, vy, vz;// Speed of the gantry head.
-  std::wstring dev_path;
+  std::string dev_path;
 };
 
 #endif

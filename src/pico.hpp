@@ -1,7 +1,6 @@
 #ifndef PICO_HPP
 #define PICO_HPP
 
-// #include <libps5000-1.5/ps5000Api.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -10,8 +9,6 @@ class PicoUnit
 {
 public:
   PicoUnit();
-  // PicoUnit( const PicoUnit& ) = delete;
-  // PicoUnit( const PicoUnit&& ) = delete;
 
   ~PicoUnit();
 
