@@ -14,7 +14,7 @@
  *    Collect a block of samples immediately
  *    Collect a block of samples when a trigger event occurs
  *    Collect a block using ETS
- *	  Collect samples using a rapid block capture with trigger 
+ *	  Collect samples using a rapid block capture with trigger
  *    Collect a stream of data immediately
  *    Collect a stream of data when a trigger event occurs
  *    Set Signal Generator, using built in or custom signals
@@ -68,9 +68,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include <libps5000-1.5/ps5000Api.h>
+#include <libps5000/ps5000Api.h>
 #ifndef PICO_STATUS
-#include <libps5000-1.5/PicoStatus.h>
+#include <libps5000/PicoStatus.h>
 #define PREF4
 #endif
 
@@ -367,7 +367,7 @@ void BlockDataHandler(UNIT_MODEL * unit, char * text, int32_t offset)
 				"Immediately Block Mode: failed to call run_block successfully \n");
 		return;
 	}
-	
+
 	printf("Waiting for trigger...Press a key to abort\n");
 
 	while (!g_ready && !_kbhit())
@@ -987,14 +987,14 @@ void SetSignalGenerator(UNIT_MODEL unit)
  * - Used by the two stream data examples - untriggered and triggered
  * Inputs:
  * - unit - the unit to sample on
- * - preTrigger - the number of samples in the pre-trigger phase 
+ * - preTrigger - the number of samples in the pre-trigger phase
  *					(0 if no trigger has been set)
  ***************************************************************************/
 void StreamDataHandler(UNIT_MODEL * unit, uint32_t preTrigger)
 {
 	int32_t i, j;
 	uint32_t sampleCount = 50000; /*  Make sure buffer large enough */
-	
+
 	FILE * fp;
 	int16_t * buffers[PS5000_MAX_CHANNEL_BUFFERS];
 	int16_t * appBuffers[PS5000_MAX_CHANNEL_BUFFERS];
@@ -1032,18 +1032,18 @@ void StreamDataHandler(UNIT_MODEL * unit, uint32_t preTrigger)
 	bufferInfo.appBuffers = appBuffers;
 
 	printf("Waiting for trigger...Press a key to abort\n");
-	
+
 	g_autoStop = FALSE;
 
 	status = ps5000RunStreaming(unit->handle, &sampleInterval, PS5000_US, preTrigger, 1000000 - preTrigger, TRUE, 1, sampleCount);
-	
+
 
 	if (status != PICO_OK)
 	{
 		printf("ps5000Streaming: %d\n", status);
 		return;
 	}
-	
+
 	printf("Streaming data...Press a key to abort\n");
 
 	fp = fopen("streaming_data.txt", "w");
@@ -1054,7 +1054,7 @@ void StreamDataHandler(UNIT_MODEL * unit, uint32_t preTrigger)
 		Sleep(10);
 
 		g_ready = FALSE;
-		
+
 		status = ps5000GetStreamingLatestValues(unit->handle, CallBackStreaming, &bufferInfo);
 
 		if (g_ready && g_sampleCount > 0) /* can be ready and have no data, if autoStop has fired */
@@ -1115,7 +1115,7 @@ void StreamDataHandler(UNIT_MODEL * unit, uint32_t preTrigger)
 			free(buffers[i * 2 + 1]);
 			free(appBuffers[i * 2 + 1]);
 		}
-		
+
 	}
 }
 
@@ -1155,20 +1155,20 @@ void CollectStreamingTriggered(UNIT_MODEL * unit)
 {
 	int16_t triggerVoltage = mv_to_adc(100,
 			unit->channelSettings[PS5000_CHANNEL_A].range); // ChannelInfo stores ADC counts
-	
+
 	struct tTriggerChannelProperties sourceDetails =
 	{ triggerVoltage, triggerVoltage, 256 * 10, PS5000_CHANNEL_A, LEVEL };
-	
+
 	struct tTriggerConditions conditions =
 	{ CONDITION_TRUE, CONDITION_DONT_CARE, CONDITION_DONT_CARE,
 			CONDITION_DONT_CARE, CONDITION_DONT_CARE, CONDITION_DONT_CARE,
 			CONDITION_DONT_CARE };
-	
+
 	struct tPwq pulseWidth;
-	
+
 	struct tTriggerDirections directions =
 	{ RISING, NONE, NONE, NONE, NONE, NONE };
-	
+
 	memset(&pulseWidth, 0, sizeof(struct tPwq));
 
 	printf("Collect streaming triggered...\n");

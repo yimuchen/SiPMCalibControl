@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
-#include <boost/format.hpp>
 #include <chrono>
 #include <cmath>
 #include <iostream>
@@ -35,25 +34,25 @@ GCoder::InitPrinter( const std::wstring& dev )
 {
   static const int speed = B115200;
   struct termios tty;
+  char dev_arr[1024];
+  char errormessage[2048];
 
   dev_path = dev;
 
-  char dev_arr[2048];
-
   const int len = std::wcstombs( dev_arr, dev_path.c_str(), dev_path.length() );
-  dev_arr[len] = '\0'; // Manually adding termination string
+  dev_arr[len] = '\0';// Manually adding termination string
 
   printer_IO = open( dev_arr, O_RDWR | O_NOCTTY | O_SYNC );
   if( printer_IO < 0 ){
-    printerr( (boost::format("printer io {%d} %s") % printer_IO % dev_arr).str() );
-    throw std::runtime_error( "Failed opening printer IO" );
+    sprintf( errormessage,
+      "Failed to open printer IO [%d] %s", printer_IO, dev_arr );
+    throw std::runtime_error( errormessage  );
   }
 
   if( tcgetattr( printer_IO, &tty ) < 0 ){
-    throw std::runtime_error(
-      ( boost::format( "Error getting termios settings: %s" )
-        % strerror( errno ) ).str()
-      );
+    sprintf( errormessage,
+      "Error getting termios settings %s",  strerror( errno ) );
+    throw std::runtime_error( errormessage );
   }
 
   cfsetospeed( &tty, (speed_t)speed );
@@ -76,10 +75,8 @@ GCoder::InitPrinter( const std::wstring& dev )
   tty.c_cc[VTIME] = 1;
 
   if( tcsetattr( printer_IO, TCSANOW, &tty ) != 0 ){
-    throw std::runtime_error(
-      ( boost::format( "Error setting termios: %s" )
-        % strerror( errno ) ).str()
-      );
+    sprintf( errormessage, "Error setting termios: %s", strerror( errno ) );
+    throw std::runtime_error( errormessage );
   }
 
   printmsg( "Waking up printer...." );
@@ -105,29 +102,32 @@ GCoder::RunGcode(
 
   // Readout data
   char buffer[buffersize];
+  char msg[1024];
   int readlen;
   std::string ackstr = "";
   bool awk           = false;
 
   // Pretty output
-  boost::format printfmt( "[%s] to USBTERM[%s] (attempt %u)..." );
   std::string pstring = gcode;
   boost::trim_right( pstring );
-  const std::string printmsg = ( printfmt%pstring%printer_IO%attempt ).str();
+
+  sprintf( msg, "[%s] to USBTERM[%d] (attempt %u)...",
+    pstring.c_str(), printer_IO, attempt );
 
   if( printer_IO < 0 ){
     throw std::runtime_error( "Printer is not available for commands" );
   }
 
   if( attempt >= maxtry ){
-    throw std::runtime_error(
-      ( boost::format( "ACK string was not received after [%d] attempts!"
-        " The message could be dropped or there is something wrong with"
-        " the printer!" )% maxtry ).str() );
+    sprintf( msg,
+      "ACK string was not received after [%d] attempts!"
+      " The message could be dropped or there is something wrong with"
+      " the printer!",  maxtry );
+    throw std::runtime_error( msg );
   }
 
   // Sending output
-  if( verbose ){ update( msghead, printmsg ); }
+  if( verbose ){ update( msghead, msg ); }
   write( printer_IO, gcode.c_str(), gcode.length() );
   tcdrain( printer_IO );
 
@@ -146,16 +146,18 @@ GCoder::RunGcode(
         awk = true;
       }
     } else if( readlen < 0 ){
-      throw std::runtime_error(
-        ( boost::format( "Error reading printer output: %s" )
-          % strerror( errno ) ).str()
-        );
+      sprintf( msg,
+        "Error reading printer output: %s", strerror( errno ) );
+      throw std::runtime_error( msg );
     }
   } while( !awk && duration_cast<microseconds>( t2-t1 ).count() < waitack );
 
   // Checking output
   if( awk ){
-    if( verbose ){ update( msghead, printmsg+"...Done!" ); }
+    if( verbose ){
+      strcat( msg, "... Done!" );
+      update( msghead, msg );
+    }
     return ackstr;
   } else {
     return RunGcode( gcode, attempt+1, waitack );
@@ -181,9 +183,9 @@ GCoder::GetSettings() const
 void
 GCoder::SetSpeedLimit( float x, float y, float z )
 {
-  static const float maxv = 300./14.;// Setting the maximum speed
-  boost::format gcode_fmt( "M203 X%.2f Y%.2f Z%.2f\n" );
-  std::string gcode;
+  static const float maxv       = 300./14.;// Setting the maximum speed
+  static const char gcode_fmt[] = "M203 X%.2f Y%.2f Z%.2f\n";
+  char gcode[1024];
 
   // NAN detection.
   if( x != x ){ x = vx; }
@@ -194,8 +196,7 @@ GCoder::SetSpeedLimit( float x, float y, float z )
   if( y > maxv ){ y = maxv; }
   if( z > maxv ){ z = maxv; }
 
-  gcode = ( gcode_fmt %  x % y % z ).str();
-
+  sprintf( gcode, gcode_fmt, x, y, z );
   RunGcode( gcode, false );
 
   vx = x;
@@ -208,18 +209,17 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
 {
   // Check message of M114 is in:
   // "X:0.00 Y:0.00 Z:100.00 E:0.00 Count X: 0.00 Y:0.00 Z:126.01";
-  static const std::string fltregex = "\\d+\\.\\d+";
-  static const std::string wsregex  = "\\s*";
   static const std::regex checkfmt(
-    ( boost::format(
-      ".*X:(%1%) Y:(%1%) Z:(%1%).*"
-      "Count.*X: (%1%) Y:(%1%) Z:(%1%)%2%.*"
-      ) % fltregex % wsregex ).str()
+    ".*X:(\\d+\\.\\d+) Y:(\\d+\\.\\d+) Z:(\\d+\\.\\d+).*"
+    "Count.*X: (\\d+\\.\\d+) Y:(\\d+\\.\\d+) Z:(\\d+\\.\\d+)\\s*.*"
     );
   static const std::string msghead = GREEN( "[GANTRYPOS]" );
+  static const char move_fmt[]     = "G0 X%.1f Y%.1f Z%.1f\n";
 
-  boost::format move_fmt( "G0 X%.1f Y%.1f Z%.1f\n" );
-  std::string gcode;
+  char gcode[128];
+  char msg[1024];
+  float temp;
+  int check;
   std::string checkmsg;
   std::smatch checkmatch;
 
@@ -228,46 +228,44 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
   opy = y == y ? y : opy;
   opz = z == z ? z : opz;
 
-  // Rounding to closest 0.1 (precision of gantry system )
-  opx = std::round( opx * 10 ) / 10 ;
-  opy = std::round( opy * 10 ) / 10 ;
-  opz = std::round( opz * 10 ) / 10 ;
+  // Rounding to closest 0.1 (precision of gantry system)
+  opx = std::round( opx * 10 ) / 10;
+  opy = std::round( opy * 10 ) / 10;
+  opz = std::round( opz * 10 ) / 10;
 
   // Running the code
-  gcode = ( move_fmt % opx % opy % opz ).str();
+  sprintf( gcode, move_fmt, opx, opy, opz );
   RunGcode( gcode, 0, 100, verbose );
   if( verbose ){ clear_update(); }
 
   do {
     // Getting current position command
     checkmsg = RunGcode( "M114\n", 0, 100, verbose );
-    checkmsg.erase( std::remove( checkmsg.begin(), checkmsg.end(), '\n' ), checkmsg.end() );
-    if( std::regex_match( checkmsg, checkmatch, checkfmt ) ){
-      opx = std::stof( checkmatch[1].str() );
-      opy = std::stof( checkmatch[2].str() );
-      opz = std::stof( checkmatch[3].str() );
-      x   = std::stof( checkmatch[4].str() );
-      y   = std::stof( checkmatch[5].str() );
-      z   = std::stof( checkmatch[6].str() );
-
-      const std::string msg = ( boost::format(
-        "Target (%.1lf %.1lf %.1lf), Current (%.1lf, %.1lf, %.1lf)..."
-        ) % opx % opy % opz % x % y % z ).str();
+    check    = sscanf( checkmsg.c_str(),
+      "X:%f Y:%f Z:%f E:%f Count X:%f Y:%f Z:%f",
+      &opx, &opy, &opz, &temp, &x, &y, &z );
+    if( check == 7 ){
+      sprintf( msg,
+        "Target (%.1lf %.1lf %.1lf), Current (%.1lf, %.1lf, %.1lf)...",
+        opx, opy, opz, x, y, z );
 
       if( verbose ){ update( msghead, msg ); }
 
       if( MatchCoord( opx, x ) &&
           MatchCoord( opy, y ) &&
           MatchCoord( opz, z ) ){
-        if( verbose ){ update( msghead, msg+"Done!" ); }
+        if( verbose ){
+          strcat( msg, " Done!" );
+          update( msghead, msg );
+        }
         break;
       }
 
     } else {
       if( verbose ){
-        printwarn(
-          ( boost::format( "Couldn't parse string [%s][%u]! Trying again!" )
-            % checkmsg % checkmatch.size() ).str() );
+        sprintf( msg, "Couldn't parse string [%s]! Trying again!",
+          checkmsg.c_str() );
+        printwarn( msg );
       }
     }
   } while( 1 );
@@ -282,4 +280,22 @@ GCoder::MatchCoord( double x, double y )
   x = std::round( x * 10 ) / 10;
   y = std::round( y * 10 ) / 10;
   return x == y;
+}
+
+#include <boost/python.hpp>
+
+BOOST_PYTHON_MODULE( gcoder )
+{
+  boost::python::class_<GCoder>( "GCoder" )
+  // .def( boost::python::init<const std::string&>() )
+  .def( "initprinter",     &GCoder::InitPrinter )
+  // Hiding functions from python
+  // .def( "pass_gcode",       &GCoder::pass_gcode )
+  .def( "getsettings",     &GCoder::GetSettings )
+  .def( "set_speed_limit", &GCoder::SetSpeedLimit )
+  .def( "moveto",          &GCoder::MoveTo )
+  .def_readonly( "dev_path", &GCoder::dev_path )
+  .def_readonly( "opx",      &GCoder::opx )
+  .def_readonly( "opy",      &GCoder::opy )
+  .def_readonly( "opz",      &GCoder::opz );
 }

@@ -1,6 +1,5 @@
-// Direct GPIO control from
-// https://elinux.org/RPi_GPIO_Code_Samples#Direct_register_access
-
+#ifndef TRIGGER_HPP
+#define TRIGGER_HPP
 
 class Trigger
 {
@@ -46,3 +45,5 @@ private:
   inline int
   gpio_pullclock0(){ return *( gpio+38 );}// Pull up/pull down clock
 };
+
+#endif

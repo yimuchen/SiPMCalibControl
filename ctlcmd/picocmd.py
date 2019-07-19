@@ -9,7 +9,6 @@ class picoset(cmdbase.controlcmd):
   """
   Setting session parameters
   """
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.parser.add_argument(
@@ -141,6 +140,7 @@ class picorunblock(cmdbase.controlcmd):
       args.savefile.write("{0} {1} {2} {3} {4}\n".format(
           self.pico.timeinterval, self.pico.ncaptures, self.pico.presamples,
           self.pico.postsamples, self.pico.adc2mv(1)))
+      args.savefile.flush()
 
     for i in range(args.numblocks):
       self.update('Collecting block...[{0:5d}/{1:d}]'.format(
@@ -148,33 +148,21 @@ class picorunblock(cmdbase.controlcmd):
           args.numblocks,
       ))
       self.pico.startrapidblocks()
-      self.pico.waitready()
+      while not self.pico.isready():
+        self.trigger.pulse(1)
+      # self.pico.flushbuffer()
 
-      if not args.sum:
-        # Writing each capture as a single line.
-        for cap in range(self.pico.ncaptures):
-          buf = [
-              '{0:02x}'.format(
-                  int(self.pico.buffer(0, cap, x) / 256) & (2**8 - 1))
-              for x in range(self.pico.presamples + self.pico.postsamples)
-          ]
-          line = ''.join(buf)
-          args.savefile.write(line + '\n')
-      else:
-        area = []
-        for cap in range(self.pico.ncaptures):
-          area.append(
-              str(
-                  sum([
-                      int(self.pico.buffer(0, cap, x))
-                      for x in range(self.pico.presamples +
-                                     self.pico.postsamples)
-                  ])))
-        line = ' '.join(area)
+      print( "Finished block collection" )
+      for cap in range(self.pico.ncaptures ):
+        wavesum = 0
+        line = self.pico.waveformstr( 0, cap )
         args.savefile.write(line + '\n')
+        #args.savefile.flush()
 
     # Closing
+    args.savefile.flush()
     args.savefile.close()
 
     if args.dumpbuffer:
+      print("test\n\n\n")
       self.pico.dumpbuffer()

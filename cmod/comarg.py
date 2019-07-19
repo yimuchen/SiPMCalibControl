@@ -85,6 +85,14 @@ def add_hscan_options(parser, scanz=35, hrange=20, distance=0.5):
       help='Horizontal sampling distance [mm]')
   return
 
+def add_readout_option( parser ):
+  parser.add_argument(
+    '-m',
+    '--mode',
+    type=int,
+    help='Readout channel to be used, 0,1,2,3 for the ADC chip channels, -1,-2 for the picoscope channels (channel A, B)'
+  )
+
 
 def add_savefile_options(parser, default_filename):
   parser.add_argument(

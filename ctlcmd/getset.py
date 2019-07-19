@@ -65,14 +65,15 @@ class set(cmdbase.controlcmd):
       except Exception as err:
         log.printerr(str(err))
         log.printwarn("Failed to setup printer, skipping over settings")
-    if arg.remotehost and arg.remotehost != self.sshfiler.host:
+    if arg.remotehost :
+      print(self.sshfiler.host)
       try:
         self.sshfiler.reconnect(arg.remotehost)
       except Exception as err:
         log.printerr(str(err))
         log.printwarn("Failed to establish connection remote host")
-    if arg.remotepath and arg.remotepath != self.sshfiler.remotepath:
-      self.sshfiler.remotepath = arg.remotepath
+    if arg.remotepath:
+      self.sshfiler.setremotepath( arg.remotepath )
     if arg.picodevice:
       try:
         self.pico.init()

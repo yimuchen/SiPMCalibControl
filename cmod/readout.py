@@ -19,6 +19,7 @@ class readout(object):
 
   def __init__(self, parent):
     self.parent = parent
+    self.pico = parent.pico ## Reference to picoscope for
 
     try:
       self.i2c = busio.I2C(board.SCL, board.SDA)
@@ -45,11 +46,13 @@ class readout(object):
     # val = val[int(sample / 4):]
     return np.mean(val), np.std(val)
 
+
   def read_adc_raw(self, channel):
+    """
+    Reading a single ADC value from ADC chip
+    """
     if self.adc:
-      # return self.adc.read( ads.P0 )
       return AnalogIn(self.adc, ads.P0).voltage * 1000
-      # return self.adc.read_adc(channel, gain=1,data_rate=860)
     else:
       return self.modelval()
 

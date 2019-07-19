@@ -231,6 +231,7 @@ class showreadout(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
+    comarg.add_readout_option( self.parser )
     self.parser.add_argument('--dumpval', action='store_true')
     self.parser.add_argument('--nowait', action='store_true')
 

@@ -46,6 +46,9 @@ public:
   void DumpBuffer() const;
   void PrintInfo() const;
 
+  std::string WaveformString( const int16_t channel ,
+                              const unsigned capture ) const ;
+
 public:
   int16_t device;// integer representing device in driver API
 

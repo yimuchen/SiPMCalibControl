@@ -1,11 +1,9 @@
 #include "logger.hpp"
 #include "visual.hpp"
 
-#include <boost/format.hpp>
 #include <opencv2/imgproc.hpp>
 
 #include <chrono>
-#include <iostream>
 #include <thread>
 
 // Helper objects for consistant display
@@ -61,6 +59,7 @@ Visual::find_chip( const bool monitor )
 
   // Drawing variables
   static const std::string winname = "FINDCHIP_MONITOR";
+  char msg[1024];
 
   // Operational variables
   cv::Mat img, gray_img;
@@ -157,10 +156,10 @@ Visual::find_chip( const bool monitor )
         cv::FONT_HERSHEY_SIMPLEX,
         1, white );
     } else {
+      sprintf( msg, "x:%.1lf y:%.1lf", ans.x, ans.y ),
       cv::drawContours( display, hulls, 0, red, 3 );
       cv::circle( display, cv::Point( ans.x, ans.y ), 3, red, cv::FILLED );
-      cv::putText( display,
-        ( boost::format( "x:%.1lf y:%.1lf" )%ans.x%ans.y ).str(),
+      cv::putText( display, msg,
         cv::Point( 50, 100 ),
         cv::FONT_HERSHEY_SIMPLEX,
         2, white );
@@ -208,4 +207,27 @@ Visual::save_frame( const std::string& filename )
   cv::Mat img;
   cam >> img;
   imwrite( filename, img );
+}
+
+
+#include <boost/python.hpp>
+
+BOOST_PYTHON_MODULE( visual )
+{
+  boost::python::class_<Visual>( "Visual" )
+  .def( "init_dev",     &Visual::init_dev )
+  .def( "find_chip",    &Visual::find_chip )
+  .def( "sharpness",    &Visual::sharpness )
+  .def( "save_frame",   &Visual::save_frame )
+  .def( "frame_width",  &Visual::frame_width )
+  .def( "frame_height", &Visual::frame_height )
+  .def_readonly( "dev_path", &Visual::dev_path )
+  ;
+  // Required for coordinate caluclation
+  boost::python::class_<Visual::ChipResult>( "ChipResult" )
+  .def_readwrite( "x",       &Visual::ChipResult::x )
+  .def_readwrite( "y",       &Visual::ChipResult::y )
+  .def_readwrite( "area",    &Visual::ChipResult::area )
+  .def_readwrite( "maxmeas", &Visual::ChipResult::maxmeas )
+  ;
 }

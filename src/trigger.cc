@@ -1,30 +1,14 @@
-#include <trigger.hpp>
+#include "trigger.hpp"
 
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include <boost/format.hpp>
 #include <chrono>
+#include <cstdio>
 #include <stdexcept>
 #include <thread>
-
-void
-Trigger::Pulse( const unsigned n )
-{
-  static const int g = 21;
-  input_gpio( g );// must use INP_GPIO before we can use OUT_GPIO
-  out_gpio( g );
-
-  for( unsigned i = 0; i < n; ++i ){
-    gpio_set( g );
-    gpio_clear( g );
-    std::this_thread::sleep_for( std::chrono::microseconds( 1 ) );
-    // printf("\r%u", i);
-    // fflush(stdout);
-  }
-}
 
 void
 Trigger::Init()
@@ -35,6 +19,7 @@ Trigger::Init()
   static const int BLOCK_SIZE        = 4*1024;
   int mem_fd;
   void* gpio_map;
+  char errormessage[256];
 
   if( ( mem_fd = open( "/dev/mem", O_RDWR|O_SYNC ) ) < 0 ){
     throw std::runtime_error( "Can't open /dev/mem" );
@@ -53,16 +38,45 @@ Trigger::Init()
   close( mem_fd );// No need to keep mem_fd open after mmap
 
   if( gpio_map == MAP_FAILED ){
-    throw std::runtime_error( ( boost::format( "mmap error %d\n" ) % MAP_FAILED ).str() );// errno also set!
+    sprintf( errormessage, "mmap error %d", MAP_FAILED );
+    throw std::runtime_error( errormessage );// errno also set!
   }
 
   // Always use volatile pointer!
   gpio = (volatile unsigned*)gpio_map;
 }
 
-Trigger::Trigger(){
+void
+Trigger::Pulse( const unsigned n )
+{
+  static const int g = 21;
+  input_gpio( g );// must use INP_GPIO before we can use OUT_GPIO
+  out_gpio( g );
+
+  for( unsigned i = 0; i < n; ++i ){
+    gpio_set( g );
+    gpio_clear( g );
+    if( n > 1 ){
+      std::this_thread::sleep_for( std::chrono::microseconds( 100 ) );
+    }
+  }
+}
+
+Trigger::Trigger()
+{
   Init();
 }
 
 Trigger::~Trigger()
 {}
+
+/******************** BOOST PYTHON STUFF ********************** */
+#include <boost/python.hpp>
+
+BOOST_PYTHON_MODULE( trigger )
+{
+  boost::python::class_<Trigger>( "Trigger" )
+  .def( "pulse", &Trigger::Pulse )
+  .def( "init",  &Trigger::Init)
+  ;
+}
