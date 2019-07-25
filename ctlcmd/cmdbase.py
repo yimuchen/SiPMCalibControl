@@ -34,17 +34,8 @@ class controlterm(cmd.Cmd):
     self.board = board.Board()
     self.visual = visual.Visual()
     self.pico = pico.PicoUnit()
-    self.readout = readout.readout(self)
-
-    ## The following is PI specific! Wrapping up to allow for local testing
-    # on laptop
-    try:
-      self.trigger = trigger.Trigger()
-    except Exception as err:
-      log.printerr(str(err))
-      log.printwarn((
-        'Error message emitted when setting up GPIO interface, '
-        'trigger might not work as expected'))
+    self.readout = readout.readout(self) # Must be after picoscope setup
+    self.trigger = trigger.Trigger()
 
     ## Creating command instances and attaching to associated functions
     for com in cmdlist:
@@ -129,12 +120,11 @@ class controlcmd():
     ## Reference to control objects for all commands
     self.sshfiler = cmdsession.sshfiler
     self.gcoder = cmdsession.gcoder
-    self.readout = cmdsession.readout
     self.board = cmdsession.board
     self.visual = cmdsession.visual
     self.pico = cmdsession.pico
-    if (hasattr(cmdsession, 'trigger')):  # Potentially missing (PI specific)
-      self.trigger = cmdsession.trigger
+    self.readout = cmdsession.readout # Must be after pico setup
+    self.trigger = cmdsession.trigger
 
   def do(self, line):
     """

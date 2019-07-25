@@ -1,6 +1,7 @@
 import ctlcmd.cmdbase as cmdbase
 import cmod.logger as log
 import argparse
+from cmod.readout import readout
 
 class set(cmdbase.controlcmd):
   """
@@ -37,6 +38,12 @@ class set(cmdbase.controlcmd):
         '-picodevice',
         type=str,
         help='The serial number of the pico-tech device for dynamic light readout'
+    )
+    self.parser.add_argument(
+      '-readout',
+      type=int,
+      choices=[readout.MODE_ADC, readout.MODE_PICO, readout.MODE_NONE],
+      help='Setting readout mode of the current session'
     )
 
   def run(self, arg):
@@ -77,6 +84,8 @@ class set(cmdbase.controlcmd):
       except Exception as err:
         log.printerr(str(err))
         log.printwarn("Pico device is not properly set!")
+    if arg.readout:
+      self.readout.set_mode( arg.readout )
 
 
 class get(cmdbase.controlcmd):
@@ -92,6 +101,8 @@ class get(cmdbase.controlcmd):
     self.parser.add_argument('--origchip', action='store_true')
     self.parser.add_argument('--align', action='store_true')
     self.parser.add_argument('--pico', action='store_true')
+    self.parser.add_argument('--readout', action='store_true')
+
     self.parser.add_argument('-a', '--all', action='store_true')
 
   def run(self, arg):
@@ -126,6 +137,13 @@ class get(cmdbase.controlcmd):
                   self.board.vis_coord[chip][z][1], z))
     if arg.pico or arg.all:
       self.pico.printinfo()
+    if arg.readout or arg.all:
+      log.printmsg(
+        log.GREEN('[READOUT MODE]'),
+        'PICOSCOPE' if self.readout.mode == readout.MODE_PICO else  \
+        'ADC CHIP'  if self.readout.mode == readout.MODE_ADC  else \
+        'PREDEFINED MODEL'
+      )
 
 
 class getcoord(cmdbase.controlcmd):

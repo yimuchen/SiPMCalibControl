@@ -1,6 +1,7 @@
 import ctlcmd.cmdbase as cmdbase
 import cmod.comarg as comarg
 import cmod.pico as pico
+import cmod.logger as log
 import timeit  ##
 import time
 
@@ -110,7 +111,7 @@ class picorunblock(cmdbase.controlcmd):
   """
 
   DEFAULT_SAVEFILE = 'picoblock_<TIMESTAMP>.txt'
-  LOG = 'PICOBLOCK'
+  LOG = log.GREEN('[PICOBLOCK]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -122,6 +123,10 @@ class picorunblock(cmdbase.controlcmd):
     self.parser.add_argument('--dumpbuffer',
                              action='store_true',
                              help='Dumping the buffer onto screen')
+    self.parser.add_argument('--channel',
+                             type=int,
+                             default=0,
+                             help='Channel to collect input from')
     self.parser.add_argument(
         '--sum',
         action='store_true',
@@ -149,20 +154,56 @@ class picorunblock(cmdbase.controlcmd):
           args.numblocks,
       ))
       self.pico.startrapidblocks()
-      while not self.pico.isready():
-        self.trigger.pulse(1)
-      # self.pico.flushbuffer()
 
-      print("Finished block collection")
+      while not self.pico.isready():
+        self.trigger.pulse(self.pico.ncaptures, 500 )
+
+      self.pico.flushbuffer()
+
       for cap in range(self.pico.ncaptures):
-        line = self.pico.waveformstr(0, cap)
+        line = self.pico.waveformstr(args.channel, cap)
         args.savefile.write(line + '\n')
-        #args.savefile.flush()
 
     # Closing
     args.savefile.flush()
     args.savefile.close()
 
     if args.dumpbuffer:
-      print("test\n\n\n")
       self.pico.dumpbuffer()
+
+
+class picorange(cmdbase.controlcmd):
+  """
+  Automatically setting the voltage range of the pico-scope based on a few waveforms of data.
+  """
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
+    self.parser.add_argument('--captures',
+                             type=int,
+                             default=500,
+                             help='Number of captures for base the calculation')
+    self.parser.add_argument('--channel',
+                             type=int,
+                             default=0,
+                             help='Input channel to base the calculation')
+
+  def run(self, args):
+    # Setting the new number of block to run
+    self.pico.setblocknums(args.captures,
+                           self.pico.postsamples,
+                           self.pico.presamples)
+
+    while 1:
+      self.pico.startrapidblocks()
+      while not self.pico.isready():
+        self.trigger.pulse(self.pico.ncaptures, 500)
+      self.pico.flushbuffer()
+
+      wmax = self.pico.waveformmax( args.channel )
+
+      if wmax < 100 and self.pico.range > self.pico.rangemin():
+        self.pico.setrange( self.pico.range - 1 )
+      elif wmax > 200 and self.pico.range < self.pico.rangemax():
+        self.pico.setrange( self.pico.range + 1 )
+      else:
+        break;

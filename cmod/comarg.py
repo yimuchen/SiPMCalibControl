@@ -81,6 +81,18 @@ def add_hscan_options(parser, scanz=35, hrange=20, distance=0.5):
       type=float,
       default=distance,
       help='Horizontal sampling distance [mm]')
+  parser.add_argument(
+    '--channel',
+    type=int,
+    default=0,
+    help='Input channel to use'
+  )
+  parser.add_argument(
+    '--samples',
+    type=int,
+    default=500,
+    help='Number of samples to take the average'
+  )
 
 def add_readout_option( parser ):
   parser.add_argument(

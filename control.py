@@ -29,6 +29,7 @@ if __name__ == '__main__':
       digicmd.pulse,
       picocmd.picoset,
       picocmd.picorunblock,
+      picocmd.picorange,
   ])
   """
   Duplicating the session to allow for default override.
@@ -65,6 +66,7 @@ if __name__ == '__main__':
 
   try:
     cmd.set.run(args)
+    cmd.trigger.init()
   except Exception as err:
     logger.printerr(str(err))
     logger.printwarn(

@@ -13,7 +13,7 @@ add_compile_options("-Wno-undef")
 
 # General output settings
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/cmod )
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/test )
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/bin )
 
 ## Finding additional libraries
 find_package(PythonLibs   3 REQUIRED)
@@ -31,6 +31,10 @@ find_library(PICO_LIBS
   PATHS /opt/picoscope/lib/
   )
 
+find_library( WIRINGPI_LIBS
+  NAMES wiringPi wiringPiDev
+  PATHS /usr/lib/)
+
 ## Libraries are supposed to be python modules
 function(make_control_library libname source )
   add_library(${libname} SHARED ${source})
@@ -42,8 +46,6 @@ endfunction()
 
 make_control_library( logger src/logger.cc )
 
-make_control_library( trigger src/trigger.cc )
-
 make_control_library( pico src/pico.cc )
 target_include_directories(pico PRIVATE ${PICO_INCLUDES})
 target_link_libraries(pico logger ${PICO_LIBS})
@@ -54,13 +56,15 @@ target_link_libraries(gcoder logger )
 make_control_library( visual src/visual.cc )
 target_link_libraries( visual logger ${OpenCV_LIBS} )
 
+make_control_library(trigger src/trigger.cc )
+target_link_libraries(trigger ${WIRINGPI_LIBS} )
+
 
 
 ## Add testing binary main files
-add_executable( mytest.exe test/mytest.cc )
+add_executable( mytest.exe bin/mytest.cc )
 target_include_directories(mytest.exe PRIVATE ${PICO_INCLUDES} src/)
 target_link_libraries(mytest.exe pico)
 
-add_executable( pulsetest.exe test/pulsetest.cc )
-target_include_directories(pulsetest.exe PRIVATE src/)
-target_link_libraries(pulsetest.exe trigger )
+add_executable( triggerpulse.exe bin/triggerpulse.cc )
+target_link_libraries( triggerpulse.exe ${WIRINGPI_LIBS} )

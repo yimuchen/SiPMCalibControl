@@ -5,12 +5,12 @@ import numpy as np
 from scipy.optimize import curve_fit
 import time
 
+
 class moveto(cmdbase.controlcmd):
   """
   Moving the gantry head to a specific location, either by chip ID or by raw
   x-y-z coordinates. Units for the x-y-z inputs is millimeters.
   """
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     comarg.add_xychip_options(self.parser)
@@ -35,7 +35,6 @@ class movespeed(cmdbase.controlcmd):
   """
   Setting the motion speed of the gantry x-y-z motors. Units in mm/s.
   """
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.parser.add_argument('-x',
@@ -64,7 +63,8 @@ class movespeed(cmdbase.controlcmd):
 class halign(cmdbase.controlcmd):
   """
   Running horizontal alignment procedure by luminosity readout v.s. x-y motion
-  scanning
+  scanning. Notice that when running with the picoscope, the only the number of
+  captures to perform the average/spread calculation can be adjusted directly in this command. For the other options such as the integration window, the voltage range... etc. You will still need the picoset command.
   """
 
   DEFAULT_SAVEFILE = 'halign_<ZVAL>_<TIMESTAMP>.txt'
@@ -103,7 +103,7 @@ class halign(cmdbase.controlcmd):
         self.gcoder.moveto(xval, yval, arg.scanz, False)
       except:
         pass
-      lumival, uncval = self.readout.read_adc()
+      lumival, uncval = self.readout.read()
       lumi.append(lumival)
       unc.append(uncval)
 
@@ -212,8 +212,7 @@ class zscan(cmdbase.controlcmd):
       self.update("z:{0:5.1f}, L:{1:8.5f}, uL:{2:8.6f}".format(
           z, lumival, uncval))
       # Writing to file
-      arg.savefile.write(
-          "{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n".format(
+      arg.savefile.write("{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n".format(
           arg.x, arg.y, z, lumival, uncval))
 
     arg.savefile.close()
@@ -228,7 +227,7 @@ class showreadout(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    comarg.add_readout_option( self.parser )
+    comarg.add_readout_option(self.parser)
     self.parser.add_argument('--dumpval', action='store_true')
     self.parser.add_argument('--nowait', action='store_true')
 

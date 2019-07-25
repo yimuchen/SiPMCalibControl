@@ -15,7 +15,10 @@ public:
   // Cannot specify serial device?
   void Init();
 
+  int VoltageRangeMax() const ;
+  int VoltageRangeMin() const ;
   void SetVoltageRange( int newrange );
+
   void SetTrigger(
     const int16_t  channel,
     const int16_t  direction,
@@ -45,6 +48,10 @@ public:
 
   std::string WaveformString( const int16_t channel ,
                               const unsigned capture ) const ;
+  int WaveformSum( const int16_t channel,
+                   const unsigned capture ) const ;
+
+  int WaveformAbsMax( const int16_t channel ) const ;
 
 public:
   int16_t device;// integer representing device in driver API

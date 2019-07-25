@@ -9,11 +9,11 @@
 #include <stdexcept>
 #include <thread>
 
-
 static const float inputRanges[PS5000_MAX_RANGES] = {
   10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000 };
 
-PicoUnit::PicoUnit()
+PicoUnit::PicoUnit() :
+  device( 0 )
 {
 }
 
@@ -47,6 +47,18 @@ PicoUnit::~PicoUnit()
 float
 PicoUnit::adc2mv( int16_t adc ) const
 { return adc * inputRanges[range] / PS5000_MAX_VALUE; }
+
+int
+PicoUnit::VoltageRangeMin() const
+{
+  return PS5000_100MV;
+}
+
+int
+PicoUnit::VoltageRangeMax() const
+{
+  return PS5000_20V;
+}
 
 void
 PicoUnit::SetVoltageRange( const int newrange )
@@ -136,9 +148,11 @@ PicoUnit::SetBlockNums(
   }
 
   if(  post + pre > (unsigned)maxsamples ){
-    printwarn(
-      "requested samples greater than maximum allowed samples,"
-      "truncating to maximum" );
+    sprintf( errormessage,
+      "requested samples [%u+%u]greater than maximum allowed samples[%d],"
+      "truncating to maximum",
+      pre, post, maxsamples );
+    printwarn( errormessage );
     post = maxsamples - pre;
   }
   if( ncaptures != ncaps  || presamples + postsamples != pre + post ){
@@ -242,7 +256,7 @@ PicoUnit::FlushToBuffer()
 void
 PicoUnit::DumpBuffer() const
 {
-  static const char head[]      = "[PICOBUFFER]";
+  static const std::string head = GREEN( "[PICOBUFFER]" );
   static const unsigned maxcols = 6;
   const unsigned ncols          = std::min( ncaptures,  maxcols );
   char line[1024];
@@ -289,14 +303,47 @@ PicoUnit::WaveformString(
   ) const
 {
   const unsigned length = presamples + postsamples;
-  std::string ans( ' ', length*2 );
+  std::string ans(2*length, '\0');
 
   for( unsigned i = 0; i < length; ++i ){
     const int16_t raw = GetBuffer( channel, capture, i ) / 256;
     const int8_t dig1 = ( raw >> 4 ) & 0xf;
     const int8_t dig2 = raw & 0xf;
-    ans[2*i  ] = dig1 <= 9 ? '0' + dig1 : 'a' + dig1;
-    ans[2*i+1] = dig2 <= 9 ? '0' + dig2 : 'a' + dig2;
+    ans[2*i  ] = dig1 <= 9 ? '0' + dig1 : 'a' + ( dig1 % 10 );
+    ans[2*i+1] = dig2 <= 9 ? '0' + dig2 : 'a' + ( dig2 % 10 );
+  }
+
+  return ans;
+}
+
+int
+PicoUnit::WaveformSum(
+  const int16_t  channel,
+  const unsigned capture
+  ) const
+{
+  const unsigned length = presamples + postsamples;
+  int ans               = 0;
+
+  for( unsigned i = 0; i < length; ++i ){
+    ans += GetBuffer( channel, capture, i ) / 256;
+  }
+
+  return ans * adc2mv(256);
+}
+
+int
+PicoUnit::WaveformAbsMax( const int16_t channel ) const
+{
+  const unsigned length = presamples + postsamples;
+
+  int ans = -256;
+
+  for( unsigned cap = 0; cap < ncaptures; ++cap ){
+    for( unsigned i = 0; i < length; ++i ){
+      const int16_t raw = GetBuffer( channel, cap, i ) / 256;
+      ans = std::max( ans, abs( raw ) );
+    }
   }
 
   return ans;
@@ -306,14 +353,14 @@ PicoUnit::WaveformString(
 void
 PicoUnit::PrintInfo() const
 {
-  static const char description[5][128] = {
+  static const char description[5][25] = {
     "Driver Version",
     "USB Version",
     "Hardware Version",
     "Variant Info",
     "Serial"    };
-  static const char picoinfo[] = "[PICOINFO]";
-  int16_t r                    = 0;
+  static const std::string picoinfo = GREEN( "[PICOINFO]" );
+  int16_t r                         = 0;
   char inputline[80];
   char line[1024];
   int32_t variant;
@@ -404,6 +451,8 @@ BOOST_PYTHON_MODULE( pico )
   boost::python::class_<PicoUnit, boost::noncopyable>( "PicoUnit" )
   .def( "init",             &PicoUnit::Init            )
   .def( "settrigger",       &PicoUnit::SetTrigger      )
+  .def( "rangemin",         &PicoUnit::VoltageRangeMin )
+  .def( "rangemax",         &PicoUnit::VoltageRangeMax )
   .def( "setrange",         &PicoUnit::SetVoltageRange )
   .def( "setblocknums",     &PicoUnit::SetBlockNums    )
   .def( "startrapidblocks", &PicoUnit::StartRapidBlock )
@@ -415,15 +464,20 @@ BOOST_PYTHON_MODULE( pico )
   .def( "printinfo",        &PicoUnit::PrintInfo       )
   .def( "adc2mv",           &PicoUnit::adc2mv          )
   .def( "waveformstr",      &PicoUnit::WaveformString  )
+  .def( "waveformsum",      &PicoUnit::WaveformSum     )
+  .def( "waveformmax",      &PicoUnit::WaveformAbsMax     )
+
   // Defining data members as readonly:
-  .def_readonly( "presamples",       &PicoUnit::presamples )
-  .def_readonly( "postsamples",      &PicoUnit::postsamples )
-  .def_readonly( "ncaptures",        &PicoUnit::ncaptures )
-  .def_readonly( "timeinterval",     &PicoUnit::timeinterval )
-  .def_readonly( "triggerchannel",   &PicoUnit::triggerchannel )
+  .def_readonly( "device",           &PicoUnit::device           )
+  .def_readonly( "range",            &PicoUnit::range            )
+  .def_readonly( "presamples",       &PicoUnit::presamples       )
+  .def_readonly( "postsamples",      &PicoUnit::postsamples      )
+  .def_readonly( "ncaptures",        &PicoUnit::ncaptures        )
+  .def_readonly( "timeinterval",     &PicoUnit::timeinterval     )
+  .def_readonly( "triggerchannel",   &PicoUnit::triggerchannel   )
   .def_readonly( "triggerdirection", &PicoUnit::triggerdirection )
-  .def_readonly( "triggerlevel",     &PicoUnit::triggerlevel )
-  .def_readonly( "triggerdelay",     &PicoUnit::triggerdelay )
-  .def_readonly( "triggerwait",      &PicoUnit::triggerwait )
+  .def_readonly( "triggerlevel",     &PicoUnit::triggerlevel     )
+  .def_readonly( "triggerdelay",     &PicoUnit::triggerdelay     )
+  .def_readonly( "triggerwait",      &PicoUnit::triggerwait      )
   ;
 }

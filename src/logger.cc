@@ -137,7 +137,7 @@ Logger::screenclear_update()
   char clearline[1024]         = {0};
 
   for( auto it = _update.rbegin(); it != _update.rend(); ++it ){
-    const auto p = *it;
+    const auto& p = *it;
     const unsigned total_length = p.first.length() + p.second.length() + 1;
 
     for( unsigned i = 0; i < total_length; ++i ){
@@ -153,8 +153,8 @@ Logger::screenclear_update()
 void
 Logger::screenprint_update()
 {
-  for( const auto& p : _update ){
-    fprintf( stdout, "%s %s\n", p.first.c_str(), p.second.c_str() );
+  for( auto it = _update.begin() ; it != _update.end() ; ++it ){
+    fprintf( stdout, "%s %s\n", it->first.c_str(), it->second.c_str() );
     fflush( stdout );
   }
 }
