@@ -31,6 +31,7 @@ find_library(PICO_LIBS
   PATHS /opt/picoscope/lib/
   )
 
+# Only attempt to link wiring pi in a ARM machine
 if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
   find_library( WIRINGPI_LIBS
    NAMES wiringPi wiringPiDev
@@ -59,6 +60,7 @@ make_control_library( visual src/visual.cc )
 target_link_libraries( visual logger ${OpenCV_LIBS} )
 
 make_control_library(trigger src/trigger.cc )
+# For a non-ARM maching, don't attempt to link WIRING_PI
 if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
   target_link_libraries(trigger logger ${WIRINGPI_LIBS} )
 else()
@@ -74,6 +76,8 @@ target_include_directories(mytest.exe PRIVATE ${PICO_INCLUDES} src/)
 target_link_libraries(mytest.exe pico)
 
 add_executable( triggerpulse.exe bin/triggerpulse.cc )
+
+# For a non-ARM maching, don't attempt to link WIRING_PI
 if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
   target_link_libraries( triggerpulse.exe ${WIRINGPI_LIBS} )
 endif()
