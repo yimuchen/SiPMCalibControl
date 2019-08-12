@@ -2,7 +2,14 @@
 // https://elinux.org/RPi_GPIO_Code_Samples#WiringPi
 
 #include <stdexcept>
+
+#include "logger.hpp"
+
+#ifdef __arm__
 #include <wiringPi.h>
+#else
+#include <unistd.h> // For sleep function
+#endif
 
 // Get this number by running `gpio readall` And find the corresponding value
 #define TRIGGER_PIN 29
@@ -26,12 +33,16 @@ Trigger::~Trigger(){}
 void
 Trigger::Init()
 {
+#ifdef __arm__
   status = wiringPiSetup();
+#endif
   if( status == -1 ){
     throw std::runtime_error( "Wiring pi initialization failed" );
   }
 
-  pinMode( TRIGGER_PIN, OUTPUT );// aka BCM_GPIO pin 17
+#ifdef __arm__
+  pinMode( TRIGGER_PIN, OUTPUT );
+#endif
 }
 
 void
@@ -42,12 +53,16 @@ Trigger::Pulse( const unsigned n, const unsigned wait ) const
   }
 
   for( unsigned i = 0; i < n; ++i ){
+#ifdef __arm__
     digitalWrite( TRIGGER_PIN, 1 );// On
     delayMicroseconds( 1 );
     digitalWrite( TRIGGER_PIN, 0 );// Off
     if( n > 1 ){
       delayMicroseconds( wait );
     }
+#else
+    usleep( wait );
+#endif
   }
 }
 

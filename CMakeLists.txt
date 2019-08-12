@@ -31,9 +31,11 @@ find_library(PICO_LIBS
   PATHS /opt/picoscope/lib/
   )
 
-find_library( WIRINGPI_LIBS
-  NAMES wiringPi wiringPiDev
-  PATHS /usr/lib/)
+if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+  find_library( WIRINGPI_LIBS
+   NAMES wiringPi wiringPiDev
+   PATHS /usr/lib/)
+endif()
 
 ## Libraries are supposed to be python modules
 function(make_control_library libname source )
@@ -57,7 +59,12 @@ make_control_library( visual src/visual.cc )
 target_link_libraries( visual logger ${OpenCV_LIBS} )
 
 make_control_library(trigger src/trigger.cc )
-target_link_libraries(trigger ${WIRINGPI_LIBS} )
+if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+  target_link_libraries(trigger logger ${WIRINGPI_LIBS} )
+else()
+  message( WARNING "Trigger is a dummy call that only sleeps the threads")
+  add_compile_definitions(NO_WIRING)
+endif()
 
 
 
@@ -67,4 +74,6 @@ target_include_directories(mytest.exe PRIVATE ${PICO_INCLUDES} src/)
 target_link_libraries(mytest.exe pico)
 
 add_executable( triggerpulse.exe bin/triggerpulse.cc )
-target_link_libraries( triggerpulse.exe ${WIRINGPI_LIBS} )
+if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+  target_link_libraries( triggerpulse.exe ${WIRINGPI_LIBS} )
+endif()
