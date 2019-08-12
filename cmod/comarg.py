@@ -56,11 +56,32 @@ def add_xychip_options(parser):
       'Specify x-y coordinates via chip id, input negative value to indicate that the chip is a calibration one (so you can still specify coordinates with it)'
   )
 
+def add_readout_option( parser ):
+  parser.add_argument(
+    '--mode',
+    type=int,
+    choices=[-1,1,2],
+    help='Readout method to be used: 1:picoscope, 2:ADC, -1:Predefined model'
+  )
+  parser.add_argument(
+    '--channel',
+    type=int,
+    default=0,
+    help='Input channel to use'
+  )
+  parser.add_argument(
+    '--samples',
+    type=int,
+    default=5000,
+    help='Number of samples to take the average'
+  )
+
 def add_hscan_options(parser, scanz=35, hrange=20, distance=0.5):
   """
   Common arguments for performing x-y scan
   """
   add_xychip_options(parser)
+  add_readout_option( parser )
   parser.add_argument(
       '-z',
       '--scanz',
@@ -81,26 +102,7 @@ def add_hscan_options(parser, scanz=35, hrange=20, distance=0.5):
       type=float,
       default=distance,
       help='Horizontal sampling distance [mm]')
-  parser.add_argument(
-    '--channel',
-    type=int,
-    default=0,
-    help='Input channel to use'
-  )
-  parser.add_argument(
-    '--samples',
-    type=int,
-    default=500,
-    help='Number of samples to take the average'
-  )
 
-def add_readout_option( parser ):
-  parser.add_argument(
-    '-m',
-    '--mode',
-    type=int,
-    help='Readout channel to be used, 0,1,2,3 for the ADC chip channels, -1,-2 for the picoscope channels (channel A, B)'
-  )
 
 
 def add_savefile_options(parser, default_filename):
@@ -117,7 +119,8 @@ def add_savefile_options(parser, default_filename):
 
 
 def add_zscan_options(parser, zlist=range(10, 51, 1)):
-  add_xychip_options(parser)
+  add_xychip_options( parser )
+  add_readout_option( parser )
   parser.add_argument(
       '-z',
       '--zlist',
@@ -195,6 +198,18 @@ def parse_xychip_options(arg, cmdsession, add_visoffset=False, raw_coord=False):
     if not arg.x: arg.x = cmdsession.gcoder.opx
     if not arg.y: arg.y = cmdsession.gcoder.opy
 
+
+def parse_readout_options(arg,cmd):
+  if not arg.mode:
+    arg.mode = cmd.readout.mode
+  if arg.mode == cmd.readout.MODE_PICO:
+    if arg.channel < 0 or arg.channel > 1:
+      raise Exception('Channel for PICOSCOPE can only be 0 or 1')
+    cmd.readout.set_mode( arg.mode )
+  elif arg.mode == cmd.readout.MODE_ADC:
+    if arg.channel < 0 or arg.channel > 3:
+      raise Exception('Channel for ADC can only be 0--3')
+    cmd.readout.set_mode( arg.mode )
 
 def make_hscan_mesh(arg):
   """

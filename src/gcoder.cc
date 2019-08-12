@@ -72,7 +72,7 @@ GCoder::InitPrinter( const std::string& dev )
     throw std::runtime_error( errormessage );
   }
 
-  printmsg( "Waking up printer...." );
+  printmsg(GREEN("PRINTER"), "Waking up printer...." );
   usleep( 5e6 );
   SendHome();
 
@@ -250,8 +250,17 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
 
     } else {
       if( verbose ){
+        std::string pmsg = checkmsg;
+        for( unsigned i = 0 ; i < pmsg.length() ; ++i ){
+          if( pmsg[i] == '\n' ){ pmsg[i] = '\\'; }
+        }
+        if( pmsg.length() > 54 ){
+          pmsg.resize(54);
+          pmsg += "...";
+        }
+        flush_update();
         sprintf( msg, "Couldn't parse string [%s]! Trying again!",
-          checkmsg.c_str() );
+          pmsg.c_str() );
         printwarn( msg );
       }
     }

@@ -1,6 +1,7 @@
 import ctlcmd.cmdbase as cmdbase
 import cmod.logger as log
 import cmod.comarg as comarg
+import cmod.sighandle as sig
 import numpy as np
 from scipy.optimize import curve_fit
 import time
@@ -81,7 +82,7 @@ class halign(cmdbase.controlcmd):
 
   def parse(self, line):
     arg = cmdbase.controlcmd.parse(self, line)
-
+    comarg.parse_readout_options(arg, self.cmd)
     comarg.parse_xychip_options(arg, self.cmd)
 
     filename = arg.savefile if arg.savefile != halign.DEFAULT_SAVEFILE \
@@ -91,32 +92,45 @@ class halign(cmdbase.controlcmd):
     return arg
 
   def run(self, arg):
+    sighandle = sig.SigHandle()
     x, y = comarg.make_hscan_mesh(arg)
     lumi = []
     unc = []
+    total = len(x)
 
     ## Running over mesh.
-    for xval, yval in zip(x, y):
+    for idx, (xval, yval) in enumerate(zip(x, y)):
+      ## Checking for termination signal on every loop
+      if sighandle.terminate:
+        self.printmsg(("TERMINATION SIGNAL RECEIVED"
+                       "FLUSHING FILE CONTENTS THEN EXITING COMMAND"))
+        arg.savefile.flush()
+        arg.savefile.close()
+        raise Exception("TERMINATION SIGNAL")
+
       try:
         # Try to move the gantry. Even if it fails there will be fail safes
         # in other classes
         self.gcoder.moveto(xval, yval, arg.scanz, False)
       except:
         pass
-      lumival, uncval = self.readout.read()
-      lumi.append(lumival)
+      lumival, uncval = self.readout.read(channel=arg.channel,
+                                          samples=arg.samples)
+      lumi.append(abs(lumival))
       unc.append(uncval)
 
       ## Writing to screen
-      self.update(
-          'x:{0:5.1f}, y:{1:5.1f}, z:{2:5.1f}, Lumi:{3:8.5f}+-{4:8.6f}'.format(
-              xval, yval, arg.scanz, lumival, uncval))
+      self.update('{0} | {1} | {2}'.format(
+          'x:{0:5.1f}, y:{1:5.1f}, z:{2:5.1f}'.format(
+              xval, yval, arg.scanz), 'Lumi:{0:8.5f}+-{1:8.6f}'.format(
+                  lumival, uncval), '[PROGRESS {0:d}/{1:d}]'.format(idx, total)))
 
       ## Writing to file
       arg.savefile.write("{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n".format(
           xval, yval, arg.scanz, lumival, uncval))
 
     ## Clearing output objects
+    arg.savefile.flush()
     arg.savefile.close()
 
     # Performing fit
@@ -142,7 +156,10 @@ class halign(cmdbase.controlcmd):
                                                    np.sqrt(fitcorr[3][3])))
 
     ## Saving session information
-    if (not arg.scanz in self.board.lumi_coord[arg.chipid] or arg.overwrite):
+    if (not arg.chipid in self.board.lumi_coord
+        or not arg.scanz in self.board.lumi_coord[arg.chipid] or arg.overwrite):
+      if not arg.chipid in self.board.lumi_coord:
+        self.board.lumi_coord[arg.chipid] = {}
       self.board.lumi_coord[arg.chipid][arg.scanz] = [
           fitval[1],
           np.sqrt(fitcorr[1][1]), fitval[2],
@@ -183,6 +200,7 @@ class zscan(cmdbase.controlcmd):
 
   def parse(self, line):
     arg = cmdbase.controlcmd.parse(self, line)
+    comarg.parse_readout_options(arg, self.cmd)
     comarg.parse_xychip_options(arg, self.cmd)
     comarg.parse_zscan_options(arg)
 
@@ -193,10 +211,19 @@ class zscan(cmdbase.controlcmd):
     return arg
 
   def run(self, arg):
+    sighandle = sig.SigHandle()
     lumi = []
     unc = []
 
     for z in arg.zlist:
+      ## Checking for termination signal on every loop
+      if sighandle.terminate:
+        self.printmsg(("TERMINATION SIGNAL RECEIVED"
+                       "FLUSHING FILE CONTENTS THEN EXITING COMMAND"))
+        arg.savefile.flush()
+        arg.savefile.close()
+        raise Exception("TERMINATION SIGNAL")
+
       try:
         # Try to move the gantry regardless, there are fail safe for
         # readout errors
@@ -204,7 +231,22 @@ class zscan(cmdbase.controlcmd):
       except:
         pass
 
-      lumival, uncval = self.readout.read_adc(sample=100)
+      lumival = 0
+      uncval = 0
+      while 1:
+        lumival, uncval = self.readout.read(channel=arg.channel,
+                                            samples=arg.samples)
+        if self.readout.mode == self.readout.MODE_PICO:
+          wmax = self.pico.waveformmax(arg.channel)
+          if wmax < 100 and self.pico.range > self.pico.rangemin():
+            self.pico.setrange(self.pico.range - 1)
+          elif wmax > 200 and self.pico.range < self.pico.rangemax():
+            self.pico.setrange(self.pico.range + 1)
+          else:
+            break
+        else:
+          break
+
       lumi.append(lumival)
       unc.append(uncval)
 
@@ -216,6 +258,56 @@ class zscan(cmdbase.controlcmd):
           arg.x, arg.y, z, lumival, uncval))
 
     arg.savefile.close()
+
+
+class timescan(cmdbase.controlcmd):
+  """
+  Generate a log of the readout in terms relative to time.
+  """
+  DEFAULT_SAVEFILE = "tscan_<CHIP>_<TIMESTAMP>.txt"
+  LOG = log.GREEN('[TIMESCAN]')
+
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
+    comarg.add_readout_option(self.parser)
+    comarg.add_savefile_options(self.parser, timescan.DEFAULT_SAVEFILE)
+    self.parser.add_argument('--nslice',
+                             type=int,
+                             default=30,
+                             help='total number of sample to tak')
+    self.parser.add_argument('--interval',
+                             type=int,
+                             default=5,
+                             help='Time interval between sampling (seconds)')
+
+  def parse(self, line):
+    arg = cmdbase.controlcmd.parse(self, line)
+    comarg.parse_readout_options(arg, self.cmd)
+    filename = arg.savefile if arg.savefile != zscan.DEFAULT_SAVEFILE  \
+               else comarg.timestamp_filename('zscan', arg )
+    arg.savefile = self.sshfiler.remotefile(filename, arg.wipefile)
+    return arg
+
+  def run(self, args):
+    sighandle = sig.SigHandle()
+    for i in range(args.nslice):
+      ## Checking for termination signal on every loop
+      if sighandle.terminate:
+        self.printmsg(("TERMINATION SIGNAL RECEIVED"
+                       "FLUSHING FILE CONTENTS THEN EXITING COMMAND"))
+        args.savefile.flush()
+        args.savefile.close()
+        raise Exception("TERMINATION SIGNAL")
+
+      lumival, uncval = self.readout.read(channel=args.channel,
+                                          sample=args.samples)
+      args.savefile.write('{0:d} {1:.3f} {2:.4f}\n'.format(
+          i * args.interval, lumival, uncval))
+      self.update('{0:5.1f} {1:5.1f} | PROGRESS [{2:3d}/{3:3d}]'.format(
+          lumival, uncval, i, args.nslice))
+      time.sleep(args.interval)
+
+    args.savefile.close()
 
 
 class showreadout(cmdbase.controlcmd):
@@ -232,18 +324,24 @@ class showreadout(cmdbase.controlcmd):
     self.parser.add_argument('--nowait', action='store_true')
 
   def parse(self, line):
-    return cmdbase.controlcmd.parse(self, line)
+    arg = cmdbase.controlcmd.parse(self, line)
+    comarg.parse_readout_options(arg, self.cmd)
+    return arg
 
   def run(self, arg):
+    sighandle = sig.SigHandle()
     val = []
 
-    #for i in range(10):  ## Ignoring first 10 ouptuts
-    #self.readout.read_adc_raw(0)
-
     for i in range(1000):
+      if sighandle.terminate:
+        self.printmsg('TERMINATION SIGNAL RECEIVED')
+        raise Exception('TERMINATION SIGNAL')
+
       val.append(self.readout.read_adc_raw(0))
-      self.update("Latest: {0:.5f} | Mean: {1:.5f} | STD: {2:.6f}".format(
-          val[-1], np.mean(val), np.std(val)))
+      self.update("{0} | {1} | {2} | {3}".format(
+          "Latest: {0:10.5f}".format(val[-1]), "Mean: {0:10.5f}".format(
+              np.mean(val)), "STD: {0:11.6f}".format(np.std(val)),
+          "PROGRESS [{0:3d}/1000]".format(i)))
       if arg.nowait: continue
       time.sleep(1 / 50 * np.random.random())  ## Sleeping for random time
     meanval = np.mean(val)

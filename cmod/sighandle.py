@@ -10,7 +10,7 @@ class SigHandle:
     signal.signal(signal.SIGINT, self.receive_term)
     signal.signal(signal.SIGTERM, self.receive_term)
 
-  def exit_gracefully(self, signum, frame):
+  def receive_term(self, signum, frame):
     self.terminate = True
 
 if __name__ == '__main__':

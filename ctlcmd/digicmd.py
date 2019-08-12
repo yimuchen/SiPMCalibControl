@@ -1,6 +1,11 @@
 import ctlcmd.cmdbase as cmdbase
+import cmod.sighandle as sig
+import cmod.logger as log
+import time
 
 class pulse(cmdbase.controlcmd):
+  LOG = log.GREEN('[PULSE]')
+
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.parser.add_argument('-n',
@@ -12,5 +17,13 @@ class pulse(cmdbase.controlcmd):
                              default=500,
                              help='Time (in microseconds) between triggers')
 
-  def run(self, arg):
-    self.trigger.pulse(arg.n, arg.wait)
+  def run(self, args):
+    sighandle = sig.SigHandle()
+
+    for i in range(args.n):
+      if sighandle.terminate:
+        self.printmsg('TERMINATION SIGNAL RECEIVED')
+        raise Exception('TERMINATION SIGNAL')
+
+      self.trigger.pulse(1, args.wait)
+      time.sleep(args.wait/1e6)

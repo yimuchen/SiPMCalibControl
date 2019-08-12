@@ -39,7 +39,7 @@ class visualhscan(cmdbase.controlcmd):
     ## Setting up file name
     filename = arg.savefile if arg.savefile != visualhscan.DEFAULT_SAVEFILE \
                else comarg.timestamp_filename( 'vhscan', arg, ['scanz'] )
-    arg.savefile = self.sshfiler.remotefile(arg.savefile, arg.wipefile)
+    arg.savefile = self.sshfiler.remotefile(filename, arg.wipefile)
 
     return arg
 
@@ -128,7 +128,7 @@ class visualcenterchip(cmdbase.controlcmd):
         type=float,
         help=(
         'Position z to perform centering. User must make sure the visual '\
-        'transformation equation have already been created have already been ' \
+        'transformation equation have already been created have already been '\
         'created before' )
     )
     self.parser.add_argument('--overwrite', action='store_true', help='T')
@@ -139,9 +139,10 @@ class visualcenterchip(cmdbase.controlcmd):
     if not arg.startz:
       raise Exception("Specify the height to perform the centering operation")
 
-    arg.calibchip = arg.chipid if (self.board.visM_hasz(arg.chipid, arg.startz)) else next(
-        (x for x in self.board.calibchips()
-         if self.board.visM_hasz(x, arg.startz)), None)
+    arg.calibchip = arg.chipid if (self.board.visM_hasz(
+        arg.chipid, arg.startz)) else next(
+            (x for x in self.board.calibchips()
+             if self.board.visM_hasz(x, arg.startz)), None)
 
     if arg.calibchip == None:
       self.printerr(
@@ -165,7 +166,7 @@ class visualcenterchip(cmdbase.controlcmd):
       ## Early exit if chip is not found.
       if (center.x < 0 or center.y < 0):
         raise Exception(
-            "Chip lost! Check current camera position with command visualchipshow"
+            'Chip lost! Check current camera position with command visualchipshow'
         )
 
       deltaxy = np.array([
@@ -174,8 +175,7 @@ class visualcenterchip(cmdbase.controlcmd):
       ])
 
       motionxy = np.linalg.solve(
-          np.array(self.board.get_visM(arg.calibchip,self.gcoder.opz ) ),
-          deltaxy)
+          np.array(self.board.get_visM(arg.calibchip, self.gcoder.opz)), deltaxy)
 
       ## Early exit if difference from center is small
       if np.linalg.norm(motionxy) < 0.1: break
@@ -190,23 +190,22 @@ class visualcenterchip(cmdbase.controlcmd):
       ' Chip FOV position: x={2:.1f} y={3:.1f}'.
         format(self.gcoder.opx, self.gcoder.opy, center.x, center.y))
 
-    if (not self.board.vis_coord_hasz( arg.chipid, self.gcoder.opz ) or arg.overwrite):
-      self.board.add_vis_coord(arg.chipid, self.gcoder.opz, [
-          self.gcoder.opx, self.gcoder.opy
-      ] )
+    if (not self.board.vis_coord_hasz(arg.chipid, self.gcoder.opz)
+        or arg.overwrite):
+      self.board.add_vis_coord(arg.chipid, self.gcoder.opz,
+                               [self.gcoder.opx, self.gcoder.opy])
 
     # Luminosity calibrated coordinate doesn't exists. displaying the
     # estimated position from calibration chip position
-    if not self.board.lumi_coord_hasz(arg.chipid, self.gocder.opz ):
+    if not self.board.lumi_coord_hasz(arg.chipid, self.gocder.opz):
       deltax = None
       deltay = None
       currentz = self.gcoder.opz
       for calibchip in self.board.calibchips():
-        if( self.board.vis_coord_hasz(calibchip, currentz )
-            and any(self.board.lumi_coord[calibchip]) ):
-          closestz = min(
-              self.board.lumi_coord[calibchip].keys(),
-              key=lambda x: abs(x - currentz))
+        if (self.board.vis_coord_hasz(calibchip, currentz)
+            and any(self.board.lumi_coord[calibchip])):
+          closestz = min(self.board.lumi_coord[calibchip].keys(),
+                         key=lambda x: abs(x - currentz))
           deltax = self.board.get_vis_coord(calibchip, currentz)[0] \
                   - self.board.get_lumi_coord(calibchip,closestz)[0]
           deltay = self.board.get_vis_coord(calibchip,currentz)[1] \
@@ -315,13 +314,12 @@ class visualzscan(cmdbase.controlcmd):
       reco_d.append(reco.maxmeas)
 
       # Writing to screen
-      self.update('x:{0:.1f} y:{1:.1f} z:{2:.1f} | '\
-        'Sharpness:{3:.2f} | '
-        'Reco x:{4:.1f} Reco y:{5:.1f} Area:{6:.1f} MaxD:{7:.1f}'.format(
-          self.gcoder.opx, self.gcoder.opy, self.gcoder.opz,
-          laplace[-1],
-          reco.x, reco.y, reco.area, reco.maxmeas
-           ) )
+      self.update('{0} | {1} | {2}'.format(
+          'x:{0:.1f} y:{1:.1f} z:{2:.1f}'.format(
+              self.gcoder.opx, self.gcoder.opy, self.gcoder.opz),
+          'Sharpness:{0:.2f}'.format(laplace[-1]),
+          'Reco x:{0:.1f} Reco y:{1:.1f} Area:{2:.1f} MaxD:{3:.1f}'.format(
+              reco.x, reco.y, reco.area, reco.maxmeas)))
       # Writing to file
       arg.savefile.write('{0:.1f} {1:.1f} {2:.1f} '\
                   '{3:.2f} '\
@@ -342,7 +340,6 @@ class visualshowchip(cmdbase.controlcmd):
   """
   Long display of chip position, until termination signal is obtained.
   """
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 

@@ -1,9 +1,7 @@
 import ctlcmd.cmdbase as cmdbase
 import cmod.comarg as comarg
-import cmod.pico as pico
+import cmod.sighandle as sig
 import cmod.logger as log
-import timeit  ##
-import time
 
 
 class picoset(cmdbase.controlcmd):
@@ -141,6 +139,7 @@ class picorunblock(cmdbase.controlcmd):
     return args
 
   def run(self, args):
+    sighandle = sig.SigHandle()
     ## First line in file contains convertion information
     if args.savefile.tell() == 0:
       args.savefile.write("{0} {1} {2} {3} {4}\n".format(
@@ -156,7 +155,14 @@ class picorunblock(cmdbase.controlcmd):
       self.pico.startrapidblocks()
 
       while not self.pico.isready():
-        self.trigger.pulse(self.pico.ncaptures, 500 )
+        ## Checking for termination signal on every loop
+        if sighandle.terminate:
+          self.printmsg(( "TERMINATION SIGNAL RECEIVED"
+            "FLUSHING FILE CONTENTS THEN EXITING COMMAND" ))
+          args.savefile.flush()
+          args.savefile.close()
+          raise Exception("TERMINATION SIGNAL")
+        self.trigger.pulse( int(self.pico.ncaptures/10) , 500 )
 
       self.pico.flushbuffer()
 

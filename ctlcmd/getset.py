@@ -3,11 +3,11 @@ import cmod.logger as log
 import argparse
 from cmod.readout import readout
 
+
 class set(cmdbase.controlcmd):
   """
   Setting session parameters
   """
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.parser.add_argument(
@@ -28,23 +28,22 @@ class set(cmdbase.controlcmd):
         help=
         'Device path for the primary camera, should be something like /dev/video<index>.'
     )
-    self.parser.add_argument(
-        '-remotehost',
-        type=str,
-        help='Connecting to remote host for file transfer')
-    self.parser.add_argument(
-        '-remotepath', type=str, help='Remote directory to save files to')
+    self.parser.add_argument('-remotehost',
+                             type=str,
+                             help='Connecting to remote host for file transfer')
+    self.parser.add_argument('-remotepath',
+                             type=str,
+                             help='Remote directory to save files to')
     self.parser.add_argument(
         '-picodevice',
         type=str,
         help='The serial number of the pico-tech device for dynamic light readout'
     )
     self.parser.add_argument(
-      '-readout',
-      type=int,
-      choices=[readout.MODE_ADC, readout.MODE_PICO, readout.MODE_NONE],
-      help='Setting readout mode of the current session'
-    )
+        '-readout',
+        type=int,
+        choices=[readout.MODE_ADC, readout.MODE_PICO, readout.MODE_NONE],
+        help='Setting readout mode of the current session')
 
   def run(self, arg):
     if arg.boardtype:
@@ -69,7 +68,7 @@ class set(cmdbase.controlcmd):
       except Exception as err:
         log.printerr(str(err))
         log.printwarn("Failed to setup printer, skipping over settings")
-    if arg.remotehost :
+    if arg.remotehost:
       print(self.sshfiler.host)
       try:
         self.sshfiler.reconnect(arg.remotehost)
@@ -77,7 +76,7 @@ class set(cmdbase.controlcmd):
         log.printerr(str(err))
         log.printwarn("Failed to establish connection remote host")
     if arg.remotepath:
-      self.sshfiler.setremotepath( arg.remotepath )
+      self.sshfiler.setremotepath(arg.remotepath)
     if arg.picodevice:
       try:
         self.pico.init()
@@ -85,14 +84,13 @@ class set(cmdbase.controlcmd):
         log.printerr(str(err))
         log.printwarn("Pico device is not properly set!")
     if arg.readout:
-      self.readout.set_mode( arg.readout )
+      self.readout.set_mode(arg.readout)
 
 
 class get(cmdbase.controlcmd):
   """
   Printing out the session parameters, and equipment settings.
   """
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.parser.add_argument('--boardtype', action='store_true')
@@ -140,7 +138,7 @@ class get(cmdbase.controlcmd):
     if arg.readout or arg.all:
       log.printmsg(
         log.GREEN('[READOUT MODE]'),
-        'PICOSCOPE' if self.readout.mode == readout.MODE_PICO else  \
+        'PICOSCOPE' if self.readout.mode == readout.MODE_PICO else \
         'ADC CHIP'  if self.readout.mode == readout.MODE_ADC  else \
         'PREDEFINED MODEL'
       )
@@ -150,12 +148,13 @@ class getcoord(cmdbase.controlcmd):
   """
   Printing current gantry coordinates
   """
+  LOG = log.GREEN('[GANTRY-COORD]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
-  def run(self, arg):
-    log.printmsg("x:{0:.1f} y:{1:.1f} z:{2:.1f}".format(
+  def run(self, args):
+    self.printmsg('x:{0:.1f} y:{1:.1f} z:{2:.1f}'.format(
         self.gcoder.opx, self.gcoder.opy, self.gcoder.opz))
 
 
@@ -166,27 +165,26 @@ class savecalib(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    self.parser.add_argument(
-        '-f',
-        '--file',
-        type=argparse.FileType('w'),
-        help='File to save the calibration events to')
+    self.parser.add_argument('-f',
+                             '--file',
+                             type=argparse.FileType('w'),
+                             required=True,
+                             help='File to save the calibration events to')
 
   def parse(self, line):
     arg = cmdbase.controlcmd.parse(self, line)
     if not arg.file:
-      raise Exception("File name must be specified")
+      raise Exception('File name must be specified')
     return arg
 
-  def run(self, arg):
-    self.board.save_calib_file(arg.file.name)
+  def run(self, args):
+    self.board.save_calib_file(args.file.name)
 
 
 class loadcalib(cmdbase.controlcmd):
   """
   Loading calibration information from a json file
   """
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.parser.add_argument(
@@ -201,5 +199,5 @@ class loadcalib(cmdbase.controlcmd):
       raise Exception('Filename must be specified')
     return arg
 
-  def run(self, arg):
-    self.board.load_calib_file(arg.file.name)
+  def run(self, args):
+    self.board.load_calib_file(args.file.name)
