@@ -106,15 +106,18 @@ class get(cmdbase.controlcmd):
   def run(self, arg):
     if arg.boardtype or arg.all:
       log.printmsg(log.GREEN("[BOARDTYPE]"), str(self.board.boardtype))
+      for chip in self.board.chips():
+        log.printmsg(
+            log.GREEN('[BOARDTYPE]'),
+            'Default Coord | Chip:{0} | x:{1}, y:{2}'.format(
+                chip, self.board.orig_coord[chip][0],
+                self.board.orig_coord[chip][1]))
     if arg.printerdev or arg.all:
       log.printmsg(log.GREEN("[PRINTER DEV]"), str(self.gcoder.dev_path))
     if arg.camdev or arg.all:
       log.printmsg(log.GREEN("[CAM DEV]"), str(self.visual.dev_path))
     if arg.align or arg.all:
       for chip in self.board.chips():
-        print(self.board.vis_coord[chip])
-        print(self.board.visM[chip])
-        print(self.board.lumi_coord[chip])
         for z in self.board.lumi_coord[chip].keys():
           log.printmsg(
               log.GREEN("[LUMI ALIGN]") + log.YELLOW("[CHIP%s]" % chip),
@@ -162,7 +165,6 @@ class savecalib(cmdbase.controlcmd):
   """
   Saving current calibration information into a json file
   """
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.parser.add_argument('-f',

@@ -1,0 +1,13 @@
+\documentclass[a4paper]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{calc}
+
+\begin{document}
+  \begin{tikzpicture}[x=1mm,y=1mm]
+    \fill [gray] (0,0) rectangle (216,279);
+    \foreach \x in {15,45,...,216}
+      \foreach \y in {20,60,...,279}
+        \fill [black] ($(\x,\y)+(-1,-1)$) rectangle ($(\x,\y)+(1,1)$);
+  \end{tikzpicture}
+\end{document}

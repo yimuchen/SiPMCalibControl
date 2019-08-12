@@ -1,6 +1,7 @@
 import ctlcmd.cmdbase as cmdbase
 import cmod.logger as log
 import cmod.comarg as comarg
+import cmod.sighandle as sig
 import numpy as np
 from scipy.optimize import curve_fit
 import time
@@ -43,8 +44,8 @@ class visualhscan(cmdbase.controlcmd):
 
     return arg
 
-  def run(self, arg):
-    x, y = comarg.make_hscan_mesh(arg)
+  def run(self, args):
+    x, y = comarg.make_hscan_mesh(args)
 
     ## New container to account for chip not found in FOV
     gantry_x = []
@@ -52,16 +53,26 @@ class visualhscan(cmdbase.controlcmd):
     reco_x = []
     reco_y = []
 
+    ## Termination signal handler
+    sighandle = sig.SigHandle()
+
     ## Running over mesh.
-    for xval, yval in zip(x, y):
+    for idx, (xval, yval) in enumerate(zip(x, y)):
+      # Checking termination signal
+      if sighandle.terminate:
+        self.printmsg(( "TERMINATION SIGNAL RECEIVED"
+            "FLUSHING FILE CONTENTS THEN EXITING COMMAND" ))
+        args.savefile.flush()
+        args.savefile.close()
+        raise Exception("TERMINATION SIGNAL")
       try:
         # Try to move the gantry. Even if it fails there will be fail safes
         # in other classes
-        self.gcoder.moveto(xval, yval, arg.scanz, False)
+        self.gcoder.moveto(xval, yval, args.scanz, False)
       except:
         pass
 
-      center = self.visual.find_chip(arg.monitor)
+      center = self.visual.find_chip(args.monitor)
 
       if center.x > 0 and center.y > 0:
         gantry_x.append(xval)
@@ -70,13 +81,15 @@ class visualhscan(cmdbase.controlcmd):
         reco_y.append(center.y)
 
       self.update(
-          'x:{0:.1f}, y:{1:.1f}, z:{2:.1f} | Reco x:{3:.1f}, y:{4:.1f}'.format(
-              xval, yval, arg.scanz, center.x, center.y))
-      arg.savefile.write('{0:.1f} {1:.1f} {2:.1f} {3:.2f} {4:.3f}\n'.format(
-          xval, yval, arg.scanz, center.x, center.y))
+          '{0} | {1} | {2}'.format(
+          'x:{0:.1f}, y:{1:.1f}, z:{2:.1f}'.format(xval, yval, args.scanz),
+          'Reco x:{0:.1f}, y:{1:.1f}'.format( center.x, center.y),
+          'Progress [{0}/{1}]'.format( idx, len(x))))
+      args.savefile.write('{0:.1f} {1:.1f} {2:.1f} {3:.2f} {4:.3f}\n'.format(
+          xval, yval, args.scanz, center.x, center.y))
 
     cv2.destroyAllWindows()
-    arg.savefile.close()
+    args.savefile.close()
 
     fitx, corrx = curve_fit(visualhscan.model, np.vstack((gantry_x, gantry_y)),
                             reco_x)
@@ -93,18 +106,18 @@ class visualhscan(cmdbase.controlcmd):
               fity[1], np.sqrt(corry[1][1])  ) )
 
     ## Saving rounded coordinates
-    if (not self.gcoder.opz in self.board.visM[arg.chipid] or arg.overwrite):
-      self.board.add_visM(arg.chipid, self.gcoder.opz,
+    if (not self.gcoder.opz in self.board.visM[args.chipid] or args.overwrite):
+      self.board.add_visM(args.chipid, self.gcoder.opz,
                           [[fitx[0], fitx[1]], [fity[0], fity[1]]])
-    elif self.gcoder.opz in self.board.visM[arg.chipid]:
+    elif self.gcoder.opz in self.board.visM[args.chipid]:
       if comarg.prompt(
           'Tranformation equation for z={0:.1f} already exists, overwrite?'.
-          format(arg.scanz), 'no'):
-        self.board.add_visM(arg.chipid, self.gcoder.opz,
+          format(args.scanz), 'no'):
+        self.board.add_visM(args.chipid, self.gcoder.opz,
                             [[fitx[0], fitx[1]], [fity[0], fity[1]]])
 
     ## Moving back to center
-    self.gcoder.moveto(arg.x, arg.y, arg.scanz, False)
+    self.gcoder.moveto(args.x, args.y, args.scanz, False)
 
   @staticmethod
   def model(xydata, a, b, c):
@@ -152,8 +165,8 @@ class visualcenterchip(cmdbase.controlcmd):
       raise Exception('Transformation equation not found')
     return arg
 
-  def run(self, arg):
-    self.gcoder.moveto(arg.x, arg.y, arg.startz, False)
+  def run(self, args):
+    self.gcoder.moveto(args.x, args.y, args.startz, False)
     for movetime in range(10):  ## Maximum of 10 movements
       center = None
 
@@ -175,7 +188,8 @@ class visualcenterchip(cmdbase.controlcmd):
       ])
 
       motionxy = np.linalg.solve(
-          np.array(self.board.get_visM(arg.calibchip, self.gcoder.opz)), deltaxy)
+          np.array(self.board.get_visM(args.calibchip,
+                                      self.gcoder.opz)), deltaxy)
 
       ## Early exit if difference from center is small
       if np.linalg.norm(motionxy) < 0.1: break
@@ -190,14 +204,14 @@ class visualcenterchip(cmdbase.controlcmd):
       ' Chip FOV position: x={2:.1f} y={3:.1f}'.
         format(self.gcoder.opx, self.gcoder.opy, center.x, center.y))
 
-    if (not self.board.vis_coord_hasz(arg.chipid, self.gcoder.opz)
-        or arg.overwrite):
-      self.board.add_vis_coord(arg.chipid, self.gcoder.opz,
+    if (not self.board.vis_coord_hasz(args.chipid, self.gcoder.opz)
+        or args.overwrite):
+      self.board.add_vis_coord(args.chipid, self.gcoder.opz,
                                [self.gcoder.opx, self.gcoder.opy])
 
     # Luminosity calibrated coordinate doesn't exists. displaying the
     # estimated position from calibration chip position
-    if not self.board.lumi_coord_hasz(arg.chipid, self.gocder.opz):
+    if not self.board.lumi_coord_hasz(args.chipid, self.gcoder.opz):
       deltax = None
       deltay = None
       currentz = self.gcoder.opz
@@ -242,14 +256,14 @@ class visualmaxsharp(cmdbase.controlcmd):
     comarg.parse_xychip_options(arg, self.cmd, add_visoffset=True)
     return arg
 
-  def run(self, arg):
-    self.gcoder.moveto(arg.x, arg.y, arg.startz, False)
+  def run(self, args):
+    self.gcoder.moveto(args.x, args.y, args.startz, False)
     laplace = self.visual.sharpness(False)
-    zval = arg.startz
-    zstep = arg.stepsize
+    zval = args.startz
+    zstep = args.stepsize
 
     while abs(zstep) >= 0.1:
-      self.gcoder.moveto(arg.x, arg.y, zval + zstep, False)
+      self.gcoder.moveto(args.x, args.y, zval + zstep, False)
       newlap = self.visual.sharpness(False)
 
       if newlap > laplace:
@@ -291,14 +305,23 @@ class visualzscan(cmdbase.controlcmd):
 
     return arg
 
-  def run(self, arg):
+  def run(self, args):
+    sighandle = sig.SigHandle()
     laplace = []
     reco_x = []
     reco_y = []
     reco_a = []
     reco_d = []
 
-    for z in arg.zlist:
+    for z in args.zlist:
+      # Checking termination signal
+      if sighandle.terminate:
+        self.printmsg(( "TERMINATION SIGNAL RECEIVED"
+            "FLUSHING FILE CONTENTS THEN EXITING COMMAND" ))
+        args.savefile.flush()
+        args.savefile.close()
+        raise Exception("TERMINATION SIGNAL")
+
       try:
         # Try to move the gantry regardless, there are fail safe for
         # readout errors
@@ -306,8 +329,8 @@ class visualzscan(cmdbase.controlcmd):
       except:
         pass
 
-      reco = self.visual.find_chip(arg.monitor)
-      laplace.append(self.visual.sharpness(arg.monitor))
+      reco = self.visual.find_chip(args.monitor)
+      laplace.append(self.visual.sharpness(args.monitor))
       reco_x.append(reco.x)
       reco_y.append(reco.y)
       reco_a.append(reco.area)
@@ -321,7 +344,7 @@ class visualzscan(cmdbase.controlcmd):
           'Reco x:{0:.1f} Reco y:{1:.1f} Area:{2:.1f} MaxD:{3:.1f}'.format(
               reco.x, reco.y, reco.area, reco.maxmeas)))
       # Writing to file
-      arg.savefile.write('{0:.1f} {1:.1f} {2:.1f} '\
+      args.savefile.write('{0:.1f} {1:.1f} {2:.1f} '\
                   '{3:.2f} '\
                   '{4:.1f} {5:.1f} {6:.1f} {7:.1f}\n'.format(
           self.gcoder.opx, self.gcoder.opy, self.gcoder.opz,

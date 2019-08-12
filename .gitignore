@@ -22,6 +22,8 @@ CMakeFiles/**
 build/**
 .vscode/**
 **/*.exe
+*.pdf
+data/** 
 
 # inclusive directories
 !CMakeLists.txt
