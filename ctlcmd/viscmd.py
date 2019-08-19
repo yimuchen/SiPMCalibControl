@@ -60,8 +60,8 @@ class visualhscan(cmdbase.controlcmd):
     for idx, (xval, yval) in enumerate(zip(x, y)):
       # Checking termination signal
       if sighandle.terminate:
-        self.printmsg(("TERMINATION SIGNAL RECEIVED"
-                       "FLUSHING FILE CONTENTS THEN EXITING COMMAND"))
+        self.printmsg(('TERMINATION SIGNAL RECEIVED '
+                       'FLUSHING FILE CONTENTS THEN EXITING COMMAND'))
         args.savefile.flush()
         args.savefile.close()
         raise Exception("TERMINATION SIGNAL")
@@ -147,7 +147,7 @@ class visualcenterchip(cmdbase.controlcmd):
     arg = cmdbase.controlcmd.parse(self, line)
     comarg.parse_xychip_options(arg, self.cmd, add_visoffset=True)
     if not arg.startz:
-      raise Exception("Specify the height to perform the centering operation")
+      raise Exception('Specify the height to perform the centering operation')
 
     arg.calibchip = arg.chipid if (self.board.visM_hasz(
         arg.chipid, arg.startz)) else next(
@@ -155,9 +155,9 @@ class visualcenterchip(cmdbase.controlcmd):
              if self.board.visM_hasz(x, arg.startz)), None)
 
     if arg.calibchip == None:
-      self.printerr(('Motion transformation equation was not found for
-      'position z={0:.1f}mm, please run command [visualhscan] first').format(
-        arg.startz))
+      self.printerr(('Motion transformation equation was not found for '
+                     'position z={0:.1f}mm, please run command '
+                     '[visualhscan] first').format(arg.startz))
       print(arg.startz, self.board.visM)
       raise Exception('Transformation equation not found')
     return arg

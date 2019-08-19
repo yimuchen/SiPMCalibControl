@@ -12,6 +12,8 @@ import os
 import argparse
 import readline
 import glob
+import traceback
+import re
 
 
 class controlterm(cmd.Cmd):
@@ -143,6 +145,30 @@ class controlcmd():
     try:
       self.run(args)
     except Exception as err:
+      exc_msg = traceback.format_exc()
+      exc_msg = exc_msg.splitlines()
+      exc_msg = exc_msg[1:-1] ## Remove traceback and error line.
+      for idx in range(0,len(exc_msg),2):
+        file=re.findall(r'\"[A-Za-z0-9\/\.]+\"', exc_msg[idx])
+        if len(file): # For non-conventional error messages
+          file=file[0].strip().replace('"','')
+        else:
+          continue
+
+        line=re.findall(r'line\s[0-9]+', exc_msg[idx] )
+        if len(line): # For non-conventional error messages
+          line=[int(s) for s in line[0].split() if s.isdigit()][0]
+        else:
+          continue
+
+        content = exc_msg[idx+1].strip()
+
+        stackline = ''
+        stackline += log.RED('{0:4d} | '.format(line))
+        stackline += log.YELLOW('{0} | '.format(file))
+        stackline += content
+        log.printmsg( stackline )
+
       self.printerr(str(err))
       return
 
