@@ -60,8 +60,8 @@ class visualhscan(cmdbase.controlcmd):
     for idx, (xval, yval) in enumerate(zip(x, y)):
       # Checking termination signal
       if sighandle.terminate:
-        self.printmsg(( "TERMINATION SIGNAL RECEIVED"
-            "FLUSHING FILE CONTENTS THEN EXITING COMMAND" ))
+        self.printmsg(("TERMINATION SIGNAL RECEIVED"
+                       "FLUSHING FILE CONTENTS THEN EXITING COMMAND"))
         args.savefile.flush()
         args.savefile.close()
         raise Exception("TERMINATION SIGNAL")
@@ -80,11 +80,10 @@ class visualhscan(cmdbase.controlcmd):
         reco_x.append(center.x)
         reco_y.append(center.y)
 
-      self.update(
-          '{0} | {1} | {2}'.format(
-          'x:{0:.1f}, y:{1:.1f}, z:{2:.1f}'.format(xval, yval, args.scanz),
-          'Reco x:{0:.1f}, y:{1:.1f}'.format( center.x, center.y),
-          'Progress [{0}/{1}]'.format( idx, len(x))))
+      self.update('{0} | {1} | {2}'.format(
+          'x:{0:.1f}, y:{1:.1f}, z:{2:.1f}'.format(
+              xval, yval, args.scanz), 'Reco x:{0:.1f}, y:{1:.1f}'.format(
+                  center.x, center.y), 'Progress [{0}/{1}]'.format(idx, len(x))))
       args.savefile.write('{0:.1f} {1:.1f} {2:.1f} {3:.2f} {4:.3f}\n'.format(
           xval, yval, args.scanz, center.x, center.y))
 
@@ -139,11 +138,9 @@ class visualcenterchip(cmdbase.controlcmd):
         '-z',
         '--startz',
         type=float,
-        help=(
-        'Position z to perform centering. User must make sure the visual '\
-        'transformation equation have already been created have already been '\
-        'created before' )
-    )
+        help=('Position z to perform centering. User must make sure the visual '
+              'transformation equation have already been created have already '
+              'been created before'))
     self.parser.add_argument('--overwrite', action='store_true', help='T')
 
   def parse(self, line):
@@ -158,9 +155,9 @@ class visualcenterchip(cmdbase.controlcmd):
              if self.board.visM_hasz(x, arg.startz)), None)
 
     if arg.calibchip == None:
-      self.printerr(
-          'Motion transformation equation was not found for position z={0:.1f}mm, please run command [visualhscan] first'
-          .format(arg.startz))
+      self.printerr(('Motion transformation equation was not found for
+      'position z={0:.1f}mm, please run command [visualhscan] first').format(
+        arg.startz))
       print(arg.startz, self.board.visM)
       raise Exception('Transformation equation not found')
     return arg
@@ -178,9 +175,8 @@ class visualcenterchip(cmdbase.controlcmd):
 
       ## Early exit if chip is not found.
       if (center.x < 0 or center.y < 0):
-        raise Exception(
-            'Chip lost! Check current camera position with command visualchipshow'
-        )
+        raise Exception(('Chip lost! Check current camera position with '
+                         'command visualchipshow'))
 
       deltaxy = np.array([
           self.visual.frame_width() / 2 - center.x,
@@ -188,8 +184,8 @@ class visualcenterchip(cmdbase.controlcmd):
       ])
 
       motionxy = np.linalg.solve(
-          np.array(self.board.get_visM(args.calibchip,
-                                      self.gcoder.opz)), deltaxy)
+          np.array(self.board.get_visM(args.calibchip, self.gcoder.opz)),
+          deltaxy)
 
       ## Early exit if difference from center is small
       if np.linalg.norm(motionxy) < 0.1: break
@@ -201,7 +197,7 @@ class visualcenterchip(cmdbase.controlcmd):
     center = self.visual.find_chip(False)
     self.printmsg(
       'Gantry position: x={0:.1f} y={1:.1f} | '\
-      ' Chip FOV position: x={2:.1f} y={3:.1f}'.
+      'Chip FOV position: x={2:.1f} y={3:.1f}'.
         format(self.gcoder.opx, self.gcoder.opy, center.x, center.y))
 
     if (not self.board.vis_coord_hasz(args.chipid, self.gcoder.opz)
@@ -271,8 +267,8 @@ class visualmaxsharp(cmdbase.controlcmd):
         zval += zstep
       else:
         zstep *= -0.8
-      self.update("z:{0:.1f}, L:{1:.2f}".format(zval, laplace))
-    self.printmsg("Final z:{0:.1f}".format(self.gcoder.opz))
+      self.update('z:{0:.1f}, L:{1:.2f}'.format(zval, laplace))
+    self.printmsg('Final z:{0:.1f}'.format(self.gcoder.opz))
 
 
 class visualzscan(cmdbase.controlcmd):
@@ -316,11 +312,11 @@ class visualzscan(cmdbase.controlcmd):
     for z in args.zlist:
       # Checking termination signal
       if sighandle.terminate:
-        self.printmsg(( "TERMINATION SIGNAL RECEIVED"
-            "FLUSHING FILE CONTENTS THEN EXITING COMMAND" ))
+        self.printmsg(('TERMINATION SIGNAL RECEIVED '
+                       'FLUSHING FILE CONTENTS THEN EXITING COMMAND'))
         args.savefile.flush()
         args.savefile.close()
-        raise Exception("TERMINATION SIGNAL")
+        raise Exception('TERMINATION SIGNAL')
 
       try:
         # Try to move the gantry regardless, there are fail safe for

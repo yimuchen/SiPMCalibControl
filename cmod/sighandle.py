@@ -13,12 +13,13 @@ class SigHandle:
   def receive_term(self, signum, frame):
     self.terminate = True
 
+## Testing library
 if __name__ == '__main__':
   import time
 
   sighandle = SigHandle()
   while not sighandle.terminate:
     time.sleep(1)
-    print("doing something in a loop ...")
+    print('doing something in a loop ...')
 
-  print("End of the program. I was killed gracefully :)")
+  print('End of the program. I was killed gracefully :)')

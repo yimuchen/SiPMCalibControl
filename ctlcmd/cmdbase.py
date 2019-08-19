@@ -23,7 +23,9 @@ class controlterm(cmd.Cmd):
 
   intro = """
     SiPM Calibration Gantry Control System
-    Type help or ? to list commands.\n"""
+    Type help or ? to list commands.
+    Type help <cmd> for the individual help messages of each commands
+    """
   prompt = 'SiPMCalib> '
 
   def __init__(self, cmdlist):
@@ -34,15 +36,15 @@ class controlterm(cmd.Cmd):
     self.board = board.Board()
     self.visual = visual.Visual()
     self.pico = pico.PicoUnit()
-    self.readout = readout.readout(self) # Must be after picoscope setup
+    self.readout = readout.readout(self)  # Must be after picoscope setup
     self.trigger = trigger.Trigger()
 
     ## Creating command instances and attaching to associated functions
     for com in cmdlist:
       comname = com.__name__.lower()
-      dofunc = "do_" + comname
-      helpfunc = "help_" + comname
-      compfunc = "complete_" + comname
+      dofunc = 'do_' + comname
+      helpfunc = 'help_' + comname
+      compfunc = 'complete_' + comname
       self.__setattr__(comname, com(self))
       self.__setattr__(dofunc, self.__getattribute__(comname).do)
       self.__setattr__(helpfunc, self.__getattribute__(comname).callhelp)
@@ -75,15 +77,15 @@ class controlterm(cmd.Cmd):
     """
     usage: runfile <file>
 
-    Executing commands listed in a file. This should be used for testing. And
-    not used extensively.
+    Executing commands listed in a file. This should be used for standard
+    calibration procedures only.
     """
     if len(line.split()) != 1:
-      log.printerr("Please only specify one file!")
+      log.printerr('Please only specify one file!')
       return
 
     if not os.path.isfile(line):
-      log.printerr("Specified file could not be opened!")
+      log.printerr('Specified file could not be opened!')
       return
 
     with open(line) as f:
@@ -103,7 +105,6 @@ class controlcmd():
   vallina python cmd class. Here we will be using the argparse class by default
   to call for the help and complete functions
   """
-
   def __init__(self, cmdsession):
     """
     Initializer declares an argument parser class with the class name as the
@@ -123,7 +124,7 @@ class controlcmd():
     self.board = cmdsession.board
     self.visual = cmdsession.visual
     self.pico = cmdsession.pico
-    self.readout = cmdsession.readout # Must be after pico setup
+    self.readout = cmdsession.readout  # Must be after pico setup
     self.trigger = cmdsession.trigger
 
   def do(self, line):
@@ -165,8 +166,8 @@ class controlcmd():
     """
     cmdname = self.__class__.__name__.lower()
     textargs = line[len(cmdname):start_index].strip().split()
-    prevtext = textargs[-1] if len(textargs) else ""
-    options  = [opt for x in self.parser._actions for opt in x.option_strings]
+    prevtext = textargs[-1] if len(textargs) else ''
+    options = [opt for x in self.parser._actions for opt in x.option_strings]
 
     def optwithtext():
       if text:
@@ -175,12 +176,12 @@ class controlcmd():
         return options
 
     if prevtext in options:
-      action = next( x for x in self.parser._actions
-         if (prevtext in x.option_strings) )
+      action = next(
+          x for x in self.parser._actions if (prevtext in x.option_strings))
       if type(action.type) == argparse.FileType:
         return globcomp(text)
       else:
-        return ["input type: " + str(action.type), "Help: "+action.help]
+        return ['input type: ' + str(action.type), 'Help: ' + action.help]
     else:
       return optwithtext()
 
@@ -203,7 +204,7 @@ class controlcmd():
   def run(self, args):
     """
     Functions that require command specific definitions, should be overwritten in
-    the decendent classes
+    the descendent classes
     """
     pass
 
@@ -217,12 +218,12 @@ class controlcmd():
       arg = self.parser.parse_args(line.split())
     except SystemExit as err:
       self.printerr(str(err))
-      raise Exception("Cannot parse input")
+      raise Exception('Cannot parse input')
     return arg
 
 
 ## Helper function for globbing
 def globcomp(text):
-  globlist =  glob.glob(text + "*")
-  globlist = [ file + '/' if os.path.isdir(file) else file for file in globlist ]
+  globlist = glob.glob(text + "*")
+  globlist = [file + '/' if os.path.isdir(file) else file for file in globlist]
   return globlist

@@ -18,9 +18,8 @@ class moveto(cmdbase.controlcmd):
     self.parser.add_argument(
         '-z',
         type=float,
-        help=
-        'Specifying the x coordinate explicitly [mm]. If none is given the current gantry position will be used instead'
-    )
+        help=('Specifying the x coordinate explicitly [mm]. If none is given '
+              'the current gantry position will be used instead'))
 
   def parse(self, line):
     arg = cmdbase.controlcmd.parse(self, line)
@@ -102,11 +101,11 @@ class halign(cmdbase.controlcmd):
     for idx, (xval, yval) in enumerate(zip(x, y)):
       ## Checking for termination signal on every loop
       if sighandle.terminate:
-        self.printmsg(("TERMINATION SIGNAL RECEIVED"
-                       "FLUSHING FILE CONTENTS THEN EXITING COMMAND"))
+        self.printmsg(('TERMINATION SIGNAL RECEIVED '
+                       'FLUSHING FILE CONTENTS THEN EXITING COMMAND'))
         arg.savefile.flush()
         arg.savefile.close()
-        raise Exception("TERMINATION SIGNAL")
+        raise Exception('TERMINATION SIGNAL')
 
       try:
         # Try to move the gantry. Even if it fails there will be fail safes
@@ -126,7 +125,7 @@ class halign(cmdbase.controlcmd):
                   lumival, uncval), '[PROGRESS {0:d}/{1:d}]'.format(idx, total)))
 
       ## Writing to file
-      arg.savefile.write("{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n".format(
+      arg.savefile.write('{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n'.format(
           xval, yval, arg.scanz, lumival, uncval))
 
     ## Clearing output objects
@@ -148,11 +147,11 @@ class halign(cmdbase.controlcmd):
       self.gcoder.moveto(arg.x, arg.y, arg.scanz, False)
       raise err
 
-    self.printmsg("Best x:{0:.2f}+-{1:.3f}".format(fitval[1],
+    self.printmsg('Best x:{0:.2f}+-{1:.3f}'.format(fitval[1],
                                                    np.sqrt(fitcorr[1][1])))
-    self.printmsg("Best y:{0:.2f}+-{1:.3f}".format(fitval[2],
+    self.printmsg('Best y:{0:.2f}+-{1:.3f}'.format(fitval[2],
                                                    np.sqrt(fitcorr[2][2])))
-    self.printmsg("Fit  z:{0:.2f}+-{1:.3f}".format(fitval[3],
+    self.printmsg('Fit  z:{0:.2f}+-{1:.3f}'.format(fitval[3],
                                                    np.sqrt(fitcorr[3][3])))
 
     ## Saving session information
@@ -166,9 +165,8 @@ class halign(cmdbase.controlcmd):
           np.sqrt(fitcorr[1][1])
       ]
     elif arg.scanz in self.board.lumi_coord[arg.chipid]:
-      if comarg.prompt(
-          'A lumi alignment for z={0:.1f} already exists for the current session, overwrite?'
-          .format(targetz)):
+      if comarg.prompt(('A lumi alignment for z={0:.1f} already exists for '
+                        'the current session, overwrite?').format(scanz)):
         self.board.lumi_coord[arg.chipid][arg.scanz] = [
             fitval[1],
             np.sqrt(fitcorr[1][1]), fitval[2],
@@ -190,7 +188,7 @@ class zscan(cmdbase.controlcmd):
   Performing z scanning at a certain x-y coordinate
   """
 
-  DEFAULT_SAVEFILE = "zscan_<CHIP>_<TIMESTAMP>.txt"
+  DEFAULT_SAVEFILE = 'zscan_<CHIP>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[LUMI ZSCAN]')
 
   def __init__(self, cmd):
@@ -218,11 +216,11 @@ class zscan(cmdbase.controlcmd):
     for z in arg.zlist:
       ## Checking for termination signal on every loop
       if sighandle.terminate:
-        self.printmsg(("TERMINATION SIGNAL RECEIVED"
-                       "FLUSHING FILE CONTENTS THEN EXITING COMMAND"))
+        self.printmsg(('TERMINATION SIGNAL RECEIVED'
+                       'FLUSHING FILE CONTENTS THEN EXITING COMMAND'))
         arg.savefile.flush()
         arg.savefile.close()
-        raise Exception("TERMINATION SIGNAL")
+        raise Exception('TERMINATION SIGNAL')
 
       try:
         # Try to move the gantry regardless, there are fail safe for
@@ -251,7 +249,7 @@ class zscan(cmdbase.controlcmd):
       unc.append(uncval)
 
       # Writing to screen
-      self.update("z:{0:5.1f}, L:{1:8.5f}, uL:{2:8.6f}".format(
+      self.update('z:{0:5.1f}, L:{1:8.5f}, uL:{2:8.6f}'.format(
           z, lumival, uncval))
       # Writing to file
       arg.savefile.write("{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n".format(
@@ -264,7 +262,7 @@ class timescan(cmdbase.controlcmd):
   """
   Generate a log of the readout in terms relative to time.
   """
-  DEFAULT_SAVEFILE = "tscan_<CHIP>_<TIMESTAMP>.txt"
+  DEFAULT_SAVEFILE = 'tscan_<CHIP>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[TIMESCAN]')
 
   def __init__(self, cmd):
@@ -293,11 +291,11 @@ class timescan(cmdbase.controlcmd):
     for i in range(args.nslice):
       ## Checking for termination signal on every loop
       if sighandle.terminate:
-        self.printmsg(("TERMINATION SIGNAL RECEIVED"
-                       "FLUSHING FILE CONTENTS THEN EXITING COMMAND"))
+        self.printmsg(('TERMINATION SIGNAL RECEIVED '
+                       'FLUSHING FILE CONTENTS THEN EXITING COMMAND'))
         args.savefile.flush()
         args.savefile.close()
-        raise Exception("TERMINATION SIGNAL")
+        raise Exception('TERMINATION SIGNAL')
 
       lumival, uncval = self.readout.read(channel=args.channel,
                                           sample=args.samples)
@@ -339,17 +337,18 @@ class showreadout(cmdbase.controlcmd):
 
       val.append(self.readout.read_adc_raw(0))
       self.update("{0} | {1} | {2} | {3}".format(
-          "Latest: {0:10.5f}".format(val[-1]), "Mean: {0:10.5f}".format(
-              np.mean(val)), "STD: {0:11.6f}".format(np.std(val)),
-          "PROGRESS [{0:3d}/1000]".format(i)))
+          'Latest: {0:10.5f}'.format(val[-1]),
+          'Mean: {0:10.5f}'.format(np.mean(val)),
+          'STD: {0:11.6f}'.format(np.std(val)),
+          'PROGRESS [{0:3d}/1000]'.format(i)))
       if arg.nowait: continue
       time.sleep(1 / 50 * np.random.random())  ## Sleeping for random time
     meanval = np.mean(val)
     stdval = np.std(val)
     valstrip = [x for x in val if abs(x - meanval) < stdval]
-    self.printmsg("RAWVAL | Mean: {0:.5f} | STD: {1:.6f}".format(
+    self.printmsg('RAWVAL | Mean: {0:.5f} | STD: {1:.6f}'.format(
         np.mean(val), np.std(val)))
-    self.printmsg("Update | Mean: {0:.5f} | STD: {1:.6f}".format(
+    self.printmsg('Update | Mean: {0:.5f} | STD: {1:.6f}'.format(
         np.mean(valstrip), np.std(valstrip)))
     if arg.dumpval:
       for v in val:

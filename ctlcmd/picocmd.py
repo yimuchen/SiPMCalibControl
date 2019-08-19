@@ -13,42 +13,35 @@ class picoset(cmdbase.controlcmd):
     self.parser.add_argument(
         '--range',
         type=int,
-        help=
-        'Voltage range by index, use command "get --pico" for the list of available numbers'
-    )
-
+        help=('Voltage range by index, use command "get --pico" for the list '
+              'of available numbers'))
     self.parser.add_argument(
         '--triggerchannel',
         type=int,
-        help=
-        'Index representing which channel to trigger on. See the outputs of "get --pico" for the  available numbers'
-    )
-
+        help=('Index representing which channel to trigger on. See the outputs '
+              'of "get --pico" for the  available numbers'))
     self.parser.add_argument(
         '--triggerdirection',
         type=int,
-        help=
-        'Index representing the direction of the trigger. See the outputs of "get --pico" for the available numbers'
-    )
+        help=('Index representing the direction of the trigger. See the outputs '
+              'of "get --pico" for the available numbers'))
     self.parser.add_argument(
         '--triggerlevel',
         type=float,
-        help=
-        'Trigger level in mV. Note that the value will be rounded to the closest corresponding ADC value.'
-    )
+        help=('Trigger level in mV. Note that the value will be rounded to the '
+              'closest corresponding ADC value.'))
 
     self.parser.add_argument(
         '--triggerdelay',
         type=int,
-        help=
-        'Delay between trigger and data acquisition, units in 10 time intervals (see the outputs of "get --pico" to get time intervals in nanoseconds)'
-    )
+        help=('Delay between trigger and data acquisition, units in 10 time '
+              'intervals (see the outputs of "get --pico" to get time intervals '
+              'in nanoseconds)'))
     self.parser.add_argument(
         '--waittrigger',
         type=int,
-        help=
-        'Maximum wait time for a single trigger fire, units in (ms). Set to 0 for indefinite trigger wait.'
-    )
+        help=('Maximum wait time for a single trigger fire, units in (ms). Set '
+              'to 0 for indefinite trigger wait.'))
 
     self.parser.add_argument(
         '--presamples',
@@ -157,12 +150,12 @@ class picorunblock(cmdbase.controlcmd):
       while not self.pico.isready():
         ## Checking for termination signal on every loop
         if sighandle.terminate:
-          self.printmsg(( "TERMINATION SIGNAL RECEIVED"
-            "FLUSHING FILE CONTENTS THEN EXITING COMMAND" ))
+          self.printmsg(('TERMINATION SIGNAL RECEIVED '
+                         'FLUSHING FILE CONTENTS THEN EXITING COMMAND'))
           args.savefile.flush()
           args.savefile.close()
-          raise Exception("TERMINATION SIGNAL")
-        self.trigger.pulse( int(self.pico.ncaptures/10) , 500 )
+          raise Exception('TERMINATION SIGNAL')
+        self.trigger.pulse(int(self.pico.ncaptures / 10), 500)
 
       self.pico.flushbuffer()
 
@@ -195,8 +188,7 @@ class picorange(cmdbase.controlcmd):
 
   def run(self, args):
     # Setting the new number of block to run
-    self.pico.setblocknums(args.captures,
-                           self.pico.postsamples,
+    self.pico.setblocknums(args.captures, self.pico.postsamples,
                            self.pico.presamples)
 
     while 1:
@@ -205,11 +197,11 @@ class picorange(cmdbase.controlcmd):
         self.trigger.pulse(self.pico.ncaptures, 500)
       self.pico.flushbuffer()
 
-      wmax = self.pico.waveformmax( args.channel )
+      wmax = self.pico.waveformmax(args.channel)
 
       if wmax < 100 and self.pico.range > self.pico.rangemin():
-        self.pico.setrange( self.pico.range - 1 )
+        self.pico.setrange(self.pico.range - 1)
       elif wmax > 200 and self.pico.range < self.pico.rangemax():
-        self.pico.setrange( self.pico.range + 1 )
+        self.pico.setrange(self.pico.range + 1)
       else:
-        break;
+        break

@@ -13,6 +13,7 @@ try:
 except:
   pass
 
+
 class readout(object):
   """
   Object for defining readout interface
@@ -39,9 +40,9 @@ class readout(object):
         self.mode = mode
       except Exception as err:
         log.printerr(str(err))
-        log.printwarn(
-            ('You are not working in a I2C compatible environment, Readout '
-             'values for ADC will use a predefined model instead'))
+        log.printwarn(('You are not working in a I2C compatible environment, '
+                       'Readout values for ADC will use a predefined model '
+                       'instead'))
         self.mode = readout.MODE_NONE
         raise err
     else:
@@ -72,7 +73,7 @@ class readout(object):
     for i in range(samples):
       val.append(self.read_adc_raw(channel))
       ## Sleeping for random time in ADC to avoid 60Hz aliasing
-      time.sleep(1 /200 * np.random.random())
+      time.sleep(1 / 200 * np.random.random())
     valmean = np.mean(val)
     valstd = np.std(val)
     valstrip = [x for x in val if abs(x - valmean) < valstd]
@@ -109,7 +110,7 @@ class readout(object):
     self.pico.setblocknums(samples, self.pico.postsamples, self.pico.presamples)
     self.pico.startrapidblocks()
     while not self.pico.isready():
-      self.parent.trigger.pulse( self.pico.ncaptures, 600 )
+      self.parent.trigger.pulse(self.pico.ncaptures, 600)
     self.pico.flushbuffer()
-    val = [self.pico.waveformsum(channel,x) for x in range(samples)]
+    val = [self.pico.waveformsum(channel, x) for x in range(samples)]
     return np.mean(val), np.std(val)
