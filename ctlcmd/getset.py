@@ -200,3 +200,4 @@ class loadcalib(cmdbase.controlcmd):
 
   def run(self, args):
     self.board.load_calib_file(args.file.name)
+

@@ -198,16 +198,16 @@ class controlcmd():
     def optwithtext():
       if text:
         return [x for x in options if x.startswith(text)]
-      else:
-        return options
+      return options
 
     if prevtext in options:
       action = next(
           x for x in self.parser._actions if (prevtext in x.option_strings))
       if type(action.type) == argparse.FileType:
         return globcomp(text)
-      else:
-        return ['input type: ' + str(action.type), 'Help: ' + action.help]
+      if action.nargs == 0: ## For store_true options
+        return optwithtext()
+      return ['input type: ' + str(action.type), 'Help: ' + action.help]
     else:
       return optwithtext()
 
