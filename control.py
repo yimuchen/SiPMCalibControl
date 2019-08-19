@@ -27,6 +27,7 @@ if __name__ == '__main__':
       getset.getcoord,
       getset.savecalib,
       getset.loadcalib,
+      getset.promptaction,
       digicmd.pulse,
       picocmd.picoset,
       picocmd.picorunblock,
@@ -50,6 +51,7 @@ if __name__ == '__main__':
       '-printerdev': '/dev/ttyUSB0',
       '-camdev': '/dev/video0',
       '-boardtype': 'cfg/static_calib.json',
+      '-action': 'cfg/useractions.json',
       '-picodevice': 'MYSERIAL',  #Cannot actually set. Just dummy for now
       #'-remotehost' : ['hepcms.umd.edu', '']
   }

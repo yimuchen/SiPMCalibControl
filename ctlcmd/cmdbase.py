@@ -6,6 +6,7 @@ import cmod.visual as visual
 import cmod.readout as readout
 import cmod.sshfiler as sshfiler
 import cmod.pico as pico
+import cmod.actionlist as actionlist
 import cmd
 import sys
 import os
@@ -40,6 +41,7 @@ class controlterm(cmd.Cmd):
     self.pico = pico.PicoUnit()
     self.readout = readout.readout(self)  # Must be after picoscope setup
     self.trigger = trigger.Trigger()
+    self.action = actionlist.ActionList()
 
     ## Creating command instances and attaching to associated functions
     for com in cmdlist:
@@ -128,6 +130,7 @@ class controlcmd():
     self.pico = cmdsession.pico
     self.readout = cmdsession.readout  # Must be after pico setup
     self.trigger = cmdsession.trigger
+    self.action = cmdsession.action
 
   def do(self, line):
     """

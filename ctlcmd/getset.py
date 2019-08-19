@@ -41,6 +41,11 @@ class set(cmdbase.controlcmd):
         type=int,
         choices=[readout.MODE_ADC, readout.MODE_PICO, readout.MODE_NONE],
         help='Setting readout mode of the current session')
+    self.parser.add_argument(
+      '-action',
+      type=argparse.FileType(mode='r'),
+      help='List of short hands for setting user prompts'
+    )
 
   def run(self, arg):
     if arg.boardtype:
@@ -82,6 +87,9 @@ class set(cmdbase.controlcmd):
         log.printwarn('Picoscope device is not properly set!')
     if arg.readout:
       self.readout.set_mode(arg.readout)
+    if arg.action:
+      self.action.add_json(arg.action.name)
+
 
 
 class get(cmdbase.controlcmd):
@@ -97,6 +105,7 @@ class get(cmdbase.controlcmd):
     self.parser.add_argument('--align', action='store_true')
     self.parser.add_argument('--pico', action='store_true')
     self.parser.add_argument('--readout', action='store_true')
+    self.parser.add_argument('--action', action='store_true')
 
     self.parser.add_argument('-a', '--all', action='store_true')
 
@@ -142,6 +151,12 @@ class get(cmdbase.controlcmd):
         'ADC CHIP'  if self.readout.mode == readout.MODE_ADC  else \
         'PREDEFINED MODEL'
       )
+    if arg.action or arg.all:
+      for key in self.action.shorthands():
+        log.printmsg(
+          log.GREEN('[ACTIONS]'),
+          key + ' | ' + self.action.map[key]
+        )
 
 
 class getcoord(cmdbase.controlcmd):
@@ -201,3 +216,29 @@ class loadcalib(cmdbase.controlcmd):
   def run(self, args):
     self.board.load_calib_file(args.file.name)
 
+class promptaction(cmdbase.controlcmd):
+  """
+  Displaying message that requires manual intervention.
+  """
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
+    self.parser.add_argument(
+        'string',
+        nargs='+',
+        type=str,
+        help=('String of message to show (program is paused until Enter key '
+              'is pressed). This can either be a short hand that is defined '
+              'using the loadaction command (use the listaction command to '
+              'get a list) or a raw string message that is to be shown on the '
+              'screen'))
+
+  def parse(self,line):
+    return cmdbase.controlcmd.parse(self,line)
+
+  def run(self,args):
+    msg = self.action.map[args.string[0]] \
+          if args.string[0] in self.action.shorthands() \
+          else ' '.join(args.string)
+    log.printmsg( log.GREEN('    THE NEXT STEP REQUIRES USER INTERVENTION'))
+    log.printmsg( msg )
+    input(log.GREEN('    Press [Enter] to continue...'))
