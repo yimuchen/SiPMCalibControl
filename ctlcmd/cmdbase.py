@@ -7,6 +7,7 @@ import cmod.readout as readout
 import cmod.sshfiler as sshfiler
 import cmod.pico as pico
 import cmod.actionlist as actionlist
+import cmod.sighandle as sig
 import cmd
 import sys
 import os
@@ -109,6 +110,9 @@ class controlcmd():
   vallina python cmd class. Here we will be using the argparse class by default
   to call for the help and complete functions
   """
+
+  LOG = "DUMMY"
+
   def __init__(self, cmdsession):
     """
     Initializer declares an argument parser class with the class name as the
@@ -121,6 +125,7 @@ class controlcmd():
                                           description=self.__class__.__doc__,
                                           add_help=False)
     self.cmd = cmdsession
+    self.sighandle = None
 
     ## Reference to control objects for all commands
     self.sshfiler = cmdsession.sshfiler
@@ -150,27 +155,27 @@ class controlcmd():
     except Exception as err:
       exc_msg = traceback.format_exc()
       exc_msg = exc_msg.splitlines()
-      exc_msg = exc_msg[1:-1] ## Remove traceback and error line.
-      for idx in range(0,len(exc_msg),2):
-        file=re.findall(r'\"[A-Za-z0-9\/\.]+\"', exc_msg[idx])
-        if len(file): # For non-conventional error messages
-          file=file[0].strip().replace('"','')
+      exc_msg = exc_msg[1:-1]  ## Remove traceback and error line.
+      for idx in range(0, len(exc_msg), 2):
+        file = re.findall(r'\"[A-Za-z0-9\/\.]+\"', exc_msg[idx])
+        if len(file):  # For non-conventional error messages
+          file = file[0].strip().replace('"', '')
         else:
           continue
 
-        line=re.findall(r'line\s[0-9]+', exc_msg[idx] )
-        if len(line): # For non-conventional error messages
-          line=[int(s) for s in line[0].split() if s.isdigit()][0]
+        line = re.findall(r'line\s[0-9]+', exc_msg[idx])
+        if len(line):  # For non-conventional error messages
+          line = [int(s) for s in line[0].split() if s.isdigit()][0]
         else:
           continue
 
-        content = exc_msg[idx+1].strip()
+        content = exc_msg[idx + 1].strip()
 
         stackline = ''
         stackline += log.RED('{0:4d} | '.format(line))
         stackline += log.YELLOW('{0} | '.format(file))
         stackline += content
-        log.printmsg( stackline )
+        log.printmsg(stackline)
 
       self.printerr(str(err))
       return
@@ -208,7 +213,7 @@ class controlcmd():
           x for x in self.parser._actions if (prevtext in x.option_strings))
       if type(action.type) == argparse.FileType:
         return globcomp(text)
-      if action.nargs == 0: ## For store_true options
+      if action.nargs == 0:  ## For store_true options
         return optwithtext()
       return ['input type: ' + str(action.type), 'Help: ' + action.help]
     else:
@@ -216,17 +221,29 @@ class controlcmd():
 
   ## Overloading for less verbose message printing
   def update(self, text):
+    """
+    Printing an update message using the static variable "LOG".
+    """
     log.update(self.LOG, text)
 
   def printmsg(self, text):
+    """
+    Printing a message new-line using the static variable "LOG".
+    """
     log.clear_update()
     log.printmsg(self.LOG, text)
 
   def printerr(self, text):
+    """
+    Printing a error message with a standard red "ERROR" header.
+    """
     log.clear_update()
     log.printerr(text)
 
   def printwarn(self, text):
+    """
+    Printing a warning message with a standard yellow "WARNING" header.
+    """
     log.clear_update()
     log.printerr()
 
@@ -250,9 +267,47 @@ class controlcmd():
       raise Exception('Cannot parse input')
     return arg
 
+  def init_handle(self):
+    """
+    Creating the a new instance of the signal handling class to be used for
+    process handling.
+    """
+    self.sighandle = sig.SigHandle()
 
-## Helper function for globbing
-def globcomp(text):
-  globlist = glob.glob(text + "*")
-  globlist = [file + '/' if os.path.isdir(file) else file for file in globlist]
-  return globlist
+  def check_handle(self, args):
+    """
+    Checking the status of the signal handle, closing files and raising an
+    exception if a termination signal was ever set by the user.
+    """
+    check_msg = 'TERMINATION SIGNAL RECEIVED, '
+    flush_msg = 'FLUSHING FILE CONTENTS THEN '
+    exit_msg = 'EXITING COMMAND'
+    msg = check_msg + exit_msg if hasattr(args, 'savefile') \
+      else check_msg + flush_msg + exit_msg
+
+    if self.sighandle.terminate:
+      self.printmsg(msg)
+      if hasattr(args, 'savefile'):
+        args.savefile.flush()
+        args.savefile.close()
+      raise Exception('TERMINATION SIGNAL')
+
+  def move_gantry(self, x, y, z, verbose):
+    """
+    Wrapper for gantry motion command, suppresses the exception raised for in
+    case that the gantry isn't connected so that one can test with pre-defined
+    models.
+    """
+    try:
+      # Try to move the gantry. Even if it fails there will be fail safes
+      # in other classes
+      self.gcoder.moveto(x, y, z, verbose)
+    except:
+      pass
+
+  # Helper function for globbing
+  @staticmethod
+  def globcomp(text):
+    globlist = glob.glob(text + "*")
+    globlist = [file + '/' if os.path.isdir(file) else file for file in globlist]
+    return globlist

@@ -1,7 +1,6 @@
 import ctlcmd.cmdbase as cmdbase
 import cmod.logger as log
 import cmod.comarg as comarg
-import cmod.sighandle as sig
 import numpy as np
 from scipy.optimize import curve_fit
 import time
@@ -91,7 +90,7 @@ class halign(cmdbase.controlcmd):
     return arg
 
   def run(self, arg):
-    sighandle = sig.SigHandle()
+    self.init_handle()
     x, y = comarg.make_hscan_mesh(arg)
     lumi = []
     unc = []
@@ -99,20 +98,8 @@ class halign(cmdbase.controlcmd):
 
     ## Running over mesh.
     for idx, (xval, yval) in enumerate(zip(x, y)):
-      ## Checking for termination signal on every loop
-      if sighandle.terminate:
-        self.printmsg(('TERMINATION SIGNAL RECEIVED '
-                       'FLUSHING FILE CONTENTS THEN EXITING COMMAND'))
-        arg.savefile.flush()
-        arg.savefile.close()
-        raise Exception('TERMINATION SIGNAL')
-
-      try:
-        # Try to move the gantry. Even if it fails there will be fail safes
-        # in other classes
-        self.gcoder.moveto(xval, yval, arg.scanz, False)
-      except:
-        pass
+      self.check_handle(arg)
+      self.move_gantry(xval, yval, arg.scanz, False)
       lumival, uncval = self.readout.read(channel=arg.channel,
                                           samples=arg.samples)
       lumi.append(abs(lumival))
@@ -166,7 +153,7 @@ class halign(cmdbase.controlcmd):
       ]
     elif arg.scanz in self.board.lumi_coord[arg.chipid]:
       if comarg.prompt(('A lumi alignment for z={0:.1f} already exists for '
-                        'the current session, overwrite?').format(scanz)):
+                        'the current session, overwrite?').format(arg.scanz)):
         self.board.lumi_coord[arg.chipid][arg.scanz] = [
             fitval[1],
             np.sqrt(fitcorr[1][1]), fitval[2],
@@ -209,25 +196,13 @@ class zscan(cmdbase.controlcmd):
     return arg
 
   def run(self, arg):
-    sighandle = sig.SigHandle()
+    self.init_handle()
     lumi = []
     unc = []
 
     for z in arg.zlist:
-      ## Checking for termination signal on every loop
-      if sighandle.terminate:
-        self.printmsg(('TERMINATION SIGNAL RECEIVED'
-                       'FLUSHING FILE CONTENTS THEN EXITING COMMAND'))
-        arg.savefile.flush()
-        arg.savefile.close()
-        raise Exception('TERMINATION SIGNAL')
-
-      try:
-        # Try to move the gantry regardless, there are fail safe for
-        # readout errors
-        self.gcoder.moveto(arg.x, arg.y, z, False)
-      except:
-        pass
+      self.check_handle(arg)
+      self.move_gantry(arg.x, arg.y, z, False)
 
       lumival = 0
       uncval = 0
@@ -287,15 +262,9 @@ class timescan(cmdbase.controlcmd):
     return arg
 
   def run(self, args):
-    sighandle = sig.SigHandle()
+    self.init_handle()
     for i in range(args.nslice):
-      ## Checking for termination signal on every loop
-      if sighandle.terminate:
-        self.printmsg(('TERMINATION SIGNAL RECEIVED '
-                       'FLUSHING FILE CONTENTS THEN EXITING COMMAND'))
-        args.savefile.flush()
-        args.savefile.close()
-        raise Exception('TERMINATION SIGNAL')
+      self.check_handle(args)
 
       lumival, uncval = self.readout.read(channel=args.channel,
                                           sample=args.samples)
@@ -327,13 +296,11 @@ class showreadout(cmdbase.controlcmd):
     return arg
 
   def run(self, arg):
-    sighandle = sig.SigHandle()
+    self.init_handle()
     val = []
 
     for i in range(1000):
-      if sighandle.terminate:
-        self.printmsg('TERMINATION SIGNAL RECEIVED')
-        raise Exception('TERMINATION SIGNAL')
+      self.check_handle(arg)
 
       val.append(self.readout.read_adc_raw(0))
       self.update("{0} | {1} | {2} | {3}".format(

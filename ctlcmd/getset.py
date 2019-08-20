@@ -154,7 +154,7 @@ class get(cmdbase.controlcmd):
     header = log.GREEN('[PRINTER]')
     log.printmsg(header, 'device: ' + str(self.gcoder.dev_path))
     log.printmsg(
-        header, 'current coordinates: x{0:.1f} y{1:.1f} z{1:0.1f}'.format(
+        header, 'current coordinates: x{0:.1f} y{1:.1f} z{2:0.1f}'.format(
             self.gcoder.opx, self.gcoder.opy, self.gcoder.opz))
 
   def print_camera(self):

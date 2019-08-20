@@ -1,7 +1,6 @@
 import ctlcmd.cmdbase as cmdbase
 import cmod.logger as log
 import cmod.comarg as comarg
-import cmod.sighandle as sig
 import numpy as np
 from scipy.optimize import curve_fit
 import time
@@ -45,6 +44,7 @@ class visualhscan(cmdbase.controlcmd):
     return arg
 
   def run(self, args):
+    self.init_handle()
     x, y = comarg.make_hscan_mesh(args)
 
     ## New container to account for chip not found in FOV
@@ -53,24 +53,10 @@ class visualhscan(cmdbase.controlcmd):
     reco_x = []
     reco_y = []
 
-    ## Termination signal handler
-    sighandle = sig.SigHandle()
-
     ## Running over mesh.
     for idx, (xval, yval) in enumerate(zip(x, y)):
-      # Checking termination signal
-      if sighandle.terminate:
-        self.printmsg(('TERMINATION SIGNAL RECEIVED '
-                       'FLUSHING FILE CONTENTS THEN EXITING COMMAND'))
-        args.savefile.flush()
-        args.savefile.close()
-        raise Exception("TERMINATION SIGNAL")
-      try:
-        # Try to move the gantry. Even if it fails there will be fail safes
-        # in other classes
-        self.gcoder.moveto(xval, yval, args.scanz, False)
-      except:
-        pass
+      self.check_handle(args)
+      self.move_gantry(xval, yval, args.scanz, False)
 
       center = self.visual.find_chip(args.monitor)
 
@@ -163,7 +149,7 @@ class visualcenterchip(cmdbase.controlcmd):
     return arg
 
   def run(self, args):
-    self.gcoder.moveto(args.x, args.y, args.startz, False)
+    self.move_gantry(args.x, args.y, args.startz, False)
     for movetime in range(10):  ## Maximum of 10 movements
       center = None
 
@@ -253,7 +239,7 @@ class visualmaxsharp(cmdbase.controlcmd):
     return arg
 
   def run(self, args):
-    self.gcoder.moveto(args.x, args.y, args.startz, False)
+    self.move_gantry(args.x, args.y, args.startz, False)
     laplace = self.visual.sharpness(False)
     zval = args.startz
     zstep = args.stepsize
@@ -302,7 +288,7 @@ class visualzscan(cmdbase.controlcmd):
     return arg
 
   def run(self, args):
-    sighandle = sig.SigHandle()
+    self.init_handle()
     laplace = []
     reco_x = []
     reco_y = []
@@ -311,19 +297,9 @@ class visualzscan(cmdbase.controlcmd):
 
     for z in args.zlist:
       # Checking termination signal
-      if sighandle.terminate:
-        self.printmsg(('TERMINATION SIGNAL RECEIVED '
-                       'FLUSHING FILE CONTENTS THEN EXITING COMMAND'))
-        args.savefile.flush()
-        args.savefile.close()
-        raise Exception('TERMINATION SIGNAL')
+      self.check_handle(args)
+      self.move_gantry(arg.x, arg.y, z, False)
 
-      try:
-        # Try to move the gantry regardless, there are fail safe for
-        # readout errors
-        self.gcoder.moveto(arg.x, arg.y, z, False)
-      except:
-        pass
 
       reco = self.visual.find_chip(args.monitor)
       laplace.append(self.visual.sharpness(args.monitor))
