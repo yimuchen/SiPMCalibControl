@@ -45,48 +45,66 @@ class set(cmdbase.controlcmd):
                              type=argparse.FileType(mode='r'),
                              help='List of short hands for setting user prompts')
 
-  def run(self, arg):
-    if arg.boardtype:
-      try:
-        self.board.set_boardtype(arg.boardtype.name)
-      except Exception as err:
-        log.printerr(str(err))
-        log.printwarn('Board type setting has failed, skipping over setting')
-    if arg.camdev and arg.camdev != self.visual.dev_path:
-      try:
-        self.visual.init_dev(arg.camdev)
-      except Exception as err:
-        log.printerr(str(err))
-        log.printwarn('Initializing webcam has failed, skipping over setting')
-    if arg.printerdev and arg.printerdev != self.gcoder.dev_path:
-      try:
-        self.gcoder.initprinter(arg.printerdev)
-        printset = self.gcoder.getsettings()
-        printset = printset.split('\necho:')
-        for line in printset:
-          log.printmsg(log.GREEN('[PRINTER]'), line)
-      except Exception as err:
-        log.printerr(str(err))
-        log.printwarn('Failed to setup printer, skipping over settings')
-    if arg.remotehost:
-      print(self.sshfiler.host)
-      try:
-        self.sshfiler.reconnect(arg.remotehost)
-      except Exception as err:
-        log.printerr(str(err))
-        log.printwarn('Failed to establish connection remote host')
-    if arg.remotepath:
-      self.sshfiler.setremotepath(arg.remotepath)
-    if arg.picodevice:
-      try:
-        self.pico.init()
-      except Exception as err:
-        log.printerr(str(err))
-        log.printwarn('Picoscope device is not properly set!')
-    if arg.readout:
-      self.readout.set_mode(arg.readout)
-    if arg.action:
-      self.action.add_json(arg.action.name)
+  def run(self, args):
+    if args.boardtype:
+      self.set_board(args)
+    if args.camdev:
+      self.set_camera(args)
+    if args.printerdev:
+      self.set_printer(args)
+    if args.remotehost:
+      self.set_host(args)
+    if args.remotepath:
+      self.sshfiler.setremotepath(args.remotepath)
+    if args.picodevice:
+      self.set_picodevice(args)
+    if args.readout:
+      self.readout.set_mode(args.readout)
+    if args.action:
+      self.action.add_json(args.action.name)
+
+  def set_board(self, args):
+    try:
+      self.board.set_boardtype(args.boardtype.name)
+    except Exception as err:
+      log.printerr(str(err))
+      log.printwarn('Board type setting has failed, skipping over setting')
+
+  def set_camera(self, args):
+    if args.camdev == self.visual.dev_path:
+      pass
+    try:
+      self.visual.init_dev(args.camdev)
+    except Exception as err:
+      log.printerr(str(err))
+      log.printwarn('Initializing webcam has failed, skipping over setting')
+
+  def set_printer(self, args):
+    if args.printerdev == self.gcoder.dev_path:
+      pass
+    try:
+      self.gcoder.initprinter(args.printerdev)
+      printset = self.gcoder.getsettings()
+      printset = printset.split('\necho:')
+      for line in printset:
+        log.printmsg(log.GREEN('[PRINTER]'), line)
+    except Exception as err:
+      log.printerr(str(err))
+      log.printwarn('Failed to setup printer, skipping over settings')
+
+  def set_host(self, args):
+    try:
+      self.sshfiler.reconnect(args.remotehost)
+    except Exception as err:
+      log.printerr(str(err))
+      log.printwarn('Failed to establish connection remote host')
+
+  def set_picodevice(self, args):
+    try:
+      self.pico.init()
+    except Exception as err:
+      log.printerr(str(err))
+      log.printwarn('Picoscope device is not properly set!')
 
 
 class get(cmdbase.controlcmd):
