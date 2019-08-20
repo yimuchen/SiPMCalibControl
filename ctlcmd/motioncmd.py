@@ -26,8 +26,8 @@ class moveto(cmdbase.controlcmd):
     if not arg.z: arg.z = self.gcoder.opz
     return arg
 
-  def run(self, arg):
-    self.gcoder.moveto(arg.x, arg.y, arg.z, True)
+  def run(self, args):
+    self.gcoder.moveto(args.x, args.y, args.z, True)
 
 
 class movespeed(cmdbase.controlcmd):
@@ -55,8 +55,8 @@ class movespeed(cmdbase.controlcmd):
 
     return arg
 
-  def run(self, arg):
-    self.gcoder.set_speed_limit(arg.x, arg.y, arg.z)
+  def run(self, args):
+    self.gcoder.set_speed_limit(args.x, args.y, args.z)
 
 
 class halign(cmdbase.controlcmd):
@@ -89,38 +89,39 @@ class halign(cmdbase.controlcmd):
 
     return arg
 
-  def run(self, arg):
+  def run(self, args):
     self.init_handle()
-    x, y = comarg.make_hscan_mesh(arg)
+    x, y = comarg.make_hscan_mesh(args)
     lumi = []
     unc = []
     total = len(x)
 
     ## Running over mesh.
     for idx, (xval, yval) in enumerate(zip(x, y)):
-      self.check_handle(arg)
-      self.move_gantry(xval, yval, arg.scanz, False)
-      lumival, uncval = self.readout.read(channel=arg.channel,
-                                          samples=arg.samples)
+      self.check_handle(args)
+      self.move_gantry(xval, yval, args.scanz, False)
+      lumival, uncval = self.readout.read(channel=args.channel,
+                                          samples=args.samples)
       lumi.append(abs(lumival))
       unc.append(uncval)
 
       ## Writing to screen
       self.update('{0} | {1} | {2}'.format(
           'x:{0:5.1f}, y:{1:5.1f}, z:{2:5.1f}'.format(
-              xval, yval, arg.scanz), 'Lumi:{0:8.5f}+-{1:8.6f}'.format(
+              xval, yval, args.scanz), 'Lumi:{0:8.5f}+-{1:8.6f}'.format(
                   lumival, uncval), '[PROGRESS {0:d}/{1:d}]'.format(idx, total)))
 
       ## Writing to file
-      arg.savefile.write('{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n'.format(
-          xval, yval, arg.scanz, lumival, uncval))
+      args.savefile.write(
+          '{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n'.format(
+              xval, yval, args.scanz, lumival, uncval))
 
     ## Clearing output objects
-    arg.savefile.flush()
-    arg.savefile.close()
+    args.savefile.flush()
+    args.savefile.close()
 
     # Performing fit
-    p0 = (max(lumi) * (arg.scanz**2), arg.x, arg.y, arg.scanz, min(lumi))
+    p0 = (max(lumi) * (args.scanz**2), args.x, args.y, args.scanz, min(lumi))
     try:
       fitval, fitcorr = curve_fit(halign.model,
                                   np.vstack((x, y)),
@@ -130,8 +131,8 @@ class halign(cmdbase.controlcmd):
                                   maxfev=10000)
     except Exception as err:
       self.printerr(('Lumi fit failed to converge, check output stored in file '
-                     '%s for collected values').format(arg.savefile.name))
-      self.gcoder.moveto(arg.x, arg.y, arg.scanz, False)
+                     '{0} for collected values').format(args.savefile.name))
+      self.gcoder.moveto(args.x, args.y, args.scanz, False)
       raise err
 
     self.printmsg('Best x:{0:.2f}+-{1:.3f}'.format(fitval[1],
@@ -142,26 +143,27 @@ class halign(cmdbase.controlcmd):
                                                    np.sqrt(fitcorr[3][3])))
 
     ## Saving session information
-    if (not arg.chipid in self.board.lumi_coord
-        or not arg.scanz in self.board.lumi_coord[arg.chipid] or arg.overwrite):
-      if not arg.chipid in self.board.lumi_coord:
-        self.board.lumi_coord[arg.chipid] = {}
-      self.board.lumi_coord[arg.chipid][arg.scanz] = [
+    if (not args.chipid in self.board.lumi_coord
+        or not args.scanz in self.board.lumi_coord[args.chipid]
+        or args.overwrite):
+      if not args.chipid in self.board.lumi_coord:
+        self.board.lumi_coord[args.chipid] = {}
+      self.board.lumi_coord[args.chipid][args.scanz] = [
           fitval[1],
           np.sqrt(fitcorr[1][1]), fitval[2],
           np.sqrt(fitcorr[1][1])
       ]
-    elif arg.scanz in self.board.lumi_coord[arg.chipid]:
+    elif args.scanz in self.board.lumi_coord[args.chipid]:
       if comarg.prompt(('A lumi alignment for z={0:.1f} already exists for '
-                        'the current session, overwrite?').format(arg.scanz)):
-        self.board.lumi_coord[arg.chipid][arg.scanz] = [
+                        'the current session, overwrite?').format(args.scanz)):
+        self.board.lumi_coord[args.chipid][args.scanz] = [
             fitval[1],
             np.sqrt(fitcorr[1][1]), fitval[2],
             np.sqrt(fitcorr[1][1])
         ]
 
     ## Sending gantry to position
-    self.gcoder.moveto(fitval[1], fitval[2], arg.scanz, True)
+    self.move_gantry(fitval[1], fitval[2], args.scanz, True)
 
   @staticmethod
   def model(xydata, N, x0, y0, z, p):
@@ -195,22 +197,22 @@ class zscan(cmdbase.controlcmd):
 
     return arg
 
-  def run(self, arg):
+  def run(self, args):
     self.init_handle()
     lumi = []
     unc = []
 
-    for z in arg.zlist:
-      self.check_handle(arg)
-      self.move_gantry(arg.x, arg.y, z, False)
+    for z in args.zlist:
+      self.check_handle(args)
+      self.move_gantry(args.x, args.y, z, False)
 
       lumival = 0
       uncval = 0
       while 1:
-        lumival, uncval = self.readout.read(channel=arg.channel,
-                                            samples=arg.samples)
+        lumival, uncval = self.readout.read(channel=args.channel,
+                                            samples=args.samples)
         if self.readout.mode == self.readout.MODE_PICO:
-          wmax = self.pico.waveformmax(arg.channel)
+          wmax = self.pico.waveformmax(args.channel)
           if wmax < 100 and self.pico.range > self.pico.rangemin():
             self.pico.setrange(self.pico.range - 1)
           elif wmax > 200 and self.pico.range < self.pico.rangemax():
@@ -227,10 +229,11 @@ class zscan(cmdbase.controlcmd):
       self.update('z:{0:5.1f}, L:{1:8.5f}, uL:{2:8.6f}'.format(
           z, lumival, uncval))
       # Writing to file
-      arg.savefile.write("{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n".format(
-          arg.x, arg.y, z, lumival, uncval))
+      args.savefile.write(
+          "{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n".format(
+              args.x, args.y, z, lumival, uncval))
 
-    arg.savefile.close()
+    args.savefile.close()
 
 
 class timescan(cmdbase.controlcmd):
@@ -295,20 +298,20 @@ class showreadout(cmdbase.controlcmd):
     comarg.parse_readout_options(arg, self.cmd)
     return arg
 
-  def run(self, arg):
+  def run(self, args):
     self.init_handle()
     val = []
 
     for i in range(1000):
-      self.check_handle(arg)
+      self.check_handle(args)
 
       val.append(self.readout.read_adc_raw(0))
       self.update("{0} | {1} | {2} | {3}".format(
-          'Latest: {0:10.5f}'.format(val[-1]),
-          'Mean: {0:10.5f}'.format(np.mean(val)),
-          'STD: {0:11.6f}'.format(np.std(val)),
+          'Latest: {0:10.5f}'.format(val[-1]), 'Mean: {0:10.5f}'.format(
+              np.mean(val)), 'STD: {0:11.6f}'.format(np.std(val)),
           'PROGRESS [{0:3d}/1000]'.format(i)))
-      if arg.nowait: continue
+      if args.nowait:
+        continue
       time.sleep(1 / 50 * np.random.random())  ## Sleeping for random time
     meanval = np.mean(val)
     stdval = np.std(val)
@@ -317,6 +320,6 @@ class showreadout(cmdbase.controlcmd):
         np.mean(val), np.std(val)))
     self.printmsg('Update | Mean: {0:.5f} | STD: {1:.6f}'.format(
         np.mean(valstrip), np.std(valstrip)))
-    if arg.dumpval:
+    if args.dumpval:
       for v in val:
         print(v)

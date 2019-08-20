@@ -99,7 +99,7 @@ class controlterm(cmd.Cmd):
     return
 
   def complete_runfile(self, text, line, start_index, end_index):
-    return globcomp(text)
+    return controlcmd.globcomp(text)
 
 
 class controlcmd():
@@ -212,7 +212,7 @@ class controlcmd():
       action = next(
           x for x in self.parser._actions if (prevtext in x.option_strings))
       if type(action.type) == argparse.FileType:
-        return globcomp(text)
+        return controlcmd.globcomp(text)
       if action.nargs == 0:  ## For store_true options
         return optwithtext()
       return ['input type: ' + str(action.type), 'Help: ' + action.help]

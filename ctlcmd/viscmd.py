@@ -298,7 +298,7 @@ class visualzscan(cmdbase.controlcmd):
     for z in args.zlist:
       # Checking termination signal
       self.check_handle(args)
-      self.move_gantry(arg.x, arg.y, z, False)
+      self.move_gantry(args.x, args.y, z, False)
 
 
       reco = self.visual.find_chip(args.monitor)
@@ -341,7 +341,7 @@ class visualshowchip(cmdbase.controlcmd):
   def parse(self, line):
     return cmdbase.controlcmd.parse(self, line)
 
-  def run(self, arg):
+  def run(self, args):
     while True:
       self.visual.find_chip(True)
       if cv2.waitKey(100) > 0:  ## If any key is pressed
