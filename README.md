@@ -19,6 +19,7 @@ include:
   - [ADS1x15 Driver][ADS1x15]: For interfacing with pico-ammeter readout
   - [libps5000][Picoscope]: For interfacing with the readout oscilloscope
   - [WiringPi][WiringPi]: For trigger control via GPIO
+  - [Paramiko][Paramiko]: For data transfer over ssh
 
 For deployment for local testing on personal machines, WiringPi is not needed,
 but will require the user to manually setup a trigger system such that the
@@ -45,3 +46,4 @@ to use the program, se the [official documentation][SiPMCalibTwiki].
 [ADS1x15]: https://github.com/adafruit/Adafruit_CircuitPython_ADS1x15
 [raspi]: https://www.raspberrypi.org/products/raspberry-pi-3-model-b-plus/
 [archarm]: https://archlinuxarm.org/about/downloads
+[Paramiko]: http://www.paramiko.org/
