@@ -41,11 +41,9 @@ class set(cmdbase.controlcmd):
         type=int,
         choices=[readout.MODE_ADC, readout.MODE_PICO, readout.MODE_NONE],
         help='Setting readout mode of the current session')
-    self.parser.add_argument(
-      '-action',
-      type=argparse.FileType(mode='r'),
-      help='List of short hands for setting user prompts'
-    )
+    self.parser.add_argument('-action',
+                             type=argparse.FileType(mode='r'),
+                             help='List of short hands for setting user prompts')
 
   def run(self, arg):
     if arg.boardtype:
@@ -91,7 +89,6 @@ class set(cmdbase.controlcmd):
       self.action.add_json(arg.action.name)
 
 
-
 class get(cmdbase.controlcmd):
   """
   Printing out the session parameters, and equipment settings.
@@ -111,52 +108,78 @@ class get(cmdbase.controlcmd):
 
   def run(self, arg):
     if arg.boardtype or arg.all:
-      log.printmsg(log.GREEN("[BOARDTYPE]"), str(self.board.boardtype))
-      for chip in self.board.chips():
-        log.printmsg(
-            log.GREEN('[BOARDTYPE]'),
-            'Default Coord | Chip:{0} | x:{1}, y:{2}'.format(
-                chip, self.board.orig_coord[chip][0],
-                self.board.orig_coord[chip][1]))
+      self.print_board()
     if arg.printerdev or arg.all:
-      log.printmsg(log.GREEN('[PRINTER DEV]'), str(self.gcoder.dev_path))
+      self.print_printer()
     if arg.camdev or arg.all:
       log.printmsg(log.GREEN('[CAM DEV]'), str(self.visual.dev_path))
     if arg.align or arg.all:
-      for chip in self.board.chips():
-        for z in self.board.lumi_coord[chip].keys():
-          log.printmsg(
-              log.GREEN('[LUMI ALIGN]') + log.YELLOW('[CHIP%s]' % chip),
-              'x:{0:.2f}+-{1:.2f} y:{2:.2f}+-{3:.2f} | at z={4:.1f}'.format(
-                  self.board.vis_coord[chip][z][0],
-                  self.board.vis_coord[chip][z][2],
-                  self.board.vis_coord[chip][z][1],
-                  self.board.vis_coord[chip][z][3], z))
-        for z in self.board.visM[chip].keys():
-          log.printmsg(
-              log.GREEN('[VISUAL MATRIX]') + log.YELLOW('[CHIP%s]' % chip),
-              '{0} | at z={1:.1f}'.format(self.board.visM[chip][z], z))
-        for z in self.board.vis_coord[chip].keys():
-          log.printmsg(
-              log.GREEN('[VISUAL ALIGN]') + log.YELLOW('[CHIP%s]' % chip),
-              'x:{0:.2f} y:{1:.2f} | at z={2:.1f}'.format(
-                  self.board.vis_coord[chip][z][0],
-                  self.board.vis_coord[chip][z][1], z))
+      self.print_alignment()
     if arg.pico or arg.all:
       self.pico.printinfo()
     if arg.readout or arg.all:
-      log.printmsg(
-        log.GREEN('[READOUT MODE]'),
-        'PICOSCOPE' if self.readout.mode == readout.MODE_PICO else \
-        'ADC CHIP'  if self.readout.mode == readout.MODE_ADC  else \
-        'PREDEFINED MODEL'
-      )
+      self.print_readout()
     if arg.action or arg.all:
       for key in self.action.shorthands():
+        log.printmsg(log.GREEN('[ACTIONS]'), key + ' | ' + self.action.map[key])
+
+  def print_board(self):
+    header = log.GREEN('[BOARDTYPE]')
+    msg_format = 'Default Coord | Chip:{0} | x:{1}, y:{2}'
+    log.printmsg(header, str(self.board.boardtype))
+    for chip in self.board.chips():
+      msg = msg_format.format(chip, self.board.orig_coord[chip][0],
+                              self.board.orig_coord[chip][1])
+      log.printmsg(header, msg)
+
+  def print_printer(self):
+    header = log.GREEN('[PRINTER]')
+    log.printmsg(header, 'device: ' + str(self.gcoder.dev_path))
+    log.printmsg(
+        header, 'current coordinates: x{0:.1f} y{1:.1f} z{1:0.1f}'.format(
+            self.gcoder.opx, self.gcoder.opy, self.gcoder.opz))
+
+  def print_camera(self):
+    header = log.GREEN('[CAMERA]')
+    log.printmsg(header, str(self.visual.dev_path))
+
+  def print_alignment(self):
+    lumi_header = log.GREEN('[LUMI_ALIGN]')
+    matrix_header = log.GREEN('[VIS_MATRIX]')
+    vis_header = log.GREEN('[VIS__ALIGN]')
+    chip_format = log.YELLOW(' CHIP{0:3d}')
+    for chip in self.board.chips():
+      chip_str = chip_format.format(int(chip))
+      for z in self.board.lumi_coord[chip].keys():
         log.printmsg(
-          log.GREEN('[ACTIONS]'),
-          key + ' | ' + self.action.map[key]
-        )
+            lumi_header + chip_str,
+            'x:{0:.2f}+-{1:.2f} y:{2:.2f}+-{3:.2f} | at z={4:.1f}'.format(
+                self.board.vis_coord[chip][z][0],
+                self.board.vis_coord[chip][z][2],
+                self.board.vis_coord[chip][z][1],
+                self.board.vis_coord[chip][z][3], z))
+      for z in self.board.visM[chip].keys():
+        log.printmsg(matrix_header + chip_str, '{0} | at z={1:.1f}'.format(
+            self.board.visM[chip][z], z))
+      for z in self.board.vis_coord[chip].keys():
+        log.printmsg(
+            vis_header + chip_str, 'x:{0:.2f} y:{1:.2f} | at z={2:.1f}'.format(
+                self.board.vis_coord[chip][z][0],
+                self.board.vis_coord[chip][z][1], z))
+
+  def print_readout(self):
+    log.printmsg(
+      log.GREEN('[READOUT]'),
+      'PICOSCOPE' if self.readout.mode == readout.MODE_PICO else \
+      'ADC CHIP'  if self.readout.mode == readout.MODE_ADC  else \
+      'PREDEFINED MODEL')
+
+  def print_action(self):
+    header = log.GREEN('[ACTION]')
+    msg_format = log.YELLOW('{0}') + ' | {1}'
+    for key in self.action.shorthands():
+      msg = msg_format.format(key, self.action.map[key])
+      log.printmsg(header, msg)
 
 
 class getcoord(cmdbase.controlcmd):
@@ -216,6 +239,7 @@ class loadcalib(cmdbase.controlcmd):
   def run(self, args):
     self.board.load_calib_file(args.file.name)
 
+
 class promptaction(cmdbase.controlcmd):
   """
   Displaying message that requires manual intervention.
@@ -232,13 +256,13 @@ class promptaction(cmdbase.controlcmd):
               'get a list) or a raw string message that is to be shown on the '
               'screen'))
 
-  def parse(self,line):
-    return cmdbase.controlcmd.parse(self,line)
+  def parse(self, line):
+    return cmdbase.controlcmd.parse(self, line)
 
-  def run(self,args):
+  def run(self, args):
     msg = self.action.map[args.string[0]] \
           if args.string[0] in self.action.shorthands() \
           else ' '.join(args.string)
-    log.printmsg( log.GREEN('    THE NEXT STEP REQUIRES USER INTERVENTION'))
-    log.printmsg( msg )
+    log.printmsg(log.GREEN('    THE NEXT STEP REQUIRES USER INTERVENTION'))
+    log.printmsg("    > " + msg)
     input(log.GREEN('    Press [Enter] to continue...'))
