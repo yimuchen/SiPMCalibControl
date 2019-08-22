@@ -27,6 +27,8 @@ if __name__ == '__main__':
       getset.getcoord,
       getset.savecalib,
       getset.loadcalib,
+      getset.lighton,
+      getset.lightoff,
       getset.promptaction,
       digicmd.pulse,
       picocmd.picoset,

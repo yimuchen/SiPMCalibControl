@@ -258,6 +258,27 @@ class loadcalib(cmdbase.controlcmd):
     self.board.load_calib_file(args.file.name)
 
 
+class lighton(cmdbase.controlcmd):
+  """
+  Turning the LED lights on.
+  """
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
+
+  def run(self,args):
+    self.trigger.light_on()
+
+class lightoff(cmdbase.controlcmd):
+  """
+  Turning the LED lights on.
+  """
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
+
+  def run(self,line):
+    self.trigger.light_off()
+
+
 class promptaction(cmdbase.controlcmd):
   """
   Displaying message that requires manual intervention.

@@ -285,6 +285,10 @@ PicoUnit::DumpBuffer() const
 
     printmsg( head, line );
   }
+
+  // Two empty lines for aesthetic reasons
+  printmsg( "" );
+  printmsg( "" );
 }
 
 int16_t

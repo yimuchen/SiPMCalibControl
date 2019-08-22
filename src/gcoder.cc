@@ -258,8 +258,8 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
           pmsg.resize(54);
           pmsg += "...";
         }
-        flush_update();
-        sprintf( msg, "Couldn't parse string [%s]! Trying again!",
+        // flush_update();
+        sprintf( msg, "Couldn't parse string [%s]! Trying again!\n\n",
           pmsg.c_str() );
         printwarn( msg );
       }

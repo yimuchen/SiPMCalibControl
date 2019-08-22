@@ -109,7 +109,7 @@ Logger::Update( const std::string& key, const std::string& msg )
 void
 Logger::PrintMessage( const std::string& msg, const std::string& header )
 {
-  FlushUpdate();
+  // screenclear_update();
   if( header != "" ){
     fprintf( stdout, "%s ", header.c_str() );
   }
