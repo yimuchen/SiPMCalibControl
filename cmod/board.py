@@ -33,10 +33,9 @@ class Board(object):
 
   def load_calib_file(self, file):
     if not self.empty():
-      logger.printwarn(
-          'The current session is not empty. Loading a new boardtype will erase any existing configuration for the current session'
-      )
-
+      logger.printwarn(('The current session is not empty. Loading a new '
+                        'boardtype will erase any existing configuration '
+                        'for the current session'))
     jsontemp = json.loads(open(file, 'r').read())
 
     def make_fz_dict(ext_dict):
@@ -66,6 +65,14 @@ class Board(object):
   def calibchips(self):
     return sorted([k for k in self.orig_coord.keys() if int(k) < 0],
                   reverse=True)
+
+  def add_calib_chip(self,chipid):
+    if chipid not in self.orig_coord and int(chipid) < 0:
+      self.orig_coord[chipid] = [-100,-100] # Non-existent calibration chip
+      self.vis_coord[chipid] = {}
+      self.visM[chipid] = {}
+      self.lumi_coord[chipid] = {}
+
 
   # Get/Set calibration measures with additional parsing
   def add_vis_coord(self, chip, z, data):

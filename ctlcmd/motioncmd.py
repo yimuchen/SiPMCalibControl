@@ -142,6 +142,10 @@ class halign(cmdbase.controlcmd):
     self.printmsg('Fit  z:{0:.2f}+-{1:.3f}'.format(fitval[3],
                                                    np.sqrt(fitcorr[3][3])))
 
+    ## Generating calibration chip id if using chip coordinates
+    if not args.chipid in self.board.visM and int(args.chipid) < 0:
+      self.board.add_calib_chip(args.chipid)
+
     ## Saving session information
     if (not args.chipid in self.board.lumi_coord
         or not args.scanz in self.board.lumi_coord[args.chipid]

@@ -90,6 +90,10 @@ class visualhscan(cmdbase.controlcmd):
               fity[0], np.sqrt(corry[0][0]),
               fity[1], np.sqrt(corry[1][1])  ) )
 
+    ## Generating calibration chip id if using chip coordinates
+    if not args.chipid in self.board.visM and int(args.chipid) < 0:
+      self.board.add_calib_chip(args.chipid)
+
     ## Saving rounded coordinates
     if (not self.gcoder.opz in self.board.visM[args.chipid] or args.overwrite):
       self.board.add_visM(args.chipid, self.gcoder.opz,
