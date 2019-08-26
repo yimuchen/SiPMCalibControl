@@ -75,7 +75,8 @@ if __name__ == '__main__':
   except Exception as err:
     logger.printerr(str(err))
     logger.printwarn(
-        "There was error in the setup process, program will "
-        "continue but will most likely misbehave! Use at your own risk!")
+        'There was error in the setup process, program will '
+        'continue but will most likely misbehave! Use at your own risk!')
+
 
   cmd.cmdloop()

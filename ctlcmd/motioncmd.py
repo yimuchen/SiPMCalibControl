@@ -63,7 +63,9 @@ class halign(cmdbase.controlcmd):
   """
   Running horizontal alignment procedure by luminosity readout v.s. x-y motion
   scanning. Notice that when running with the picoscope, the only the number of
-  captures to perform the average/spread calculation can be adjusted directly in this command. For the other options such as the integration window, the voltage range... etc. You will still need the picoset command.
+  captures to perform the average/spread calculation can be adjusted directly in
+  this command. For the other options such as the integration window, the voltage
+  range... etc. You will still need the picoset command.
   """
 
   DEFAULT_SAVEFILE = 'halign_<ZVAL>_<TIMESTAMP>.txt'
@@ -123,7 +125,7 @@ class halign(cmdbase.controlcmd):
     # Performing fit
     p0 = (max(lumi) * (args.scanz**2), args.x, args.y, args.scanz, min(lumi))
     try:
-      fitval, fitcorr = curve_fit(halign.model,
+      fitval, fitcovar = curve_fit(halign.model,
                                   np.vstack((x, y)),
                                   lumi,
                                   p0=p0,
@@ -136,11 +138,11 @@ class halign(cmdbase.controlcmd):
       raise err
 
     self.printmsg('Best x:{0:.2f}+-{1:.3f}'.format(fitval[1],
-                                                   np.sqrt(fitcorr[1][1])))
+                                                   np.sqrt(fitcovar[1][1])))
     self.printmsg('Best y:{0:.2f}+-{1:.3f}'.format(fitval[2],
-                                                   np.sqrt(fitcorr[2][2])))
+                                                   np.sqrt(fitcovar[2][2])))
     self.printmsg('Fit  z:{0:.2f}+-{1:.3f}'.format(fitval[3],
-                                                   np.sqrt(fitcorr[3][3])))
+                                                   np.sqrt(fitcovar[3][3])))
 
     ## Generating calibration chip id if using chip coordinates
     if not args.chipid in self.board.visM and int(args.chipid) < 0:
@@ -154,16 +156,16 @@ class halign(cmdbase.controlcmd):
         self.board.lumi_coord[args.chipid] = {}
       self.board.lumi_coord[args.chipid][args.scanz] = [
           fitval[1],
-          np.sqrt(fitcorr[1][1]), fitval[2],
-          np.sqrt(fitcorr[1][1])
+          np.sqrt(fitcovar[1][1]), fitval[2],
+          np.sqrt(fitcovar[1][1])
       ]
     elif args.scanz in self.board.lumi_coord[args.chipid]:
       if comarg.prompt(('A lumi alignment for z={0:.1f} already exists for '
                         'the current session, overwrite?').format(args.scanz)):
         self.board.lumi_coord[args.chipid][args.scanz] = [
             fitval[1],
-            np.sqrt(fitcorr[1][1]), fitval[2],
-            np.sqrt(fitcorr[1][1])
+            np.sqrt(fitcovar[1][1]), fitval[2],
+            np.sqrt(fitcovar[1][1])
         ]
 
     ## Sending gantry to position

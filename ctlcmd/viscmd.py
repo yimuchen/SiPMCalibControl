@@ -76,19 +76,19 @@ class visualhscan(cmdbase.controlcmd):
     cv2.destroyAllWindows()
     args.savefile.close()
 
-    fitx, corrx = curve_fit(visualhscan.model, np.vstack((gantry_x, gantry_y)),
-                            reco_x)
-    fity, corry = curve_fit(visualhscan.model, np.vstack((gantry_x, gantry_y)),
-                            reco_y)
+    fitx, covar_x = curve_fit(visualhscan.model, np.vstack((gantry_x, gantry_y)),
+                              reco_x)
+    fity, covar_y = curve_fit(visualhscan.model, np.vstack((gantry_x, gantry_y)),
+                              reco_y)
 
     self.printmsg( 'Transformation for CamX ' \
           '= ({0:.2f}+-{1:.3f})x + ({2:.2f}+-{3:.2f})y'.format(
-              fitx[0], np.sqrt(corrx[0][0]),
-              fitx[1], np.sqrt(corrx[1][1])  ) )
+              fitx[0], np.sqrt(covar_x[0][0]),
+              fitx[1], np.sqrt(covar_x[1][1])  ) )
     self.printmsg( 'Transformation for CamY ' \
           '= ({0:.2f}+-{1:.3f})x + ({2:.2f}+-{3:.2f})y'.format(
-              fity[0], np.sqrt(corry[0][0]),
-              fity[1], np.sqrt(corry[1][1])  ) )
+              fity[0], np.sqrt(covar_y[0][0]),
+              fity[1], np.sqrt(covar_y[1][1])  ) )
 
     ## Generating calibration chip id if using chip coordinates
     if not args.chipid in self.board.visM and int(args.chipid) < 0:
@@ -303,7 +303,6 @@ class visualzscan(cmdbase.controlcmd):
       # Checking termination signal
       self.check_handle(args)
       self.move_gantry(args.x, args.y, z, False)
-
 
       reco = self.visual.find_chip(args.monitor)
       laplace.append(self.visual.sharpness(args.monitor))

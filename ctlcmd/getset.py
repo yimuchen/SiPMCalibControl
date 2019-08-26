@@ -143,8 +143,9 @@ class get(cmdbase.controlcmd):
 
   def print_board(self):
     header = log.GREEN('[BOARDTYPE]')
-    msg_format = 'Default Coord | Chip:{0} | x:{1}, y:{2}'
+    msg_format = 'Chip:{0:>4s} | x:{1:5.1f}, y:{2:5.1f}'
     log.printmsg(header, str(self.board.boardtype))
+    log.printmsg(header, 'Board ID: '+self.board.boardid)
     for chip in self.board.chips():
       msg = msg_format.format(chip, self.board.orig_coord[chip][0],
                               self.board.orig_coord[chip][1])
