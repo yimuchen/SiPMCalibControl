@@ -16,6 +16,18 @@ struct GCoder
   // GCoder( const std::wstring& dev );
   ~GCoder();
 
+  // Static data members
+  static const float _max_x;
+  static const float _max_y;
+  static const float _max_z;
+
+  static float
+  max_x(){ return _max_x; }
+  static float
+  max_y(){ return _max_y; }
+  static float
+  max_z(){ return _max_z; }
+
   void InitPrinter( const std::string& dev );
 
   // Raw motion command setup
@@ -48,9 +60,9 @@ struct GCoder
   static bool MatchCoord( double x, double y );
 
 public:
-  int          printer_IO;
-  float        opx, opy, opz;// current position of the printer
-  float        vx, vy, vz;// Speed of the gantry head.
+  int         printer_IO;
+  float       opx, opy, opz; // current position of the printer
+  float       vx, vy, vz; // Speed of the gantry head.
   std::string dev_path;
 };
 

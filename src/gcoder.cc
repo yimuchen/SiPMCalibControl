@@ -72,7 +72,7 @@ GCoder::InitPrinter( const std::string& dev )
     throw std::runtime_error( errormessage );
   }
 
-  printmsg(GREEN("PRINTER"), "Waking up printer...." );
+  printmsg( GREEN( "PRINTER" ), "Waking up printer...." );
   usleep( 5e6 );
   SendHome();
 
@@ -102,7 +102,7 @@ GCoder::RunGcode(
 
   // Pretty output
   std::string pstring = gcode;
-  pstring[pstring.length()-1] = '\0'; // Getting rid of trailing new line
+  pstring[pstring.length()-1] = '\0';// Getting rid of trailing new line
 
   sprintf( msg, "[%s] to USBTERM[%d] (attempt %u)...",
     pstring.c_str(), printer_IO, attempt );
@@ -218,6 +218,17 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
   opy = std::round( opy * 10 ) / 10;
   opz = std::round( opz * 10 ) / 10;
 
+  // checking for boundary
+  if( opx < 0 || opx > max_x() ||
+      opy < 0 || opy > max_y() ||
+      opz < 0 || opz > max_z()  ){
+    printwarn( "Coordinates is outside of gantry limit! Moving the "
+      "destination back into reasonable limits." );
+    opx = std::max( std::min( opx, max_x() ), 0.0f );
+    opy = std::max( std::min( opy, max_y() ), 0.0f );
+    opz = std::max( std::min( opz, max_z() ), 0.0f );
+  }
+
   // Running the code
   sprintf( gcode, move_fmt, opx, opy, opz );
   RunGcode( gcode, 0, 100, verbose );
@@ -251,11 +262,13 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
     } else {
       if( verbose ){
         std::string pmsg = checkmsg;
-        for( unsigned i = 0 ; i < pmsg.length() ; ++i ){
+
+        for( unsigned i = 0; i < pmsg.length(); ++i ){
           if( pmsg[i] == '\n' ){ pmsg[i] = '\\'; }
         }
+
         if( pmsg.length() > 54 ){
-          pmsg.resize(54);
+          pmsg.resize( 54 );
           pmsg += "...";
         }
         // flush_update();
@@ -278,6 +291,11 @@ GCoder::MatchCoord( double x, double y )
   return x == y;
 }
 
+
+const float GCoder::_max_x = 345;
+const float GCoder::_max_y = 450;
+const float GCoder::_max_z = 460;
+
 #include <boost/python.hpp>
 
 BOOST_PYTHON_MODULE( gcoder )
@@ -293,5 +311,13 @@ BOOST_PYTHON_MODULE( gcoder )
   .def_readonly( "dev_path", &GCoder::dev_path )
   .def_readonly( "opx",      &GCoder::opx )
   .def_readonly( "opy",      &GCoder::opy )
-  .def_readonly( "opz",      &GCoder::opz );
+  .def_readonly( "opz",      &GCoder::opz )
+  // Static methods
+  .def( "max_x",    &GCoder::max_x )
+     .staticmethod("max_x")
+  .def( "max_y",    &GCoder::max_y )
+     .staticmethod("max_y")
+  .def( "max_z",    &GCoder::max_z )
+    .staticmethod("max_z")
+  ;
 }
