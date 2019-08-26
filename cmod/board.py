@@ -1,4 +1,5 @@
 import cmod.logger as logger
+import cmod.gcoder as gcoder
 import json
 
 class Board(object):
@@ -16,9 +17,9 @@ class Board(object):
 
   def set_boardtype(self, file):
     if any(self.chips()) or not self.empty():
-      logger.printwarn(
-          'The current session is not empty. Loading a new boardtype will erase any existing configuration for the current session'
-      )
+      logger.printwarn(('The current session is not empty. Loading a new '
+                        'boardtype will erase any existing configuration '
+                        'for the current session'))
 
     jsontemp = json.loads(open(file, 'r').read())
     self.boardtype = jsontemp['board type']
@@ -27,6 +28,25 @@ class Board(object):
     ## Getting the original coordinate list
     for key in jsontemp['default coordinate']:
       self.orig_coord[str(key)] = jsontemp['default coordinate'][key]
+      if (self.orig_coord[str(key)][0] > gcoder.GCoder.max_x()
+          or self.orig_coord[str(key)][1] > gcoder.GCoder.max_y()
+          or self.orig_coord[str(key)][0] < 0
+          or self.orig_coord[str(key)][1] < 0):
+        logger.printwarn(('The chip position for chip {0} (x:{1},y:{2}) '
+                          'is outside of the gantry boundaries (0-{3},0-{4}). '
+                          'For safety of operation, the chip position will be '
+                          'adjusted. This might lead to unexpected '
+                          'behavior').format(key, self.orig_coord[str(key)][0],
+                                             self.orig_coord[str(key)][1],
+                                             gcoder.GCoder.max_x(),
+                                             gcoder.GCoder.max_y()))
+        self.orig_coord[str(key)][0] = max(
+            [min([self.orig_coord[str(key)][0],
+                  gcoder.GCoder.max_x()]), 0])
+        self.orig_coord[str(key)][1] = max(
+            [min([self.orig_coord[str(key)][1],
+                  gcoder.GCoder.max_y()]), 0])
+
       self.vis_coord[str(key)] = {}
       self.visM[str(key)] = {}
       self.lumi_coord[str(key)] = {}
@@ -66,13 +86,12 @@ class Board(object):
     return sorted([k for k in self.orig_coord.keys() if int(k) < 0],
                   reverse=True)
 
-  def add_calib_chip(self,chipid):
+  def add_calib_chip(self, chipid):
     if chipid not in self.orig_coord and int(chipid) < 0:
-      self.orig_coord[chipid] = [-100,-100] # Non-existent calibration chip
+      self.orig_coord[chipid] = [-100, -100]  # Non-existent calibration chip
       self.vis_coord[chipid] = {}
       self.visM[chipid] = {}
       self.lumi_coord[chipid] = {}
-
 
   # Get/Set calibration measures with additional parsing
   def add_vis_coord(self, chip, z, data):
