@@ -426,7 +426,7 @@ class controlcmd():
                                    ' specified using <ARG> to indicate '
                                    'placeholders to be used by argument values. '
                                    'The placeholder <TIMESTAMP> can be used for '
-                                   'a string representing the current time')
+                                   'a string representing the current time'))
     self.parser.add_argument('--wipefile',
                              action='store_true',
                              help='Wipe existing content in output file')
