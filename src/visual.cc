@@ -51,7 +51,7 @@ Visual::find_chip( const bool monitor )
 {
   // Magic numbers that will need some method of adjustment
   static const cv::Size blursize( 5, 5 );
-  static const int minthreshold   = 60;
+  static const int minthreshold   = 80;
   static const int maxthreshold   = 255;// this doesn't need to change.
   static const double maxchiplumi = 40;
   static const int minchipsize    = 50;
@@ -66,6 +66,7 @@ Visual::find_chip( const bool monitor )
   std::vector<std::vector<cv::Point> > contours;
   std::vector<std::vector<cv::Point> > hulls;
   std::vector<cv::Vec4i> hierarchy;
+  std::vector<cv::Point> polyapprox ;
 
   // Getting image
   getImg( img );
@@ -88,6 +89,8 @@ Visual::find_chip( const bool monitor )
     if( size < minchipsize ){ continue; }// skipping small speckles
     if( ratio > chipratio
         || ratio < 1./chipratio ){ continue; }// skipping non-square stuff
+    cv::approxPolyDP( contours.at(i), polyapprox, size*0.08, true );
+    if( polyapprox.size() != 4 ){ continue; }
 
     // Calculating average color of inside contour
     cv::Mat mask = cv::Mat::zeros( img.size(), CV_8UC1 );
