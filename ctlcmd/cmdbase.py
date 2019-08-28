@@ -95,7 +95,11 @@ class controlterm(cmd.Cmd):
 
     with open(line) as f:
       for cmdline in f.readlines():
-        self.onecmd(cmdline.strip())
+        status = self.onecmd(cmdline.strip())
+        if status != controlcmd.EXIT_SUCCESS:
+          log.printerr(('Command [{0}] in file [{1}] has failed. Exiting '
+                        '[runfile] command').format(cmdline.strip(), f.name))
+          break
     return
 
   def complete_runfile(self, text, line, start_index, end_index):
@@ -110,6 +114,9 @@ class controlcmd():
   vallina python cmd class. Here we will be using the argparse class by default
   to call for the help and complete functions
   """
+  PARSE_ERROR = -1
+  EXECUTE_ERROR = -2
+  EXIT_SUCCESS = 0
 
   LOG = "DUMMY"
 
@@ -144,15 +151,8 @@ class controlcmd():
     children classes. The actual execution of the function is handled in the run
     method.
     """
-    try:
-      args = self.parse(line)
-    except Exception as err:
-      self.printerr(str(err))
-      return
 
-    try:
-      self.run(args)
-    except Exception as err:
+    def print_tracestack():
       exc_msg = traceback.format_exc()
       exc_msg = exc_msg.splitlines()
       exc_msg = exc_msg[1:-1]  ## Remove traceback and error line.
@@ -177,11 +177,23 @@ class controlcmd():
         stackline += content
         log.printmsg(stackline)
 
+
+    try:
+      args = self.parse(line)
+    except Exception as err:
+      print_tracestack()
       self.printerr(str(err))
-      return
+      return controlcmd.PARSE_ERROR
+
+    try:
+      self.run(args)
+    except Exception as err:
+      print_tracestack()
+      self.printerr(str(err))
+      return controlcmd.EXECUTE_ERROR
 
     log.clear_update()
-    return
+    return controlcmd.EXIT_SUCCESS
 
   def callhelp(self):
     """

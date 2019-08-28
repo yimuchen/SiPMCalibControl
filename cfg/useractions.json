@@ -1,7 +1,8 @@
 {
-  "PD_PULSER" : "Setting pulser board into dynamic mode, please tune the PULL DOWN VOLTAGE to 1.68V",
-  "PD_CONST": "Setting pulser board into continuous mode, please tune the PULL DOWN VOLTAGE to 4.30V",
+  "PD_PULSER" : "Setting pulser board into dynamic mode, please tune the PULL DOWN VOLTAGE to [0.95V] and turn SIPM HIGH VOLTAGE [ON]",
+  "PD_CONST": "Setting pulser board into continuous mode, please tune the PULL DOWN VOLTAGE to [4.30V] and turn SIPM HIGH VOLTAGE [OFF]",
+  "PD_OFF": "Turning off the pulser board, please tune the PULL DOWN VOLTAGE to [0] and turn SIPM HIGH VOLTAGE [OFF]",
 
-  "VIS_MODE": "Preparing for visual calibration, please make sure the SiPM HIGH VOLTAGE power supply is OFF",
-  "DARK_MODE": "Preparing for data collections, please make sure that the light sensing power supplies are ON"
+  "VIS_MODE": "Preparing for visual calibration, please make sure the SIPM HIGH VOLTAGE is [OFF]",
+  "DARK_MODE": "Preparing for data collections, please make sure that the LIGHT SENSING POWER is [ON]"
 }

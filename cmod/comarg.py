@@ -127,66 +127,70 @@ def parse_xychip_options(arg, cmdsession, add_visoffset=False, raw_coord=False):
   ## Setting up alias for board
   board = cmdsession.board
 
-  if arg.chipid != None:
-    if int(arg.chipid) >= 0:
-      if arg.x or arg.y:
-        raise Exception('You can either specify chip-id or x y, not both')
-      if not str(arg.chipid) in cmdsession.board.chips():
-        raise Exception('Chip id was not specified in board type')
-      arg.x, arg.y = cmdsession.board.orig_coord[arg.chipid]
-    else:
+  ## If not directly specifying the chip id, assuming some calibration chip with
+  ## specified coordinate system. Exit immediately.
+  if arg.chipid == None:
+    arg.chipid = '-100'
+    if not arg.x: arg.x = cmdsession.gcoder.opx
+    if not arg.y: arg.y = cmdsession.gcoder.opy
+    return
 
-      if not arg.chipid in board.chips():
-        raise Exception('Chip id was not specified in board type')
-      if raw_coord:
-        # Early exit if not specified
-        arg.x, arg.y = board.orig_coord[arg.chipid]
-        return
+  ## Attempt to get a board specified chip position.
+  if not arg.chipid in board.chips():
+    raise Exception('Chip id was not specified in board type')
+    return
 
-    # Determining current z value ( from argument first, otherwise guessing
-    # from present gantry position )
-    currentz = arg.z if hasattr(arg, 'z') else \
+  ## Raising exception when attempting to overide chip position with raw
+  ## x-y values
+  if arg.x or arg.y:
+    raise Exception('You can either specify chip-id or x y, not both')
+    return
+
+  # Early exit if raw coordinates requested
+  if raw_coord:
+    arg.x, arg.y = board.orig_coord[arg.chipid]
+    return
+
+  # Determining current z value ( from argument first, otherwise guessing
+  # from present gantry position )
+  currentz = arg.z if hasattr(arg, 'z') else \
                min(arg.zlist) if hasattr(arg, 'zlist') else \
                cmdsession.gcoder.opz
 
-    # Determine visual offset to assign based on *calibration* chips!
-    xoffset = -20
-    yoffset = 0
-    if any(board.calibchips()):
-      calibchip = board.calibchips()[0]
-      if (currentz in board.vis_coord[calibchip]
-          and any(board.lumi_coord[calibchip])):
-        closestz = min(board.lumi_coord[calibchip].keys(),
-                       key=lambda x: abs(x - currentz))
-        xoffset = board.vis_coord[calibchip][currentz][0] \
-                - board.lumi_coord[calibchip][closestz][0]
-        yoffset = board.vis_coord[calibchip][currentz][1] \
-                - board.lumi_coord[calibchip][closestz][2]
-
-    ## If Lumi coordinate exists, use the lumi coordinate
-    # closest z value if multiple values exist s)
-    if any(cmdsession.board.lumi_coord[arg.chipid]):
-      closestz = min(board.lumi_coord[arg.chipid].keys(),
+  # Determine visual offset to assign based on *calibration* chips!
+  xoffset = -36
+  yoffset = 0
+  if any(board.calibchips()):
+    calibchip = board.calibchips()[0]
+    if (currentz in board.vis_coord[calibchip]
+        and any(board.lumi_coord[calibchip])):
+      closestz = min(board.lumi_coord[calibchip].keys(),
                      key=lambda x: abs(x - currentz))
-      arg.x = board.lumi_coord[arg.chipid][closestz][0]
-      arg.y = board.lumi_coord[arg.chipid][closestz][2]
-    # Else if visual coordinates exists, move to visual cooridnate with
-    # offset subtracted, the operating z value must have a matching
-    # entry in the vis coordinates, otherwise there will be mismatches
-    elif currentz in cmdsession.board.vis_coord[arg.chipid]:
-      arg.x = board.vis_coord[arg.chipid][currentz][0] - xoffset
-      arg.y = board.vis_coord[arg.chipid][currentz][1] - yoffset
-    else:
-      arg.x, arg.y = cmdsession.board.orig_coord[arg.chipid]
+      xoffset = board.vis_coord[calibchip][currentz][0] \
+              - board.lumi_coord[calibchip][closestz][0]
+      yoffset = board.vis_coord[calibchip][currentz][1] \
+              - board.lumi_coord[calibchip][closestz][2]
 
-    ## Adding back the horizontal offset if specified
-    if add_visoffset:
-      arg.x += xoffset
-      arg.y += yoffset
+  ## If Lumi coordinate exists, use the lumi coordinate
+  # closest z value if multiple values exist s)
+  if any(cmdsession.board.lumi_coord[arg.chipid]):
+    closestz = min(board.lumi_coord[arg.chipid].keys(),
+                   key=lambda x: abs(x - currentz))
+    arg.x = board.lumi_coord[arg.chipid][closestz][0]
+    arg.y = board.lumi_coord[arg.chipid][closestz][2]
+  # Else if visual coordinates exists, move to visual cooridnate with
+  # offset subtracted, the operating z value must have a matching
+  # entry in the vis coordinates, otherwise there will be mismatches
+  elif currentz in cmdsession.board.vis_coord[arg.chipid]:
+    arg.x = board.vis_coord[arg.chipid][currentz][0] - xoffset
+    arg.y = board.vis_coord[arg.chipid][currentz][1] - yoffset
   else:
-    arg.chipid = '-100'  ## Assuming some calibration chip is not specified
-    if not arg.x: arg.x = cmdsession.gcoder.opx
-    if not arg.y: arg.y = cmdsession.gcoder.opy
+    arg.x, arg.y = board.orig_coord[arg.chipid]
+
+  ## Adding back the horizontal offset if specified
+  if add_visoffset:
+    arg.x += xoffset
+    arg.y += yoffset
 
 
 def parse_readout_options(arg, cmd):
