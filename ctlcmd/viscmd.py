@@ -19,19 +19,19 @@ class visualhscan(cmdbase.controlcmd):
     ## Adding common coordinate for x-y scanning
     self.add_hscan_options(hrange=3, distance=0.5)
     self.add_savefile_options(self.DEFAULT_SAVEFILE)
-    self.parser.add_argument(
-        '-m',
-        '--monitor',
-        action='store_true',
-        help='Whether or not to open the monitoring window (could be slow!!)')
-    self.parser.add_argument(
-        '--overwrite',
-        action='store_true',
-        help='Forcing the storage of scan results as session information')
+    self.parser.add_argument('-m',
+                             '--monitor',
+                             action='store_true',
+                             help=('Whether or not to open the monitoring window'
+                                   ' (could be slow!!)'))
+    self.parser.add_argument('--overwrite',
+                             action='store_true',
+                             help=('Forcing the storage of scan results as '
+                                   'session information'))
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
-    self.parse_xychip_options(args,add_visoffset=True)
+    self.parse_xychip_options(args, add_visoffset=True)
     self.parse_savefile(args)
     return args
 
@@ -116,18 +116,20 @@ class visualcenterchip(cmdbase.controlcmd):
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.add_xychip_options()
-    self.parser.add_argument(
-        '-z',
-        '--startz',
-        type=float,
-        help=('Position z to perform centering. User must make sure the visual '
-              'transformation equation have already been created have already '
-              'been created before'))
-    self.parser.add_argument('--overwrite', action='store_true', help='T')
+    self.parser.add_argument('-z',
+                             '--scanz',
+                             type=float,
+                             help=('Position z to perform centering. User must '
+                                   'make sure the visual transformation '
+                                   'equation has already been created before'))
+    self.parser.add_argument('--overwrite',
+                             action='store_true',
+                             help=('Whether to overwrite the existing '
+                                   'information or not'))
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
-    self.parse_xychip_options(args,add_visoffset=True)
+    self.parse_xychip_options(args, add_visoffset=True)
     if not args.startz:
       raise Exception('Specify the height to perform the centering operation')
 
@@ -216,18 +218,18 @@ class visualmaxsharp(cmdbase.controlcmd):
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.add_xychip_options()
-    self.parser.add_argument(
-        '-z',
-        '--startz',
-        type=float,
-        default=30,
-        help='Initial value to begin finding optimal z value [mm]')
-    self.parser.add_argument(
-        '-d',
-        '--stepsize',
-        type=float,
-        default=1,
-        help='First step size to scan for immediate neighborhood z scan [mm]')
+    self.parser.add_argument('-z',
+                             '--startz',
+                             type=float,
+                             default=30,
+                             help=('Initial value to begin finding optimal z '
+                                   'value [mm]'))
+    self.parser.add_argument('-d',
+                             '--stepsize',
+                             type=float,
+                             default=1,
+                             help=('First step size to scan for immediate '
+                                   'neighborhood z scan [mm]'))
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
@@ -258,18 +260,18 @@ class visualzscan(cmdbase.controlcmd):
   Scanning focus to calibrate z distance
   """
 
-  DEFAULT_SAVEFILE = 'vscan_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'vscan_<CHIPID>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[VISZSCAN]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.add_savefile_options(visualzscan.DEFAULT_SAVEFILE)
     self.add_zscan_options()
-    self.parser.add_argument(
-        '-m',
-        '--monitor',
-        action='store_true',
-        help='Whether or not to open the monitoring window (could be slow!!)')
+    self.parser.add_argument('-m',
+                             '--monitor',
+                             action='store_true',
+                             help=('Whether or not to open a monitoring window '
+                                   '(could be slow!!)'))
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)

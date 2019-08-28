@@ -74,10 +74,10 @@ class halign(cmdbase.controlcmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.add_hscan_options(hrange=20, distance=1)
     self.add_savefile_options(halign.DEFAULT_SAVEFILE)
-    self.parser.add_argument(
-        '--overwrite',
-        action='store_true',
-        help='Forcing the storage of scan results as session information')
+    self.parser.add_argument('--overwrite',
+                             action='store_true',
+                             help=('Forcing the storage of scan results as '
+                                   'session information'))
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
@@ -156,7 +156,7 @@ class halign(cmdbase.controlcmd):
       ]
     elif args.scanz in self.board.lumi_coord[args.chipid]:
       if self.cmd.prompt(('A lumi alignment for z={0:.1f} already exists for '
-                        'the current session, overwrite?').format(args.scanz)):
+                          'the current session, overwrite?').format(args.scanz)):
         self.board.lumi_coord[args.chipid][args.scanz] = [
             fitval[1],
             np.sqrt(fitcovar[1][1]), fitval[2],
@@ -184,7 +184,7 @@ class zscan(cmdbase.controlcmd):
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.add_zscan_options()
-    self.add_savefile_options( zscan.DEFAULT_SAVEFILE)
+    self.add_savefile_options(zscan.DEFAULT_SAVEFILE)
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
