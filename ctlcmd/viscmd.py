@@ -1,6 +1,5 @@
 import ctlcmd.cmdbase as cmdbase
 import cmod.logger as log
-import cmod.comarg as comarg
 import numpy as np
 from scipy.optimize import curve_fit
 import time
@@ -12,14 +11,14 @@ class visualhscan(cmdbase.controlcmd):
   Performing horizontal scan with camera system
   """
 
-  DEFAULT_SAVEFILE = 'vhscan_<ZVAL>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'vhscan_<SCANZ>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[VIS HSCAN]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     ## Adding common coordinate for x-y scanning
-    comarg.add_hscan_options(self.parser, hrange=3, distance=0.5)
-    comarg.add_savefile_options(self.parser, self.DEFAULT_SAVEFILE)
+    self.add_hscan_options(hrange=3, distance=0.5)
+    self.add_savefile_options(self.DEFAULT_SAVEFILE)
     self.parser.add_argument(
         '-m',
         '--monitor',
@@ -31,21 +30,14 @@ class visualhscan(cmdbase.controlcmd):
         help='Forcing the storage of scan results as session information')
 
   def parse(self, line):
-    arg = cmdbase.controlcmd.parse(self, line)
-
-    ## Defaults to present position
-    comarg.parse_xychip_options(arg, self.cmd, add_visoffset=True)
-
-    ## Setting up file name
-    filename = arg.savefile if arg.savefile != visualhscan.DEFAULT_SAVEFILE \
-               else comarg.timestamp_filename( 'vhscan', arg, ['scanz'] )
-    arg.savefile = self.sshfiler.remotefile(filename, arg.wipefile)
-
-    return arg
+    args = cmdbase.controlcmd.parse(self, line)
+    self.parse_xychip_options(args,add_visoffset=True)
+    self.parse_savefile(args)
+    return args
 
   def run(self, args):
     self.init_handle()
-    x, y = comarg.make_hscan_mesh(args)
+    x, y = self.make_hscan_mesh(args)
 
     ## New container to account for chip not found in FOV
     gantry_x = []
@@ -99,7 +91,7 @@ class visualhscan(cmdbase.controlcmd):
       self.board.add_visM(args.chipid, self.gcoder.opz,
                           [[fitx[0], fitx[1]], [fity[0], fity[1]]])
     elif self.gcoder.opz in self.board.visM[args.chipid]:
-      if comarg.prompt(
+      if self.cmd.prompt(
           'Tranformation equation for z={0:.1f} already exists, overwrite?'.
           format(args.scanz), 'no'):
         self.board.add_visM(args.chipid, self.gcoder.opz,
@@ -123,7 +115,7 @@ class visualcenterchip(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    comarg.add_xychip_options(self.parser)
+    self.add_xychip_options()
     self.parser.add_argument(
         '-z',
         '--startz',
@@ -134,23 +126,23 @@ class visualcenterchip(cmdbase.controlcmd):
     self.parser.add_argument('--overwrite', action='store_true', help='T')
 
   def parse(self, line):
-    arg = cmdbase.controlcmd.parse(self, line)
-    comarg.parse_xychip_options(arg, self.cmd, add_visoffset=True)
-    if not arg.startz:
+    args = cmdbase.controlcmd.parse(self, line)
+    self.parse_xychip_options(args,add_visoffset=True)
+    if not args.startz:
       raise Exception('Specify the height to perform the centering operation')
 
-    arg.calibchip = arg.chipid if (self.board.visM_hasz(
-        arg.chipid, arg.startz)) else next(
+    args.calibchip = args.chipid if (self.board.visM_hasz(
+        args.chipids, args.startz)) else next(
             (x for x in self.board.calibchips()
-             if self.board.visM_hasz(x, arg.startz)), None)
+             if self.board.visM_hasz(x, args.startz)), None)
 
-    if arg.calibchip == None:
+    if args.calibchip == None:
       self.printerr(('Motion transformation equation was not found for '
                      'position z={0:.1f}mm, please run command '
-                     '[visualhscan] first').format(arg.startz))
-      print(arg.startz, self.board.visM)
+                     '[visualhscan] first').format(args.startz))
+      print(args.startz, self.board.visM)
       raise Exception('Transformation equation not found')
-    return arg
+    return args
 
   def run(self, args):
     self.move_gantry(args.x, args.y, args.startz, False)
@@ -223,7 +215,7 @@ class visualmaxsharp(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    comarg.add_xychip_options(self.parser)
+    self.add_xychip_options()
     self.parser.add_argument(
         '-z',
         '--startz',
@@ -238,9 +230,9 @@ class visualmaxsharp(cmdbase.controlcmd):
         help='First step size to scan for immediate neighborhood z scan [mm]')
 
   def parse(self, line):
-    arg = cmdbase.controlcmd.parse(self, line)
-    comarg.parse_xychip_options(arg, self.cmd, add_visoffset=True)
-    return arg
+    args = cmdbase.controlcmd.parse(self, line)
+    self.parse_xychip_options(args, add_visoffset=True)
+    return args
 
   def run(self, args):
     self.move_gantry(args.x, args.y, args.startz, False)
@@ -271,8 +263,8 @@ class visualzscan(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    comarg.add_savefile_options(self.parser, visualzscan.DEFAULT_SAVEFILE)
-    comarg.add_zscan_options(self.parser)
+    self.add_savefile_options(visualzscan.DEFAULT_SAVEFILE)
+    self.add_zscan_options()
     self.parser.add_argument(
         '-m',
         '--monitor',
@@ -280,16 +272,11 @@ class visualzscan(cmdbase.controlcmd):
         help='Whether or not to open the monitoring window (could be slow!!)')
 
   def parse(self, line):
-    arg = cmdbase.controlcmd.parse(self, line)
-    comarg.parse_xychip_options(arg, self.cmd, add_visoffset=True)
-    comarg.parse_zscan_options(arg)
-
-    filename = arg.savefile if arg.savefile != visualzscan.DEFAULT_SAVEFILE    \
-               else comarg.timestamp_filename( 'vzscan', arg )
-
-    arg.savefile = self.sshfiler.remotefile(filename, arg.wipefile)
-
-    return arg
+    args = cmdbase.controlcmd.parse(self, line)
+    self.parse_xychip_options(args, add_visoffset=True)
+    self.parse_zscan_options(args)
+    self.parse_savefile(args)
+    return args
 
   def run(self, args):
     self.init_handle()

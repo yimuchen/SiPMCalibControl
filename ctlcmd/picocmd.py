@@ -1,5 +1,4 @@
 import ctlcmd.cmdbase as cmdbase
-import cmod.comarg as comarg
 import cmod.logger as log
 
 
@@ -105,7 +104,7 @@ class picorunblock(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    comarg.add_savefile_options(self.parser, picorunblock.DEFAULT_SAVEFILE)
+    self.add_savefile_options(picorunblock.DEFAULT_SAVEFILE)
     self.parser.add_argument('--numblocks',
                              type=int,
                              default=1,
@@ -124,10 +123,7 @@ class picorunblock(cmdbase.controlcmd):
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
-    filename = args.savefile if args.savefile != picorunblock.DEFAULT_SAVEFILE \
-              else comarg.timestamp_filename('picoblock', args )
-
-    args.savefile = self.sshfiler.remotefile(filename, args.wipefile)
+    self.parse_savefile(args)
     return args
 
   def run(self, args):

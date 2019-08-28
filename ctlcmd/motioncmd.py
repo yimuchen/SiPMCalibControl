@@ -1,6 +1,5 @@
 import ctlcmd.cmdbase as cmdbase
 import cmod.logger as log
-import cmod.comarg as comarg
 import numpy as np
 from scipy.optimize import curve_fit
 import time
@@ -13,16 +12,16 @@ class moveto(cmdbase.controlcmd):
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    comarg.add_xychip_options(self.parser)
-    self.parser.add_argument(
-        '-z',
-        type=float,
-        help=('Specifying the x coordinate explicitly [mm]. If none is given '
-              'the current gantry position will be used instead'))
+    self.add_xychip_options()
+    self.parser.add_argument('-z',
+                             type=float,
+                             help=('Specifying the x coordinate explicitly [mm].'
+                                   ' If none is given the current gantry '
+                                   'position will be used instead'))
 
   def parse(self, line):
     arg = cmdbase.controlcmd.parse(self, line)
-    comarg.parse_xychip_options(arg, self.cmd)
+    self.parse_xychip_options(arg, self.cmd)
     if not arg.z: arg.z = self.gcoder.opz
     return arg
 
@@ -68,32 +67,28 @@ class halign(cmdbase.controlcmd):
   range... etc. You will still need the picoset command.
   """
 
-  DEFAULT_SAVEFILE = 'halign_<ZVAL>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'halign_<CHIPID>_<SCANZ>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[LUMI ALIGN]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    comarg.add_hscan_options(self.parser, hrange=20, distance=1)
-    comarg.add_savefile_options(self.parser, halign.DEFAULT_SAVEFILE)
+    self.add_hscan_options(hrange=20, distance=1)
+    self.add_savefile_options(halign.DEFAULT_SAVEFILE)
     self.parser.add_argument(
         '--overwrite',
         action='store_true',
         help='Forcing the storage of scan results as session information')
 
   def parse(self, line):
-    arg = cmdbase.controlcmd.parse(self, line)
-    comarg.parse_readout_options(arg, self.cmd)
-    comarg.parse_xychip_options(arg, self.cmd)
-
-    filename = arg.savefile if arg.savefile != halign.DEFAULT_SAVEFILE \
-               else comarg.timestamp_filename( 'halign', arg, ['scanz'] )
-    arg.savefile = self.sshfiler.remotefile(filename, arg.wipefile)
-
-    return arg
+    args = cmdbase.controlcmd.parse(self, line)
+    self.parse_readout_options(args)
+    self.parse_xychip_options(args)
+    self.parse_savefile(args)
+    return args
 
   def run(self, args):
     self.init_handle()
-    x, y = comarg.make_hscan_mesh(args)
+    x, y = self.make_hscan_mesh(args)
     lumi = []
     unc = []
     total = len(x)
@@ -126,11 +121,11 @@ class halign(cmdbase.controlcmd):
     p0 = (max(lumi) * (args.scanz**2), args.x, args.y, args.scanz, min(lumi))
     try:
       fitval, fitcovar = curve_fit(halign.model,
-                                  np.vstack((x, y)),
-                                  lumi,
-                                  p0=p0,
-                                  sigma=unc,
-                                  maxfev=10000)
+                                   np.vstack((x, y)),
+                                   lumi,
+                                   p0=p0,
+                                   sigma=unc,
+                                   maxfev=10000)
     except Exception as err:
       self.printerr(('Lumi fit failed to converge, check output stored in file '
                      '{0} for collected values').format(args.savefile.name))
@@ -160,7 +155,7 @@ class halign(cmdbase.controlcmd):
           np.sqrt(fitcovar[1][1])
       ]
     elif args.scanz in self.board.lumi_coord[args.chipid]:
-      if comarg.prompt(('A lumi alignment for z={0:.1f} already exists for '
+      if self.cmd.prompt(('A lumi alignment for z={0:.1f} already exists for '
                         'the current session, overwrite?').format(args.scanz)):
         self.board.lumi_coord[args.chipid][args.scanz] = [
             fitval[1],
@@ -183,25 +178,21 @@ class zscan(cmdbase.controlcmd):
   Performing z scanning at a certain x-y coordinate
   """
 
-  DEFAULT_SAVEFILE = 'zscan_<CHIP>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'zscan_<CHIPID>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[LUMI ZSCAN]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    comarg.add_zscan_options(self.parser)
-    comarg.add_savefile_options(self.parser, zscan.DEFAULT_SAVEFILE)
+    self.add_zscan_options()
+    self.add_savefile_options( zscan.DEFAULT_SAVEFILE)
 
   def parse(self, line):
-    arg = cmdbase.controlcmd.parse(self, line)
-    comarg.parse_readout_options(arg, self.cmd)
-    comarg.parse_xychip_options(arg, self.cmd)
-    comarg.parse_zscan_options(arg)
-
-    filename = arg.savefile if arg.savefile != zscan.DEFAULT_SAVEFILE  \
-               else comarg.timestamp_filename('zscan', arg )
-    arg.savefile = self.sshfiler.remotefile(filename, arg.wipefile)
-
-    return arg
+    args = cmdbase.controlcmd.parse(self, line)
+    self.parse_readout_options(args)
+    self.parse_xychip_options(args)
+    self.parse_zscan_options(args)
+    self.parse_savefile(args)
+    return args
 
   def run(self, args):
     self.init_handle()
@@ -246,13 +237,13 @@ class timescan(cmdbase.controlcmd):
   """
   Generate a log of the readout in terms relative to time.
   """
-  DEFAULT_SAVEFILE = 'tscan_<CHIP>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'tscan_<CHIPID>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[TIMESCAN]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    comarg.add_readout_option(self.parser)
-    comarg.add_savefile_options(self.parser, timescan.DEFAULT_SAVEFILE)
+    self.add_readout_option()
+    self.add_savefile_options(timescan.DEFAULT_SAVEFILE)
     self.parser.add_argument('--nslice',
                              type=int,
                              default=30,
@@ -263,12 +254,10 @@ class timescan(cmdbase.controlcmd):
                              help='Time interval between sampling (seconds)')
 
   def parse(self, line):
-    arg = cmdbase.controlcmd.parse(self, line)
-    comarg.parse_readout_options(arg, self.cmd)
-    filename = arg.savefile if arg.savefile != zscan.DEFAULT_SAVEFILE  \
-               else comarg.timestamp_filename('zscan', arg )
-    arg.savefile = self.sshfiler.remotefile(filename, arg.wipefile)
-    return arg
+    args = cmdbase.controlcmd.parse(self, line)
+    self.parse_readout_options(args)
+    self.parse_savefile(args)
+    return args
 
   def run(self, args):
     self.init_handle()
@@ -295,14 +284,14 @@ class showreadout(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    comarg.add_readout_option(self.parser)
+    self.add_readout_option()
     self.parser.add_argument('--dumpval', action='store_true')
     self.parser.add_argument('--nowait', action='store_true')
 
   def parse(self, line):
-    arg = cmdbase.controlcmd.parse(self, line)
-    comarg.parse_readout_options(arg, self.cmd)
-    return arg
+    args = cmdbase.controlcmd.parse(self, line)
+    self.parse_readout_options(args)
+    return args
 
   def run(self, args):
     self.init_handle()
