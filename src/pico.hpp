@@ -1,7 +1,6 @@
 #ifndef PICO_HPP
 #define PICO_HPP
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -72,12 +71,13 @@ public:
   int runtime;// storing runtime for Rapid block
 
 private:
-  std::vector<std::unique_ptr<int16_t[]> > bufferA;
-  std::vector<std::unique_ptr<int16_t[]> > bufferB;
-  std::unique_ptr<int16_t[]> overflowbuffer;
+  std::vector<int16_t*> bufferA;
+  std::vector<int16_t*> bufferB;
+  // int16_t* overflowbuffer;
 
   // Helper functions for sanity check
   void findTimeInterval();// Running once and not changing;
+  void ClearPointers();
 };
 
 #endif

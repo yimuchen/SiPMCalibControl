@@ -13,9 +13,13 @@ static const float inputRanges[PS5000_MAX_RANGES] = {
   10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000 };
 
 PicoUnit::PicoUnit() :
-  device( 0 )
-{
-}
+  device( 0 ),
+  presamples(0),
+  postsamples(0),
+  ncaptures(0),
+  bufferA(),
+  bufferB()
+{}
 
 void
 PicoUnit::Init()
@@ -35,12 +39,15 @@ PicoUnit::Init()
 
   // Setting up default settings
   SetVoltageRange( PS5000_100MV );
-  SetTrigger( PS5000_EXTERNAL, RISING, 2000, 0, 0 );// 0 delay, indefinite trigger wait time.
+  SetTrigger( PS5000_EXTERNAL, RISING, 2000, 0, 0 );
+  // 0 delay, indefinite trigger wait time.
+  SetBlockNums( 500, 0, 100 );
   findTimeInterval();
 }
 
 PicoUnit::~PicoUnit()
 {
+  ClearPointers();
   ps5000CloseUnit( device );
 }
 
@@ -156,25 +163,21 @@ PicoUnit::SetBlockNums(
     post = maxsamples - pre;
   }
   if( ncaptures != ncaps  || presamples + postsamples != pre + post ){
+    ClearPointers();
     ncaptures = ncaps;
 
     // Resizing the buffers
-    bufferA.resize( ncaptures );
-    bufferB.resize( ncaptures );
-    overflowbuffer.reset( new int16_t[pre+post] );
-
-    if( overflowbuffer.get() == nullptr ){
-      throw std::runtime_error( "Failed to initialized overflow buffer" );
-    }
+    bufferA.resize( ncaptures, nullptr );
+    bufferB.resize( ncaptures, nullptr );
 
     for( unsigned i = 0; i < ncaptures; ++i ){
-      bufferA[i].reset( new int16_t[ pre+post ] );
-      bufferB[i].reset( new int16_t[ pre+post ] );
-      if( bufferA[i].get() == nullptr || bufferB[i].get() == nullptr ){
+      bufferA[i] = new int16_t[ pre+post ];
+      bufferB[i] = new int16_t[ pre+post ];
+      if( bufferA[i] == nullptr || bufferB[i] == nullptr ){
         sprintf( errormessage,
           "Failed to initialize block memory buffer (%d/%d). Maybe try smaller number of captures"
                , i, ncaptures );
-
+        ClearPointers();
         throw std::runtime_error( errormessage );
       }
     }
@@ -182,6 +185,22 @@ PicoUnit::SetBlockNums(
   presamples  = pre;
   postsamples = post;
 }
+
+void
+PicoUnit::ClearPointers()
+{
+  for( unsigned i = 0 ; i < ncaptures ; ++i ){
+    if( bufferA[i] != nullptr ){
+      delete[] bufferA[i];
+      bufferA[i] = nullptr;
+    }
+    if( bufferB[i] != nullptr ){
+      delete[] bufferB[i];
+      bufferB[i] = nullptr;
+    }
+  }
+}
+
 
 void
 PicoUnit::StartRapidBlock()
@@ -202,22 +221,6 @@ PicoUnit::StartRapidBlock()
     throw std::runtime_error( errormessage );
   }
 
-  for( unsigned block = 0; block < ncaptures; ++block ){
-    status = ps5000SetDataBufferBulk( device,
-      PS5000_CHANNEL_A,
-      bufferA[block].get(),
-      presamples + postsamples, block );
-    status = ps5000SetDataBufferBulk( device,
-      PS5000_CHANNEL_B,
-      bufferB[block].get(),
-      presamples + postsamples, block );
-
-    if( status != PICO_OK ){
-      sprintf( errormessage,
-        "Error setting up data buffer (Error code:%d)", status );
-      throw std::runtime_error( errormessage );
-    }
-  }
 }
 
 void
@@ -245,11 +248,34 @@ void
 PicoUnit::FlushToBuffer()
 {
   uint32_t actualsamples = presamples + postsamples;
+  int     status = 0;
+  char errormessage[1024];
+  for( unsigned block = 0; block < ncaptures; ++block ){
+    status = ps5000SetDataBufferBulk( device,
+      PS5000_CHANNEL_A,
+      bufferA[block],
+      actualsamples, block );
+    status = ps5000SetDataBufferBulk( device,
+      PS5000_CHANNEL_B,
+      bufferB[block],
+      actualsamples, block );
+
+    if( status != PICO_OK ){
+      sprintf( errormessage,
+        "Error setting up data buffer (Error code:%d)", status );
+      throw std::runtime_error( errormessage );
+    }
+  }
+
+  int16_t* overflowbuffer = new int16_t[ncaptures];
+
   ps5000GetValuesBulk( device,
     &actualsamples,
     0, ncaptures-1,// flush range
-    overflowbuffer.get()// overflow buffer
+    overflowbuffer// overflow buffer
     );
+
+  delete[] overflowbuffer;
 }
 
 // Debugging methods
