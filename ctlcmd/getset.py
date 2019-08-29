@@ -124,20 +124,20 @@ class get(cmdbase.controlcmd):
 
     self.parser.add_argument('-a', '--all', action='store_true')
 
-  def run(self, arg):
-    if arg.boardtype or arg.all:
+  def run(self, args):
+    if args.boardtype or args.all:
       self.print_board()
-    if arg.printerdev or arg.all:
+    if args.printerdev or args.all:
       self.print_printer()
-    if arg.camdev or arg.all:
+    if args.camdev or args.all:
       log.printmsg(log.GREEN('[CAM DEV]'), str(self.visual.dev_path))
-    if arg.align or arg.all:
+    if args.align or args.all:
       self.print_alignment()
-    if arg.pico or arg.all:
+    if args.pico or args.all:
       self.pico.printinfo()
-    if arg.readout or arg.all:
+    if args.readout or args.all:
       self.print_readout()
-    if arg.action or arg.all:
+    if args.action or args.all:
       for key in self.action.shorthands():
         log.printmsg(log.GREEN('[ACTIONS]'), key + ' | ' + self.action.map[key])
 
@@ -228,10 +228,10 @@ class savecalib(cmdbase.controlcmd):
                              help='File to save the calibration events to')
 
   def parse(self, line):
-    arg = cmdbase.controlcmd.parse(self, line)
-    if not arg.file:
+    args = cmdbase.controlcmd.parse(self, line)
+    if not args.file:
       raise Exception('File name must be specified')
-    return arg
+    return args
 
   def run(self, args):
     self.board.save_calib_file(args.file.name)
@@ -250,10 +250,10 @@ class loadcalib(cmdbase.controlcmd):
         help='File to load the calibration information from')
 
   def parse(self, line):
-    arg = cmdbase.controlcmd.parse(self, line)
-    if not arg.file:
+    args = cmdbase.controlcmd.parse(self, line)
+    if not args.file:
       raise Exception('Filename must be specified')
-    return arg
+    return args
 
   def run(self, args):
     self.board.load_calib_file(args.file.name)

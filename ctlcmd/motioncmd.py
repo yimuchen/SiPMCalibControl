@@ -20,10 +20,10 @@ class moveto(cmdbase.controlcmd):
                                    'position will be used instead'))
 
   def parse(self, line):
-    arg = cmdbase.controlcmd.parse(self, line)
-    self.parse_xychip_options(arg, self.cmd)
-    if not arg.z: arg.z = self.gcoder.opz
-    return arg
+    args = cmdbase.controlcmd.parse(self, line)
+    self.parse_xychip_options(args, self.cmd)
+    if not args.z: args.z = self.gcoder.opz
+    return args
 
   def run(self, args):
     self.gcoder.moveto(args.x, args.y, args.z, True)
@@ -46,13 +46,13 @@ class movespeed(cmdbase.controlcmd):
                              help='motion speed of gantry in z axis ')
 
   def parse(self, line):
-    arg = cmdbase.controlcmd.parse(self, line)
+    args = cmdbase.controlcmd.parse(self, line)
     # Filling with NAN for missing settings.
-    if not arg.x: arg.x = float('nan')
-    if not arg.y: arg.y = float('nan')
-    if not arg.z: arg.z = float('nan')
+    if not args.x: args.x = float('nan')
+    if not args.y: args.y = float('nan')
+    if not args.z: args.z = float('nan')
 
-    return arg
+    return args
 
   def run(self, args):
     self.gcoder.set_speed_limit(args.x, args.y, args.z)
@@ -269,7 +269,7 @@ class timescan(cmdbase.controlcmd):
       args.savefile.write('{0:d} {1:.3f} {2:.4f}\n'.format(
           i * args.interval, lumival, uncval))
       self.update('{0:5.1f} {1:5.1f} | PROGRESS [{2:3d}/{3:3d}]'.format(
-          lumival, uncval, i, args.nslice))
+          lumival, uncval, i + 1, args.nslice))
       time.sleep(args.interval)
 
     args.savefile.close()
@@ -285,8 +285,13 @@ class showreadout(cmdbase.controlcmd):
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.add_readout_option()
-    self.parser.add_argument('--dumpval', action='store_true')
-    self.parser.add_argument('--nowait', action='store_true')
+    self.parser.add_argument('--dumpval',
+                             action='store_true',
+                             help='Dump the entire sequence of collected data')
+    self.parser.add_argument('--nowait',
+                             action='store_true',
+                             help=('Whether or not to perform the random wait '
+                                   'process for ADC data collection'))
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
@@ -301,10 +306,10 @@ class showreadout(cmdbase.controlcmd):
       self.check_handle(args)
 
       val.append(self.readout.read_adc_raw(0))
-      self.update("{0} | {1} | {2} | {3}".format(
+      self.update('{0} | {1} | {2} | {3}'.format(
           'Latest: {0:10.5f}'.format(val[-1]), 'Mean: {0:10.5f}'.format(
               np.mean(val)), 'STD: {0:11.6f}'.format(np.std(val)),
-          'PROGRESS [{0:3d}/1000]'.format(i)))
+          'PROGRESS [{0:3d}/1000]'.format(i + 1)))
       if args.nowait:
         continue
       time.sleep(1 / 50 * np.random.random())  ## Sleeping for random time

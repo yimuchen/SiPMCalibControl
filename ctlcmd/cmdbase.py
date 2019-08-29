@@ -468,8 +468,10 @@ class controlcmd():
     max_x = gcoder.GCoder.max_x()
     max_y = gcoder.GCoder.max_y()
 
-    if (args.x - args.range < 0 or args.x + args.range > max_x
-        or args.y - args.range < 0 or args.y + args.range > max_y):
+    if(args.x - args.range < 0 or
+       args.x + args.range > max_x or
+       args.y - args.range < 0 or
+       args.y + args.range > max_y):
       log.printwarn(('The arguments placed will put the gantry past its limits, '
                      'the command will used modified input parameters'))
 
@@ -575,8 +577,9 @@ class controlcmd():
     Finding x-y offset between the luminosity and visual alignment based the
     existing calibration
     """
-    # If no calibration chip exists, just return a default value (from gantry head
-    # design.)
+
+    # If no calibration chip exists, just return a default value (from gantry
+    # head design.)
     DEFAULT_XOFFSET = -40
     DEFAULT_YOFFSET = 0
     if not any(self.board.calibchips()):
@@ -627,7 +630,7 @@ class controlcmd():
         try:
           val = action.type(getattr(args, string))
         except:
-          continue
+          pass
         substring = '{0}{1}'.format(string, val)
         substring = re.sub(r'\.', 'p', substring)
         filename = re.sub('\\<{0}\\>'.format(string),
@@ -635,6 +638,7 @@ class controlcmd():
                           filename,
                           flags=re.IGNORECASE)
 
+    # Opening the file using the remote file handle
     args.savefile = self.sshfiler.remotefile(filename, args.wipefile)
 
   # Helper function for globbing
