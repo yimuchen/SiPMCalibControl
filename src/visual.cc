@@ -1,14 +1,22 @@
 #include "logger.hpp"
 #include "visual.hpp"
 
+#include <opencv2/core/utils/logger.hpp>
 #include <opencv2/imgproc.hpp>
 
 #include <chrono>
 #include <thread>
 
-// Helper objects for consistant display
+// Helper objects for consistant display BGR
 static const cv::Scalar red( 100, 100, 255 );
+static const cv::Scalar cyan( 255, 255, 100 );
+static const cv::Scalar yellow( 100, 255, 255 );
+static const cv::Scalar green( 100, 255, 100 );
 static const cv::Scalar white( 255, 255, 255 );
+
+// Setting OPENCV into silent mode
+static const auto __dummy_settings
+  = cv::utils::logging::setLogLevel( cv::utils::logging::LOG_LEVEL_SILENT );
 
 
 Visual::Visual() : cam(){}
@@ -66,7 +74,13 @@ Visual::find_chip( const bool monitor )
   std::vector<std::vector<cv::Point> > contours;
   std::vector<std::vector<cv::Point> > hulls;
   std::vector<cv::Vec4i> hierarchy;
-  std::vector<cv::Point> polyapprox ;
+  std::vector<cv::Point> polyapprox;
+
+  std::vector<std::vector<cv::Point> > failed_ratio;
+  std::vector<std::vector<cv::Point> > failed_lumi;
+  std::vector<std::vector<cv::Point> > failed_rect;
+  std::vector<std::vector<cv::Point> > failed_largest;
+
 
   // Getting image
   getImg( img );
@@ -87,25 +101,35 @@ Visual::find_chip( const bool monitor )
     const double ratio   = (double)bound.height / (double)bound.width;
     const double size    = std::max( bound.height, bound.width );
     if( size < minchipsize ){ continue; }// skipping small speckles
-    if( ratio > chipratio
-        || ratio < 1./chipratio ){ continue; }// skipping non-square stuff
-    cv::approxPolyDP( contours.at(i), polyapprox, size*0.08, true );
-    if( polyapprox.size() != 4 ){ continue; }
 
-    // Calculating average color of inside contour
+    // Expecting the ratio of the bounding box to be square.
+    if( ratio > chipratio || ratio < 1./chipratio ){
+      failed_ratio.push_back( contours.at( i ) );
+      continue;
+    }
+
+    // Expecting the internals of of the photosensor to be dark.
     cv::Mat mask = cv::Mat::zeros( img.size(), CV_8UC1 );
     cv::drawContours( mask, contours, i, 255, cv::FILLED );
     const cv::Scalar meancol = cv::mean( img, mask );
     const double lumi        = 0.2126*meancol[0]
                                + 0.7152*meancol[1]
                                + 0.0722*meancol[2];
+    if( lumi > maxchiplumi ){
+      failed_lumi.push_back( contours.at( i ) );
+      continue;
+    }// Photosensors are dark.
 
-    // Selection criteria
-    if( lumi > maxchiplumi ){ continue; }// Photosensors are dark.
-
-    // Generating convect hull
+    // Generating convex hull
     std::vector<cv::Point> hull;
     cv::convexHull( cv::Mat( contours.at( i ) ), hull );
+
+    // Convex hull should be sufficiently rectangular
+    cv::approxPolyDP( hull, polyapprox, size*0.08, true );
+    if( polyapprox.size() != 4 ){
+      failed_rect.push_back( contours.at( i ) );
+      continue;
+    }
 
     // Only keeping largest convex hull
     if( !hulls.empty() ){
@@ -114,6 +138,7 @@ Visual::find_chip( const bool monitor )
 
       if( boundpres.height * boundpres.width
           > boundprev.height * boundprev.width ){
+        failed_largest.push_back( hulls.back() );
         hulls.pop_back();
       }
     }
@@ -149,15 +174,44 @@ Visual::find_chip( const bool monitor )
     // Generating the image
     cv::Mat display( img );
 
-    for( unsigned i = 0; i < contours.size(); ++i ){
-      cv::drawContours( display, contours, i, white, 2 );
+    // for( unsigned i = 0; i < contours.size(); ++i ){
+    //   cv::drawContours( display, contours, i, white, 2 );
+    // }
+
+    for( unsigned i = 0; i < failed_ratio.size(); ++i ){
+      cv::drawContours( display, failed_ratio, i, white );
     }
+
+    cv::putText( display, "FAILED RATIO",
+      cv::Point( 50, 700 ), cv::FONT_HERSHEY_SIMPLEX, 2, white  );
+
+    for( unsigned i = 0; i < failed_ratio.size(); ++i ){
+      cv::drawContours( display, failed_lumi, i, green );
+    }
+
+    cv::putText( display, "FAILED LUMI",
+      cv::Point( 50, 800 ), cv::FONT_HERSHEY_SIMPLEX, 2, green  );
+
+    for( unsigned i = 0; i < failed_ratio.size(); ++i ){
+      cv::drawContours( display, failed_rect, i, yellow );
+    }
+
+    cv::putText( display, "FAILED RECT",
+      cv::Point( 50, 850 ), cv::FONT_HERSHEY_SIMPLEX, 2, yellow  );
+
+    for( unsigned i = 0; i < failed_ratio.size(); ++i ){
+      cv::drawContours( display, failed_largest, i, cyan );
+    }
+
+    cv::putText( display, "FAILED LARGEST",
+      cv::Point( 50, 850 ), cv::FONT_HERSHEY_SIMPLEX, 2, cyan  );
+
 
     if( hulls.empty() ){
       cv::putText( display, "NOT FOUND",
         cv::Point( 50, 100 ),
         cv::FONT_HERSHEY_SIMPLEX,
-        1, white );
+        1, red );
     } else {
       sprintf( msg, "x:%.1lf y:%.1lf", ans.x, ans.y ),
       cv::drawContours( display, hulls, 0, red, 3 );
@@ -165,8 +219,9 @@ Visual::find_chip( const bool monitor )
       cv::putText( display, msg,
         cv::Point( 50, 100 ),
         cv::FONT_HERSHEY_SIMPLEX,
-        2, white );
+        2, red );
     }
+
     imshow( winname, display );
     cv::waitKey( 30 );
   }
