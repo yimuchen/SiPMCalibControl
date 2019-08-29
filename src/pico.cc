@@ -14,11 +14,9 @@ static const float inputRanges[PS5000_MAX_RANGES] = {
 
 PicoUnit::PicoUnit() :
   device( 0 ),
-  presamples(0),
-  postsamples(0),
-  ncaptures(0),
-  bufferA(),
-  bufferB()
+  presamples( 0 ),
+  postsamples( 0 ),
+  ncaptures( 0 )
 {}
 
 void
@@ -47,7 +45,6 @@ PicoUnit::Init()
 
 PicoUnit::~PicoUnit()
 {
-  ClearPointers();
   ps5000CloseUnit( device );
 }
 
@@ -162,22 +159,36 @@ PicoUnit::SetBlockNums(
     printwarn( errormessage );
     post = maxsamples - pre;
   }
-  if( ncaptures != ncaps  || presamples + postsamples != pre + post ){
-    ClearPointers();
-    ncaptures = ncaps;
 
-    // Resizing the buffers
-    bufferA.resize( ncaptures, nullptr );
-    bufferB.resize( ncaptures, nullptr );
+  // Resizing capture buffer only if needed (reqesting more stuff)
+  if( ncaptures < ncaps ){
+    bufferA.resize( ncaps );
+    bufferB.resize( ncaps );
 
+    for( unsigned i = ncaptures; i < ncaps; ++i ){
+      bufferA[i].reset( new int16_t[presamples + postsamples] );
+      bufferB[i].reset( new int16_t[presamples + postsamples] );
+      if( bufferA[i] == nullptr || bufferB[i] == nullptr ){
+        sprintf( errormessage,
+          "Failed to initialize block memory buffer (%d/%d). Maybe try smaller "
+          "number of captures"
+               , i, ncaptures );
+        throw std::runtime_error( errormessage );
+      }
+    }
+
+    overflowbuffer.reset( new int16_t[ncaps] );
+  }
+  ncaptures = ncaps;
+
+  if( presamples + postsamples < pre + post ){
     for( unsigned i = 0; i < ncaptures; ++i ){
-      bufferA[i] = new int16_t[ pre+post ];
-      bufferB[i] = new int16_t[ pre+post ];
+      bufferA[i].reset( new int16_t[ pre+post ] );
+      bufferB[i].reset( new int16_t[ pre+post ] );
       if( bufferA[i] == nullptr || bufferB[i] == nullptr ){
         sprintf( errormessage,
           "Failed to initialize block memory buffer (%d/%d). Maybe try smaller number of captures"
                , i, ncaptures );
-        ClearPointers();
         throw std::runtime_error( errormessage );
       }
     }
@@ -185,22 +196,6 @@ PicoUnit::SetBlockNums(
   presamples  = pre;
   postsamples = post;
 }
-
-void
-PicoUnit::ClearPointers()
-{
-  for( unsigned i = 0 ; i < ncaptures ; ++i ){
-    if( bufferA[i] != nullptr ){
-      delete[] bufferA[i];
-      bufferA[i] = nullptr;
-    }
-    if( bufferB[i] != nullptr ){
-      delete[] bufferB[i];
-      bufferB[i] = nullptr;
-    }
-  }
-}
-
 
 void
 PicoUnit::StartRapidBlock()
@@ -248,16 +243,17 @@ void
 PicoUnit::FlushToBuffer()
 {
   uint32_t actualsamples = presamples + postsamples;
-  int     status = 0;
+  int status             = 0;
   char errormessage[1024];
+
   for( unsigned block = 0; block < ncaptures; ++block ){
     status = ps5000SetDataBufferBulk( device,
       PS5000_CHANNEL_A,
-      bufferA[block],
+      bufferA[block].get(),
       actualsamples, block );
     status = ps5000SetDataBufferBulk( device,
       PS5000_CHANNEL_B,
-      bufferB[block],
+      bufferB[block].get(),
       actualsamples, block );
 
     if( status != PICO_OK ){
@@ -267,15 +263,12 @@ PicoUnit::FlushToBuffer()
     }
   }
 
-  int16_t* overflowbuffer = new int16_t[ncaptures];
-
   ps5000GetValuesBulk( device,
     &actualsamples,
     0, ncaptures-1,// flush range
-    overflowbuffer// overflow buffer
+    overflowbuffer.get()// overflow buffer
     );
 
-  delete[] overflowbuffer;
 }
 
 // Debugging methods
@@ -333,7 +326,7 @@ PicoUnit::WaveformString(
   ) const
 {
   const unsigned length = presamples + postsamples;
-  std::string ans(2*length, '\0');
+  std::string ans( 2*length, '\0' );
 
   for( unsigned i = 0; i < length; ++i ){
     const int16_t raw = GetBuffer( channel, capture, i ) / 256;
@@ -359,7 +352,7 @@ PicoUnit::WaveformSum(
     ans += GetBuffer( channel, capture, i ) / 256;
   }
 
-  return ans * adc2mv(256);
+  return ans * adc2mv( 256 );
 }
 
 int
