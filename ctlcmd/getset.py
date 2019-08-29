@@ -1,7 +1,8 @@
 import ctlcmd.cmdbase as cmdbase
 import cmod.logger as log
-import argparse
 from cmod.readout import readout
+import argparse
+import re
 
 
 class set(cmdbase.controlcmd):
@@ -145,7 +146,7 @@ class get(cmdbase.controlcmd):
     header = log.GREEN('[BOARDTYPE]')
     msg_format = 'Chip:{0:>4s} | x:{1:5.1f}, y:{2:5.1f}'
     log.printmsg(header, str(self.board.boardtype))
-    log.printmsg(header, 'Board ID: '+self.board.boardid)
+    log.printmsg(header, 'Board ID: ' + self.board.boardid)
     for chip in self.board.chips():
       msg = msg_format.format(chip, self.board.orig_coord[chip][0],
                               self.board.orig_coord[chip][1])
@@ -263,20 +264,21 @@ class lighton(cmdbase.controlcmd):
   """
   Turning the LED lights on.
   """
-  def __init__(self,cmd):
-    cmdbase.controlcmd.__init__(self,cmd)
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
 
-  def run(self,args):
+  def run(self, args):
     self.trigger.light_on()
+
 
 class lightoff(cmdbase.controlcmd):
   """
   Turning the LED lights on.
   """
-  def __init__(self,cmd):
-    cmdbase.controlcmd.__init__(self,cmd)
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
 
-  def run(self,line):
+  def run(self, line):
     self.trigger.light_off()
 
 
@@ -288,7 +290,7 @@ class promptaction(cmdbase.controlcmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.parser.add_argument(
         'string',
-        nargs='+',
+        nargs=1,
         type=str,
         help=('String of message to show (program is paused until Enter key '
               'is pressed). This can either be a short hand that is defined '
@@ -300,9 +302,26 @@ class promptaction(cmdbase.controlcmd):
     return cmdbase.controlcmd.parse(self, line)
 
   def run(self, args):
+    def color_change(x):
+      if x == '[ON]':
+        return log.GREEN(x)
+      if x == '[OFF]':
+        return log.RED(x)
+      if re.match(r'\[[\d\.]+[a-zA-Z]*\]', x):
+        return log.GREEN(x)
+      if x.isupper():
+        return log.YELLOW(x)
+      return x
+
     msg = self.action.map[args.string[0]] \
           if args.string[0] in self.action.shorthands() \
           else ' '.join(args.string)
+
+    msg = ' '.join([color_change(x) for x in msg.split()])
     log.printmsg(log.GREEN('    THE NEXT STEP REQUIRES USER INTERVENTION'))
-    log.printmsg("    > " + msg)
-    input(log.GREEN('    Press [Enter] to continue...'))
+    log.printmsg('    > ' + msg)
+
+    input_text = ''
+    while input_text != args.string[0]:
+      input_text = input(
+          log.GREEN('    TYPE [%s] to continue...') % args.string[0])
