@@ -594,18 +594,18 @@ class controlcmd():
       vis_y = None
 
       # Trying to get the luminosity alignment with closest z value
-      if any(self.board.vis_coord[calibchip]):
+      if any(self.board.lumi_coord[calibchip]):
         closestz = self.find_closest_z(self.board.lumi_coord[calibchip],
                                        currentz)
         lumi_x = self.board.lumi_coord[calibchip][closestz][0]
         lumi_y = self.board.lumi_coord[calibchip][closestz][2]
 
       # Trying to get the visual alignment with closest z value
-      if any(self.board.lumi_coord[calibchip]):
-        closestz = self.find_closest_z(self.board.lumi_coord[calibchip],
+      if any(self.board.vis_coord[calibchip]):
+        closestz = self.find_closest_z(self.board.vis_coord[calibchip],
                                        currentz)
-        vis_x = self.board.vis_coord[calibchip][currentz][0]
-        vis_y = self.board.vis_coord[calibchip][currentz][1]
+        vis_x = self.board.vis_coord[calibchip][closestz][0]
+        vis_y = self.board.vis_coord[calibchip][closestz][1]
 
       if lumi_x and lumi_y and vis_x and vis_y:
         return vis_x - lumi_x, vis_y - lumi_y

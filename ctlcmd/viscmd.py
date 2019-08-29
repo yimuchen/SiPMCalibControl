@@ -130,29 +130,29 @@ class visualcenterchip(cmdbase.controlcmd):
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
     self.parse_xychip_options(args, add_visoffset=True)
-    if not args.startz:
+    if not args.scanz:
       raise Exception('Specify the height to perform the centering operation')
 
     args.calibchip = args.chipid if (self.board.visM_hasz(
-        args.chipids, args.startz)) else next(
+        args.chipid, args.scanz)) else next(
             (x for x in self.board.calibchips()
-             if self.board.visM_hasz(x, args.startz)), None)
+             if self.board.visM_hasz(x, args.scanz)), None)
 
     if args.calibchip == None:
       self.printerr(('Motion transformation equation was not found for '
                      'position z={0:.1f}mm, please run command '
-                     '[visualhscan] first').format(args.startz))
-      print(args.startz, self.board.visM)
+                     '[visualhscan] first').format(args.scanz))
+      print(args.scanz, self.board.visM)
       raise Exception('Transformation equation not found')
     return args
 
   def run(self, args):
-    self.move_gantry(args.x, args.y, args.startz, False)
+    self.move_gantry(args.x, args.y, args.scanz, False)
     for movetime in range(10):  ## Maximum of 10 movements
       center = None
 
       ## Try to find center for a maximum of 3 times
-      for findtime in range(3):
+      for findtime in range(10):
         center = self.visual.find_chip(False)
         if center.x > 0:
           break

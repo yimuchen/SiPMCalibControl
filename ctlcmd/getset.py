@@ -313,6 +313,8 @@ class promptaction(cmdbase.controlcmd):
         return log.YELLOW(x)
       return x
 
+    self.init_handle()
+
     msg = self.action.map[args.string[0]] \
           if args.string[0] in self.action.shorthands() \
           else ' '.join(args.string)
@@ -323,5 +325,6 @@ class promptaction(cmdbase.controlcmd):
 
     input_text = ''
     while input_text != args.string[0]:
+      self.check_handle(args)
       input_text = input(
           log.GREEN('    TYPE [%s] to continue...') % args.string[0])
