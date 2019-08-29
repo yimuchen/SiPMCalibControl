@@ -50,9 +50,9 @@ class readout(object):
 
   def read(self, channel=0, samples=1000):
     """
-    Getting an average value of the readout
-    Note that this is intended to be an averaged + RMS return value.
-    If you want a full readout, see the picoscope related commands.
+    Getting an average value of the readout Note that this is intended to be an
+    averaged + RMS return value. If you want a full readout, see the picoscope
+    related commands.
     """
     if self.mode == readout.MODE_PICO:
       return self.read_pico(channel, samples)
