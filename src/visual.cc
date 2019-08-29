@@ -185,21 +185,21 @@ Visual::find_chip( const bool monitor )
     cv::putText( display, "FAILED RATIO",
       cv::Point( 50, 700 ), cv::FONT_HERSHEY_SIMPLEX, 2, white  );
 
-    for( unsigned i = 0; i < failed_ratio.size(); ++i ){
+    for( unsigned i = 0; i < failed_lumi.size(); ++i ){
       cv::drawContours( display, failed_lumi, i, green );
     }
 
     cv::putText( display, "FAILED LUMI",
-      cv::Point( 50, 800 ), cv::FONT_HERSHEY_SIMPLEX, 2, green  );
+      cv::Point( 50, 750 ), cv::FONT_HERSHEY_SIMPLEX, 2, green  );
 
-    for( unsigned i = 0; i < failed_ratio.size(); ++i ){
+    for( unsigned i = 0; i < failed_rect.size(); ++i ){
       cv::drawContours( display, failed_rect, i, yellow );
     }
 
     cv::putText( display, "FAILED RECT",
-      cv::Point( 50, 850 ), cv::FONT_HERSHEY_SIMPLEX, 2, yellow  );
+      cv::Point( 50, 800 ), cv::FONT_HERSHEY_SIMPLEX, 2, yellow  );
 
-    for( unsigned i = 0; i < failed_ratio.size(); ++i ){
+    for( unsigned i = 0; i < failed_largest.size(); ++i ){
       cv::drawContours( display, failed_largest, i, cyan );
     }
 
