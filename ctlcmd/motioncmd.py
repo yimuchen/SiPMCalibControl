@@ -21,7 +21,7 @@ class moveto(cmdbase.controlcmd):
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
-    self.parse_xychip_options(args, self.cmd)
+    self.parse_xychip_options(args)
     if not args.z: args.z = self.gcoder.opz
     return args
 
@@ -101,21 +101,16 @@ class halign(cmdbase.controlcmd):
                                           samples=args.samples)
       lumi.append(abs(lumival))
       unc.append(uncval)
-
-      ## Writing to screen
       self.update('{0} | {1} | {2}'.format(
-          'x:{0:5.1f}, y:{1:5.1f}, z:{2:5.1f}'.format(
-              xval, yval, args.scanz), 'Lumi:{0:8.5f}+-{1:8.6f}'.format(
-                  lumival, uncval), '[PROGRESS {0:d}/{1:d}]'.format(idx, total)))
-
+          'x:{0:5.1f}, y:{1:5.1f}, z:{2:5.1f}'.format(xval, yval, args.scanz),
+          'Lumi:{0:8.5f}+-{1:8.6f}'.format(lumival, uncval),
+          'Progress [{0:3d}/{1:3d}]'.format(idx+1, len(x))))
       ## Writing to file
       args.savefile.write(
           '{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n'.format(
               xval, yval, args.scanz, lumival, uncval))
 
-    ## Clearing output objects
-    args.savefile.flush()
-    args.savefile.close()
+    self.close_savefile(args)
 
     # Performing fit
     p0 = (max(lumi) * (args.scanz**2), args.x, args.y, args.scanz, min(lumi))
@@ -189,8 +184,8 @@ class zscan(cmdbase.controlcmd):
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
     self.parse_readout_options(args)
-    self.parse_xychip_options(args)
     self.parse_zscan_options(args)
+    self.parse_xychip_options(args)
     self.parse_savefile(args)
     return args
 
@@ -230,7 +225,7 @@ class zscan(cmdbase.controlcmd):
           "{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n".format(
               args.x, args.y, z, lumival, uncval))
 
-    args.savefile.close()
+    self.close_savefile(args)
 
 
 class timescan(cmdbase.controlcmd):
@@ -263,7 +258,6 @@ class timescan(cmdbase.controlcmd):
     self.init_handle()
     for i in range(args.nslice):
       self.check_handle(args)
-
       lumival, uncval = self.readout.read(channel=args.channel,
                                           sample=args.samples)
       args.savefile.write('{0:d} {1:.3f} {2:.4f}\n'.format(
@@ -272,7 +266,7 @@ class timescan(cmdbase.controlcmd):
           lumival, uncval, i + 1, args.nslice))
       time.sleep(args.interval)
 
-    args.savefile.close()
+    self.close_savefile(args)
 
 
 class showreadout(cmdbase.controlcmd):

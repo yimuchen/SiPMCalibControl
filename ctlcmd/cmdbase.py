@@ -492,8 +492,8 @@ class controlcmd():
     Parsing the z scanning options
     """
     args.zlist = " ".join(args.zlist)
-    braces = re.findall(r'[(.*?)]', args.zlist)
-    args.zlist = re.sub(r'[(.*?)]', '', args.zlist)
+    braces = re.findall(r'\[(.*?)\]', args.zlist)
+    args.zlist = re.sub(r'\[.*?\]', '', args.zlist)
     args.zlist = [float(z) for z in args.zlist.split()]
     for rstring in braces:
       r = [float(rarg) for rarg in rstring.split()]
@@ -640,6 +640,16 @@ class controlcmd():
 
     # Opening the file using the remote file handle
     args.savefile = self.sshfiler.remotefile(filename, args.wipefile)
+
+  def close_savefile(self,args):
+    """
+    Close a save file with a standard message for the verbosity of run files.
+    """
+    if not hasattr(args, 'savefile'):
+      return
+    self.printmsg( "Saving results to file [{0}]".format(args.savefile.name) )
+    args.savefile.flush()
+    args.savefile.close()
 
   # Helper function for globbing
   @staticmethod

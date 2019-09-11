@@ -64,9 +64,8 @@ class visualhscan(cmdbase.controlcmd):
                   center.x, center.y), 'Progress [{0}/{1}]'.format(idx, len(x))))
       args.savefile.write('{0:.1f} {1:.1f} {2:.1f} {3:.2f} {4:.3f}\n'.format(
           xval, yval, args.scanz, center.x, center.y))
-
     cv2.destroyAllWindows()
-    args.savefile.close()
+    self.close_savefile(args)
 
     fitx, covar_x = curve_fit(visualhscan.model, np.vstack((gantry_x, gantry_y)),
                               reco_x)
@@ -275,8 +274,8 @@ class visualzscan(cmdbase.controlcmd):
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
-    self.parse_xychip_options(args, add_visoffset=True)
     self.parse_zscan_options(args)
+    self.parse_xychip_options(args, add_visoffset=True)
     self.parse_savefile(args)
     return args
 
