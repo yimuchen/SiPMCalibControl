@@ -220,6 +220,7 @@ class savecalib(cmdbase.controlcmd):
   """
   Saving current calibration information into a json file
   """
+  LOG = log.GREEN('[SAVE_CALIB]')
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.parser.add_argument('-f',
@@ -235,6 +236,8 @@ class savecalib(cmdbase.controlcmd):
     return args
 
   def run(self, args):
+    self.printmsg('Saving calibration results to file [{0}]'.format(
+      args.file.name))
     self.board.save_calib_file(args.file.name)
 
 
@@ -303,6 +306,9 @@ class promptaction(cmdbase.controlcmd):
 
   def run(self, args):
     def color_change(x):
+      """
+      Formatting the output for clarity of what the user should be doing.
+      """
       if x == '[ON]':
         return log.GREEN(x)
       if x == '[OFF]':
