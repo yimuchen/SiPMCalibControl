@@ -72,7 +72,7 @@ GCoder::InitPrinter( const std::string& dev )
     throw std::runtime_error( errormessage );
   }
 
-  printmsg( GREEN( "PRINTER" ), "Waking up printer...." );
+  printmsg( GREEN( "[PRINTER]" ), "Waking up printer...." );
   usleep( 5e6 );
   SendHome();
 
@@ -236,6 +236,7 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
 
   do {
     // Getting current position command
+    usleep( 5e4 );
     const std::string checkmsg = RunGcode( "M114\n", 0, 100, verbose );
 
     check = sscanf( checkmsg.c_str(),
@@ -272,9 +273,9 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
           pmsg += "...";
         }
         // flush_update();
-        sprintf( msg, "Couldn't parse string [%s]! Trying again!\n\n",
-          pmsg.c_str() );
-        printwarn( msg );
+        // sprintf( msg, "Couldn't parse string [%s]! Trying again!\n\n",
+        //   pmsg.c_str() );
+        // printwarn( msg );
       }
     }
   } while( 1 );
