@@ -3,6 +3,7 @@
   "PD_PULSEHI" : "Setting pulser board into dynamic mode, please tune the PULL DOWN VOLTAGE to [1.65V] and turn SIPM HIGH VOLTAGE [ON]",
   "PD_CONST": "Setting pulser board into continuous mode, please tune the PULL DOWN VOLTAGE to [4.30V] and turn SIPM HIGH VOLTAGE [OFF]",
   "PD_OFF": "Turning off the pulser board, please tune the PULL DOWN VOLTAGE to [0] and turn SIPM HIGH VOLTAGE [OFF]",
+  "ND1": "Install NDfilter on pulse board 1 and make sure SIPM HIGH VOLTAGE IS [OFF]",
 
   "VIS_MODE": "Preparing for visual calibration, please make sure the SIPM HIGH VOLTAGE is [OFF]",
   "DARK_MODE": "Preparing for data collections, please make sure that the LIGHT SENSING POWER is [ON]"
