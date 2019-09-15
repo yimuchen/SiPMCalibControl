@@ -4,7 +4,7 @@ import json
 
 class Board(object):
   """
-  Class for storing a board type an a list of chip x-y positions
+  Class for storing a board type and a list of chip x-y positions
   """
 
   def __init__(self):
