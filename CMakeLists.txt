@@ -15,10 +15,15 @@ add_compile_options("-Wno-undef")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/cmod )
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/bin )
 
+set(BOOST_PYTHON_COMPONENTS "python3")
+if( APPLE )
+  set(BOOST_PYTHON_COMPONENTS "python37")
+endif()
+
 ## Finding additional libraries
 find_package(PythonLibs   3 REQUIRED)
 find_package(PythonInterp 3 REQUIRED)
-find_package(Boost          REQUIRED COMPONENTS python3)
+find_package(Boost          REQUIRED COMPONENTS ${BOOST_PYTHON_COMPONENTS})
 find_package(OpenCV         REQUIRED)
 
 FILE(GLOB PICO_SRC pico/*.cc)

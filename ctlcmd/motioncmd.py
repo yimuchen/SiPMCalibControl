@@ -15,7 +15,7 @@ class moveto(cmdbase.controlcmd):
     self.add_xychip_options()
     self.parser.add_argument('-z',
                              type=float,
-                             help=('Specifying the x coordinate explicitly [mm].'
+                             help=('Specifying the z coordinate explicitly [mm].'
                                    ' If none is given the current gantry '
                                    'position will be used instead'))
 

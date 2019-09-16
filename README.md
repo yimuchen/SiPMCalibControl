@@ -21,10 +21,12 @@ include:
   - [WiringPi][WiringPi]: For trigger control via GPIO
   - [Paramiko][Paramiko]: For data transfer over ssh
 
-For deployment for local testing on personal machines, WiringPi is not needed,
-but will require the user to manually setup a trigger system such that the
-oscilloscope will terminal nominally. The current configuration is done on a
-[Raspberry pi 3B+][raspi] running [ArchLinux Arm7][archarm].
+For deployment for local testing on personal machines, WiringPi and ADS1x15 is
+not needed. But local testing will require the user to manually setup a trigger
+system such that the oscilloscope will terminal nominally. The current
+configuration is done on a [Raspberry pi 3B+][raspi] running [ArchLinux
+Arm7][archarm], and is known to work with a typical ArchLinux machine.
+
 
 ## Installation and run commands
 
@@ -39,6 +41,25 @@ python3 control.py
 
 You should be greeted with a new command line prompt. For more instruction to how
 to use the program, se the [official documentation][SiPMCalibTwiki].
+
+## Installing prerequisites
+
+### ArchLinux (standard x86)
+
+```bash
+pacman -S boost python3
+```
+
+### Mac with Homebrew
+
+```bash
+brew install cmake
+brea install boost --with-python
+brew install boost-python3
+brew install python3
+pip3 paramiko
+```
+
 
 [SiPMCalibTwiki]: https://twiki.cern.ch/twiki/bin/viewauth/CMS/UMDHGCalSiPMCalib
 [WiringPi]: http://wiringpi.com/
