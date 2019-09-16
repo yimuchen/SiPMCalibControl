@@ -52,18 +52,21 @@ pacman -S boost python3
 
 ### Mac with Homebrew
 
+Manually download the picoscope driver from [HERE][Picoscope_MAC]
+
 ```bash
-brew install cmake
-brea install boost --with-python
-brew install boost-python3
-brew install python3
+brew install cmake python3 boost boost-python3 opencv
 pip3 paramiko
+
+cmake -D Boost_NO_BOOST_CMAKE:BOOL=ON ./
+cmake --build ./
 ```
 
 
 [SiPMCalibTwiki]: https://twiki.cern.ch/twiki/bin/viewauth/CMS/UMDHGCalSiPMCalib
 [WiringPi]: http://wiringpi.com/
 [Picoscope]: https://www.picotech.com/downloads/linux
+[Picoscope_MAC]: https://www.picotech.com/downloads
 [ADS1x15]: https://github.com/adafruit/Adafruit_CircuitPython_ADS1x15
 [raspi]: https://www.raspberrypi.org/products/raspberry-pi-3-model-b-plus/
 [archarm]: https://archlinuxarm.org/about/downloads

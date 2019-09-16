@@ -15,10 +15,17 @@ add_compile_options("-Wno-undef")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/cmod )
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/bin )
 
-set(BOOST_PYTHON_COMPONENTS "python3")
-if( APPLE )
+## Linux apple differences
+if(UNIX AND NOT APPLE)
+  set(BOOST_PYTHON_COMPONENTS "python3")
+  set(PICO_FIND_PATH "/opt/picoscope/")
+else()
   set(BOOST_PYTHON_COMPONENTS "python37")
+  set(PICO_FIND_PATH "/Applications/PiscoScope\ 6.app/Contents/Resources/")
 endif()
+
+set(PICO_INCLUDE_PATH ${PICO_FIND_PATH}"/include/")
+set(PICO_LIBRARY_PATH ${PICO_FIND_PATH}"/lib/")
 
 ## Finding additional libraries
 find_package(PythonLibs   3 REQUIRED)
@@ -26,14 +33,16 @@ find_package(PythonInterp 3 REQUIRED)
 find_package(Boost          REQUIRED COMPONENTS ${BOOST_PYTHON_COMPONENTS})
 find_package(OpenCV         REQUIRED)
 
+
+
 FILE(GLOB PICO_SRC pico/*.cc)
 find_path( PICO_INCLUDES
   NAMES libps5000/ps5000Api.h
-  PATHS /opt/picoscope/include/
+  PATHS ${PICO_INCLUDE_PATH}
   )
 find_library(PICO_LIBS
   NAMES ps5000
-  PATHS /opt/picoscope/lib/
+  PATHS ${PICO_LIBRARY_PATH}
   )
 
 # Only attempt to link wiring pi in a ARM machine
