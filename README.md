@@ -27,7 +27,6 @@ system such that the oscilloscope will terminal nominally. The current
 configuration is done on a [Raspberry pi 3B+][raspi] running [ArchLinux
 Arm7][archarm], and is known to work with a typical ArchLinux machine.
 
-
 ## Executing the control program
 
 Initiate the program using the command
@@ -37,7 +36,8 @@ python3 control.py
 ```
 
 You should be greeted with a new command line prompt. For more instruction to how
-to use the program, se the [official documentation][SiPMCalibTwiki].
+to use the program, se the [official documentation][SiPMCalibTwiki]. If you have
+problems connecting to the raspberry Pi, see the [CONNECT.md](CONNECT.md) file.
 
 ## Installing Instructions
 
@@ -65,8 +65,7 @@ cd libps5000
 ```
 
 The you would need to edit the `PKGBUILD` file in this directory to get the
-`armhf` version of the drivers found
-[here][https://labs.picotech.com/debian/pool/main/libp/libps5000/]. In this, you
+`armhf` version of the drivers found [here][picoscope_download]. In this, you
 will need to edit the `pkgversion`, `source` and the `md5sums` entries in the
 `PKGBUILD` file respectively.
 
@@ -154,7 +153,6 @@ Check if it can run using:
 python3 control.py
 ```
 
-
 ### Mac with Homebrew for local testing
 
 Manually download the picoscope driver from [HERE][Picoscope_MAC]. Then run the
@@ -192,6 +190,7 @@ python3 control.py
 [WiringPi]: http://wiringpi.com/
 [Picoscope]: https://www.picotech.com/downloads/linux
 [Picoscope_MAC]: https://www.picotech.com/downloads
+[picoscope_download]: https://labs.picotech.com/debian/pool/main/libp/libps5000/
 [ADS1x15]: https://github.com/adafruit/Adafruit_CircuitPython_ADS1x15
 [raspi]: https://www.raspberrypi.org/products/raspberry-pi-3-model-b-plus/
 [archarm]: https://archlinuxarm.org/about/downloads
