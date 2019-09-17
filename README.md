@@ -177,7 +177,7 @@ cmake --build ./
 You would need to export the library search variable:
 
 ```bash
-export DYLD_FALLBACK_LIBRARY_PATH=${DYLD_FALLBACK_LIBRARY_PATH}:"/Applications/PicoScope\ 6.app/Contents/Resources/lib"
+export DYLD_FALLBACK_LIBRARY_PATH=${DYLD_FALLBACK_LIBRARY_PATH}:"/Applications/PicoScope 6.app/Contents/Resources/lib"
 ```
 
 Then run:
