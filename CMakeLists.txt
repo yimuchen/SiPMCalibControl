@@ -21,7 +21,7 @@ if(UNIX AND NOT APPLE)
   set(PICO_FIND_PATH "/opt/picoscope/")
 else()
   set(BOOST_PYTHON_COMPONENTS "python37")
-  set(PICO_FIND_PATH "/Applications/PiscoScope\ 6.app/Contents/Resources/")
+  set(PICO_FIND_PATH "/Applications/PicoScope\ 6.app/Contents/Resources/")
 endif()
 
 set(PICO_INCLUDE_PATH "${PICO_FIND_PATH}/include/")
@@ -60,7 +60,9 @@ endif()
 function(make_control_library libname source )
   add_library(${libname} SHARED ${source})
   set_target_properties( ${libname} PROPERTIES PREFIX "" )
-  target_include_directories(${libname} PRIVATE ${PYTHON_INCLUDE_DIRS} )
+  target_include_directories(${libname} PRIVATE
+    ${PYTHON_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS} )
   target_link_libraries(${libname}
     ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} )
 endfunction()

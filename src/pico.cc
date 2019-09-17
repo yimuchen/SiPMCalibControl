@@ -1,4 +1,8 @@
+#ifdef __arm__
 #include <libps5000/ps5000Api.h>
+#else
+#include <libps5000-1.5/ps5000Api.h>
+#endif
 
 #include "logger.hpp"
 #include "pico.hpp"
