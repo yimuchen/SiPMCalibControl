@@ -1,6 +1,11 @@
+#ifdef __arm__
+#include <libps5000/ps5000Api.h>
+#else
+#include <libps5000-1.5/ps5000Api.h>
+#endif
+
 #include "pico.hpp"
 #include <iostream>
-#include <libps5000/ps5000Api.h>
 
 int
 main( int argc, char* argv[] )
