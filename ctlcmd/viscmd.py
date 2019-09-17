@@ -182,6 +182,15 @@ class visualcenterchip(cmdbase.controlcmd):
       'Gantry position: x={0:.1f} y={1:.1f} | '\
       'Chip FOV position: x={2:.1f} y={3:.1f}'.
         format(self.gcoder.opx, self.gcoder.opy, center.x, center.y))
+    self.printmsg(
+      'Chip corner coordinate: '\
+      '[{0:d},{1:d}], [{2},{3}], [{4},{5}], [{6},{7}]'.format(
+        center.poly_x1, center.poly_y1,
+        center.poly_x2, center.poly_y2,
+        center.poly_x3, center.poly_y3,
+        center.poly_x4, center.poly_y4,
+      )
+    )
 
     if (not self.board.vis_coord_hasz(args.chipid, self.gcoder.opz)
         or args.overwrite):

@@ -149,7 +149,9 @@ Visual::find_chip( const bool monitor )
   // Calculating convexhull position if nothing is found
   Visual::ChipResult ans;
   if( hulls.empty() ){
-    ans = ChipResult{ -1, -1, 0, 0 };
+    ans = ChipResult{ -1, -1, 0, 0,
+                      0, 0, 0, 0,
+                      0, 0, 0, 0 };
   } else {
     // position calculation of final contour
     cv::Moments m = cv::moments( hulls.at( 0 ), false );
@@ -163,7 +165,22 @@ Visual::find_chip( const bool monitor )
       }
     }
 
-    ans = ChipResult{ m.m10/m.m00, m.m01/m.m00,  m.m00, distmax};
+    // Recalculating the polygon approximation
+    const cv::Rect bound = cv::boundingRect( hulls.at( 0 ) );
+    const double size    = std::max( bound.height, bound.width );
+    cv::approxPolyDP( hulls.at( 0 ), polyapprox, size*0.08, true );
+
+    ans = ChipResult{
+      m.m10/m.m00, m.m01/m.m00,  m.m00, distmax,
+      polyapprox.at( 0 ).x,
+      polyapprox.at( 1 ).x,
+      polyapprox.at( 2 ).x,
+      polyapprox.at( 3 ).x,
+      polyapprox.at( 0 ).y,
+      polyapprox.at( 1 ).y,
+      polyapprox.at( 2 ).y,
+      polyapprox.at( 3 ).y,
+    };
   }
 
   // Plotting final calculation results
@@ -173,10 +190,6 @@ Visual::find_chip( const bool monitor )
 
     // Generating the image
     cv::Mat display( img );
-
-    // for( unsigned i = 0; i < contours.size(); ++i ){
-    //   cv::drawContours( display, contours, i, white, 2 );
-    // }
 
     for( unsigned i = 0; i < failed_ratio.size(); ++i ){
       cv::drawContours( display, failed_ratio, i, white );
@@ -287,5 +300,13 @@ BOOST_PYTHON_MODULE( visual )
   .def_readwrite( "y",       &Visual::ChipResult::y )
   .def_readwrite( "area",    &Visual::ChipResult::area )
   .def_readwrite( "maxmeas", &Visual::ChipResult::maxmeas )
+  .def_readwrite( "poly_x1", &Visual::ChipResult::poly_x1 )
+  .def_readwrite( "poly_x2", &Visual::ChipResult::poly_x2 )
+  .def_readwrite( "poly_x3", &Visual::ChipResult::poly_x3 )
+  .def_readwrite( "poly_x4", &Visual::ChipResult::poly_x4 )
+  .def_readwrite( "poly_y1", &Visual::ChipResult::poly_y1 )
+  .def_readwrite( "poly_y2", &Visual::ChipResult::poly_y2 )
+  .def_readwrite( "poly_y3", &Visual::ChipResult::poly_y3 )
+  .def_readwrite( "poly_y4", &Visual::ChipResult::poly_y4 )
   ;
 }

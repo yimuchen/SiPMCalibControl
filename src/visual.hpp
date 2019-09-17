@@ -23,6 +23,14 @@ public:
     double y;
     double area;
     double maxmeas;
+    int poly_x1 ;
+    int poly_x2 ;
+    int poly_x3 ;
+    int poly_x4 ;
+    int poly_y1 ;
+    int poly_y2 ;
+    int poly_y3 ;
+    int poly_y4 ;
   };
 
   ChipResult find_chip( const bool );
