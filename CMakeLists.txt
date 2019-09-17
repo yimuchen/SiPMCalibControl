@@ -12,6 +12,7 @@ add_compile_options("-Wall")
 add_compile_options("-Wno-undef")
 
 # General output settings
+set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/cmod )
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/bin )
 
