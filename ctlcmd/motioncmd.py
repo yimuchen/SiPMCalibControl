@@ -107,8 +107,8 @@ class halign(cmdbase.controlcmd):
           'Progress [{0:3d}/{1:3d}]'.format(idx+1, len(x))))
       ## Writing to file
       args.savefile.write(
-          '{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n'.format(
-              xval, yval, args.scanz, lumival, uncval))
+          '{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f} {5:d}\n'.format(
+              xval, yval, args.scanz, lumival, uncval, self.cmd.ndfilter))
 
     self.close_savefile(args)
 
@@ -222,8 +222,8 @@ class zscan(cmdbase.controlcmd):
           z, lumival, uncval))
       # Writing to file
       args.savefile.write(
-          "{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f}\n".format(
-              args.x, args.y, z, lumival, uncval))
+          "{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f} {5:d}\n".format(
+              args.x, args.y, z, lumival, uncval,self.cmd.ndfilter))
 
     self.close_savefile(args)
 

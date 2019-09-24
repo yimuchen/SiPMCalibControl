@@ -136,9 +136,9 @@ class picorunblock(cmdbase.controlcmd):
     self.init_handle()
     ## First line in file contains convertion information
     if args.savefile.tell() == 0:
-      args.savefile.write("{0} {1} {2} {3} {4}\n".format(
+      args.savefile.write("{0} {1} {2} {3} {4} {5}\n".format(
           self.pico.timeinterval, self.pico.ncaptures, self.pico.presamples,
-          self.pico.postsamples, self.pico.adc2mv(1)))
+          self.pico.postsamples, self.pico.adc2mv(1), self.cmd.ndfilter))
       args.savefile.flush()
 
     for i in range(args.numblocks):
@@ -154,9 +154,11 @@ class picorunblock(cmdbase.controlcmd):
 
       self.pico.flushbuffer()
 
-      for cap in range(self.pico.ncaptures):
-        line = self.pico.waveformstr(args.channel, cap)
-        args.savefile.write(line + '\n')
+      lines = [
+          self.pico.waveformstr(args.channel, cap)
+          for cap in range(self.pico.ncaptures)
+      ]
+      args.savefile.write("\n".join(lines))
 
     # Closing
     args.savefile.flush()

@@ -45,6 +45,7 @@ class controlterm(cmd.Cmd):
     self.readout = readout.readout(self)  # Must be after picoscope setup
     self.trigger = trigger.Trigger()
     self.action = actionlist.ActionList()
+    self.ndfilter = 0# Initial index of NDfilter
 
     ## Creating command instances and attaching to associated functions
     for com in cmdlist:

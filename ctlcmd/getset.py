@@ -11,32 +11,29 @@ class set(cmdbase.controlcmd):
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    self.parser.add_argument(
-        '-boardtype',
-        type=argparse.FileType(mode='r'),
-        help=('Setting board type via a configuration json file that lists '
-              'CHIP_ID with x-y-coordinates.'))
-    self.parser.add_argument(
-        '-printerdev',
-        type=str,
-        help=('Device path for the 3d printer. Should be something like '
-              '`/dev/tty<SOMETHING>`.'))
-    self.parser.add_argument(
-        '-camdev',
-        type=str,
-        help=('Device path for the primary camera, should be something like '
-              '/dev/video<index>.'))
+    self.parser.add_argument('-boardtype',
+                             type=argparse.FileType(mode='r'),
+                             help=('Setting board type via a configuration json '
+                                   'file that lists CHIP_ID with x-y '
+                                   'coordinates.'))
+    self.parser.add_argument('-printerdev',
+                             type=str,
+                             help=('Device path for the 3d printer. Should be '
+                                   'something like `/dev/tty<SOMETHING>`.'))
+    self.parser.add_argument('-camdev',
+                             type=str,
+                             help=('Device path for the primary camera, should '
+                                   'be something like `/dev/video<index>.`'))
     self.parser.add_argument('-remotehost',
                              type=str,
                              help='Connecting to remote host for file transfer')
     self.parser.add_argument('-remotepath',
                              type=str,
                              help='Remote directory to save files to')
-    self.parser.add_argument(
-        '-picodevice',
-        type=str,
-        help=('The serial number of the pico-tech device for dynamic light '
-              'readout'))
+    self.parser.add_argument('-picodevice',
+                             type=str,
+                             help=('The serial number of the pico-tech device '
+                                   'for dynamic light readout'))
     self.parser.add_argument(
         '-readout',
         type=int,
@@ -45,6 +42,11 @@ class set(cmdbase.controlcmd):
     self.parser.add_argument('-action',
                              type=argparse.FileType(mode='r'),
                              help='List of short hands for setting user prompts')
+    self.parser.add_argument('-ndfilter',
+                             type=int,
+                             help=('Change the ND filter index in software, user'
+                                   ' is responsible for making sure the software'
+                                   ' and hardware ND filters are the same'))
 
   def run(self, args):
     if args.boardtype:
@@ -63,6 +65,8 @@ class set(cmdbase.controlcmd):
       self.readout.set_mode(args.readout)
     if args.action:
       self.action.add_json(args.action.name)
+    if args.ndfilter:
+      self.cmd.ndfilter = args.ndfilter
 
   def set_board(self, args):
     try:
@@ -122,6 +126,7 @@ class get(cmdbase.controlcmd):
     self.parser.add_argument('--pico', action='store_true')
     self.parser.add_argument('--readout', action='store_true')
     self.parser.add_argument('--action', action='store_true')
+    self.parser.add_argument('--ndfilter', action='store_true')
 
     self.parser.add_argument('-a', '--all', action='store_true')
 
@@ -139,8 +144,9 @@ class get(cmdbase.controlcmd):
     if args.readout or args.all:
       self.print_readout()
     if args.action or args.all:
-      for key in self.action.shorthands():
-        log.printmsg(log.GREEN('[ACTIONS]'), key + ' | ' + self.action.map[key])
+      self.print_action()
+    if args.ndfilter or args.all:
+      log.printmsg(log.GREEN('[NDFILTER]'), str(self.cmd.ndfilter))
 
   def print_board(self):
     header = log.GREEN('[BOARDTYPE]')
@@ -197,9 +203,12 @@ class get(cmdbase.controlcmd):
   def print_action(self):
     header = log.GREEN('[ACTION]')
     msg_format = log.YELLOW('{0}') + ' | {1}'
+    set_format = log.YELLOW('{0}') + ' | RUN CMD | set {1}'
     for key in self.action.shorthands():
-      msg = msg_format.format(key, self.action.map[key])
+      msg = msg_format.format(key, self.action.getmessage(key))
+      smsg = set_format.format(key, " ".join(self.action.getset(key)))
       log.printmsg(header, msg)
+      log.printmsg(header, smsg)
 
 
 class getcoord(cmdbase.controlcmd):
@@ -221,6 +230,7 @@ class savecalib(cmdbase.controlcmd):
   Saving current calibration information into a json file
   """
   LOG = log.GREEN('[SAVE_CALIB]')
+
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.parser.add_argument('-f',
@@ -237,7 +247,7 @@ class savecalib(cmdbase.controlcmd):
 
   def run(self, args):
     self.printmsg('Saving calibration results to file [{0}]'.format(
-      args.file.name))
+        args.file.name))
     self.board.save_calib_file(args.file.name)
 
 
@@ -320,10 +330,10 @@ class promptaction(cmdbase.controlcmd):
       return x
 
     self.init_handle()
+    is_defined = args.string[0] in self.action.shorthands()
 
-    msg = self.action.map[args.string[0]] \
-          if args.string[0] in self.action.shorthands() \
-          else ' '.join(args.string)
+    msg = self.action.getmessage(args.string[0]) if is_defined \
+          else args.string[0]
 
     msg = ' '.join([color_change(x) for x in msg.split()])
     log.printmsg(log.GREEN('    THE NEXT STEP REQUIRES USER INTERVENTION'))
@@ -334,3 +344,7 @@ class promptaction(cmdbase.controlcmd):
       self.check_handle(args)
       input_text = input(
           log.GREEN('    TYPE [%s] to continue...') % args.string[0])
+
+    if is_defined:
+      cmd = 'set ' + ' '.join(self.action.getset(args.string[0]))
+      self.cmd.onecmd(cmd.strip())
