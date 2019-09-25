@@ -10,7 +10,6 @@ import cmod.actionlist as actionlist
 import cmod.sighandle as sig
 import numpy as np
 import cmd
-import sys
 import os
 import argparse
 import readline
@@ -65,6 +64,8 @@ class controlterm(cmd.Cmd):
 
   def postcmd(self, stop, line):
     log.printmsg("")  # Printing extra empty line for aesthetics
+    if line.strip() == "exit":
+      return cmd.Cmd.postcmd(self,stop,line)
 
   def get_names(self):
     """
@@ -74,7 +75,7 @@ class controlterm(cmd.Cmd):
     return dir(self)
 
   def do_exit(self, line):
-    sys.exit(0)
+    return True
 
   def help_exit(self):
     "Exit program current session"
@@ -215,8 +216,9 @@ class controlcmd():
     try:
       args = self.parse(line)
     except Exception as err:
-      print_tracestack()
-      self.printerr(str(err))
+      # print_tracestack()
+      # self.printerr(str(err))
+      # self.parser.print_help()
       return controlcmd.PARSE_ERROR
 
     try:
@@ -309,7 +311,7 @@ class controlcmd():
     try:
       arg = self.parser.parse_args(line.split())
     except SystemExit as err:
-      self.printerr(str(err))
+      # self.printerr(str(err))
       raise Exception('Cannot parse input')
     return arg
 
