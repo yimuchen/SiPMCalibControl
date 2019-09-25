@@ -17,6 +17,7 @@ if __name__ == '__main__':
       motioncmd.zscan,
       motioncmd.timescan,
       motioncmd.showreadout,
+      viscmd.visualset,
       viscmd.visualhscan,
       viscmd.visualzscan,
       viscmd.visualmaxsharp,

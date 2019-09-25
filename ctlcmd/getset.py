@@ -136,7 +136,7 @@ class get(cmdbase.controlcmd):
     if args.printerdev or args.all:
       self.print_printer()
     if args.camdev or args.all:
-      log.printmsg(log.GREEN('[CAM DEV]'), str(self.visual.dev_path))
+      self.print_camera()
     if args.align or args.all:
       self.print_alignment()
     if args.pico or args.all:
@@ -168,6 +168,13 @@ class get(cmdbase.controlcmd):
   def print_camera(self):
     header = log.GREEN('[CAMERA]')
     log.printmsg(header, str(self.visual.dev_path))
+    log.printmsg(header, 'Threshold:{0:3f}'.format(self.visual.threshold))
+    log.printmsg(header, 'Blur:     {0:3d} [pix]'.format(self.visual.blur_range))
+    log.printmsg(header, 'Max Lumi: {0:3f}'.format(self.visual.lumi_cutoff))
+    log.printmsg(header,
+                 'Min Size: {0:3d} [pix]'.format(self.visual.size_cutoff))
+    log.printmsg(header, 'Ratio:    {0:3f}'.format(self.visual.ratio_cutoff))
+    log.printmsg(header, 'Poly:     {0:3f}'.format(self.visual.poly_range))
 
   def print_alignment(self):
     lumi_header = log.GREEN('[LUMI_ALIGN]')

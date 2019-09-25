@@ -19,12 +19,15 @@ static const auto __dummy_settings
   = cv::utils::logging::setLogLevel( cv::utils::logging::LOG_LEVEL_SILENT );
 
 
-Visual::Visual() : cam(){}
-Visual::~Visual(){}
+Visual::Visual() : cam()
+{
+  init_var_default();
+}
 
 Visual::Visual( const std::string& dev ) : cam()
 {
   init_dev( dev );
+  init_var_default();
 }
 
 void
@@ -42,6 +45,19 @@ Visual::init_dev( const std::string& dev )
   cam.set( cv::CAP_PROP_BUFFERSIZE,      1 );// Reducing buffer for fast capture
 }
 
+void
+Visual::init_var_default()
+{
+  threshold    = 80;
+  blur_range   = 5;
+  lumi_cutoff  = 40;
+  size_cutoff  = 50;
+  ratio_cutoff = 1.4;
+  poly_range   = 0.08;
+}
+
+Visual::~Visual(){}
+
 unsigned
 Visual::frame_width() const
 {
@@ -57,186 +73,225 @@ Visual::frame_height() const
 Visual::ChipResult
 Visual::find_chip( const bool monitor )
 {
-  // Magic numbers that will need some method of adjustment
-  static const cv::Size blursize( 5, 5 );
-  static const int minthreshold   = 80;
-  static const int maxthreshold   = 255;// this doesn't need to change.
-  static const double maxchiplumi = 40;
-  static const int minchipsize    = 50;
-  static const double chipratio   = 1.4;
-
-  // Drawing variables
-  static const std::string winname = "FINDCHIP_MONITOR";
-  char msg[1024];
-
   // Operational variables
-  cv::Mat img, gray_img;
-  std::vector<std::vector<cv::Point> > contours;
-  std::vector<std::vector<cv::Point> > hulls;
-  std::vector<cv::Vec4i> hierarchy;
-  std::vector<cv::Point> polyapprox;
-
-  std::vector<std::vector<cv::Point> > failed_ratio;
-  std::vector<std::vector<cv::Point> > failed_lumi;
-  std::vector<std::vector<cv::Point> > failed_rect;
-  std::vector<std::vector<cv::Point> > failed_largest;
-
-
+  cv::Mat img;
   // Getting image
   getImg( img );
 
-  // Standard image processing.
-  cv::cvtColor( img, gray_img, cv::COLOR_BGR2GRAY );
-  cv::blur( gray_img, gray_img, blursize );
-  cv::threshold( gray_img, gray_img,
-    minthreshold, maxthreshold,
-    cv::THRESH_BINARY );
-  cv::findContours( gray_img, contours, hierarchy,
-    cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point( 0, 0 ) );
+
+  const std::vector<Contour_t> contours = GetContours( img );
+
+  std::vector<Contour_t> failed_ratio;
+  std::vector<Contour_t> failed_lumi;
+  std::vector<Contour_t> failed_rect;
+  std::vector<Contour_t> hulls;
 
   // Calculating all contour properties
   for( unsigned i = 0; i < contours.size(); i++ ){
-    // Size and dimesion estimation from bounding rectangle
-    const cv::Rect bound = cv::boundingRect( contours.at( i ) );
-    const double ratio   = (double)bound.height / (double)bound.width;
-    const double size    = std::max( bound.height, bound.width );
-    if( size < minchipsize ){ continue; }// skipping small speckles
+    const double size = GetContourSize( contours.at( i ) );
+    if( size < size_cutoff ){ continue; }// skipping small speckles
 
     // Expecting the ratio of the bounding box to be square.
-    if( ratio > chipratio || ratio < 1./chipratio ){
+    const cv::Rect bound = cv::boundingRect( contours.at( i ) );
+    const double ratio   = (double)bound.height / (double)bound.width;
+    if( ratio > ratio_cutoff || ratio < 1./ratio_cutoff ){
       failed_ratio.push_back( contours.at( i ) );
       continue;
     }
 
     // Expecting the internals of of the photosensor to be dark.
-    cv::Mat mask = cv::Mat::zeros( img.size(), CV_8UC1 );
-    cv::drawContours( mask, contours, i, 255, cv::FILLED );
-    const cv::Scalar meancol = cv::mean( img, mask );
-    const double lumi        = 0.2126*meancol[0]
-                               + 0.7152*meancol[1]
-                               + 0.0722*meancol[2];
-    if( lumi > maxchiplumi ){
+    const double lumi = GetImageLumi( img, contours.at( i ) );
+    if( lumi > lumi_cutoff ){
       failed_lumi.push_back( contours.at( i ) );
       continue;
     }// Photosensors are dark.
 
     // Generating convex hull
-    std::vector<cv::Point> hull;
-    cv::convexHull( cv::Mat( contours.at( i ) ), hull );
-
-    // Convex hull should be sufficiently rectangular
-    cv::approxPolyDP( hull, polyapprox, size*0.08, true );
-    if( polyapprox.size() != 4 ){
+    const Contour_t hull = GetConvexHull( contours.at( i ) );
+    const Contour_t poly = GetPolyApprox( hull );
+    if( poly.size() != 4 ){
       failed_rect.push_back( contours.at( i ) );
       continue;
-    }
-
-    // Only keeping largest convex hull
-    if( !hulls.empty() ){
-      const cv::Rect boundprev = cv::boundingRect( hulls.back() );
-      const cv::Rect boundpres = cv::boundingRect( hull );
-
-      if( boundpres.height * boundpres.width
-          > boundprev.height * boundprev.width ){
-        failed_largest.push_back( hulls.back() );
-        hulls.pop_back();
-      }
     }
 
     hulls.push_back( hull );
   }
 
-  // Calculating convexhull position if nothing is found
-  Visual::ChipResult ans;
-  if( hulls.empty() ){
-    ans = ChipResult{ -1, -1, 0, 0,
-                      0, 0, 0, 0,
-                      0, 0, 0, 0 };
-  } else {
-    // position calculation of final contour
-    cv::Moments m = cv::moments( hulls.at( 0 ), false );
+  std::sort( hulls.begin(), hulls.end(), Visual::CompareContourSize );
 
-    // Maximum distance in contour
-    double distmax = 0;
-
-    for( const auto& p1 : hulls.at( 0 ) ){
-      for( const auto& p2 : hulls.at( 0 ) ){
-        distmax = std::max( distmax, cv::norm( p2-p1 ) );
-      }
-    }
-
-    // Recalculating the polygon approximation
-    const cv::Rect bound = cv::boundingRect( hulls.at( 0 ) );
-    const double size    = std::max( bound.height, bound.width );
-    cv::approxPolyDP( hulls.at( 0 ), polyapprox, size*0.08, true );
-
-    ans = ChipResult{
-      m.m10/m.m00, m.m01/m.m00,  m.m00, distmax,
-      polyapprox.at( 0 ).x,
-      polyapprox.at( 1 ).x,
-      polyapprox.at( 2 ).x,
-      polyapprox.at( 3 ).x,
-      polyapprox.at( 0 ).y,
-      polyapprox.at( 1 ).y,
-      polyapprox.at( 2 ).y,
-      polyapprox.at( 3 ).y,
-    };
+  if( monitor ){
+    ShowFindChip( img, failed_ratio, failed_lumi, failed_rect, hulls );
   }
 
-  // Plotting final calculation results
-  if( monitor ){
-    // Window will be created, if already exists, this function does nothing
-    cv::namedWindow( winname, cv::WINDOW_AUTOSIZE );
+  if( hulls.empty() ){
+    return ChipResult{ -1, -1, 0, 0,
+                       0, 0, 0, 0,
+                       0, 0, 0, 0 };
+  } else {
+    // position calculation of final contour
+    const cv::Moments m = cv::moments( hulls.at( 0 ), false );
 
-    // Generating the image
-    cv::Mat display( img );
+    // Maximum distance in contour
+    const double distmax = GetContourMaxMeasure( hulls.at( 0 ) );
+    const Contour_t poly = GetPolyApprox( hulls.at( 0 ) );
 
-    for( unsigned i = 0; i < failed_ratio.size(); ++i ){
-      cv::drawContours( display, failed_ratio, i, white );
+    return ChipResult{
+      m.m10/m.m00, m.m01/m.m00,  m.m00, distmax,
+      poly.at( 0 ).x,
+      poly.at( 1 ).x,
+      poly.at( 2 ).x,
+      poly.at( 3 ).x,
+      poly.at( 0 ).y,
+      poly.at( 1 ).y,
+      poly.at( 2 ).y,
+      poly.at( 3 ).y,
+    };
+  }
+}
+
+void
+Visual::ShowFindChip(
+  const cv::Mat&     img,
+  const ContourList& failed_ratio,
+  const ContourList& failed_lumi,
+  const ContourList& failed_rect,
+  const ContourList& hulls  ) const
+{
+  // Drawing variables
+  static const std::string winname = "FINDCHIP_MONITOR";
+  char msg[1024];
+
+  // Window will be created, if already exists, this function does nothing
+  cv::namedWindow( winname, cv::WINDOW_AUTOSIZE );
+
+  // Generating the image
+  cv::Mat display( img );
+
+  auto PlotContourList = [&display]( const ContourList& list,
+                                     const cv::Scalar& color ) -> void {
+                           for( unsigned i = 0; i < list.size(); ++i ){
+                             cv::drawContours( display, list, i, color );
+                           }
+                         };
+
+  auto PlotText = [&display]( const std::string& str,
+                              const cv::Point& pos,
+                              const cv::Scalar& col ) -> void {
+                    cv::putText( display, str,
+                      pos, cv::FONT_HERSHEY_SIMPLEX, 0.8, col, 2 );
+                  };
+
+  PlotContourList( failed_ratio, white );
+  PlotText( "Failed Ratio", cv::Point(50,700), white );
+
+  PlotContourList( failed_lumi,  green );
+  PlotText( "Failed Lumi", cv::Point(50,750), green );
+
+  PlotContourList( failed_rect, yellow );
+  PlotText( "Failed Rect", cv::Point(50,800), yellow );
+
+  PlotContourList( hulls,         cyan );
+  PlotText( "Candidate", cv::Point( 50, 850 ), cyan );
+
+  if( hulls.empty() ){
+    PlotText( "NOT FOUND", cv::Point( 20,20), red );
+  } else {
+    const cv::Moments m = cv::moments( hulls.at( 0 ), false );
+    const double x      = m.m10/m.m00;
+    const double y      = m.m01/m.m00;
+
+    sprintf( msg, "x:%.1lf y:%.1lf", x, y ),
+    cv::drawContours( display, hulls, 0, red, 3 );
+    cv::circle( display, cv::Point( x, y ), 3, red, cv::FILLED );
+    PlotText( msg, cv::Point( 50, 100 ), red );
+  }
+
+  imshow( winname, display );
+  cv::waitKey( 30 );
+}
+
+std::vector<Visual::Contour_t>
+Visual::GetContours( cv::Mat& img ) const
+{
+  cv::Mat gray_img;
+  std::vector<cv::Vec4i> hierarchy;
+  std::vector<Contour_t> contours;
+
+  // Standard image processing.
+  cv::cvtColor( img, gray_img, cv::COLOR_BGR2GRAY );
+  cv::blur( gray_img, gray_img, cv::Size( blur_range, blur_range ) );
+  cv::threshold( gray_img, gray_img,
+    threshold, 255,
+    cv::THRESH_BINARY );
+  cv::findContours( gray_img, contours, hierarchy,
+    cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point( 0, 0 ) );
+
+  return contours;
+}
+
+double
+Visual::GetImageLumi( const cv::Mat& img, const Contour_t& cont ) const
+{
+  // Expecting the internals of of the photosensor to be dark.
+  const std::vector<Contour_t> v_cont = { cont };
+
+  cv::Mat mask = cv::Mat::zeros( img.size(), CV_8UC1 );
+
+  cv::drawContours( mask, v_cont, 0, 255, cv::FILLED );
+
+  const cv::Scalar meancol = cv::mean( img, mask );
+
+  return 0.2126*meancol[0]
+         + 0.7152*meancol[1]
+         + 0.0722*meancol[2];
+}
+
+bool
+Visual::CompareContourSize( const Contour_t& x, const Contour_t& y )
+{
+  const cv::Rect x_bound = cv::boundingRect( x );
+  const cv::Rect y_bound = cv::boundingRect( y );
+
+  return x_bound.height * x_bound.width
+         > y_bound.height * y_bound.width;
+}
+
+Visual::Contour_t
+Visual::GetConvexHull( const Contour_t& x ) const
+{
+  Contour_t hull;
+  cv::convexHull( cv::Mat( x ), hull );
+  return hull;
+}
+
+Visual::Contour_t
+Visual::GetPolyApprox( const Contour_t& x ) const
+{
+  Contour_t ans;
+  const double size = GetContourSize( x );
+
+  cv::approxPolyDP( x, ans, size*poly_range, true );
+
+  return ans;
+}
+
+double
+Visual::GetContourSize( const Contour_t& x ) const
+{
+  const cv::Rect bound = cv::boundingRect( x );
+  return std::max( bound.height, bound.width );
+}
+
+double
+Visual::GetContourMaxMeasure( const Contour_t& x ) const
+{
+  // Maximum distance in contour
+  double ans = 0;
+
+  for( const auto& p1 : x ){
+    for( const auto& p2 : x ){
+      ans = std::max( ans, cv::norm( p2-p1 ) );
     }
-
-    cv::putText( display, "FAILED RATIO",
-      cv::Point( 50, 700 ), cv::FONT_HERSHEY_SIMPLEX, 2, white  );
-
-    for( unsigned i = 0; i < failed_lumi.size(); ++i ){
-      cv::drawContours( display, failed_lumi, i, green );
-    }
-
-    cv::putText( display, "FAILED LUMI",
-      cv::Point( 50, 750 ), cv::FONT_HERSHEY_SIMPLEX, 2, green  );
-
-    for( unsigned i = 0; i < failed_rect.size(); ++i ){
-      cv::drawContours( display, failed_rect, i, yellow );
-    }
-
-    cv::putText( display, "FAILED RECT",
-      cv::Point( 50, 800 ), cv::FONT_HERSHEY_SIMPLEX, 2, yellow  );
-
-    for( unsigned i = 0; i < failed_largest.size(); ++i ){
-      cv::drawContours( display, failed_largest, i, cyan );
-    }
-
-    cv::putText( display, "FAILED LARGEST",
-      cv::Point( 50, 850 ), cv::FONT_HERSHEY_SIMPLEX, 2, cyan  );
-
-
-    if( hulls.empty() ){
-      cv::putText( display, "NOT FOUND",
-        cv::Point( 50, 100 ),
-        cv::FONT_HERSHEY_SIMPLEX,
-        1, red );
-    } else {
-      sprintf( msg, "x:%.1lf y:%.1lf", ans.x, ans.y ),
-      cv::drawContours( display, hulls, 0, red, 3 );
-      cv::circle( display, cv::Point( ans.x, ans.y ), 3, red, cv::FILLED );
-      cv::putText( display, msg,
-        cv::Point( 50, 100 ),
-        cv::FONT_HERSHEY_SIMPLEX,
-        2, red );
-    }
-
-    imshow( winname, display );
-    cv::waitKey( 30 );
   }
 
   return ans;
@@ -292,8 +347,15 @@ BOOST_PYTHON_MODULE( visual )
   .def( "save_frame",   &Visual::save_frame )
   .def( "frame_width",  &Visual::frame_width )
   .def( "frame_height", &Visual::frame_height )
-  .def_readonly( "dev_path", &Visual::dev_path )
+  .def_readonly( "dev_path", &Visual::dev_path  )
+  .def_readwrite( "threshold",    &Visual::threshold    )
+  .def_readwrite( "blur_range",   &Visual::blur_range   )
+  .def_readwrite( "lumi_cutoff",  &Visual::lumi_cutoff  )
+  .def_readwrite( "size_cutoff",  &Visual::size_cutoff  )
+  .def_readwrite( "ratio_cutoff", &Visual::ratio_cutoff )
+  .def_readwrite( "poly_range",   &Visual::poly_range   )
   ;
+
   // Required for coordinate caluclation
   boost::python::class_<Visual::ChipResult>( "ChipResult" )
   .def_readwrite( "x",       &Visual::ChipResult::x )

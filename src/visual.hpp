@@ -41,9 +41,37 @@ public:
   unsigned frame_width() const ;
   unsigned frame_height() const;
 
+  int blur_range;
+  int lumi_cutoff;
+  int size_cutoff;
+  double threshold;
+  double ratio_cutoff;
+  double poly_range;
+
 private:
   cv::VideoCapture cam;
   void getImg( cv::Mat& );
+  void init_var_default();
+
+  // Private methods for easier image processing
+  typedef std::vector<cv::Point> Contour_t;
+  typedef std::vector<Contour_t> ContourList;
+  std::vector<Contour_t> GetContours( cv::Mat& ) const ;
+  double GetImageLumi( const cv::Mat&, const Contour_t& ) const;
+
+  Contour_t GetConvexHull( const Contour_t& ) const ;
+  Contour_t GetPolyApprox( const Contour_t& ) const ;
+  double    GetContourSize( const Contour_t& ) const ;
+  double    GetContourMaxMeasure( const Contour_t&) const ;
+
+  void ShowFindChip(
+    const cv::Mat&,
+    const ContourList&,
+    const ContourList&,
+    const ContourList&,
+    const ContourList& ) const;
+
+  static bool CompareContourSize( const Contour_t&, const Contour_t& );
 };
 
 #endif

@@ -6,6 +6,61 @@ import time
 import cv2
 
 
+class visualset(cmdbase.controlcmd):
+  """
+  Defining the visual computation parameters
+  """
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
+    self.parser.add_argument('--threshold',
+                             '-t',
+                             type=float,
+                             help=('Grayscale threshold to perform contouring '
+                                   'algorithm [0-255]'))
+    self.parser.add_argument('--blur',
+                             '-b',
+                             type=int,
+                             help=('Blur size to perform to the image before '
+                                   'contouring to avoid picking up noise '
+                                   '[pixels]'))
+    self.parser.add_argument('--lumi',
+                             '-l',
+                             type=float,
+                             help=('Maximum luminosity threshold of the '
+                                   'interior of a contour to be selected as a '
+                                   'chip candidate (typically 0-255)'))
+    self.parser.add_argument('--size',
+                             '-s',
+                             type=int,
+                             help=('Minimum size of a contour to be '
+                                   'selected as a chip candidate [pixels]'))
+    self.parser.add_argument('--ratio',
+                             '-r',
+                             type=float,
+                             help=('Maximum Ratio of the two dimension of a '
+                                   'contour to be selected as a chip '
+                                   'candidate (>1)'))
+    self.parser.add_argument('--poly',
+                             '-p',
+                             type=float,
+                             help=('Relative tolerance for performing polygon '
+                                   'approximation algorithm (0, 1)'))
+
+  def run(self, args):
+    if args.threshold:
+      self.visual.threshold = args.threshold
+    if args.blur:
+      self.visual.blur_range = args.blur
+    if args.lumi:
+      self.visual.lumi_cutoff = args.lumi
+    if args.size:
+      self.visual.size_cutoff = args.size
+    if args.ratio:
+      self.visual.ratio_cutoff = args.ratio
+    if args.poly:
+      self.visual.poly_range = args.poly
+
+
 class visualhscan(cmdbase.controlcmd):
   """
   Performing horizontal scan with camera system
