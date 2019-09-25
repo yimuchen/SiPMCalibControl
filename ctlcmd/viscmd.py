@@ -397,7 +397,9 @@ class visualshowchip(cmdbase.controlcmd):
     return cmdbase.controlcmd.parse(self, line)
 
   def run(self, args):
+    self.init_handle()
     while True:
+      self.check_handle(args)
       self.visual.find_chip(True)
       if cv2.waitKey(100) > 0:  ## If any key is pressed
         break
