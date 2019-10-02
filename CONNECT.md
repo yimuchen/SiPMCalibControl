@@ -29,3 +29,13 @@ terminal, the command `ifconfig` should give you a new connection like
 `bridge100` with an IPv4 that looks like a standard sharing IP address (like
 192.168.2.1). To ssh to the raspberry pi, ssh to the IP address with the last
 digit incremented by 1.
+
+If you are running into trouble with commands that open OpenCV windows, try
+enabling indirect rendering for [xquartz](https://www.xquartz.org/):
+
+```bash
+defaults write org.macosforge.xquartz.X11 enable_iglx -bool true
+```
+
+You will need to reboot (or at least restart xquartz) for the command to take
+effect.
