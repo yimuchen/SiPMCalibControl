@@ -1,10 +1,10 @@
 {
   "PD_PULSELOW" : {
-    "message": "Setting pulser board into dynamic mode, please tune the PULL DOWN VOLTAGE to [0.94V] and turn SIPM HIGH VOLTAGE [ON]",
+    "message": "Setting pulser board into dynamic mode, please tune the PULL DOWN VOLTAGE to [0.3V] and turn SIPM HIGH VOLTAGE [ON]",
     "set" : ["-readout", "1"]
   },
   "PD_PULSEHI" : {
-    "message": "Setting pulser board into dynamic mode, please tune the PULL DOWN VOLTAGE to [1.65V] and turn SIPM HIGH VOLTAGE [ON]",
+    "message": "Setting pulser board into dynamic mode, please tune the PULL DOWN VOLTAGE to [2.150V] and turn SIPM HIGH VOLTAGE [ON]",
     "set" : ["-readout", "1"]
   },
   "PD_CONST": {

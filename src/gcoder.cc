@@ -221,7 +221,7 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
   // checking for boundary
   if( opx < 0 || opx > max_x() ||
       opy < 0 || opy > max_y() ||
-      opz < 0 || opz > max_z()  ){
+      opz < 0 || opz > max_z() ){
     printwarn( "Coordinates is outside of gantry limit! Moving the "
       "destination back into reasonable limits." );
     opx = std::max( std::min( opx, max_x() ), 0.0f );
@@ -309,16 +309,17 @@ BOOST_PYTHON_MODULE( gcoder )
   .def( "getsettings",     &GCoder::GetSettings )
   .def( "set_speed_limit", &GCoder::SetSpeedLimit )
   .def( "moveto",          &GCoder::MoveTo )
+  .def( "sendhome",        &GCoder::SendHome )
   .def_readonly( "dev_path", &GCoder::dev_path )
   .def_readonly( "opx",      &GCoder::opx )
   .def_readonly( "opy",      &GCoder::opy )
   .def_readonly( "opz",      &GCoder::opz )
   // Static methods
-  .def( "max_x",    &GCoder::max_x )
-     .staticmethod("max_x")
-  .def( "max_y",    &GCoder::max_y )
-     .staticmethod("max_y")
-  .def( "max_z",    &GCoder::max_z )
-    .staticmethod("max_z")
+  .def( "max_x", &GCoder::max_x )
+  .staticmethod( "max_x" )
+  .def( "max_y", &GCoder::max_y )
+  .staticmethod( "max_y" )
+  .def( "max_z", &GCoder::max_z )
+  .staticmethod( "max_z" )
   ;
 }

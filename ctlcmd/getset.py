@@ -41,8 +41,7 @@ class set(cmdbase.controlcmd):
         help='Setting readout mode of the current session')
     self.parser.add_argument('-action',
                              type=argparse.FileType(mode='r'),
-                             help=('JSON file with a list of short hands for '
-                                   'setting user prompts'))
+                             help='List of short hands for setting user prompts')
     self.parser.add_argument('-ndfilter',
                              type=int,
                              help=('Change the ND filter index in software, user'
@@ -122,6 +121,7 @@ class get(cmdbase.controlcmd):
     self.parser.add_argument('--boardtype', action='store_true')
     self.parser.add_argument('--printerdev', action='store_true')
     self.parser.add_argument('--camdev', action='store_true')
+    self.parser.add_argument('--origchip', action='store_true')
     self.parser.add_argument('--align', action='store_true')
     self.parser.add_argument('--pico', action='store_true')
     self.parser.add_argument('--readout', action='store_true')

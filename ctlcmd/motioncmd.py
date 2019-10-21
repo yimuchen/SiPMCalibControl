@@ -57,6 +57,17 @@ class movespeed(cmdbase.controlcmd):
   def run(self, args):
     self.gcoder.set_speed_limit(args.x, args.y, args.z)
 
+class sendhome(cmdbase.controlcmd):
+  """
+  Sending the gantry system home. This will reset in the internal coordinate
+  systems in the gantry. So use only when needed.
+  """
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
+
+  def run(self,args):
+    self.gcoder.sendhome()
+
 
 class halign(cmdbase.controlcmd):
   """
@@ -259,7 +270,7 @@ class timescan(cmdbase.controlcmd):
     for i in range(args.nslice):
       self.check_handle(args)
       lumival, uncval = self.readout.read(channel=args.channel,
-                                          sample=args.samples)
+                                          samples=args.samples)
       args.savefile.write('{0:d} {1:.3f} {2:.4f}\n'.format(
           i * args.interval, lumival, uncval))
       self.update('{0:5.1f} {1:5.1f} | PROGRESS [{2:3d}/{3:3d}]'.format(

@@ -13,6 +13,7 @@ if __name__ == '__main__':
   cmd = cmdbase.controlterm([
       motioncmd.moveto,
       motioncmd.movespeed,
+      motioncmd.sendhome,
       motioncmd.halign,
       motioncmd.zscan,
       motioncmd.timescan,
