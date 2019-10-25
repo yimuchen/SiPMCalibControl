@@ -1,9 +1,9 @@
-#include "gcoder.hpp"
 #include "logger.hpp"
 
 #include <chrono>
 #include <cmath>
 #include <stdexcept>
+#include <string>
 
 // Stuff required for tty input and output
 #include <errno.h>
@@ -11,6 +11,70 @@
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+
+struct GCoder
+{
+  GCoder();
+  // GCoder( const std::wstring& dev );
+  ~GCoder();
+
+  // Static data members
+  static const float _max_x;
+  static const float _max_y;
+  static const float _max_z;
+
+  static float
+  max_x(){ return _max_x; }
+  static float
+  max_y(){ return _max_y; }
+  static float
+  max_z(){ return _max_z; }
+
+  void InitPrinter( const std::string& dev );
+
+  // Raw motion command setup
+  std::string RunGcode(
+    const std::string& gcode,
+    const unsigned     attempt = 0,
+    const unsigned     waitack = 1e4,
+    const bool         verbose = false
+    ) const;
+
+  // Abstaction of actual GCode commands
+  void SendHome();
+
+  std::wstring GetSettings() const;
+
+  void SetSpeedLimit(
+    float x = std::nanf(""),
+    float y = std::nanf(""),
+    float z = std::nanf("")
+    );
+
+  void MoveTo(
+    float      x       = std::nanf(""),
+    float      y       = std::nanf(""),
+    float      z       = std::nanf(""),
+    const bool verbose = false
+    );
+
+  void MoveToRaw(
+    float      x       = std::nanf(""),
+    float      y       = std::nanf(""),
+    float      z       = std::nanf(""),
+    const bool verbose = false
+    );
+
+  // Floating point comparison.
+  static bool MatchCoord( double x, double y );
+
+public:
+  int         printer_IO;
+  float       opx, opy, opz; // current position of the printer
+  float       vx, vy, vz; // Speed of the gantry head.
+  std::string dev_path;
+};
+
 
 GCoder::GCoder() :
   printer_IO( -1 ),
@@ -317,6 +381,8 @@ const float GCoder::_max_x = 345;
 const float GCoder::_max_y = 450;
 const float GCoder::_max_z = 460;
 
+
+#ifndef STANDALONE
 #include <boost/python.hpp>
 
 BOOST_PYTHON_MODULE( gcoder )
@@ -343,3 +409,4 @@ BOOST_PYTHON_MODULE( gcoder )
   .staticmethod( "max_z" )
   ;
 }
+#endif

@@ -90,10 +90,10 @@ else()
 endif()
 
 
-
 ## Add testing binary main files
 add_executable( mytest.exe bin/mytest.cc )
 target_include_directories(mytest.exe PRIVATE ${PICO_INCLUDES} src/)
+target_compile_definitions(mytest.exe PUBLIC "STANDALONE")
 target_link_libraries(mytest.exe pico)
 
 add_executable( triggerpulse.exe bin/triggerpulse.cc )
