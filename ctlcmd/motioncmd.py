@@ -115,7 +115,7 @@ class halign(cmdbase.controlcmd):
       self.update('{0} | {1} | {2}'.format(
           'x:{0:5.1f}, y:{1:5.1f}, z:{2:5.1f}'.format(xval, yval, args.scanz),
           'Lumi:{0:8.5f}+-{1:8.6f}'.format(lumival, uncval),
-          'Progress [{0:3d}/{1:3d}]'.format(idx+1, len(x))))
+          'Progress [{0:3d}/{1:3d}]'.format(idx+1, total)))
       ## Writing to file
       args.savefile.write(
           '{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f} {5:d}\n'.format(

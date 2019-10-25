@@ -200,6 +200,26 @@ GCoder::SetSpeedLimit( float x, float y, float z )
 void
 GCoder::MoveTo( float x, float y, float z, bool verbose )
 {
+  static constexpr float min_z_safety = 20;
+
+  if( z < min_z_safety && opz < min_z_safety ){
+    MoveToRaw( opx, opy, min_z_safety, verbose );
+    MoveToRaw( x,   y,   min_z_safety, verbose  );
+    MoveToRaw( x,   y,   z,            verbose );
+  } else if( opz < min_z_safety ){
+    MoveToRaw( opx, opy, min_z_safety, verbose );
+    MoveToRaw( x,   y,   z,            verbose  );
+  } else if( z < min_z_safety ){
+    MoveToRaw( x, y, min_z_safety, verbose );
+    MoveToRaw( x, y, z,            verbose );
+  } else {
+    MoveToRaw( x, y, z, verbose );
+  }
+}
+
+void
+GCoder::MoveToRaw( float x, float y, float z, bool verbose )
+{
   static const std::string msghead = GREEN( "[GANTRYPOS]" );
   static const char move_fmt[]     = "G0 X%.1f Y%.1f Z%.1f\n";
 

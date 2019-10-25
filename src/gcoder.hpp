@@ -56,6 +56,13 @@ struct GCoder
     const bool verbose = false
     );
 
+  void MoveToRaw(
+    float      x       = std::nanf(""),
+    float      y       = std::nanf(""),
+    float      z       = std::nanf(""),
+    const bool verbose = false
+    );
+
   // Floating point comparison.
   static bool MatchCoord( double x, double y );
 
