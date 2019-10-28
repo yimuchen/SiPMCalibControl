@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
   try:
     cmd.set.run(args)
-    cmd.trigger.init()
+    cmd.gpio.init()
   except Exception as err:
     logger.printerr(str(err))
     logger.printwarn(

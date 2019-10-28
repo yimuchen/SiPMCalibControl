@@ -80,14 +80,7 @@ target_link_libraries(gcoder logger )
 make_control_library( visual src/visual.cc )
 target_link_libraries( visual logger ${OpenCV_LIBS} )
 
-make_control_library(trigger src/trigger.cc )
-# For a non-ARM maching, don't attempt to link WIRING_PI
-if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
-  target_link_libraries(trigger logger ${WIRINGPI_LIBS} )
-else()
-  message( WARNING "Trigger is a dummy call that only sleeps the threads")
-  add_compile_definitions(NO_WIRING)
-endif()
+make_control_library(gpio src/gpio.cc )
 
 
 ## Add testing binary main files
@@ -97,8 +90,5 @@ target_compile_definitions(mytest.exe PUBLIC "STANDALONE")
 target_link_libraries(mytest.exe pico)
 
 add_executable( triggerpulse.exe bin/triggerpulse.cc )
-
-# For a non-ARM maching, don't attempt to link WIRING_PI
-if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
-  target_link_libraries( triggerpulse.exe ${WIRINGPI_LIBS} )
-endif()
+target_include_directories(triggerpulse.exe PRIVATE src/)
+target_compile_definitions(triggerpulse.exe PUBLIC "STANDALONE" )

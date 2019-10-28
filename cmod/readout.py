@@ -110,7 +110,7 @@ class readout(object):
     self.pico.setblocknums(samples, self.pico.postsamples, self.pico.presamples)
     self.pico.startrapidblocks()
     while not self.pico.isready():
-      self.parent.trigger.pulse(self.pico.ncaptures, 600)
+      self.parent.gpio.pulse(self.pico.ncaptures, 600)
     self.pico.flushbuffer()
     val = [self.pico.waveformsum(channel, x) for x in range(samples)]
     return np.mean(val), np.std(val)

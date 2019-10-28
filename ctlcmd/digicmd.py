@@ -21,5 +21,5 @@ class pulse(cmdbase.controlcmd):
 
     for i in range(args.n):
       self.check_handle(args)
-      self.trigger.pulse(1, args.wait)
+      self.gpio.pulse(1, args.wait)
       time.sleep(args.wait/1e6)

@@ -1,7 +1,7 @@
 import cmod.gcoder as gcoder
 import cmod.board as board
 import cmod.logger as log
-import cmod.trigger as trigger
+import cmod.gpio as gpio
 import cmod.visual as visual
 import cmod.readout as readout
 import cmod.sshfiler as sshfiler
@@ -43,7 +43,7 @@ class controlterm(cmd.Cmd):
     self.visual = visual.Visual()
     self.pico = pico.PicoUnit()
     self.readout = readout.readout(self)  # Must be after picoscope setup
-    self.trigger = trigger.Trigger()
+    self.gpio = gpio.GPIO()
     self.action = actionlist.ActionList()
     self.ndfilter = 0# Initial index of NDfilter
 
@@ -177,7 +177,7 @@ class controlcmd():
     self.visual = cmdsession.visual
     self.pico = cmdsession.pico
     self.readout = cmdsession.readout  # Must be after pico setup
-    self.trigger = cmdsession.trigger
+    self.gpio = cmdsession.gpio
     self.action = cmdsession.action
 
   def do(self, line):

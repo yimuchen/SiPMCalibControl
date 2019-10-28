@@ -44,16 +44,28 @@ problems connecting to the raspberry Pi, see the [CONNECT.md](CONNECT.md) file.
 In general, the control software requires python3 and opencv-4.0, and the driver
 for the picoscope. The following machine configurations have been tested.
 
-### ArchLinuxARM for Deployment
+### ArchLinux ARM for Deployment
+
+First ensure that the i2c interface and the pwm interface has been enabled on the
+device. For as raspberry pi, add the following lines in to the `/boot/config.txt`
+file.
+
+```bash
+dtparam=i2c_arm=on
+
+
+```
 
 Notice that the picoscope driver only supports ARM7 and not ARM8. For installing
 the standard packages:
+
 
 ```bash
 pacman -S boost python opencv python-scipy python-paramiko # Architecture independent
 pacman -S wiringpi #Only on pi
 pip3 install adafruit-circuitpython-ads1x15 # Only on Pi
 ```
+
 
 For installing the picoscope driver, download the PKGBUILD file for the x86
 picoscope driver.
@@ -95,10 +107,16 @@ Then create a `udev` rule to change the permission of the relevant hardware:
 #In /etc/udev/rules.d/99-sipmcontrol.rules
 
 ## For the GPIO
-SUBSYSTEM=="bcm2835-gpiomem", KERNEL=="gpiomem", GROUP="gpio", MODE="0660"
-SUBSYSTEM=="gpio", KERNEL=="gpiochip*", ACTION=="add", PROGRAM="/bin/sh -c 'chown root:gpio /sys/class/gpio/export /sys/class/gpio/unexport ; chmod 220 /sys/class/gpio/export /sys/class/gpio/unexport'"
-SUBSYSTEM=="gpio", KERNEL=="gpio*", ACTION=="add", PROGRAM="/bin/sh -c 'chown root:gpio /sys%p/active_low /sys%p/direction /sys%p/edge /sys%p/value ; chmod 660 /sys%p/active_low /sys%p/direction /sys%p/edge /sys%p/value'"
-
+SUBSYSTEM=="bcm2835-gpiomem", GROUP="gpio", MODE="0660"
+SUBSYSTEM=="gpio", GROUP="gpio", MODE="0660"
+SUBSYSTEM=="gpio*", PROGRAM="/bin/sh -c '\
+        chown -R root:gpio /sys/class/gpio           && chmod -R 770 /sys/class/gpio;\
+        chown -R root:gpio /sys/devices/virtual/gpio && chmod -R 770 /sys/devices/virtual/gpio;\
+        chown -R root:gpio /sys/class/pwm            && chmod -R 770 /sys/class/pwm ;\
+        chown -R root:gpio /sys/class/pwm/pwmchip*/* && chmod -R 770 /sys/class/pwm/pwmchip*/* ;\
+        chown -R root:gpio /sys/devices/platform/soc/3f20c000.pwm && chmod -R 770 /sys/devices/platform/soc/3f20c000.pwm ;\
+        chown -R root:gpio /sys$devpath && chmod -R 770 /sys$devpath\
+'"
 ## For the I2C interface
 KERNEL=="i2c-[0-9]*", GROUP="i2c"
 

@@ -288,7 +288,7 @@ class lighton(cmdbase.controlcmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
   def run(self, args):
-    self.trigger.light_on()
+    self.gpio.light_on()
 
 
 class lightoff(cmdbase.controlcmd):
@@ -299,7 +299,7 @@ class lightoff(cmdbase.controlcmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
   def run(self, line):
-    self.trigger.light_off()
+    self.gpio.light_off()
 
 
 class promptaction(cmdbase.controlcmd):
