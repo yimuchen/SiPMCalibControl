@@ -112,16 +112,23 @@ SUBSYSTEM=="gpio", GROUP="gpio", MODE="0660"
 SUBSYSTEM=="gpio*", PROGRAM="/bin/sh -c '\
         chown -R root:gpio /sys/class/gpio           && chmod -R 770 /sys/class/gpio;\
         chown -R root:gpio /sys/devices/virtual/gpio && chmod -R 770 /sys/devices/virtual/gpio;\
-        chown -R root:gpio /sys/class/pwm            && chmod -R 770 /sys/class/pwm ;\
-        chown -R root:gpio /sys/class/pwm/pwmchip*/* && chmod -R 770 /sys/class/pwm/pwmchip*/* ;\
-        chown -R root:gpio /sys/devices/platform/soc/3f20c000.pwm && chmod -R 770 /sys/devices/platform/soc/3f20c000.pwm ;\
+        chown -R root:gpio sys/devices/platform/soc/*.gpio/gpiochip0/gpio && chmod -R 770 /sys/devices/platform/soc/*.gpio/gpiochip0/gpio;\
         chown -R root:gpio /sys$devpath && chmod -R 770 /sys$devpath\
 '"
+## For PWM
+SUBSYSTEM=="pwm*", PROGRAM="/bin/sh -c '\
+        chown -R root:gpio /sys/class/pwm && chmod -R 770 /sys/class/pwm;\
+        chown -R root:gpio /sys/devices/platform/soc/*.pwm/pwm/pwmchip* && chmod -R 770 /sys/devices/platform/soc/*.pwm/pwm/pwmchip*\
+'"
+
 ## For the I2C interface
 KERNEL=="i2c-[0-9]*", GROUP="i2c"
 
 ## For the picoscope
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ce9", MODE="664",GROUP="pico"
+
+
+
 ```
 
 You would need to reboot for the action to take effect. Now, you can compile and
