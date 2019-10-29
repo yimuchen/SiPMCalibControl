@@ -84,11 +84,12 @@ make_control_library(gpio src/gpio.cc )
 
 
 ## Add testing binary main files
-add_executable( mytest.exe bin/mytest.cc )
-target_include_directories(mytest.exe PRIVATE ${PICO_INCLUDES} src/)
-target_compile_definitions(mytest.exe PUBLIC "STANDALONE")
-target_link_libraries(mytest.exe pico)
+add_executable( pico_test.exe bin/pico_test.cc )
+target_include_directories(pico_test.exe PRIVATE ${PICO_INCLUDES} src/)
+target_compile_definitions(pico_test.exe PUBLIC "STANDALONE")
+target_link_libraries(pico_test.exe pico)
 
-add_executable( triggerpulse.exe bin/triggerpulse.cc )
-target_include_directories(triggerpulse.exe PRIVATE src/)
-target_compile_definitions(triggerpulse.exe PUBLIC "STANDALONE" )
+add_executable( gpio_test.exe bin/gpio_test.cc )
+target_include_directories(gpio_test.exe PRIVATE src/)
+target_compile_definitions(gpio_test.exe PUBLIC "STANDALONE" )
+
