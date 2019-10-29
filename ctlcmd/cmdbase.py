@@ -42,8 +42,8 @@ class controlterm(cmd.Cmd):
     self.board = board.Board()
     self.visual = visual.Visual()
     self.pico = pico.PicoUnit()
-    self.readout = readout.readout(self)  # Must be after picoscope setup
     self.gpio = gpio.GPIO()
+    self.readout = readout.readout(self)  # Must be after picoscope setup
     self.action = actionlist.ActionList()
     self.ndfilter = 0# Initial index of NDfilter
 
@@ -179,6 +179,7 @@ class controlcmd():
     self.readout = cmdsession.readout  # Must be after pico setup
     self.gpio = cmdsession.gpio
     self.action = cmdsession.action
+
 
   def do(self, line):
     """

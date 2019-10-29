@@ -2,18 +2,6 @@ import cmod.logger as log
 import numpy as np
 import time
 
-## Try to import the ADC models, do nothing if module isn't found
-# Exceptions will be raised by other function calls.
-try:
-  import board
-  import busio
-  import adafruit_ads1x15.ads1115 as ads
-  import adafruit_ads1x15.ads1x15 as adsset
-  from adafruit_ads1x15.analog_in import AnalogIn
-except:
-  pass
-
-
 class readout(object):
   """
   Object for defining readout interface
@@ -26,6 +14,7 @@ class readout(object):
   def __init__(self, parent):
     self.parent = parent
     self.pico = parent.pico  ## Reference to picoscope for simplified
+    self.gpio = parent.gpio
     self.mode = readout.MODE_NONE
     self.i2c = None
     self.adc = None
@@ -34,17 +23,7 @@ class readout(object):
     if mode == readout.MODE_PICO and self.pico.device:
       self.mode = mode
     elif mode == readout.MODE_ADC:
-      try:
-        self.setup_i2c()
-        print('Setting readout mode to ADC chip')
-        self.mode = mode
-      except Exception as err:
-        log.printerr(str(err))
-        log.printwarn(('You are not working in a I2C compatible environment, '
-                       'Readout values for ADC will use a predefined model '
-                       'instead'))
-        self.mode = readout.MODE_NONE
-        raise err
+      self.mode == readout.MODE_ADC
     else:
       self.mode = readout.MODE_NONE
 
@@ -60,32 +39,27 @@ class readout(object):
       # Model readout is modelled directly into the adc function.
       return self.read_adc(channel, samples)
 
-  def setup_i2c(self):
-    ## Setting up dummy variables first
-    self.i2c = busio.I2C(board.SCL, board.SDA)
-    self.adc = ads.ADS1115(self.i2c, data_rate=860, mode=adsset.Mode.CONTINUOUS)
-
   def read_adc(self, channel=0, samples=100):
     """
     Getting the averaged readout from the ADC chip
     """
     val = []
     for i in range(samples):
-      val.append(self.read_adc_raw(channel))
+      val.append(self.gpio.adc_read(channel))
       ## Sleeping for random time in ADC to avoid 60Hz aliasing
       time.sleep(1 / 200 * np.random.random())
     valmean = np.mean(val)
     valstd = np.std(val)
     valstrip = [x for x in val if abs(x - valmean) < valstd]
     # val = val[int(sample / 4):]
-    return np.mean(val), np.std(val)
+    return np.mean(val), np.std(val)/np.sqrt(samples)
 
   def read_adc_raw(self, channel):
     """
     Reading a single ADC value from ADC chip
     """
     if self.mode == readout.MODE_ADC:
-      return AnalogIn(self.adc, ads.P0).voltage * 1000
+      return self.gpio.adc_read( channel )
     else:
       return self.modelval()
 
@@ -113,4 +87,4 @@ class readout(object):
       self.parent.gpio.pulse(self.pico.ncaptures, 600)
     self.pico.flushbuffer()
     val = [self.pico.waveformsum(channel, x) for x in range(samples)]
-    return np.mean(val), np.std(val)
+    return np.mean(val), np.std(val)/sqrt(samples)
