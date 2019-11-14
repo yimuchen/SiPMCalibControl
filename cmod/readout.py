@@ -52,7 +52,7 @@ class readout(object):
     valstd = np.std(val)
     valstrip = [x for x in val if abs(x - valmean) < valstd]
     # val = val[int(sample / 4):]
-    return np.mean(val), np.std(val)/np.sqrt(samples)
+    return np.mean(val), np.std(val)
 
   def read_adc_raw(self, channel):
     """
@@ -84,7 +84,7 @@ class readout(object):
     self.pico.setblocknums(samples, self.pico.postsamples, self.pico.presamples)
     self.pico.startrapidblocks()
     while not self.pico.isready():
-      self.parent.gpio.pulse(self.pico.ncaptures, 600)
+      self.parent.gpio.pulse(self.pico.ncaptures, 4000)
     self.pico.flushbuffer()
     val = [self.pico.waveformsum(channel, x) for x in range(samples)]
-    return np.mean(val), np.std(val)/sqrt(samples)
+    return np.mean(val), np.std(val)/np.sqrt(samples)

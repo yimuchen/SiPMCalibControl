@@ -80,5 +80,4 @@ if __name__ == '__main__':
         'There was error in the setup process, program will '
         'continue but will most likely misbehave! Use at your own risk!')
 
-
   cmd.cmdloop()
