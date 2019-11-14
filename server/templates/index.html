@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <!--css related stuff-->
+  <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}">
+
+  <!--External Javascript-->
+  <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" />
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js"></script>
+
+  <script src="{{url_for('static', filename='js/external/plotly-1.51.1.min.js')}}"></script>
+
+  <!--Custom Javascript-->
+  <script type="text/javascript" src="{{url_for('static',filename='js/animation.js')}}"></script>
+  <script type="text/javascript" src="{{url_for('static',filename='js/inputsync.js')}}"></script>
+  <script type="text/javascript" src="{{url_for('static',filename='js/plot.js')}}"></script>
+</head>
+
+<body>
+  <div id="column-container">
+    <div id="main-column">
+      <h2>Monitoring</h2>
+
+      <div class="tab" id="real-time">
+        <div class="tab-title">
+          <span>System Real Time</span>
+          <i class="fa fa=fa-angle-left"></i>
+        </div>
+        <div class="tab-content">
+          <div id="up-time">
+          </div>
+          <div id="up-time-since">
+
+          </div>
+          <div class="plot" id="temperature-plot">
+          </div>
+
+          <div class="plot" id="sensor-plot">
+          </div>
+        </div>
+      </div>
+      <div class="tab" id="tile-layout">
+        <div class="tab-title">
+          <span>Tile Layout</span>
+          <i class="fa fa=fa-angle-left"></i>
+        </div>
+        <div class="tab-content">
+          <div class="plot" id="tile-layout-plot">
+
+          </div>
+          <div class="plot" id="chip-status-plot">
+
+          </div>
+        </div>
+      </div>
+      <div class="tab" id="chip-details">
+        <div class="tab-title">
+          <span>Chip details</span>
+          <i class="fa fa=fa-angle-left"></i>
+        </div>
+        <div class="tab-content hidden">
+          <div id="chip-list">
+            <a href="#chip1-detail">1</a>
+            <a href="#chip2-detail">2</a>
+          </div>
+          <div id="chip1-detail">
+            <div class="chip-name">Chip ID: 1</div>
+            <div class="plot" id="chip1-intensity-plot">
+            </div>
+            <div class="plot" id="chip1-lowlight-plot">
+            </div>
+            <div id="chip1-status">
+            </div>
+          </div>
+          <div id="chip2-detail">
+            <div class="chip-name">Chip ID: 2</div>
+            <div class="plot" id="chip2-intensity-plot">
+            </div>
+            <div class="plot" id="chip2-lowlight-plot">
+            </div>
+            <div id="chip2-status">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div id="action-column">
+      <h2>Action</h2>
+      <div class="tab" id="standard-calib">
+        <div class="tab-title">
+          <span>Standard calibrations</span>
+          <i class="fa fa=fa-angle-left"></i>
+        </div>
+        <div class="tab-content">
+          <div class="button-container">
+            <button id="standard-d8">Calib. D8</button>
+            <button id="standard-d7">Calib. D7</button>
+            <button id="standard-d6">Calib. D6</button>
+            <button id="standard-d5">Calib. D5</button>
+            <button id="standard-d4">Calib. D4</button>
+            <button id="standard-d3">Calib. D3</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab" id="debug-calib">
+        <div class="tab-title">
+          <span>System calibrations</span>
+          <i class="fa fa=fa-angle-left"></i>
+        </div>
+        <div class="tab-content hidden">
+          <div class="button-container">
+            <button id="debug-type-1">Calib. T1</button>
+            <button id="debug-type-2">Calib. T2</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab" id="lumiscan">
+        <div class="tab-title">
+          <span>Luminosity scan</span>
+          <i class="fa fa-angle-right"></i>
+        </div>
+        <div class="tab-content hidden">
+          <table>
+            <td>
+              <span class="input-name">Chip ID</span>
+              <input type="text" id="lumiscan-chip" />
+            </td>
+            <td class="input-align">
+              <div class="input-row">
+                <span class="input-name">X</span>
+                <input type="text" id="lumiscan-x" />
+                <span class="input-units">mm</span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">Y</span>
+                <input type="text" id="lumiscan-y" />
+                <span class="input-units">mm</span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">chan.</span>
+                <input type="text" id="lumiscan-channel" />
+                <span class="input-units"></span>
+              </div>
+            </td>
+
+          </table>
+
+          <div class="input-align">
+            <div class="input-row">
+              <span class="input-name">Z</span>
+              <input type="text" id="lumiscan-z" />
+              <span class="input-units">mm</span>
+            </div>
+            <div class="input-row">
+              <span class="input-name">sampling</span>
+              <input type="text" id="lumiscan-samples" />
+              <span class="input-units">--</span>
+            </div>
+            <div class="input-row">
+              <span class="input-name">Range</span>
+              <input type="text" id="lumiscan-scanrange-text" />
+              <span class="input-units">mm</span>
+              <input type="range" min="1" max="60" step="0.5" id="lumiscan-scanrange-range" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">Sep.</span>
+              <input type="text" id="lumiscan-step-text" />
+              <span class="input-units">mm</span>
+              <input type="range" min="0.2" max="10" step="0.2" id="lumiscan-step-range" />
+            </div>
+          </div>
+          <div class="button-container">
+            <button>Run</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab" id="zscan">
+        <div class="tab-title">
+          <span>Intensity scan</span>
+          <i class="fa fa-angle-right"></i>
+        </div>
+        <div class="tab-content hidden">
+          <table>
+            <td>
+              <span class="input-name">Chip ID</span>
+              <input type="text" id="intscan-chip" />
+            </td>
+            <td class="input-align">
+              <div class="input-row">
+                <span class="input-name">X</span>
+                <input type="text" id="intscan-x" />
+                <span class="input-units">mm</span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">Y</span>
+                <input type="text" id="intscan-y" />
+                <span class="input-units">mm</span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">chan.</span>
+                <input type="text" id="intscan-channel" />
+                <span class="input-units"></span>
+              </div>
+            </td>
+
+          </table>
+
+          <div class="input-align">
+            <div class="input-row">
+              <span class="input-name">sampling</span>
+              <input type="text" id="intscan-samples" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">Z List [mm]</span>
+              <input type="text" id="intscan-zlist" />
+            </div>
+          </div>
+          <div class="button-container">
+            <button>Run</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab" id="visualscan">
+        <div class="tab-title">
+          <span>Visual Contruction</span>
+          <i class="fa fa-angle-right"></i>
+        </div>
+        <div class="tab-content hidden">
+          <table>
+            <td>
+              <span class="input-name">Chip ID</span>
+              <input type="text" id="visscan-chip" />
+            </td>
+            <td class="input-align">
+              <div class="input-row">
+                <span class="input-name">X</span>
+                <input type="text" id="visscan-x" />
+                <span class="input-units">mm</span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">Y</span>
+                <input type="text" id="visscan-y" />
+                <span class="input-units">mm</span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">chan.</span>
+                <input type="text" id="visscan-channel" />
+                <span class="input-units"></span>
+              </div>
+            </td>
+
+          </table>
+
+          <div class="input-align">
+            <div class="input-row">
+              <span class="input-name">Z</span>
+              <input type="text" id="visscan-z" />
+              <span class="input-units">mm</span>
+            </div>
+            <div class="input-row">
+              <span class="input-name">Range</span>
+              <input type="text" id="visscan-scanrange-text" />
+              <span class="input-units">mm</span>
+              <input type="range" min="1" max="20" step="0.5" id="visscan-scanrange-range" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">Sep.</span>
+              <input type="text" id="visscan-step-text" />
+              <span class="input-units">mm</span>
+              <input type="range" min="0.2" max="5" step="0.1" id="visscan-step-range" />
+            </div>
+          </div>
+          <div class="button-container">
+            <button>Run</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="setting-column">
+      <h2>Settings</h2>
+
+      <div class="tab" id="picoscope">
+        <div class="tab-title">
+          <span>Scope settings</span>
+          <i class="fa fa-angle-left"></i>
+        </div>
+        <div class="tab-content hidden">
+          <table style="text-align:center;">
+            <tr>
+              <td>A</td>
+              <td>B</td>
+              <td>Ext.</td>
+            </tr>
+            <tr>
+              <td><input type="radio" name="trigger-channel" id="trigger-channel-A" /></td>
+              <td><input type="radio" name="trigger-channel" id="trigger-channel-B" /></td>
+              <td><input type="radio" name="trigger-channel" id="trigger-channel-EXT" /></td>
+              <td class="input-align">
+                <div class="input-row">
+                  <span class="input-name">Trig.</span>
+                  <input type="text" id="trigger-level-text" />
+                  <span class="setting-unit">ADC</span>
+                  <span id="trigger-level-converted"></span>
+                  <input type="range" min="-128" max="127" id="trigger-level-range" />
+                </div>
+              </td>
+            <tr>
+              <td>
+                <input type="range" class="vertical" orient="vertical" id="channel-a-range" min="3" max="10"
+                  value={{scope_channel_a_range}} /><br>
+                <div id="channel-a-range-value">20V</div>
+              </td>
+              <td>
+                <input type="range" class="vertical" orient="vertical" id="channel-b-range" min="3" max="10"
+                  value={{scope_channel_a_range}} /><br>
+                <div id="channel-b-range-value">20V</div>
+              </td>
+              <td></td>
+              <td class="input-align">
+
+                <div class="input-row">
+                  <span class="input-name">Trig. dir.</span>
+                  <span class="input-unit">
+                    <input type="radio" name="trigger_direction" id="trigger_direction_up">
+                    <input type="radio" name="trigger_direction" id="trigger_direction_down">
+                    <input type="radio" name="trigger_direction" id="trigger_direction_both">
+                    <br>up/down/both
+                </div>
+                <p></p>
+
+
+                <div class="input-row">
+                  <span class="input-name">Delay</span>
+                  <input type="text" id="trigger-delay" />
+                  <span class="input-unit">ns</span>
+                </div>
+                <div class="input-row">
+                  <span class="input-name">Pre-samp.</span>
+                  <input type="text" id="trigger-presample" />
+                  <span class="input-unit">-</span>
+                </div>
+                <div class="input-row">
+                  <span class="input-name">Post-samp</span>
+                  <input type="text" id="trigger-postsample" />
+                  <span class="input-unit">-</span>
+                </div>
+                <div class="input-row">
+                  <span class="input-name">Num. blocks</span>
+                  <input type="text" id="trigger-blocksize" />
+                  <span class="input-unit">-</span>
+                </div>
+              </td>
+            </tr>
+          </table>
+          <div class="button-container">
+            <button id="picoscope_undo">Clear</button>
+            <button id="picoscope_update">Update</button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tab" id="pwm-settings">
+        <div class="tab-title">
+          <span>Power settings</span>
+          <i class="fa fa-angle-left"></i>
+        </div>
+        <div class="tab-content hidden">
+          <div class="input-align">
+            <div class="input-row">
+              <div class="input-name" title="This is a help text">PWM1</div>
+              <input type="text" id="pwm1" />
+              <div class="input-units">V</div>
+            </div>
+            <div class="input-row">
+              <div class="input-name">PWM2
+                <span class="input-help"></span>
+              </div>
+              <input type="text" id="pwm2" />
+              <div class="input-units">V</div>
+            </div>
+            <div class="input-row">
+              <span class="input-name">Frequency
+                <span class="input-help"></span>
+              </span>
+              <input type="text" id="pwm_freq" />
+              <span class=input-units>kHz</span>
+            </div>
+          </div>
+          <div class=button-container>
+            <button id="pwm_undo">Clear</button>
+            <button id="pwm_update" disabled>Update</button>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="tab" id="imaging-settings">
+        <div class="tab-title">
+          <span>Image processing</span>
+          <i class="fa fa-angle-left"></i>
+        </div>
+        <div class="tab-content hidden">
+          <div class="input-align">
+            <div class="input-row">
+              <span class="input-name">Threshold</span>
+              <input type="text" id="image-threshold-text" />
+              <span class="input-unit"></span>
+              <input type="range" min="0" max="255" id="image-threshold-range" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">Blur</span>
+              <input type="text" id="image-blur-text" />
+              <span class="input-unit">Pixels</span>
+              <input type="range" min="0" max="20" id="image-blur-range" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">Luminosity</span>
+              <input type="text" id="image-lumi-text" />
+              <span class="input-unit">Pixels</span>
+              <input type="range" min="0" max="255" id="image-lumi-range" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">Min. Size</span>
+              <input type="text" id="image-size-text" />
+              <span class="input-unit">Pixels</span>
+              <input type="range" min="60" max="1000" id="image-size-range" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">Max Ratio</span>
+              <input type="text" id="image-ratio-text" />
+              <span class="input-unit">%</span>
+              <input type="range" min="100" max="500" id="image-ratio-range" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">Poly rang.</span>
+              <input type="text" id="image-poly-text" />
+              <span class="input-unit">%</span>
+              <input type="range" min="0" max="100" id="image-poly-range" />
+            </div>
+          </div>
+
+          <div class="button-container">
+            <button id="image-setting-clear">Clear</button>
+            <button id="image-setting-update">Update</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab" id="device-settings">
+        <div class="tab-title">
+          <span>Device settings</span>
+          <i class="fa fa-angle-left"></i>
+        </div>
+        <div class="tab-content hidden">
+          <div class="input-align">
+            <div class="input-row">
+              <span class="input-name">3D Printer</span>
+              <input type="text" id="printer-dev" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">Camera</span>
+              <input type="text" id="camera-dev" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">Scope</span>
+              <input type="text" id="scope-dev" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">Board type</span>
+              <input type="text" id="scope-dev" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+
+</html>

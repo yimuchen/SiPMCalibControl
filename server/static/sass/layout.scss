@@ -1,0 +1,157 @@
+#column-container {
+  position: relative;
+  margin: 0 auto;
+  max-width: 80%;
+  min-width: 1000px;
+  min-height: 2000px;
+}
+
+#setting-column {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 28%;
+  h2 {
+    width: 100%;
+    text-align: left;
+    padding-left: 0.2em;
+  }
+  .tab{
+    .tab-title{
+      i {
+        position: absolute;
+        right:5px;
+      }
+    }
+  }
+}
+
+#action-column {
+  position: absolute;
+  top: 0px;
+  right:0px;
+  width:28%;
+  h2 {
+    width: 100%;
+    text-align: right;
+    padding-right: 0.2em;
+    margin-right: 0.2em;
+  }
+}
+
+#main-column{
+  position: absolute;
+  top: 0px;
+  left: 28%;
+  width: 44%;
+  h2 {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+.tab {
+  width: 100%;
+  .tab-title{
+    width:100%;
+      margin-top: 0.4em;
+      margin-left: 0.2em;
+      margin-right: 0.2em;
+      margin-bottom: 0.2em;
+      font-size: 1.2em;
+  }
+
+  .tab-content {
+    width: auto;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-top: 10px;
+    padding-bottom: 15px;
+    // Default settings for input fields
+    input[type=text]{
+      width: 3.5em;
+    }
+
+    .table {
+      text-align: center;
+    }
+
+    .input-align{
+      display: table;
+      .input-row{
+        display:table-row;
+        .input-name {
+          text-align: right;
+          display:table-cell;
+          padding: 0.2em;
+          .input-help{
+            position: absolute;
+            left:0;
+            top:100%;
+            background-color: gray;
+            color:black;
+
+            display:hidden;
+          }
+        }
+        input[type='text']{
+          display: table-cell;
+          text-align: right;
+        }
+        .input-units{
+          display: table-cell;
+          text-align: left;
+          padding-left: 0.2em;
+        }
+        input[type='range']{
+          width:100%;
+          height: 0.2em;
+          text-align:right;
+          margin-bottom: 0.5em;
+        }
+      }
+    }
+
+    .button-container {
+      padding-top: 0.5em;
+      width: 100%;
+      text-align: center;
+    }
+
+
+    // Hide by default, JQuery will open required tabs on document loading.
+    display: none;
+    overflow: hidden;
+  }
+
+}
+
+
+#main-column {
+  .tab-content{
+    text-align: center;
+
+    div.plot{
+      max-width: 90%;
+      min-width: 30%;
+    }
+  }
+}
+
+@media screen and (max-width: 1000px) {
+  #column-container {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  #setting-column, #action-column, #main-column {
+    position: relative;
+    width: 100%;
+    top:auto;
+    left:auto;
+    right:auto;
+    h2 {
+      text-align: left;
+    }
+  }
+}

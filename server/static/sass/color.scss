@@ -1,0 +1,56 @@
+#setting-column {
+  background-color: darkblue;
+  h2{
+    color: white;
+  }
+
+  .tab {
+    .tab-title{
+      color: white;
+    }
+    .tab-content {
+      background-color: cornflowerblue;
+      color: black;
+    }
+  }
+}
+
+#main-column {
+  background-color: orangered;
+  h2{
+    color: white;
+  }
+
+  .tab {
+    .tab-title{
+      color:white;
+    }
+    .tab-content{
+      background-color: peachpuff;
+      color:black;
+    }
+  }
+
+  .plot {
+    border-color: orangered;
+    border-width: 2px;
+    border-style: solid;
+  }
+}
+
+
+#action-column{
+  background-color: chartreuse;
+  h2{
+    color:darkgreen;
+  }
+  .tab{
+    .tab-title{
+      color:black;
+    }
+    .tab-content{
+      background-color: greenyellow;
+      color:black;
+    }
+  }
+}

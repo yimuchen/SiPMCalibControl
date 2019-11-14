@@ -1,0 +1,16 @@
+div[id$="-range-value"]{
+  width: 1em;
+  height: 3em;
+  text-align: center;
+  transform: translateX(50%) translateY(50%) rotate(-90deg);
+}
+
+#trigger-level-converted {
+  font-size: 0.7em;
+}
+
+#device-settings {
+  input[type="text"]{
+    width: 12em;
+  }
+}

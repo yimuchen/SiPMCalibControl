@@ -16,6 +16,7 @@ lib/*
 *.txt
 Makefile
 __pycache__
+**/__pycache__/**
 *.cmake
 CMakeFiles/**
 */CMakeFiles/**
@@ -23,7 +24,7 @@ build/**
 .vscode/**
 **/*.exe
 *.pdf
-data/** 
+data/**
 
 # inclusive directories
 !CMakeLists.txt
