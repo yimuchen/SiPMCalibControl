@@ -16,8 +16,17 @@ def action_connect():
 
 
 @socketio.on('run-action-cmd', namespace='/action')
-def run_standard_d8(msg):
-  print('recieved action signal')
-  print(msg)
-  time.sleep(5)
+def RunAction(msg):
+  print('received action signal')
+  emit('action-received', '', namespace='/action', boardcast=True)
+  if msg['id'] == 'raw-cmd-input':
+    RunCmdInput(msg['data'])
+  else:
+    print(msg)
+    time.sleep(5)
   emit('action-complete', '', namespace='/action', broadcast=True)
+
+
+def RunCmdInput(msg):
+  execute_cmd = msg['input']
+  socketio.cmd.onecmd( execute_cmd )

@@ -45,7 +45,7 @@ class controlterm(cmd.Cmd):
     self.gpio = gpio.GPIO()
     self.readout = readout.readout(self)  # Must be after picoscope setup
     self.action = actionlist.ActionList()
-    self.ndfilter = 0# Initial index of NDfilter
+    self.ndfilter = 0  # Initial index of NDfilter
 
     ## Creating command instances and attaching to associated functions
     for com in cmdlist:
@@ -179,7 +179,6 @@ class controlcmd():
     self.readout = cmdsession.readout  # Must be after pico setup
     self.gpio = cmdsession.gpio
     self.action = cmdsession.action
-
 
   def do(self, line):
     """
@@ -470,10 +469,8 @@ class controlcmd():
     max_x = gcoder.GCoder.max_x()
     max_y = gcoder.GCoder.max_y()
 
-    if(args.x - args.range < 0 or
-       args.x + args.range > max_x or
-       args.y - args.range < 0 or
-       args.y + args.range > max_y):
+    if (args.x - args.range < 0 or args.x + args.range > max_x
+        or args.y - args.range < 0 or args.y + args.range > max_y):
       log.printwarn(('The arguments placed will put the gantry past its limits, '
                      'the command will used modified input parameters'))
 
@@ -604,8 +601,7 @@ class controlcmd():
 
       # Trying to get the visual alignment with closest z value
       if any(self.board.vis_coord[calibchip]):
-        closestz = self.find_closest_z(self.board.vis_coord[calibchip],
-                                       currentz)
+        closestz = self.find_closest_z(self.board.vis_coord[calibchip], currentz)
         vis_x = self.board.vis_coord[calibchip][closestz][0]
         vis_y = self.board.vis_coord[calibchip][closestz][1]
 
@@ -643,13 +639,13 @@ class controlcmd():
     # Opening the file using the remote file handle
     args.savefile = self.sshfiler.remotefile(filename, args.wipefile)
 
-  def close_savefile(self,args):
+  def close_savefile(self, args):
     """
     Close a save file with a standard message for the verbosity of run files.
     """
     if not hasattr(args, 'savefile'):
       return
-    self.printmsg( "Saving results to file [{0}]".format(args.savefile.name) )
+    self.printmsg("Saving results to file [{0}]".format(args.savefile.name))
     args.savefile.flush()
     args.savefile.close()
 

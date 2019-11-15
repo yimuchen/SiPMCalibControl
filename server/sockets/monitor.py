@@ -18,8 +18,10 @@ def test_connect():
     realtime_thread = threading.Thread(target=monitor_update)
     realtime_thread.start()
 
-
 def monitor_update():
+  """
+  Real time update of system information.
+  """
   while (True):
     central = 5 * np.random.random()
     for _ in range(10):

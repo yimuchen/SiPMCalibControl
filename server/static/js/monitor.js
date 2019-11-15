@@ -1,11 +1,11 @@
 /**
  * Global variables for monitor-variable plotting.
  */
-var monitor_time = []
-var monitor_temperature1 = []
-var monitor_temperature2 = []
-var monitor_voltage1 = []
-var monitor_voltage2 = []
+var monitor_time = [];
+var monitor_temperature1 = [];
+var monitor_temperature2 = [];
+var monitor_voltage1 = [];
+var monitor_voltage2 = [];
 
 /**
  * The main function for real-time status monitoring
@@ -22,6 +22,12 @@ $(document).ready(function () {
 function connect_update(msg) {
   console.log('Confirmed!');
   $('#up-time-since').html('Since: ' + msg.start);
+  // Wiping exiting monitoring data incase of server restart
+  monitor_time = [];
+  monitor_temperature1 = [];
+  monitor_temperature2 = [];
+  monitor_voltage1 = [];
+  monitor_voltage2 = [];
 }
 
 function monitor_update(msg) {

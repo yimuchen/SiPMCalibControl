@@ -10,12 +10,11 @@ var action_socket = null;
 $(document).ready(function () {
   /**
    * On document ready, disable every button on the GUI until released by the
-   * main server.
+   * main server, also, for every button pressed, disable all buttons until the
+   * board type is released. Release signal will be handled by server side.
    */
   $('button').each(function () {
-    // Disable every button on start up
     $(this).prop('disabled', true);
-
     $(this).on('click', function () {
       $('button').each(function () {
         $(this).prop('disabled', true);
@@ -47,6 +46,13 @@ $(document).ready(function () {
   $('#standard-d8').on('click', function () {
     emit_action_cmd($(this).prop('id'), { 'section': 'this is a test' })
     console.log('Standard-d8 activated');
+  })
+
+  $('#raw-cmd-input').on('click', function() {
+    var line = $(this).siblings('#raw-cmd-input-text').val();
+    emit_action_cmd($(this).prop('id'), {
+      'input' : line
+    });
   })
 });
 

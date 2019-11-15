@@ -37,10 +37,7 @@ if __name__ == '__main__':
       picocmd.picorunblock,
       picocmd.picorange,
   ])
-  """
-  Duplicating the session to allow for default override.
-  """
-  # Weird bug in python 3.4 that doesn't allow deepcopy of argparser
+  # Duplicating the session to allow for default override.
   prog_parser = copy.deepcopy(cmd.set.parser)
 
   # Augmenting help messages
