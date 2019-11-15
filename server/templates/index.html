@@ -14,9 +14,11 @@
   <script src="{{url_for('static', filename='js/external/plotly-1.51.1.min.js')}}"></script>
 
   <!--Custom Javascript-->
-  <script type="text/javascript" src="{{url_for('static',filename='js/animation.js')}}"></script>
-  <script type="text/javascript" src="{{url_for('static',filename='js/inputsync.js')}}"></script>
-  <script type="text/javascript" src="{{url_for('static',filename='js/plot.js')}}"></script>
+  <script src="{{url_for('static',filename='js/action.js')}}"></script>
+  <script src="{{url_for('static',filename='js/animation.js')}}"></script>
+  <script src="{{url_for('static',filename='js/inputsync.js')}}"></script>
+  <script src="{{url_for('static',filename='js/monitor.js')}}"></script>
+  <script src="{{url_for('static',filename='js/tilelayout.js')}}"></script>
 </head>
 
 <body>
@@ -48,9 +50,8 @@
           <i class="fa fa=fa-angle-left"></i>
         </div>
         <div class="tab-content">
-          <div class="plot" id="tile-layout-plot">
-
-          </div>
+          <div class="plot" id="tile-layout-plot"></div>
+          <div id="tile-layout-chiphoverinfo"></div>
           <div class="plot" id="chip-status-plot">
 
           </div>
@@ -63,8 +64,17 @@
         </div>
         <div class="tab-content hidden">
           <div id="chip-list">
+            <a href="#chip0-detail">0</a>
             <a href="#chip1-detail">1</a>
-            <a href="#chip2-detail">2</a>
+          </div>
+          <div id="chip0-detail">
+            <div class="chip-name">Chip ID: 0</div>
+            <div class="plot" id="chip0-intensity-plot">
+            </div>
+            <div class="plot" id="chip0-lowlight-plot">
+            </div>
+            <div id="chip1-status">
+            </div>
           </div>
           <div id="chip1-detail">
             <div class="chip-name">Chip ID: 1</div>
@@ -73,15 +83,6 @@
             <div class="plot" id="chip1-lowlight-plot">
             </div>
             <div id="chip1-status">
-            </div>
-          </div>
-          <div id="chip2-detail">
-            <div class="chip-name">Chip ID: 2</div>
-            <div class="plot" id="chip2-intensity-plot">
-            </div>
-            <div class="plot" id="chip2-lowlight-plot">
-            </div>
-            <div id="chip2-status">
             </div>
           </div>
         </div>

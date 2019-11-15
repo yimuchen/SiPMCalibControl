@@ -46,17 +46,18 @@ $(document).ready(function () {
     var max = 0;
     var unit = '';
     switch (range_idx) {
-      case '3':  max = 100; unit ='mV'; break;
-      case '4':  max = 200; unit ='mV'; break;
-      case '5':  max = 500; unit ='mV'; break;
-      case '6':  max = 1  ; unit ='V' ; break;
-      case '7':  max = 2  ; unit ='V' ; break;
-      case '8':  max = 5  ; unit ='V' ; break;
-      case '9':  max = 10 ; unit ='V' ; break;
-      case '10': max = 20 ; unit ='V' ; break;
-      default:   max = 0  ; break;
+      case '3': max = 100; unit = 'mV'; break;
+      case '4': max = 200; unit = 'mV'; break;
+      case '5': max = 500; unit = 'mV'; break;
+      case '6': max = 1; unit = 'V'; break;
+      case '7': max = 2; unit = 'V'; break;
+      case '8': max = 5; unit = 'V'; break;
+      case '9': max = 10; unit = 'V'; break;
+      case '10': max = 20; unit = 'V'; break;
+      default: max = 0; break;
     }
 
-    $('#trigger-level-converted').html( '('+ (max*adc/128.0).toFixed(1) + unit + ')');
+    $('#trigger-level-converted').html(
+      '(' + (max * adc / 128.0).toFixed(1) + unit + ')');
   });
 });

@@ -3,12 +3,10 @@ import threading
 import datetime
 import time
 import numpy as np
-import np.random
 
 from .. import socketio, start_time
 
 realtime_thread = threading.Thread()
-
 
 @socketio.on('connect')
 def test_connect():
