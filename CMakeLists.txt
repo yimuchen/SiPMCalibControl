@@ -89,7 +89,15 @@ target_include_directories(pico_test.exe PRIVATE ${PICO_INCLUDES} src/)
 target_compile_definitions(pico_test.exe PUBLIC "STANDALONE")
 target_link_libraries(pico_test.exe pico)
 
-add_executable( gpio_test.exe bin/gpio_test.cc )
+add_executable(gpio_test.exe bin/gpio_test.cc )
 target_include_directories(gpio_test.exe PRIVATE src/)
 target_compile_definitions(gpio_test.exe PUBLIC "STANDALONE" )
 
+## Making the GUI stuff
+file(GLOB CSS_FILES server/static/sass/*.scss)
+add_custom_command(OUTPUT server/static/style.css
+  COMMAND "sass" "style.scss:style.css" "--style=compressed"
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/server/static
+  MAIN_DEPENDENCY ${CSS_FILES}
+)
+add_custom_target(gen_server_css ALL DEPENDS server/static/style.css)
