@@ -54,6 +54,11 @@ $(document).ready(function () {
       'input' : line
     });
   })
+
+  $('#image-setting-clear').on('click', function(){
+    emit_action_cmd($(this).prop('id'), {});
+  });
+  $('#image-setting-update').on('click', image_setting_update );
 });
 
 
@@ -61,5 +66,16 @@ function emit_action_cmd(id, msg) {
   action_socket.emit('run-action-cmd', {
     'id': id,
     'data': msg
+  });
+}
+
+function image_setting_update(event){
+  emit_action_cmd(event.target.id, {
+    'threshold': $('#image-threshold-text').val(),
+    'blur' : $('#image-blur-text').val(),
+    'lumi' : $('#image-lumi-text').val(),
+    'size' : $('#image-size-text').val(),
+    'ratio' : $('#image-ratio-text').val(),
+    'poly' : $('#image-poly-text').val()
   });
 }

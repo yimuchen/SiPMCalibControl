@@ -6,6 +6,7 @@ import time
 import numpy as np
 
 from .. import socketio
+from .monitor import visual_settings_update
 
 
 @socketio.on('connect', namespace='/action')
@@ -21,6 +22,9 @@ def RunAction(msg):
   emit('action-received', '', namespace='/action', boardcast=True)
   if msg['id'] == 'raw-cmd-input':
     RunCmdInput(msg['data'])
+  elif msg['id'] in ['image-setting-clear', 'image-setting-update']:
+    visual_settings_update(msg['data'])
+
   else:
     print(msg)
     time.sleep(5)

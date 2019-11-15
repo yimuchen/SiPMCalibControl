@@ -349,6 +349,10 @@ class controlcmd():
       # in other classes
       self.gcoder.moveto(x, y, z, verbose)
     except:
+      # Setting internal coordinates to the designated position anyway.
+      self.gcoder.opx = x
+      self.gcoder.opy = y
+      self.gcoder.opz = z
       pass
 
   def add_xychip_options(self):

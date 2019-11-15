@@ -26,7 +26,7 @@ class moveto(cmdbase.controlcmd):
     return args
 
   def run(self, args):
-    self.gcoder.moveto(args.x, args.y, args.z, True)
+    self.move_gantry(args.x, args.y, args.z, True)
 
 
 class movespeed(cmdbase.controlcmd):

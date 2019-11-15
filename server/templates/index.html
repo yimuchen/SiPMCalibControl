@@ -16,6 +16,7 @@
   <!--Custom Javascript-->
   <script src="{{url_for('static',filename='js/action.js')}}"></script>
   <script src="{{url_for('static',filename='js/animation.js')}}"></script>
+  <script src="{{url_for('static',filename='js/graphics.js')}}"></script>
   <script src="{{url_for('static',filename='js/inputsync.js')}}"></script>
   <script src="{{url_for('static',filename='js/monitor.js')}}"></script>
   <script src="{{url_for('static',filename='js/tilelayout.js')}}"></script>
@@ -40,7 +41,7 @@
           <div class="plot" id="temperature-plot">
           </div>
 
-          <div class="plot" id="sensor-plot">
+          <div class="plot" id="voltage-plot">
           </div>
         </div>
       </div>
@@ -445,7 +446,7 @@
               <span class="input-name">Min. Size</span>
               <input type="text" id="image-size-text" />
               <span class="input-unit">Pixels</span>
-              <input type="range" min="60" max="1000" id="image-size-range" />
+              <input type="range" min="0" max="1000" id="image-size-range" />
             </div>
             <div class="input-row">
               <span class="input-name">Max Ratio</span>
@@ -456,7 +457,7 @@
             <div class="input-row">
               <span class="input-name">Poly rang.</span>
               <input type="text" id="image-poly-text" />
-              <span class="input-unit">%</span>
+              <span class="input-unit"></span>
               <input type="range" min="0" max="100" id="image-poly-range" />
             </div>
           </div>

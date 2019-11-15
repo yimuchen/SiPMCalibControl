@@ -1,21 +1,10 @@
 $(document).ready(function () {
   $('.input-row > input[type="range"]').on('input', function () {
     var new_id = $(this).attr('id').replace('-range', '-text');
-    // alert($(this).val());
     $('#' + new_id).val($(this).val());
   });
 
-  $('.input-row >input[type="text"]').on('input', function () {
-    var range_id = $(this).attr('id').replace('-text', '-range');
-    var max_val = $('#' + range_id).attr('max');
-    var min_val = $('#' + range_id).attr('min');
-    if ($(this).val() > max_val) {
-      $(this).val(max_val);
-    } else if ($(this).val() < min_val) {
-      $(this).val(min_val);
-    }
-    $('#' + range_id).val($(this).val());
-  })
+  $('.input-row >input[type="text"]').on('input', sync_range_to_text)
 
   $('input[id^="channel-"][id$="-range"]').on('input', function (event) {
     var myval = $(this).val();
@@ -61,3 +50,19 @@ $(document).ready(function () {
       '(' + (max * adc / 128.0).toFixed(1) + unit + ')');
   });
 });
+
+function sync_range_to_text(event) {
+  sync_range_to_text_by_id(event.target.id)
+}
+
+function sync_range_to_text_by_id(id) {
+  var range_id = id.replace('-text', '-range');
+  var max_val = parseFloat($(range_id).attr('max'));
+  var min_val = parseFloat($(range_id).attr('min'));
+  if ($(id).val() > max_val) {
+    $(id).val(max_val);
+  } else if ($(id).val() < min_val) {
+    $(id).val(min_val);
+  }
+  $(range_id).val($(id).val());
+}

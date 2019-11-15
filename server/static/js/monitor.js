@@ -11,12 +11,13 @@ var monitor_voltage2 = [];
  * The main function for real-time status monitoring
  */
 $(document).ready(function () {
-  var socket = io.connect("http://localhost:9100");
+  var socket = io.connect("http://localhost:9100/monitor");
 
   // List of all socket update functions
   socket.on('connect', function (msg) { console.log('Connected!'); });
   socket.on('confirm', connect_update);
   socket.on('monitor-update', monitor_update);
+  socket.on('visual-settings-update', visual_settings_update );
 });
 
 function connect_update(msg) {
@@ -34,15 +35,12 @@ function monitor_update(msg) {
   update_time(msg);
   update_raw_data(msg);
 
-  var temperature_data = generate_plotly_temp_data();
-
-  if ($('#temperature-plot').hasClass('updated')) {
-    update_plot('temperature-plot', temperature_data
-      , generate_plotly_temp_layout_update());
-  } else {
-    makenew_plot('temperature-plot', temperature_data
-      , generate_plotly_temp_layout());
-  }
+  plot_data('temperature-plot',
+    generate_plotly_temp_data(),
+    generate_plotly_temp_layout());
+  plot_data('voltage-plot',
+    generate_plotly_volt_data(),
+    generate_plotly_volt_layout());
 }
 
 function update_time(msg) {
@@ -94,32 +92,25 @@ function generate_plotly_temp_data() {
   ];
 }
 
-function generate_plotly_temp_layout_update() {
-  return {
-    'xaxis.range': [
-      monitor_time[0],
-      Math.max(parseInt(monitor_time[0]) + 10,
-        parseInt(monitor_time[monitor_time.length - 1]) + 0.1)
-    ],
-    'yaxis.range': [
-      Math.min(15, Math.min(Math.min(...monitor_temperature1),
-        Math.min(...monitor_temperature2))),
-      Math.max(24, Math.max(Math.max(...monitor_temperature1) + 4,
-        Math.max(...monitor_temperature2) + 4))
-    ]
-  };
-}
-
 function generate_plotly_temp_layout() {
   return {
     xaxis: {
       title: "Time (since system start) [sec]",
       nticks: 10,
-      range: [monitor_time[0], parseInt(monitor_time[0]) + 10]
+      range: [
+        monitor_time[0],
+        Math.max(parseInt(monitor_time[0]) + 10,
+          parseInt(monitor_time[monitor_time.length - 1]) + 0.1)
+      ]
     },
     yaxis: {
       title: "Temperature [C]",
-      range: [ 15, 24 ]
+      range: [
+        Math.min(15, Math.min(Math.min(...monitor_temperature1),
+          Math.min(...monitor_temperature2))),
+        Math.max(24, Math.max(Math.max(...monitor_temperature1) + 4,
+          Math.max(...monitor_temperature2) + 4))
+      ]
     },
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',
@@ -139,13 +130,69 @@ function generate_plotly_temp_layout() {
   };
 }
 
-
-function makenew_plot(plotly_id, plotly_data, plotly_layout) {
-  Plotly.newPlot(plotly_id, plotly_data, plotly_layout);
-  $('#' + plotly_id).addClass('updated');
+function generate_plotly_volt_data() {
+  return [
+    {
+      x: monitor_time,
+      y: monitor_temperature1,
+      type: 'scatter',
+      name: 'Pulser pull-up'
+    },
+    {
+      x: monitor_time,
+      y: monitor_temperature2,
+      type: 'scatter',
+      name: 'PD Bias'
+    },
+  ];
 }
 
-function update_plot(plotly_id, plotly_data, plotly_layout_update) {
-  Plotly.redraw(plotly_id, plotly_data)
-  Plotly.relayout(plotly_id, plotly_layout_update);
+function generate_plotly_volt_layout() {
+  return {
+    xaxis: {
+      title: "Time (since system start) [sec]",
+      nticks: 10,
+      range: [
+        monitor_time[0],
+        Math.max(parseInt(monitor_time[0]) + 10,
+          parseInt(monitor_time[monitor_time.length - 1]) + 0.1)
+      ]
+    },
+    yaxis: {
+      title: "Measured Voltage [V]",
+      range: [
+        Math.min(15, Math.min(Math.min(...monitor_temperature1),
+          Math.min(...monitor_temperature2))),
+        Math.max(24, Math.max(Math.max(...monitor_temperature1) + 4,
+          Math.max(...monitor_temperature2) + 4))
+      ]
+    },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    margin: {
+      l: '40',
+      r: '0',
+      b: '40',
+      t: '10',
+      pad: 0
+    },
+    width: 400,
+    height: 400,
+    legend: {
+      x: 0.5,
+      y: 0.9
+    }
+  };
+}
+
+function visual_settings_update(msg){
+  var settings_list = [
+    'threshold', 'blur', 'lumi', 'size', 'ratio', 'poly'
+  ]
+
+  settings_list.forEach( function(setting){
+    var id = '#image-' + setting + '-text';
+    $(id).val(msg[setting]);
+    sync_range_to_text_by_id( id );
+  });
 }

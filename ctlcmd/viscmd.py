@@ -25,7 +25,7 @@ class visualset(cmdbase.controlcmd):
                                    '[pixels]'))
     self.parser.add_argument('--lumi',
                              '-l',
-                             type=float,
+                             type=int,
                              help=('Maximum luminosity threshold of the '
                                    'interior of a contour to be selected as a '
                                    'chip candidate (typically 0-255)'))
