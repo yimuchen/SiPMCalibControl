@@ -430,10 +430,10 @@ GPIO::FlushADCSetting()
   const uint8_t rate  = ( adc_rate  & 0x7 );
 
   uint8_t write_buffer[3] = {
-    1,// First register fit is always 1,
+    1,// First register bit is always 1,
     // Configuration byte 1
-    // Always| MUX bits     | PGA bits    | MODE (always continuous)
-    // 1     | x    x    x  | x   x   x   | 0
+    // Always  | MUX bits     | PGA bits    | MODE (always continuous)
+    // 1       | x    x    x  | x   x   x   | 0
     ( 0x1 << 7 | channel << 4 |  range << 1 | 0x0 ),
     // Configuration byte 0
     // DR bits |  COM BITS (Leave as default)
@@ -447,7 +447,7 @@ GPIO::FlushADCSetting()
     throw std::runtime_error( "Error writing setting to i2C device" );
   }
 
-  sleep( 1 );
+  usleep( 30 );
 
   // Set for reading
   read_buffer[0] = 0;

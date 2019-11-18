@@ -23,7 +23,8 @@ $(document).ready(function () {
   });
 
 
-  action_socket = io.connect("http://localhost:9100/action");
+  action_socket
+    = io.connect('http://' + window.location.hostname + ':9100/action');
 
   action_socket.on('connect', function () {
     console.log('action socket connected!');
@@ -48,17 +49,17 @@ $(document).ready(function () {
     console.log('Standard-d8 activated');
   })
 
-  $('#raw-cmd-input').on('click', function() {
+  $('#raw-cmd-input').on('click', function () {
     var line = $(this).siblings('#raw-cmd-input-text').val();
     emit_action_cmd($(this).prop('id'), {
-      'input' : line
+      'input': line
     });
   })
 
-  $('#image-setting-clear').on('click', function(){
+  $('#image-setting-clear').on('click', function () {
     emit_action_cmd($(this).prop('id'), {});
   });
-  $('#image-setting-update').on('click', image_setting_update );
+  $('#image-setting-update').on('click', image_setting_update);
 });
 
 
@@ -69,13 +70,13 @@ function emit_action_cmd(id, msg) {
   });
 }
 
-function image_setting_update(event){
+function image_setting_update(event) {
   emit_action_cmd(event.target.id, {
     'threshold': $('#image-threshold-text').val(),
-    'blur' : $('#image-blur-text').val(),
-    'lumi' : $('#image-lumi-text').val(),
-    'size' : $('#image-size-text').val(),
-    'ratio' : $('#image-ratio-text').val(),
-    'poly' : $('#image-poly-text').val()
+    'blur': $('#image-blur-text').val(),
+    'lumi': $('#image-lumi-text').val(),
+    'size': $('#image-size-text').val(),
+    'ratio': $('#image-ratio-text').val(),
+    'poly': $('#image-poly-text').val()
   });
 }

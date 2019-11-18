@@ -15,7 +15,7 @@ main( int argc, char** argv )
 
   gpio.Pulse(100, 10);
 
-
+  /*
   usleep(1e6);
   gpio.SetPWM( 0, 0.5, 1e5 );
   sleep(15);
@@ -23,11 +23,12 @@ main( int argc, char** argv )
   sleep(15);
   gpio.SetPWM( 0, 0.2, 1e5 );
   sleep(15);
+  */
 
 
   for( int i = 0 ; i < 10 ; ++i ){
     std::cout << "\r" << gpio.ReadADC(0) << std::flush;
-    usleep(1e4);
+    usleep(1e3);
   } std::cout << std::endl;
   for( int i = 0 ; i < 10 ; ++i ){
     std::cout << "\r" << gpio.ReadADC(1) << std::flush;

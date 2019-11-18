@@ -13,7 +13,10 @@ import cmod.logger as logger
 import sys
 import copy
 
-socketio = SocketIO(debug=False, async_mode='threading')
+socketio = SocketIO(
+  debug=False,
+  async_mode='threading', )
+  #cors_allow_origins='*' )
 start_time = datetime.datetime.now()
 
 ## importing local socket functions after socketio declaration

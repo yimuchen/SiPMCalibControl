@@ -46,9 +46,9 @@ def monitor_update():
 
     try:
       val0 = socketio.cmd.gpio.adc_read(0)
-      val1 = socketio.cmd.gpio.adc_read(0)
-      val2 = socketio.cmd.gpio.adc_read(0)
-      val3 = socketio.cmd.gpio.adc_read(0)
+      val1 = socketio.cmd.gpio.adc_read(1)
+      val2 = socketio.cmd.gpio.adc_read(2)
+      val3 = socketio.cmd.gpio.adc_read(3)
     except:  ## For local testing
       val0 = central + 15 + 0.5 * np.random.random()
       val1 = central + 15 + 0.2 * np.random.random()

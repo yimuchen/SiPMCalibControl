@@ -11,13 +11,14 @@ var monitor_voltage2 = [];
  * The main function for real-time status monitoring
  */
 $(document).ready(function () {
-  var socket = io.connect("http://localhost:9100/monitor");
+  var socket
+    = io.connect('http://' + window.location.hostname + ':9100/monitor');
 
   // List of all socket update functions
-  socket.on('connect', function (msg) { console.log('Connected!'); });
+  socket.on('connect', function (msg) { console.log('Connected to monitor socket!'); });
   socket.on('confirm', connect_update);
   socket.on('monitor-update', monitor_update);
-  socket.on('visual-settings-update', visual_settings_update );
+  socket.on('visual-settings-update', visual_settings_update);
 });
 
 function connect_update(msg) {
@@ -185,14 +186,14 @@ function generate_plotly_volt_layout() {
   };
 }
 
-function visual_settings_update(msg){
+function visual_settings_update(msg) {
   var settings_list = [
     'threshold', 'blur', 'lumi', 'size', 'ratio', 'poly'
   ]
 
-  settings_list.forEach( function(setting){
+  settings_list.forEach(function (setting) {
     var id = '#image-' + setting + '-text';
     $(id).val(msg[setting]);
-    sync_range_to_text_by_id( id );
+    sync_range_to_text_by_id(id);
   });
 }
