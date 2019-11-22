@@ -1,0 +1,6 @@
+picoset --presample 0 --postsample 100 --ncapture 5000
+# For external LED
+picoset --triggerchannel 4 --triggerdirection 2 --triggerlevel 500 --triggerdelay 9
+
+# For Laser
+picoset --triggerchannel 4 --triggerdirection 2 --triggerlevel 500 --triggerdelay 11

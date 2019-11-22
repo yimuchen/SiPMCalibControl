@@ -4,7 +4,7 @@
 
 # General Python exclusion
 *.pyc
-**/*.aux 
+**/*.aux
 
 # Swap files
 *.swp
@@ -29,3 +29,4 @@ data/**
 
 # inclusive directories
 !CMakeLists.txt
+!dofiles/*.txt
