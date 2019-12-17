@@ -33,6 +33,7 @@ if __name__ == '__main__':
       getset.lightoff,
       getset.promptaction,
       digicmd.pulse,
+      digicmd.pwm,
       picocmd.picoset,
       picocmd.picorunblock,
       picocmd.picorange,

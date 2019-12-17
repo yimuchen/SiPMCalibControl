@@ -15,15 +15,12 @@ main( int argc, char** argv )
 
   gpio.Pulse(100, 10);
 
-  /*
-  usleep(1e6);
-  gpio.SetPWM( 0, 0.5, 1e5 );
-  sleep(15);
-  gpio.SetPWM( 0, 0.8, 1e5 );
-  sleep(15);
-  gpio.SetPWM( 0, 0.2, 1e5 );
-  sleep(15);
-  */
+  for( int i = 0 ; i < 100000 ; ++i ){
+  gpio.SetPWM( 0, 1.0, 1e4 );
+  usleep(1e4);
+  gpio.SetPWM( 0, 0.0, 1e4 );
+  usleep(1e4);
+  }
 
 
   for( int i = 0 ; i < 10 ; ++i ){
