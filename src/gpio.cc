@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <cmath>
 
 #include <stdexcept>
 
@@ -31,11 +32,13 @@ public:
   void  SetADCRange( const int );
   void  SetADCRate( const int );
   float ReadADC( const unsigned channel );
+  float ReadNTCTemp( const unsigned channel );
+  float ReadRTDTemp( const unsigned channel );
 
   // On the raspberry PI, these pins correspond to the BCM pin from
   // wiringPi's `gpio readall` command
-  static constexpr unsigned trigger_pin = 21;
-  static constexpr unsigned light_pin   = 26;
+  static constexpr unsigned trigger_pin = 21;// PHYS PIN 40
+  static constexpr unsigned light_pin   = 26; // PHYS PIN 37
 
   static constexpr unsigned READ  = 0;
   static constexpr unsigned WRITE = 1;
@@ -248,7 +251,7 @@ GPIO::CloseGPIO( const int pin )
 {
   static constexpr unsigned buffer_length = 3;
   unsigned write_length;
-  char buffer [buffer_length];
+  char buffer[buffer_length];
   int fd = open( "/sys/class/gpio/unexport", O_WRONLY );
   if( -1 == fd ){
     throw std::runtime_error( "Failed to open un-export for writing!" );
@@ -468,6 +471,47 @@ GPIO::ADCReadRaw()
   return ans;
 }
 
+
+float GPIO::ReadNTCTemp( const unsigned channel )
+{
+  // Standard values for NTC resistors used in circuit;
+  static const float T_0 = 25 + 273.15;
+  static const float R_0 = 10000;
+  static const float B   = 3500;
+
+  // Standard operation values for biasing circuit
+  static const float V_total = 5.00;
+  static const float R_ref   = 10000;
+
+  // Dynamic convertion
+  const float v = ReadADC( channel );
+  const float R = R_ref * v / ( V_total - v );
+
+  // Temperature equation from Steinhart–Hart equation.
+  // 1/T = 1/T0 + 1/B * ln(R/R0)
+  return ( T_0 * B )/( B + T_0* std::log( R/R_0 ) );
+}
+
+float GPIO::ReadRTDTemp( const unsigned channel )
+{
+  // Typical value of RTDs in circuit
+  static const float R_0 = 10000;
+  static const float T_0 = 273.15;
+  static const float a   = 0.003850;
+
+  // standard operation values for biasing circuit
+  static const float V_total = 5.00;
+  static const float R_ref   = 10000;
+
+  // Dynamic conversion
+  const float v = ReadADC( channel );
+  const float R = R_ref * v / ( V_total -v );
+
+  // Temperature conversion is simply
+  // R = R_0 (1 + a (T - T0))
+  return T_0 + (R - R_0)/(R_0 * a);
+}
+
 // ******************************************************************************
 // BOOST Python stuff
 // ******************************************************************************
@@ -485,6 +529,8 @@ BOOST_PYTHON_MODULE( gpio )
                     .def( "adc_read",  &GPIO::ReadADC     )
                     .def( "adc_range", &GPIO::SetADCRange )
                     .def( "adc_rate",  &GPIO::SetADCRate  )
+                    .def( "rtd_read",  &GPIO::ReadRTDTemp )
+                    .def( "ntc_read",  &GPIO::ReadNTCTemp )
   ;
 
   gpio_class.attr( "ADS_RANGE_6V" )    = GPIO::ADS_RANGE_6V;

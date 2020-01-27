@@ -4,3 +4,8 @@ picoset --triggerchannel 4 --triggerdirection 2 --triggerlevel 500 --triggerdela
 
 # For Laser
 picoset --triggerchannel 4 --triggerdirection 2 --triggerlevel 500 --triggerdelay 11
+
+
+# For dark current trigger 
+picoset --presample 5 --postsample 95  --ncapture 5000
+picoset --triggerchannel 0 --triggerdirection 3 --triggerlevel -3 --triggerdelay 0 
