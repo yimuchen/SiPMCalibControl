@@ -1,3 +1,4 @@
+#include <cmath>
 #include <fcntl.h>
 #include <linux/i2c-dev.h>
 #include <stdio.h>
@@ -6,9 +7,26 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <cmath>
 
+#include <array>
+#include <deque>
+#include <queue>
 #include <stdexcept>
+#include <thread>
+
+template<typename T, int maxlength, typename Container = std::deque<T> >
+class FixedQueue : public std::queue<T, Container>
+{
+public:
+  void push( const T& value )
+  {
+    if( this->size() == maxlength ){
+      this->c.pop_front();
+    }
+    std::queue<T, Container>::push( value );
+  }
+};
+
 
 class GPIO
 {
@@ -72,8 +90,11 @@ private:
 
   static constexpr int ads_default_address = 0x48;
   static int InitI2C();
-  void       FlushADCSetting();
+  void       PushADCSetting();
   int16_t    ADCReadRaw();
+  void       FlushLoop();
+  void       InitI2CFlush();
+  void       CloseI2CFlush();
 
   // High level function using i2C interface
   int gpio_trigger;
@@ -83,6 +104,11 @@ private:
   uint8_t adc_range;
   uint8_t adc_rate;
   uint8_t adc_channel;
+
+  // I2C interface continuous streaming.
+  bool i2c_flush;
+  std::thread i2c_flush_thread;
+  std::array<FixedQueue<float, 100>, 4> i2c_flush_array;
 };
 
 void
@@ -93,15 +119,22 @@ GPIO::Init()
 
   InitPWM();
 
+  if( gpio_adc != -1 ){
+    CloseI2CFlush();
+  }
+
   gpio_adc = InitI2C();
-  FlushADCSetting();
+  if( gpio_adc != -1 ){
+    PushADCSetting();
+    InitI2CFlush();
+  }
 }
 
 GPIO::GPIO() :
   gpio_trigger( -1 ),
   gpio_light( -1 ),
   gpio_adc( -1 ),
-  adc_range( ADS_RANGE_2V ),
+  adc_range( ADS_RANGE_6V ),
   adc_rate( ADS_RATE_860SPS ),
   adc_channel( 0 )
 {
@@ -123,6 +156,7 @@ GPIO::~GPIO()// Turning off LED light when the process has ended.
   ClosePWM();
 
   if( gpio_adc != -1 ){
+    CloseI2CFlush();
     close( gpio_adc );
   }
 }
@@ -370,20 +404,7 @@ GPIO::SetPWM( const unsigned c,
 float
 GPIO::ReadADC( const unsigned channel )
 {
-  if( channel != adc_channel ){
-    adc_channel = channel;
-    FlushADCSetting();
-  }
-
-  const int16_t adc   = ADCReadRaw();
-  const uint8_t range = adc_range& 0x7;
-  const float conv    = range == ADS_RANGE_6V  ? 6144.0 / 32678.0 :
-                        range == ADS_RANGE_4V  ? 4096.0 / 32678.0 :
-                        range == ADS_RANGE_2V  ? 2048.0 / 32678.0 :
-                        range == ADS_RANGE_1V  ? 1024.0 / 32678.0 :
-                        range == ADS_RANGE_p5V ?  512.0 / 32678.0 :
-                        256.0 / 32678.0;
-  return adc * conv;
+  return i2c_flush_array[channel].back();
 }
 
 void
@@ -391,7 +412,7 @@ GPIO::SetADCRange( const int range )
 {
   if( adc_range  != range ){
     adc_range = range;
-    FlushADCSetting();
+    PushADCSetting();
   }
 }
 
@@ -400,7 +421,7 @@ GPIO::SetADCRate( const int rate )
 {
   if( rate != adc_rate ){
     adc_rate = rate;
-    FlushADCSetting();
+    PushADCSetting();
   }
 }
 
@@ -425,7 +446,7 @@ GPIO::InitI2C()
 }
 
 void
-GPIO::FlushADCSetting()
+GPIO::PushADCSetting()
 {
   const uint8_t channel = ( adc_channel & 0x3 ) | ( 0x1 << 2 );
   // channel should be compared with GND
@@ -450,7 +471,7 @@ GPIO::FlushADCSetting()
     throw std::runtime_error( "Error writing setting to i2C device" );
   }
 
-  usleep( 30 );
+  usleep( 1e5 );
 
   // Set for reading
   read_buffer[0] = 0;
@@ -480,7 +501,7 @@ float GPIO::ReadNTCTemp( const unsigned channel )
   static const float B   = 3500;
 
   // Standard operation values for biasing circuit
-  static const float V_total = 5.00;
+  static const float V_total = 5000.00;
   static const float R_ref   = 10000;
 
   // Dynamic convertion
@@ -489,7 +510,7 @@ float GPIO::ReadNTCTemp( const unsigned channel )
 
   // Temperature equation from Steinhart–Hart equation.
   // 1/T = 1/T0 + 1/B * ln(R/R0)
-  return ( T_0 * B )/( B + T_0* std::log( R/R_0 ) );
+  return ( T_0 * B )/( B + T_0* std::log( R/R_0 ) ) - 273.15;
 }
 
 float GPIO::ReadRTDTemp( const unsigned channel )
@@ -500,7 +521,7 @@ float GPIO::ReadRTDTemp( const unsigned channel )
   static const float a   = 0.003850;
 
   // standard operation values for biasing circuit
-  static const float V_total = 5.00;
+  static const float V_total = 5000.00;
   static const float R_ref   = 10000;
 
   // Dynamic conversion
@@ -509,8 +530,44 @@ float GPIO::ReadRTDTemp( const unsigned channel )
 
   // Temperature conversion is simply
   // R = R_0 (1 + a (T - T0))
-  return T_0 + (R - R_0)/(R_0 * a);
+  return T_0 + ( R - R_0 )/( R_0 * a ) - T_0;
 }
+
+void GPIO::FlushLoop()
+{
+  while( i2c_flush == true ){
+    for( unsigned channel = 0; channel < 4; ++channel ){
+      adc_channel = channel;
+      PushADCSetting();
+
+      const int16_t adc   = ADCReadRaw();
+      const uint8_t range = adc_range& 0x7;
+      const float conv    = range == ADS_RANGE_6V  ? 6144.0 / 32678.0 :
+                            range == ADS_RANGE_4V  ? 4096.0 / 32678.0 :
+                            range == ADS_RANGE_2V  ? 2048.0 / 32678.0 :
+                            range == ADS_RANGE_1V  ? 1024.0 / 32678.0 :
+                            range == ADS_RANGE_p5V ?  512.0 / 32678.0 :
+                            256.0 / 32678.0;
+      i2c_flush_array[channel].push( adc * conv );
+      usleep( 1e5 );
+    }
+  }
+}
+
+void GPIO::InitI2CFlush()
+{
+  i2c_flush        = true;
+  i2c_flush_thread = std::thread( [this] {
+    this->FlushLoop();
+  } );
+}
+
+void GPIO::CloseI2CFlush()
+{
+  i2c_flush = false;
+  i2c_flush_thread.join();
+}
+
 
 // ******************************************************************************
 // BOOST Python stuff

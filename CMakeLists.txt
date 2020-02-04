@@ -35,12 +35,12 @@ else()
   set(PICO_HEADERS "libps5000-1.5/ps5000Api.h")
 endif()
 
-
 ## Finding additional libraries
 find_package(PythonLibs   3 REQUIRED)
 find_package(PythonInterp 3 REQUIRED)
 find_package(Boost          REQUIRED COMPONENTS ${BOOST_PYTHON_COMPONENTS})
 find_package(OpenCV         REQUIRED)
+find_package(Threads        REQUIRED)
 
 FILE(GLOB PICO_SRC pico/*.cc)
 find_path( PICO_INCLUDES
@@ -80,7 +80,8 @@ target_link_libraries(gcoder logger )
 make_control_library( visual src/visual.cc )
 target_link_libraries( visual logger ${OpenCV_LIBS} )
 
-make_control_library(gpio src/gpio.cc )
+make_control_library(gpio src/gpio.cc)
+target_link_libraries(gpio Threads::Threads)
 
 
 ## Add testing binary main files
@@ -92,6 +93,7 @@ target_link_libraries(pico_test.exe pico)
 add_executable(gpio_test.exe bin/gpio_test.cc )
 target_include_directories(gpio_test.exe PRIVATE src/)
 target_compile_definitions(gpio_test.exe PUBLIC "STANDALONE" )
+target_link_libraries(gpio_test.exe Threads::Threads)
 
 ## Making the GUI stuff
 file(GLOB CSS_FILES server/static/sass/*.scss)
