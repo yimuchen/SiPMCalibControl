@@ -12,9 +12,12 @@ main( int argc, char** argv )
   usleep( 1e6 );
   gpio.LightsOff();
 
+  gpio.SetPWM( 0, 0.9, 3e5 );
+  // gpio.Pulse( 10000, 10000 );
 
-  gpio.Pulse( 100, 10 );
 
+  gpio.SetPWM( 0, 0.8, 1e5 );
+  gpio.SetPWM( 1, 0.8, 1e5 );
   /*
      for( int i = 0; i < 100; ++i ){
      gpio.SetPWM( 0, 1.0, 1e4 );
@@ -24,13 +27,15 @@ main( int argc, char** argv )
      }
    */
 
-  for( int i = 0; i < 10000; ++i ){
+  for( int i = 0; i < 100; ++i ){
     std::cout << "\r"
               << gpio.ReadNTCTemp( 0 ) << "|"
-              << gpio.ReadADC( 0 ) << " [[]] "
+              << gpio.ReadADC( 0 ) << "\t ***  \t"
               << gpio.ReadRTDTemp( 1 ) << "|"
-              << gpio.ReadADC(1) << std::flush;
-    usleep( 1e5 );
+              << gpio.ReadADC( 1 ) << "\t  ***  \t"
+              << gpio.ReadADC( 2 ) << "\t  ***  \t"
+              << gpio.ReadADC( 3 ) << "\r" << std::flush;
+    usleep( 1e6 );
   }
 
 

@@ -57,15 +57,16 @@ class movespeed(cmdbase.controlcmd):
   def run(self, args):
     self.gcoder.set_speed_limit(args.x, args.y, args.z)
 
+
 class sendhome(cmdbase.controlcmd):
   """
   Sending the gantry system home. This will reset in the internal coordinate
   systems in the gantry. So use only when needed.
   """
-  def __init__(self,cmd):
-    cmdbase.controlcmd.__init__(self,cmd)
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
 
-  def run(self,args):
+  def run(self, args):
     self.gcoder.sendhome()
 
 
@@ -115,7 +116,7 @@ class halign(cmdbase.controlcmd):
       self.update('{0} | {1} | {2}'.format(
           'x:{0:5.1f}, y:{1:5.1f}, z:{2:5.1f}'.format(xval, yval, args.scanz),
           'Lumi:{0:8.5f}+-{1:8.6f}'.format(lumival, uncval),
-          'Progress [{0:3d}/{1:3d}]'.format(idx+1, total)))
+          'Progress [{0:3d}/{1:3d}]'.format(idx + 1, total)))
       ## Writing to file
       args.savefile.write(
           '{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f} {5:d}\n'.format(
@@ -234,7 +235,7 @@ class zscan(cmdbase.controlcmd):
       # Writing to file
       args.savefile.write(
           "{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f} {5:d}\n".format(
-              args.x, args.y, z, lumival, uncval,self.cmd.ndfilter))
+              args.x, args.y, z, lumival, uncval, self.cmd.ndfilter))
 
     self.close_savefile(args)
 
@@ -243,7 +244,7 @@ class timescan(cmdbase.controlcmd):
   """
   Generate a log of the readout in terms relative to time.
   """
-  DEFAULT_SAVEFILE = 'tscan_<CHIPID>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'tscan_<TIMESTAMP>.txt'
   LOG = log.GREEN('[TIMESCAN]')
 
   def __init__(self, cmd):
@@ -253,7 +254,7 @@ class timescan(cmdbase.controlcmd):
     self.parser.add_argument('--nslice',
                              type=int,
                              default=30,
-                             help='total number of sample to tak')
+                             help='total number of sample to take')
     self.parser.add_argument('--interval',
                              type=int,
                              default=5,
@@ -267,14 +268,25 @@ class timescan(cmdbase.controlcmd):
 
   def run(self, args):
     self.init_handle()
+    start_time = time.time_ns()
     for i in range(args.nslice):
       self.check_handle(args)
       lumival, uncval = self.readout.read(channel=args.channel,
                                           samples=args.samples)
-      args.savefile.write('{0:d} {1:.3f} {2:.4f}\n'.format(
-          i * args.interval, lumival, uncval))
-      self.update('{0:5.1f} {1:5.1f} | PROGRESS [{2:3d}/{3:3d}]'.format(
-          lumival, uncval, i + 1, args.nslice))
+      sample_time = time.time_ns()
+      args.savefile.write(
+          '{0:f} {1:.3f} {2:.4f} {3:.2f} {4:.3f} {5:.3f} {6:.2f} {7:.2f}\n'.format(
+              (sample_time - start_time) / 1e9, lumival, uncval,
+              self.gpio.adc_read(2), self.gpio.ntc_read(0),
+              self.gpio.rtd_read(1), self.gpio.adc_read(0),
+              self.gpio.adc_read(1)))
+      args.savefile.flush()
+      self.update('{0} | {1} | {2}'.format(
+          '{0:5.1f} {1:5.1f}'.format(lumival, uncval),
+          'Bias:{0:5.3f} Pulse:{1:.2f}C SiPM:{2:.2f}C'.format(
+              self.gpio.adc_read(2), self.gpio.ntc_read(0),
+              self.gpio.rtd_read(1)), 'PROGRESS [{0:3d}/{1:d}]'.format(
+                  i + 1, args.nslice)))
       time.sleep(args.interval)
 
     self.close_savefile(args)

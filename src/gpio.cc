@@ -40,6 +40,8 @@ public:
   void Pulse( const unsigned n, const unsigned wait ) const;
   void LightsOn() const;
   void LightsOff() const;
+  void SpareOn() const;
+  void SpareOff() const;
 
   // High level function using PWM interface
   void SetPWM( const unsigned channel,
@@ -57,6 +59,7 @@ public:
   // wiringPi's `gpio readall` command
   static constexpr unsigned trigger_pin = 21;// PHYS PIN 40
   static constexpr unsigned light_pin   = 26; // PHYS PIN 37
+  static constexpr unsigned spare_pin   = 25; // PHYS PIN TBD
 
   static constexpr unsigned READ  = 0;
   static constexpr unsigned WRITE = 1;
@@ -99,6 +102,7 @@ private:
   // High level function using i2C interface
   int gpio_trigger;
   int gpio_light;
+  int gpio_spare;
   int gpio_adc;
 
   uint8_t adc_range;
@@ -116,6 +120,7 @@ GPIO::Init()
 {
   gpio_light   = InitGPIOPin(   light_pin, WRITE );
   gpio_trigger = InitGPIOPin( trigger_pin, WRITE );
+  gpio_spare   = InitGPIOPin(   spare_pin, WRITE );
 
   InitPWM();
 
@@ -134,8 +139,8 @@ GPIO::GPIO() :
   gpio_trigger( -1 ),
   gpio_light( -1 ),
   gpio_adc( -1 ),
-  adc_range( ADS_RANGE_6V ),
-  adc_rate( ADS_RATE_860SPS ),
+  adc_range( ADS_RANGE_4V ),
+  adc_rate( ADS_RATE_250SPS ),
   adc_channel( 0 )
 {
 }
@@ -199,6 +204,25 @@ GPIO::LightsOff() const
     throw std::runtime_error( "GPIO for light pin is not initialized" );
   }
   GPIOWrite( gpio_light, LOW );
+}
+
+void
+GPIO::SpareOn() const
+{
+  if( gpio_spare == -1 ){
+    throw std::runtime_error( "GPIO for spare pin is not initialized" );
+  }
+  GPIOWrite( gpio_spare, HI );
+}
+
+void
+GPIO::SpareOff() const
+{
+  if( gpio_spare == -1 ){
+    throw std::runtime_error( "GPIO for spare pin is not initialized" );
+  }
+
+  GPIOWrite( gpio_spare, LOW );
 }
 
 // ******************************************************************************
@@ -385,8 +409,6 @@ GPIO::SetPWM( const unsigned c,
     throw std::runtime_error( errmsg );
   }
 
-  printf( "%s %s\n", period_str, duty_str );
-
   write( fd_enable, "0",        1 );
   write( fd_period, period_str, period_len  );
   write( fd_duty,   duty_str,   duty_len  );
@@ -501,7 +523,7 @@ float GPIO::ReadNTCTemp( const unsigned channel )
   static const float B   = 3500;
 
   // Standard operation values for biasing circuit
-  static const float V_total = 5000.00;
+  static const float V_total = 5003.00;
   static const float R_ref   = 10000;
 
   // Dynamic convertion
@@ -518,10 +540,10 @@ float GPIO::ReadRTDTemp( const unsigned channel )
   // Typical value of RTDs in circuit
   static const float R_0 = 10000;
   static const float T_0 = 273.15;
-  static const float a   = 0.003850;
+  static const float a   = 0.003916;
 
   // standard operation values for biasing circuit
-  static const float V_total = 5000.00;
+  static const float V_total = 5003.00;
   static const float R_ref   = 10000;
 
   // Dynamic conversion
@@ -530,7 +552,7 @@ float GPIO::ReadRTDTemp( const unsigned channel )
 
   // Temperature conversion is simply
   // R = R_0 (1 + a (T - T0))
-  return T_0 + ( R - R_0 )/( R_0 * a ) - T_0;
+  return T_0 + ( R - R_0 )/( R_0 * a ) - 273.15;
 }
 
 void GPIO::FlushLoop()

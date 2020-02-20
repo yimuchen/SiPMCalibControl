@@ -151,7 +151,7 @@ class picorunblock(cmdbase.controlcmd):
       while not self.pico.isready():
         self.check_handle(args)
         try: ## For stand alone runs with external trigger
-          self.gpio.pulse(int(self.pico.ncaptures / 10), 500)
+          self.gpio.pulse(int(self.pico.ncaptures / 10), 100)
         except:
           pass
 
