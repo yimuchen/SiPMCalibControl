@@ -59,12 +59,18 @@ public:
   // wiringPi's `gpio readall` command
   static constexpr unsigned trigger_pin = 21;// PHYS PIN 40
   static constexpr unsigned light_pin   = 26; // PHYS PIN 37
-  static constexpr unsigned spare_pin   = 25; // PHYS PIN TBD
+  static constexpr unsigned spare_pin   = 20; // PHYS PIN 38
 
   static constexpr unsigned READ  = 0;
   static constexpr unsigned WRITE = 1;
   static constexpr unsigned LOW   = 0;
   static constexpr unsigned HI    = 1;
+
+  // CONSTANT EXPRESSION for file pointers
+  static constexpr int UNOPENED    = -2;
+  static constexpr int OPEN_FAILED = -1;
+  static constexpr int IO_FAILED   = -1;
+  static constexpr int NORMAL_PTR  = 0;
 
   static constexpr uint8_t ADS_RANGE_6V   = 0x0;
   static constexpr uint8_t ADS_RANGE_4V   = 0x1;
@@ -82,14 +88,18 @@ public:
   static constexpr uint8_t ADS_RATE_475SPS = 0x6;
   static constexpr uint8_t ADS_RATE_860SPS = 0x7;
 
+  bool StatusGPIO() const;
+  bool StatusADC() const;
+  bool StatusPWM() const;
+
 private:
   static int  InitGPIOPin( const int pin, const unsigned direction );
   static void CloseGPIO( const int pin );
   static int  GPIORead( const int fd );
   static void GPIOWrite( const int fd, const unsigned val );
 
-  static void InitPWM();
-  static void ClosePWM();
+  void InitPWM();
+  void ClosePWM();
 
   static constexpr int ads_default_address = 0x48;
   static int InitI2C();
@@ -99,11 +109,18 @@ private:
   void       InitI2CFlush();
   void       CloseI2CFlush();
 
-  // High level function using i2C interface
+  // File pointers triggers direct GPIO
   int gpio_trigger;
   int gpio_light;
   int gpio_spare;
+
+  // File pointer to ADC
   int gpio_adc;
+
+  // File pointer to PWM stuff
+  int pwm_enable[2];
+  int pwm_duty[2];
+  int pwm_period[2];
 
   uint8_t adc_range;
   uint8_t adc_rate;
@@ -118,51 +135,69 @@ private:
 void
 GPIO::Init()
 {
-  gpio_light   = InitGPIOPin(   light_pin, WRITE );
-  gpio_trigger = InitGPIOPin( trigger_pin, WRITE );
-  gpio_spare   = InitGPIOPin(   spare_pin, WRITE );
+  try {
+    gpio_light   = InitGPIOPin(   light_pin, WRITE );
+    gpio_trigger = InitGPIOPin( trigger_pin, WRITE );
+    gpio_spare   = InitGPIOPin(   spare_pin, WRITE );
 
-  InitPWM();
+    InitPWM();
 
-  if( gpio_adc != -1 ){
-    CloseI2CFlush();
-  }
+    if( gpio_adc != -1 ){
+      CloseI2CFlush();
+    }
 
-  gpio_adc = InitI2C();
-  if( gpio_adc != -1 ){
-    PushADCSetting();
+    gpio_adc = InitI2C();
+    if( gpio_adc != -1 ){
+      PushADCSetting();
+      InitI2CFlush();
+    }
+  } catch( std::exception& e ){
+    // For local testing, this start the I2C monitoring flush even if
+    // Something failed, (The ADC readout will just be a random stream)
     InitI2CFlush();
+
+    // Passing error message onto higher functions
+    throw e;
   }
 }
 
 GPIO::GPIO() :
-  gpio_trigger( -1 ),
-  gpio_light( -1 ),
-  gpio_adc( -1 ),
+  gpio_trigger( UNOPENED ),
+  gpio_light( UNOPENED ),
+  gpio_spare( UNOPENED ),
+  gpio_adc( UNOPENED ),
   adc_range( ADS_RANGE_4V ),
   adc_rate( ADS_RATE_250SPS ),
   adc_channel( 0 )
 {
+  pwm_enable[0] = UNOPENED;
+  pwm_duty[0]   = UNOPENED;
+  pwm_period[0] = UNOPENED;
+  pwm_enable[1] = UNOPENED;
+  pwm_duty[1]   = UNOPENED;
+  pwm_period[1] = UNOPENED;
 }
 
 GPIO::~GPIO()// Turning off LED light when the process has ended.
 {
-  if( gpio_light != -1 ){
+  if( gpio_light >= NORMAL_PTR ){
     LightsOff();
     close( gpio_light );
     CloseGPIO( light_pin );
   }
 
-  if( gpio_trigger != -1 ){
+  if( gpio_trigger >= NORMAL_PTR ){
     close( gpio_trigger );
     CloseGPIO( trigger_pin );
   }
 
   ClosePWM();
 
-  if( gpio_adc != -1 ){
+  if( gpio_adc >= NORMAL_PTR ){
     CloseI2CFlush();
     close( gpio_adc );
+  } else {
+    CloseI2CFlush();
   }
 }
 
@@ -172,7 +207,7 @@ GPIO::~GPIO()// Turning off LED light when the process has ended.
 void
 GPIO::Pulse( const unsigned n, const unsigned wait ) const
 {
-  if( gpio_trigger == -1 ){
+  if( gpio_trigger == OPEN_FAILED ){
     throw std::runtime_error( "GPIO for trigger pin is not initialized" );
   }
 
@@ -190,7 +225,7 @@ GPIO::Pulse( const unsigned n, const unsigned wait ) const
 void
 GPIO::LightsOn() const
 {
-  if( gpio_light == -1 ){
+  if( gpio_light == OPEN_FAILED ){
     throw std::runtime_error( "GPIO for light pin is not initialized" );
   }
 
@@ -200,7 +235,7 @@ GPIO::LightsOn() const
 void
 GPIO::LightsOff() const
 {
-  if( gpio_light == -1 ){
+  if( gpio_light == OPEN_FAILED ){
     throw std::runtime_error( "GPIO for light pin is not initialized" );
   }
   GPIOWrite( gpio_light, LOW );
@@ -209,7 +244,7 @@ GPIO::LightsOff() const
 void
 GPIO::SpareOn() const
 {
-  if( gpio_spare == -1 ){
+  if( gpio_spare == OPEN_FAILED ){
     throw std::runtime_error( "GPIO for spare pin is not initialized" );
   }
   GPIOWrite( gpio_spare, HI );
@@ -218,7 +253,7 @@ GPIO::SpareOn() const
 void
 GPIO::SpareOff() const
 {
-  if( gpio_spare == -1 ){
+  if( gpio_spare == OPEN_FAILED ){
     throw std::runtime_error( "GPIO for spare pin is not initialized" );
   }
 
@@ -237,11 +272,8 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
   char path[buffer_length];
   char errmsg[1024];
 
-  int fd;
-
-  // Setting up the export
-  fd = open( "/sys/class/gpio/export", O_WRONLY );
-  if( -1 == fd ){
+  int fd = open( "/sys/class/gpio/export", O_WRONLY );
+  if( fd == OPEN_FAILED ){
     sprintf( errmsg, "Failed to open /sys/class/gpio/export" );
     throw std::runtime_error( errmsg );
   }
@@ -259,8 +291,8 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
     usleep( 1e5 );
   }
 
-  fd = direction == READ ? open( path, O_WRONLY ) : open( path, O_WRONLY );
-  if( -1 == fd ){
+  fd = ( direction == READ ) ? open( path, O_WRONLY ) : open( path, O_WRONLY );
+  if( fd  == OPEN_FAILED ){
     sprintf( errmsg, "Failed to open gpio [%d] direction! [%s]", pin, path );
     throw std::runtime_error( errmsg );
   }
@@ -268,7 +300,7 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
   int status = write( fd
                     , direction == READ ? "in" : "out"
                     , direction == READ ? 2    : 3 );
-  if( status == -1 ){
+  if( status == IO_FAILED ){
     sprintf( errmsg, "Failed to set gpio [%d] direction!", pin );
     throw std::runtime_error( errmsg );
   }
@@ -276,12 +308,11 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
 
   // Opening GPIO PIN
   snprintf( path, buffer_length, "/sys/class/gpio/gpio%d/value", pin );
-  fd = direction == READ ? open( path, O_RDONLY ) : open( path, O_WRONLY );
-  if( -1 == fd ){
+  fd = ( direction == READ ) ? open( path, O_RDONLY ) : open( path, O_WRONLY );
+  if( fd == OPEN_FAILED ){
     sprintf( errmsg, "Failed to open gpio [%d] value! [%s]", pin, path );
     throw std::runtime_error( errmsg );
   }
-
 
   return fd;
 }
@@ -290,7 +321,7 @@ int
 GPIO::GPIORead( const int fd )
 {
   char value_str[3];
-  if( -1 == read( fd, value_str, 3 ) ){
+  if( read( fd, value_str, 3 ) == IO_FAILED ){
     throw std::runtime_error( "Failed to read gpio value!" );
   }
   return atoi( value_str );
@@ -299,7 +330,7 @@ GPIO::GPIORead( const int fd )
 void
 GPIO::GPIOWrite( const int fd, const unsigned val )
 {
-  if( 1 != write( fd, LOW == val ? "0" : "1", 1 ) ){
+  if( write( fd, LOW == val ? "0" : "1", 1 ) == IO_FAILED ){
     throw std::runtime_error( "Failed to write gpio value!" );
   }
 }
@@ -311,7 +342,7 @@ GPIO::CloseGPIO( const int pin )
   unsigned write_length;
   char buffer[buffer_length];
   int fd = open( "/sys/class/gpio/unexport", O_WRONLY );
-  if( -1 == fd ){
+  if( fd == OPEN_FAILED ){
     throw std::runtime_error( "Failed to open un-export for writing!" );
   }
 
@@ -330,21 +361,31 @@ GPIO::InitPWM()
   char errmsg[1024];
 
   int fd = open( "/sys/class/pwm/pwmchip0/export", O_WRONLY );
-  if( -1 == fd ){
+  if( fd == OPEN_FAILED ){
     sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip0/export" );
+    pwm_enable[0] = -1;// Flagging the PWM stuff as unopened.
     throw std::runtime_error( errmsg );
   }
   write( fd, "0", 1 );
   write( fd, "1", 1 );
 
   // Waiting for the sysfs to generated the corresponding file
-  while( access( "/sys/class/pwm/pwmchip0/pwm0/enable", F_OK ) == -1 ){
+  while( access( "/sys/class/pwm/pwmchip0/pwm0/enable", F_OK ) == OPEN_FAILED ){
     usleep( 1e5 );
   }
 
-  while( access( "/sys/class/pwm/pwmchip0/pwm1/enable", F_OK ) == -1 ){
+  while( access( "/sys/class/pwm/pwmchip0/pwm1/enable", F_OK ) == OPEN_FAILED ){
     usleep( 1e5 );
   }
+
+  // Opening the various files for IO
+  pwm_enable[0] = open( "/sys/class/pwm/pwmchip0/pwm0/enable",     O_WRONLY );
+  pwm_duty[0]   = open( "/sys/class/pwm/pwmchip0/pwm0/duty_cycle", O_WRONLY );
+  pwm_period[0] = open( "/sys/class/pwm/pwmchip0/pwm0/period",     O_WRONLY );
+
+  pwm_enable[1] = open( "/sys/class/pwm/pwmchip0/pwm0/enable",     O_WRONLY );
+  pwm_duty[1]   = open( "/sys/class/pwm/pwmchip0/pwm0/duty_cycle", O_WRONLY );
+  pwm_period[1] = open( "/sys/class/pwm/pwmchip0/pwm0/period",     O_WRONLY );
 
   close( fd );
 }
@@ -353,20 +394,24 @@ void
 GPIO::ClosePWM()
 {
   char errmsg[1024];
-  int fd = open( "/sys/class/pwm/pwmchip0/pwm1/enable", O_WRONLY );
-  write( fd, "0", 1 );
 
-  fd = open( "/sys/class/pwm/pwmchip0/pwm0/enable", O_WRONLY );
-  write( fd, "0", 1 );
+  if( pwm_enable[0] != UNOPENED ){
+    for( unsigned channel = 0; channel <= 1; channel++ ){
+      write( pwm_enable[channel], "0", 1 );
+      close( pwm_enable[channel] );
+      close( pwm_duty[channel] );
+      close( pwm_period[channel] );
 
-  fd = open( "/sys/class/pwm/pwmchip0/unexport", O_WRONLY );
-  if( -1 == fd ){
-    sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip0/unexport" );
-    throw std::runtime_error( errmsg );
+      sprintf( errmsg, "/sys/class/pwm/pwmchip%u/unexport", channel );
+      int fd = open( errmsg, O_WRONLY );
+      if( fd == OPEN_FAILED ){
+        sprintf( errmsg, "Failed /sys/class/pwm/pwmchip%u/unexport", channel );
+        throw std::runtime_error( errmsg );
+      }
+      write( fd, "0", 1 );
+      write( fd, "1", 1 );
+    }
   }
-  write( fd, "0", 1 );
-  write( fd, "1", 1 );
-  close( fd );
 }
 
 
@@ -387,36 +432,21 @@ GPIO::SetPWM( const unsigned c,
   const unsigned period = 1e9 / frequency;
   const unsigned duty   = period * duty_cycle;
 
-  char enable_path[1024];
-  char duty_path[1024];
-  char period_path[1024];
   char duty_str[10];
   char period_str[10];
   char errmsg[1024];
-
-  sprintf( enable_path, "/sys/class/pwm/pwmchip0/pwm%u/enable",     channel );
-  sprintf( duty_path,   "/sys/class/pwm/pwmchip0/pwm%u/duty_cycle", channel );
-  sprintf( period_path, "/sys/class/pwm/pwmchip0/pwm%u/period",     channel );
   unsigned duty_len   = sprintf( duty_str,    "%u", duty );
   unsigned period_len = sprintf( period_str,  "%u", period );
 
-  int fd_enable = open( enable_path, O_WRONLY );
-  int fd_duty   = open( duty_path,   O_WRONLY );
-  int fd_period = open( period_path, O_WRONLY );
-
-  if( fd_enable == -1 || fd_duty == -1 || fd_period == -1 ){
+  if( pwm_enable[channel] == OPEN_FAILED ){
     sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip%u settings", c );
     throw std::runtime_error( errmsg );
   }
 
-  write( fd_enable, "0",        1 );
-  write( fd_period, period_str, period_len  );
-  write( fd_duty,   duty_str,   duty_len  );
-  write( fd_enable, "1",        1 );
-
-  close( fd_enable );
-  close( fd_duty );
-  close( fd_period );
+  write( pwm_enable[channel], "0",        1          );
+  write( pwm_period[channel], period_str, period_len );
+  write( pwm_duty[channel],   duty_str,   duty_len   );
+  write( pwm_enable[channel], "1",        1          );
 }
 
 // ******************************************************************************
@@ -453,13 +483,13 @@ GPIO::InitI2C()
   char errmsg[1024];
   int fd = open( "/dev/i2c-1", O_RDWR );
   // open device
-  if( fd  < 0 ){
+  if( fd == OPEN_FAILED ){
     sprintf( errmsg, "Error: Couldn't open i2c device! %s", "/dev/i2c-1" );
     throw std::runtime_error( errmsg );
   }
 
   // connect to ADS1115 as i2c slave
-  if( ioctl( fd, I2C_SLAVE, 0x48 ) < 0 ){
+  if( ioctl( fd, I2C_SLAVE, 0x48 ) == IO_FAILED ){
     sprintf( errmsg, "Error: Couldn't find i2c device on address [%d]!", 0x48 );
     throw std::runtime_error( errmsg );
   }
@@ -558,20 +588,27 @@ float GPIO::ReadRTDTemp( const unsigned channel )
 void GPIO::FlushLoop()
 {
   while( i2c_flush == true ){
-    for( unsigned channel = 0; channel < 4; ++channel ){
-      adc_channel = channel;
-      PushADCSetting();
+    if( gpio_adc >= NORMAL_PTR ){
+      for( unsigned channel = 0; channel < 4; ++channel ){
+        adc_channel = channel;
+        PushADCSetting();
 
-      const int16_t adc   = ADCReadRaw();
-      const uint8_t range = adc_range& 0x7;
-      const float conv    = range == ADS_RANGE_6V  ? 6144.0 / 32678.0 :
-                            range == ADS_RANGE_4V  ? 4096.0 / 32678.0 :
-                            range == ADS_RANGE_2V  ? 2048.0 / 32678.0 :
-                            range == ADS_RANGE_1V  ? 1024.0 / 32678.0 :
-                            range == ADS_RANGE_p5V ?  512.0 / 32678.0 :
-                            256.0 / 32678.0;
-      i2c_flush_array[channel].push( adc * conv );
-      usleep( 1e5 );
+        const int16_t adc   = ADCReadRaw();
+        const uint8_t range = adc_range& 0x7;
+        const float conv    = range == ADS_RANGE_6V  ? 6144.0 / 32678.0 :
+                              range == ADS_RANGE_4V  ? 4096.0 / 32678.0 :
+                              range == ADS_RANGE_2V  ? 2048.0 / 32678.0 :
+                              range == ADS_RANGE_1V  ? 1024.0 / 32678.0 :
+                              range == ADS_RANGE_p5V ?  512.0 / 32678.0 :
+                              256.0 / 32678.0;
+        i2c_flush_array[channel].push( adc * conv );
+        usleep( 1e5 );
+      }
+    } else {
+      i2c_flush_array[0].push( 200.3 );
+      i2c_flush_array[1].push( 200.3 );
+      i2c_flush_array[2].push( 200.3 );
+      i2c_flush_array[3].push( 200.3 );
     }
   }
 }
@@ -590,6 +627,32 @@ void GPIO::CloseI2CFlush()
   i2c_flush_thread.join();
 }
 
+// ******************************************************************************
+// Simple parser of status from file pointer results
+// ******************************************************************************
+bool GPIO::StatusGPIO() const
+{
+  return gpio_trigger >= NORMAL_PTR &&
+         gpio_light   >= NORMAL_PTR &&
+         gpio_spare   >= NORMAL_PTR;
+}
+
+bool GPIO::StatusADC() const
+{
+  return gpio_adc >= NORMAL_PTR;
+}
+
+bool GPIO::StatusPWM() const
+{
+  return pwm_enable[0] >= NORMAL_PTR &&
+         pwm_duty[0]   >= NORMAL_PTR &&
+         pwm_period[0] >= NORMAL_PTR &&
+         pwm_enable[1] >= NORMAL_PTR &&
+         pwm_duty[1]   >= NORMAL_PTR &&
+         pwm_period[1] >= NORMAL_PTR;
+}
+
+
 
 // ******************************************************************************
 // BOOST Python stuff
@@ -600,16 +663,19 @@ void GPIO::CloseI2CFlush()
 BOOST_PYTHON_MODULE( gpio )
 {
   auto gpio_class = boost::python::class_<GPIO, boost::noncopyable>( "GPIO" )
-                    .def( "init",      &GPIO::Init        )
-                    .def( "pulse",     &GPIO::Pulse       )
-                    .def( "light_on",  &GPIO::LightsOn    )
-                    .def( "light_off", &GPIO::LightsOff   )
-                    .def( "pwm",       &GPIO::SetPWM      )
-                    .def( "adc_read",  &GPIO::ReadADC     )
-                    .def( "adc_range", &GPIO::SetADCRange )
-                    .def( "adc_rate",  &GPIO::SetADCRate  )
-                    .def( "rtd_read",  &GPIO::ReadRTDTemp )
-                    .def( "ntc_read",  &GPIO::ReadNTCTemp )
+                    .def( "init",        &GPIO::Init        )
+                    .def( "pulse",       &GPIO::Pulse       )
+                    .def( "light_on",    &GPIO::LightsOn    )
+                    .def( "light_off",   &GPIO::LightsOff   )
+                    .def( "pwm",         &GPIO::SetPWM      )
+                    .def( "adc_read",    &GPIO::ReadADC     )
+                    .def( "adc_range",   &GPIO::SetADCRange )
+                    .def( "adc_rate",    &GPIO::SetADCRate  )
+                    .def( "rtd_read",    &GPIO::ReadRTDTemp )
+                    .def( "ntc_read",    &GPIO::ReadNTCTemp )
+                    .def( "gpio_status", &GPIO::StatusGPIO  )
+                    .def( "adc_status",  &GPIO::StatusADC   )
+                    .def( "pwm_status",  &GPIO::StatusPWM   )
   ;
 
   gpio_class.attr( "ADS_RANGE_6V" )    = GPIO::ADS_RANGE_6V;

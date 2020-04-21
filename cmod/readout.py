@@ -57,7 +57,7 @@ class readout(object):
   def set_mode(self, mode):
     if mode == readout.MODE_PICO and self.pico.device:
       self.mode = mode
-    elif mode == readout.MODE_ADC:
+    elif mode == readout.MODE_ADC and self.gpio.adc_status():
       self.mode == readout.MODE_ADC
     else:
       self.mode = readout.MODE_NONE
