@@ -34,6 +34,7 @@ if __name__ == '__main__':
       getset.promptaction,
       digicmd.pulse,
       digicmd.pwm,
+      digicmd.setadcref,
       digicmd.showadc,
       picocmd.picoset,
       picocmd.picorunblock,

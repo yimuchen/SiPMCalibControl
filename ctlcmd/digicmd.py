@@ -1,3 +1,8 @@
+
+"""
+Commands for raw control and raw display of GPIO/ADC/PWM functions
+
+"""
 import ctlcmd.cmdbase as cmdbase
 import cmod.logger as log
 import time
@@ -39,8 +44,10 @@ class pwm(cmdbase.controlcmd):
                              '-c',
                              type=int,
                              choices=[0, 1],
+                             required=True,
                              help='PWM channel to alter')
-    self.parser.add_argument('--duty', '-d', type=float, help='Duty cycle')
+    self.parser.add_argument('--duty', '-d', type=float,
+    required=True,help='Duty cycle')
     self.parser.add_argument('--frequency',
                              '-f',
                              type=float,
@@ -57,6 +64,33 @@ class pwm(cmdbase.controlcmd):
 
   def run(self, args):
     self.gpio.pwm(args.channel, args.duty, args.frequency)
+
+class setadcref(cmdbase.controlcmd):
+  """
+  Setting the reference voltage of the ADC readout for temperature conversion
+  """
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
+    self.parser.add_argument('--channel',
+                             '-c',
+                             type=int,
+                             choices=[0,1,2,3],
+                             nargs='+',
+                             help=('Channel to set reference voltage '
+                                   '(can set multiple to same value )'))
+    self.parser.add_argument('--val',
+                             '-v',
+                             type=float,
+                             default=5000,
+                             help=('Reference voltage to temperature conversion '
+                                  '(units: mV)'))
+
+  def run(self,args):
+    for channel in args.channel:
+      self.gpio.adc_setref(channel,args.val)
+
+
+
 
 
 class showadc(cmdbase.controlcmd):
