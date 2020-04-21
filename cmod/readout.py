@@ -58,23 +58,35 @@ class readout(object):
     if mode == readout.MODE_PICO and self.pico.device:
       self.mode = mode
     elif mode == readout.MODE_ADC and self.gpio.adc_status():
-      self.mode == readout.MODE_ADC
+      self.mode = readout.MODE_ADC
     else:
       self.mode = readout.MODE_NONE
 
-  def read(self, channel=0, samples=1000):
+  def read(self, channel=0, samples=1000, average=True):
     """
-    Getting an average value of the readout Note that this is intended to be an
-    averaged + RMS return value. If you want a full readout, see the picoscope
-    related commands.
+    Getting the readout of the current configuration with <sample> samples of
+    the a specific channel.
+    If average is set to true, this function will return the averaged value and
+    the RMS of all samples. Otherwise this function will return the full list of
+    numbers obtained in the readout.
+    For picoscope readouts, this functions integrates over the entire available
+    window, so make sure that you have set the correct picoscope settings.
     """
+
+    readout_list = []
+
     if self.mode == readout.MODE_PICO:
-      return self.read_pico(channel, samples)
+      readout_list = self.read_pico(channel, samples)
     elif self.mode == readout.MODE_ADC:
-      # Model readout is modelled directly into the adc function.
-      return self.read_adc(channel, samples)
+      readout_list = self.read_adc(channel, samples)
     else:
-      return self.read_model(channel, samples)
+      readout_list = self.read_model(channel, samples)
+
+    if average:
+      return np.mean(readout_list), np.std(readout_list)
+    else:
+      return readout_list
+
 
   def read_adc(self, channel=0, samples=100):
     """
@@ -85,11 +97,7 @@ class readout(object):
       val.append(self.gpio.adc_read(channel))
       ## Sleeping for random time in ADC to avoid 60Hz aliasing
       time.sleep(1 / 200 * np.random.random())
-    valmean = np.mean(val)
-    valstd = np.std(val)
-    valstrip = [x for x in val if abs(x - valmean) < valstd]
-    # val = val[int(sample / 4):]
-    return np.mean(val), np.std(val)
+    return val
 
   def read_adc_raw(self, channel):
     """
@@ -109,22 +117,22 @@ class readout(object):
     N_mean = readout.GetNumPixels(r0=r0, z=z)
 
     pe_list = readout.GetGPList(N_mean, samples)
-
-    return readout.GAIN * np.mean(pe_list), readout.GAIN * np.std(pe_list)
+    return readout.GetSmearedGP(pe_list)
 
   def read_pico(self, channel=0, samples=10000):
     """
     Averaged readout of the picoscope
     """
 
-    ## Running the large capture routine
-    self.pico.setblocknums(samples, self.pico.postsamples, self.pico.presamples)
-    self.pico.startrapidblocks()
-    while not self.pico.isready():
-      self.parent.gpio.pulse(self.pico.ncaptures, 100)
-    self.pico.flushbuffer()
-    val = [self.pico.waveformsum(channel, x) for x in range(samples)]
-    return np.mean(val), np.std(val) / np.sqrt(samples)
+    val = []
+    while len(val) < samples :
+      self.pico.setblocknums(1000, self.pico.postsamples, self.pico.presamples)
+      self.pico.startrapidblocks()
+      while not self.pico.isready():
+        self.parent.gpio.pulse(self.pico.ncaptures, 100)
+      self.pico.flushbuffer()
+      val.extend( self.pico.waveformsum(channel, x) for x in range(1000) )
+    return val
 
   # Constants for fake model
   NPIX = 1000  ## Maximum number of pixels
@@ -200,7 +208,7 @@ class readout(object):
 if __name__ == "__main__":
   import matplotlib.pyplot as plt
 
-  N_Points = 100000
+  N_Points = 1000
   k_list = readout.GetGPList(2.5, N_Points)
   r_list = readout.GetSmearedGP(k_list)
 
