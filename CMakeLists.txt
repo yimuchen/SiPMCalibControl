@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.0)
-project(SiPMControl)
+cmake_minimum_required(VERSION 3.8)
+project(SiPMControl CXX)
 
-## Compilter settings
-set(CMAKE_CXX_COMPILE_FEATURES cxx_range_for )
-set(CMAKE_CXX_COMPILE_FEATURES cxx_variadic_templates)
+## Compiler settings
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_COMPILE_FEATURES cxx_variadic_templates)
+set(CMAKE_CXX_EXTENSIONS OFF)
 add_compile_options("-g")
 add_compile_options("-O3")
 add_compile_options("-Wall")
@@ -18,7 +18,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/bin )
 
 ## Linux apple differences
 if(UNIX AND NOT APPLE)
-  set(BOOST_PYTHON_COMPONENTS "python3")
+  set(BOOST_PYTHON_COMPONENTS "python38")
   set(PICO_FIND_PATH "/opt/picoscope/")
 else()
   set(BOOST_PYTHON_COMPONENTS "python37")
