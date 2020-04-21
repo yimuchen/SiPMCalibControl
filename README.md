@@ -20,6 +20,8 @@ include:
   - [libps5000][Picoscope]: For interfacing with the readout oscilloscope
   - [WiringPi][WiringPi]: For trigger control via GPIO
   - [Paramiko][Paramiko]: For data transfer over ssh
+- For web interface generation
+  - Install `sass` for css file generation.
 
 For deployment for local testing on personal machines, WiringPi and ADS1x15 is
 not needed. But local testing will require the user to manually setup a trigger
