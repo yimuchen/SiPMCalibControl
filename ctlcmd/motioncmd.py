@@ -257,8 +257,18 @@ class timescan(cmdbase.controlcmd):
                              help='total number of sample to take')
     self.parser.add_argument('--interval',
                              type=int,
-                             default=5,
+                             default=1,
                              help='Time interval between sampling (seconds)')
+    self.parser.add_argument('--testpwm',
+                             type=float,
+                             nargs='*',
+                             help=('PWM duty cycle values to cycle through '
+                                   'while performing test'))
+    self.parser.add_argument('--pwmslices',
+                             type=int,
+                             default=10,
+                             help=('Number of time slices to take for a given '
+                                   'PWM test value'))
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
@@ -269,17 +279,23 @@ class timescan(cmdbase.controlcmd):
   def run(self, args):
     self.init_handle()
     start_time = time.time_ns()
+    pwmindex = 0
+
     for i in range(args.nslice):
       self.check_handle(args)
+      if (i % args.pwmslices == 0) and args.testpwm and (len(args.testpwm) > 0):
+        self.cmd.onecmd('pwm -c 0 -d {0}'.format(args.testpwm[pwmindex]))
+        pwmindex = (pwmindex + 1) % len(args.testpwm)
+
       lumival, uncval = self.readout.read(channel=args.channel,
                                           samples=args.samples)
       sample_time = time.time_ns()
       args.savefile.write(
-          '{0:f} {1:.3f} {2:.4f} {3:.2f} {4:.3f} {5:.3f} {6:.2f} {7:.2f}\n'.format(
-              (sample_time - start_time) / 1e9, lumival, uncval,
-              self.gpio.adc_read(2), self.gpio.ntc_read(0),
-              self.gpio.rtd_read(1), self.gpio.adc_read(0),
-              self.gpio.adc_read(1)))
+          '{0:f} {1:.3f} {2:.4f} {3:.2f} {4:.3f} {5:.3f} {6:.2f} {7:.2f}\n'.
+          format((sample_time - start_time) / 1e9, lumival, uncval,
+                 self.gpio.adc_read(2), self.gpio.ntc_read(0),
+                 self.gpio.rtd_read(1), self.gpio.adc_read(0),
+                 self.gpio.adc_read(1)))
       args.savefile.flush()
       self.update('{0} | {1} | {2}'.format(
           '{0:5.1f} {1:5.1f}'.format(lumival, uncval),
