@@ -51,9 +51,10 @@ public:
   // High level functions for I2C ADC chip interface
   void  SetADCRange( const int );
   void  SetADCRate( const int );
-  float ReadADC( const unsigned channel );
-  float ReadNTCTemp( const unsigned channel );
-  float ReadRTDTemp( const unsigned channel );
+  float ReadADC( const unsigned channel ) const;
+  float ReadNTCTemp( const unsigned channel ) const;
+  float ReadRTDTemp( const unsigned channel ) const;
+  void  SetReferenceVoltage( const unsigned channel, const float val );
 
   // On the raspberry PI, these pins correspond to the BCM pin from
   // wiringPi's `gpio readall` command
@@ -126,6 +127,8 @@ private:
   uint8_t adc_rate;
   uint8_t adc_channel;
 
+  float reference_voltage[4];
+
   // I2C interface continuous streaming.
   bool i2c_flush;
   std::thread i2c_flush_thread;
@@ -176,6 +179,11 @@ GPIO::GPIO() :
   pwm_enable[1] = UNOPENED;
   pwm_duty[1]   = UNOPENED;
   pwm_period[1] = UNOPENED;
+
+  reference_voltage[0] = 5000.0;
+  reference_voltage[1] = 5000.0;
+  reference_voltage[2] = 5000.0;
+  reference_voltage[3] = 5000.0;
 }
 
 GPIO::~GPIO()// Turning off LED light when the process has ended.
@@ -454,7 +462,7 @@ GPIO::SetPWM( const unsigned c,
 // Main reference:http://www.bristolwatch.com/rpi/ads1115.html
 // ******************************************************************************
 float
-GPIO::ReadADC( const unsigned channel )
+GPIO::ReadADC( const unsigned channel ) const
 {
   return i2c_flush_array[channel].back();
 }
@@ -545,7 +553,7 @@ GPIO::ADCReadRaw()
 }
 
 
-float GPIO::ReadNTCTemp( const unsigned channel )
+float GPIO::ReadNTCTemp( const unsigned channel ) const
 {
   // Standard values for NTC resistors used in circuit;
   static const float T_0 = 25 + 273.15;
@@ -565,7 +573,7 @@ float GPIO::ReadNTCTemp( const unsigned channel )
   return ( T_0 * B )/( B + T_0* std::log( R/R_0 ) ) - 273.15;
 }
 
-float GPIO::ReadRTDTemp( const unsigned channel )
+float GPIO::ReadRTDTemp( const unsigned channel ) const
 {
   // Typical value of RTDs in circuit
   static const float R_0 = 10000;
@@ -573,16 +581,21 @@ float GPIO::ReadRTDTemp( const unsigned channel )
   static const float a   = 0.003916;
 
   // standard operation values for biasing circuit
-  static const float V_total = 5003.00;
-  static const float R_ref   = 10000;
+  static const float R_ref = 10000;
 
   // Dynamic conversion
-  const float v = ReadADC( channel );
-  const float R = R_ref * v / ( V_total -v );
+  const float V_total = reference_voltage[channel];
+  const float v       = ReadADC( channel );
+  const float R       = R_ref * v / ( V_total -v );
 
   // Temperature conversion is simply
   // R = R_0 (1 + a (T - T0))
   return T_0 + ( R - R_0 )/( R_0 * a ) - 273.15;
+}
+
+void GPIO::SetReferenceVoltage( const unsigned channel, const float val )
+{
+  reference_voltage[channel] = val;
 }
 
 void GPIO::FlushLoop()
@@ -663,19 +676,20 @@ bool GPIO::StatusPWM() const
 BOOST_PYTHON_MODULE( gpio )
 {
   auto gpio_class = boost::python::class_<GPIO, boost::noncopyable>( "GPIO" )
-                    .def( "init",        &GPIO::Init        )
-                    .def( "pulse",       &GPIO::Pulse       )
-                    .def( "light_on",    &GPIO::LightsOn    )
-                    .def( "light_off",   &GPIO::LightsOff   )
-                    .def( "pwm",         &GPIO::SetPWM      )
-                    .def( "adc_read",    &GPIO::ReadADC     )
-                    .def( "adc_range",   &GPIO::SetADCRange )
-                    .def( "adc_rate",    &GPIO::SetADCRate  )
-                    .def( "rtd_read",    &GPIO::ReadRTDTemp )
-                    .def( "ntc_read",    &GPIO::ReadNTCTemp )
-                    .def( "gpio_status", &GPIO::StatusGPIO  )
-                    .def( "adc_status",  &GPIO::StatusADC   )
-                    .def( "pwm_status",  &GPIO::StatusPWM   )
+                    .def( "init",        &GPIO::Init                )
+                    .def( "pulse",       &GPIO::Pulse               )
+                    .def( "light_on",    &GPIO::LightsOn            )
+                    .def( "light_off",   &GPIO::LightsOff           )
+                    .def( "pwm",         &GPIO::SetPWM              )
+                    .def( "adc_read",    &GPIO::ReadADC             )
+                    .def( "adc_range",   &GPIO::SetADCRange         )
+                    .def( "adc_rate",    &GPIO::SetADCRate          )
+                    .def( "adc_setref",  &GPIO::SetReferenceVoltage )
+                    .def( "rtd_read",    &GPIO::ReadRTDTemp         )
+                    .def( "ntc_read",    &GPIO::ReadNTCTemp         )
+                    .def( "gpio_status", &GPIO::StatusGPIO          )
+                    .def( "adc_status",  &GPIO::StatusADC           )
+                    .def( "pwm_status",  &GPIO::StatusPWM           )
   ;
 
   gpio_class.attr( "ADS_RANGE_6V" )    = GPIO::ADS_RANGE_6V;
