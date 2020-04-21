@@ -164,9 +164,11 @@ class controlcmd():
     Each command will have accession to the cmd session, and by extension,
     every control object the could potentially be used
     """
-    self.parser = argparse.ArgumentParser(prog=self.__class__.__name__.lower(),
-                                          description=self.__class__.__doc__,
-                                          add_help=False)
+    self.parser = argparse.ArgumentParser(
+        prog=self.__class__.__name__.lower(),
+        description=self.__class__.__doc__,
+        add_help=False,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     self.cmd = cmdsession
     self.sighandle = None
 
@@ -292,6 +294,36 @@ class controlcmd():
     """
     log.clear_update()
     log.printerr()
+
+  def update_luminosity(self,
+                        data1,
+                        data2,
+                        data_tag='Luminosity',
+                        Progress=None,
+                        Temperature=None):
+    string = ''
+    string = string + 'x:{0:5.1f}, y:{1:5.1f}, z:{2:5.1f}'.format(
+        self.gcoder.opx, self.gcoder.opy, self.gcoder.opz)
+    string = string + ' | {tag} {data1:8.5f} {data2:8.6f}'.format(
+        tag=data_tag, data1=data1, data2=data2)
+    if Progress:
+      string = string + ' | Progress [{0:3d}/{1:3d}]'.format(
+          Progress[0], Progress[1])
+    if Temperature:
+      string = string + ' | Bias:{0:5.3f} Pulse:{1:.2f}C SiPM:{2:.2f}C'.format(
+          self.gpio.adc_read(2), self.gpio.ntc_read(0), self.gpio.rtd_read(1))
+    self.update(string)
+
+  def make_standard_line(self, time, lumi_data):
+    string = ''
+    string = string + '{time:.2f} {x:.1f} {y:.1f} {z:.1f}'.format(
+        time=time, x=self.gcoder.opx, y=self.gcoder.opy, z=self.gcoder.opz)
+    string = string + ' {bias:.2f} {led:.3f} {sipm:.3f}'.format(
+        bias=self.gpio.adc_read(2),
+        led=self.gpio.ntc_read(0),
+        sipm=self.gpio.rtd_read(1))
+    string = string + ' ' + ' '.join(['{:.2f}'.format(x) for x in lumi_data])
+    return string
 
   def run(self, args):
     """
@@ -483,8 +515,10 @@ class controlcmd():
     ymin = max([args.y - args.range, 0])
     ymax = min([args.y + args.range, max_y])
     sep = max([args.distance, 0.1])
-    xmesh, ymesh = np.meshgrid(np.linspace(xmin, xmax, (xmax - xmin) / sep + 1),
-                               np.linspace(ymin, ymax, (ymax - ymin) / sep + 1))
+    numx = int((xmax - xmin) / sep + 1)
+    numy = int((ymax - ymin) / sep + 1)
+    xmesh, ymesh = np.meshgrid(np.linspace(xmin, xmax, numx),
+                               np.linspace(ymin, ymax, numy))
     return [
         xmesh.reshape(1, np.prod(xmesh.shape))[0],
         ymesh.reshape(1, np.prod(ymesh.shape))[0]

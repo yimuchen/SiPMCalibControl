@@ -113,10 +113,10 @@ class visualhscan(cmdbase.controlcmd):
         reco_x.append(center.x)
         reco_y.append(center.y)
 
-      self.update('{0} | {1} | {2}'.format(
-          'x:{0:.1f}, y:{1:.1f}, z:{2:.1f}'.format(
-              xval, yval, args.scanz), 'Reco x:{0:.1f}, y:{1:.1f}'.format(
-                  center.x, center.y), 'Progress [{0}/{1}]'.format(idx, len(x))))
+      self.update_luminosity(center.x,
+                             center.y,
+                             data_tag='Reco:',
+                             Progress=(idx, len(x)))
       args.savefile.write('{0:.1f} {1:.1f} {2:.1f} {3:.2f} {4:.3f}\n'.format(
           xval, yval, args.scanz, center.x, center.y))
     cv2.destroyAllWindows()

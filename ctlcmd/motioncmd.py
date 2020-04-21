@@ -96,6 +96,7 @@ class halign(cmdbase.controlcmd):
     self.parse_readout_options(args)
     self.parse_xychip_options(args)
     self.parse_savefile(args)
+    print( 'Finish parsing')
     return args
 
   def run(self, args):
@@ -110,17 +111,16 @@ class halign(cmdbase.controlcmd):
       self.check_handle(args)
       self.move_gantry(xval, yval, args.scanz, False)
       lumival, uncval = self.readout.read(channel=args.channel,
-                                          samples=args.samples)
+                                          samples=args.samples,
+                                          average=True)
+      self.update_luminosity(lumival,
+                             uncval,
+                             Progress=(idx + 1, total),
+                             Temperature=True)
       lumi.append(abs(lumival))
       unc.append(uncval)
-      self.update('{0} | {1} | {2}'.format(
-          'x:{0:5.1f}, y:{1:5.1f}, z:{2:5.1f}'.format(xval, yval, args.scanz),
-          'Lumi:{0:8.5f}+-{1:8.6f}'.format(lumival, uncval),
-          'Progress [{0:3d}/{1:3d}]'.format(idx + 1, total)))
       ## Writing to file
-      args.savefile.write(
-          '{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f} {5:d}\n'.format(
-              xval, yval, args.scanz, lumival, uncval, self.cmd.ndfilter))
+      args.savefile.write(self.make_standard_line(0.0,(lumival,uncval)))
 
     self.close_savefile(args)
 
@@ -206,7 +206,7 @@ class zscan(cmdbase.controlcmd):
     lumi = []
     unc = []
 
-    for z in args.zlist:
+    for idx, z in enumerate(args.zlist):
       self.check_handle(args)
       self.move_gantry(args.x, args.y, z, False)
 
@@ -230,12 +230,13 @@ class zscan(cmdbase.controlcmd):
       unc.append(uncval)
 
       # Writing to screen
-      self.update('z:{0:5.1f}, L:{1:8.5f}, uL:{2:8.6f}'.format(
-          z, lumival, uncval))
+      self.update_luminosity(lumival,
+                             uncval,
+                             Progress=(idx, len(args.zlist)),
+                             Temperature=True)
       # Writing to file
-      args.savefile.write(
-          "{0:5.1f} {1:5.1f} {2:5.1f} {3:8.5f} {4:8.6f} {5:d}\n".format(
-              args.x, args.y, z, lumival, uncval, self.cmd.ndfilter))
+      args.savefile.write(self.make_standard_line(0, (lumival, uncval)))
+      args.savefile.flush()
 
     self.close_savefile(args)
 
@@ -290,19 +291,13 @@ class timescan(cmdbase.controlcmd):
       lumival, uncval = self.readout.read(channel=args.channel,
                                           samples=args.samples)
       sample_time = time.time_ns()
-      args.savefile.write(
-          '{0:f} {1:.3f} {2:.4f} {3:.2f} {4:.3f} {5:.3f} {6:.2f} {7:.2f}\n'.
-          format((sample_time - start_time) / 1e9, lumival, uncval,
-                 self.gpio.adc_read(2), self.gpio.ntc_read(0),
-                 self.gpio.rtd_read(1), self.gpio.adc_read(0),
-                 self.gpio.adc_read(1)))
+      timestamp = (sample_time - start_time) / 1e9
+      args.savefile.write(self.make_standard_line(timestamp, (lumival, uncval)))
       args.savefile.flush()
-      self.update('{0} | {1} | {2}'.format(
-          '{0:5.1f} {1:5.1f}'.format(lumival, uncval),
-          'Bias:{0:5.3f} Pulse:{1:.2f}C SiPM:{2:.2f}C'.format(
-              self.gpio.adc_read(2), self.gpio.ntc_read(0),
-              self.gpio.rtd_read(1)), 'PROGRESS [{0:3d}/{1:d}]'.format(
-                  i + 1, args.nslice)))
+      self.update_luminosity(lumival,
+                             uncval,
+                             Progress=(i + 1, args.nslice),
+                             Temperature=True)
       time.sleep(args.interval)
 
     self.close_savefile(args)
