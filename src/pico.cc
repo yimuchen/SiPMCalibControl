@@ -6,14 +6,14 @@
 
 #include "logger.hpp"
 
-#include <vector>
-#include <memory>
-#include <string>
 #include <chrono>
 #include <cstdio>
 #include <cstring>
+#include <memory>
 #include <stdexcept>
+#include <string>
 #include <thread>
+#include <vector>
 
 class PicoUnit
 {
@@ -25,8 +25,8 @@ public:
   // Cannot specify serial device?
   void Init();
 
-  int VoltageRangeMax() const ;
-  int VoltageRangeMin() const ;
+  int  VoltageRangeMax() const;
+  int  VoltageRangeMin() const;
   void SetVoltageRange( int newrange );
 
   void SetTrigger(
@@ -56,12 +56,12 @@ public:
   void DumpBuffer() const;
   void PrintInfo() const;
 
-  std::string WaveformString( const int16_t channel ,
-                              const unsigned capture ) const ;
-  int WaveformSum( const int16_t channel,
-                   const unsigned capture ) const ;
+  std::string WaveformString( const int16_t  channel,
+                              const unsigned capture ) const;
+  int WaveformSum( const int16_t  channel,
+                   const unsigned capture ) const;
 
-  int WaveformAbsMax( const int16_t channel ) const ;
+  int WaveformAbsMax( const int16_t channel ) const;
 
 public:
   int16_t device;// integer representing device in driver API
@@ -69,7 +69,7 @@ public:
   int range;
   uint16_t triggerchannel;
   uint16_t triggerdirection;
-  float    triggerlevel;
+  float triggerlevel;
   unsigned triggerdelay;
   uint16_t triggerwait;
 
@@ -82,8 +82,8 @@ public:
   int runtime;// storing runtime for Rapid block
 
 private:
-  std::vector<std::unique_ptr<int16_t[]>> bufferA;
-  std::vector<std::unique_ptr<int16_t[]>> bufferB;
+  std::vector<std::unique_ptr<int16_t[]> > bufferA;
+  std::vector<std::unique_ptr<int16_t[]> > bufferB;
   std::unique_ptr<int16_t[]> overflowbuffer;
 
   // Helper functions for sanity check
@@ -269,7 +269,8 @@ PicoUnit::SetBlockNums(
       bufferB[i].reset( new int16_t[ pre+post ] );
       if( bufferA[i] == nullptr || bufferB[i] == nullptr ){
         sprintf( errormessage,
-          "Failed to initialize block memory buffer (%d/%d). Maybe try smaller number of captures"
+          "Failed to initialize block memory buffer (%d/%d). "
+          "Maybe try smaller number of captures"
                , i, ncaptures );
         throw std::runtime_error( errormessage );
       }
@@ -465,7 +466,8 @@ PicoUnit::PrintInfo() const
     "Variant Info",
     "Serial"    };
   static const std::string picoinfo = GREEN( "[PICOINFO]" );
-  int16_t r                         = 0;
+
+  int16_t r = 0;
   char inputline[80];
   char line[1024];
   int32_t variant;
@@ -570,7 +572,7 @@ BOOST_PYTHON_MODULE( pico )
   .def( "adc2mv",           &PicoUnit::adc2mv          )
   .def( "waveformstr",      &PicoUnit::WaveformString  )
   .def( "waveformsum",      &PicoUnit::WaveformSum     )
-  .def( "waveformmax",      &PicoUnit::WaveformAbsMax     )
+  .def( "waveformmax",      &PicoUnit::WaveformAbsMax  )
 
   // Defining data members as readonly:
   .def_readonly( "device",           &PicoUnit::device           )
