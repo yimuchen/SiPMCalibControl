@@ -11,46 +11,52 @@ class set(cmdbase.controlcmd):
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    self.parser.add_argument('-boardtype',
+    self.parser.add_argument('--boardtype',
+                             '-b',
                              type=argparse.FileType(mode='r'),
                              help=('Setting board type via a configuration json '
                                    'file that lists CHIP_ID with x-y '
                                    'coordinates.'))
-    self.parser.add_argument('-printerdev',
+    self.parser.add_argument('--boardid',
+                             '-i',
+                             type=str,
+                             help=('Override the existing board id with user '
+                                   'string'))
+    self.parser.add_argument('--printerdev',
                              type=str,
                              help=('Device path for the 3d printer. Should be '
                                    'something like `/dev/tty<SOMETHING>`.'))
-    self.parser.add_argument('-camdev',
+    self.parser.add_argument('--camdev',
                              type=str,
                              help=('Device path for the primary camera, should '
                                    'be something like `/dev/video<index>.`'))
-    self.parser.add_argument('-remotehost',
+    self.parser.add_argument('--remotehost',
                              type=str,
                              help='Connecting to remote host for file transfer')
-    self.parser.add_argument('-remotepath',
+    self.parser.add_argument('--remotepath',
                              type=str,
                              help='Remote directory to save files to')
-    self.parser.add_argument('-picodevice',
+    self.parser.add_argument('--picodevice',
                              type=str,
                              help=('The serial number of the pico-tech device '
                                    'for dynamic light readout'))
     self.parser.add_argument(
-        '-readout',
+        '--readout',
+        '-r',
         type=int,
         choices=[readout.MODE_ADC, readout.MODE_PICO, readout.MODE_NONE],
         help='Setting readout mode of the current session')
-    self.parser.add_argument('-action',
+    self.parser.add_argument('--action',
+                             '-a',
                              type=argparse.FileType(mode='r'),
-                             help='List of short hands for setting user prompts')
-    self.parser.add_argument('-ndfilter',
-                             type=int,
-                             help=('Change the ND filter index in software, user'
-                                   ' is responsible for making sure the software'
-                                   ' and hardware ND filters are the same'))
+                             help=('Add files to a list of short hands for '
+                                   'setting user prompts'))
 
   def run(self, args):
     if args.boardtype:
       self.set_board(args)
+    if args.boardid:
+      self.board.boardid = args.boardid
     if args.camdev:
       self.set_camera(args)
     if args.printerdev:
@@ -65,8 +71,6 @@ class set(cmdbase.controlcmd):
       self.readout.set_mode(args.readout)
     if args.action:
       self.action.add_json(args.action.name)
-    if args.ndfilter:
-      self.cmd.ndfilter = args.ndfilter
 
   def set_board(self, args):
     try:
@@ -126,7 +130,6 @@ class get(cmdbase.controlcmd):
     self.parser.add_argument('--pico', action='store_true')
     self.parser.add_argument('--readout', action='store_true')
     self.parser.add_argument('--action', action='store_true')
-    self.parser.add_argument('--ndfilter', action='store_true')
 
     self.parser.add_argument('-a', '--all', action='store_true')
 
@@ -145,8 +148,6 @@ class get(cmdbase.controlcmd):
       self.print_readout()
     if args.action or args.all:
       self.print_action()
-    if args.ndfilter or args.all:
-      log.printmsg(log.GREEN('[NDFILTER]'), str(self.cmd.ndfilter))
 
   def print_board(self):
     header = log.GREEN('[BOARDTYPE]')

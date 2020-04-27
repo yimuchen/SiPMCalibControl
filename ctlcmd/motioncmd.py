@@ -79,7 +79,7 @@ class halign(cmdbase.controlcmd):
   range... etc. You will still need the picoset command.
   """
 
-  DEFAULT_SAVEFILE = 'halign_<CHIPID>_<SCANZ>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'halign_<BOARDID>_<CHIPID>_<SCANZ>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[LUMI ALIGN]')
 
   def __init__(self, cmd):
@@ -93,10 +93,10 @@ class halign(cmdbase.controlcmd):
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
-    self.parse_readout_options(args)
     self.parse_xychip_options(args)
+    self.parse_readout_options(args)
     self.parse_savefile(args)
-    print( 'Finish parsing')
+    print('Finish parsing')
     return args
 
   def run(self, args):
@@ -120,7 +120,9 @@ class halign(cmdbase.controlcmd):
       lumi.append(abs(lumival))
       unc.append(uncval)
       ## Writing to file
-      args.savefile.write(self.make_standard_line(0.0,(lumival,uncval)))
+      args.savefile.write(
+          self.make_standard_line((lumival, uncval), chip_id=args.chipid))
+      args.savefile.flush()
 
     self.close_savefile(args)
 
@@ -185,7 +187,7 @@ class zscan(cmdbase.controlcmd):
   Performing z scanning at a certain x-y coordinate
   """
 
-  DEFAULT_SAVEFILE = 'zscan_<CHIPID>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'zscan_<BOARDID>_<CHIPID>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[LUMI ZSCAN]')
 
   def __init__(self, cmd):
@@ -195,9 +197,9 @@ class zscan(cmdbase.controlcmd):
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
-    self.parse_readout_options(args)
-    self.parse_zscan_options(args)
     self.parse_xychip_options(args)
+    self.parse_zscan_options(args)
+    self.parse_readout_options(args)
     self.parse_savefile(args)
     return args
 
@@ -235,9 +237,56 @@ class zscan(cmdbase.controlcmd):
                              Progress=(idx, len(args.zlist)),
                              Temperature=True)
       # Writing to file
-      args.savefile.write(self.make_standard_line(0, (lumival, uncval)))
+      args.savefile.write(
+          self.make_standard_line((lumival, uncval), chip_id=args.chipid))
       args.savefile.flush()
 
+    self.close_savefile(args)
+
+
+class lowlightcollect(cmdbase.controlcmd):
+  """
+  Collection of low light data at a single gantry position, collecting data as
+  fast as possible no waiting.
+  """
+  DEFAULT_SAVEFILE = 'lowlight_<BOARDID>_<CHIPID>_<TIMESTAMP>.txt'
+  LOG = log.GREEN('[LUMI LOWLIGHT]')
+
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
+    self.add_zscan_options()
+    self.add_savefile_options(lowlightcollect.DEFAULT_SAVEFILE)
+
+  def parse(self, line):
+    args = cmdbase.controlcmd.parse(self, line)
+    self.parse_xychip_options(args)
+    self.parse_zscan_options(args)
+    self.parse_readout_options(args)
+    self.parse_savefile(args)
+
+    if len(args.zlist) != 1:
+      raise Exception("This functions accepts exactly 1 z-value.")
+
+    return args
+
+  def run(self, args):
+    self.init_handle()
+    self.move_gantry(args.x, args.y, args.zlist[0], False)
+
+    nparts = int(args.samples / 1000) + 1
+    for i in range(nparts):
+      self.check_handle(args)
+      ## Collecting data in 1000 sample bunchs for better monitoring
+      readout = self.readout.read(channel=args.channel,
+                                  samples=1000,
+                                  average=False)
+      args.savefile.write(self.make_standard_line(readout, chip_id=args.chipid))
+      args.savefile.flush()
+      self.update_luminosity(readout[-1],
+                             readout[-2],
+                             data_tag='Latest',
+                             Progress=(i, nparts),
+                             Temperature=True)
     self.close_savefile(args)
 
 
@@ -292,7 +341,10 @@ class timescan(cmdbase.controlcmd):
                                           samples=args.samples)
       sample_time = time.time_ns()
       timestamp = (sample_time - start_time) / 1e9
-      args.savefile.write(self.make_standard_line(timestamp, (lumival, uncval)))
+      args.savefile.write(
+          self.make_standard_line((lumival, uncval),
+                                  chip_id=-100,
+                                  time=timestamp))
       args.savefile.flush()
       self.update_luminosity(lumival,
                              uncval,

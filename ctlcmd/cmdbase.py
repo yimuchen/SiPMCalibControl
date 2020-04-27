@@ -45,7 +45,6 @@ class controlterm(cmd.Cmd):
     self.gpio = gpio.GPIO()
     self.readout = readout.readout(self)  # Must be after picoscope setup
     self.action = actionlist.ActionList()
-    self.ndfilter = 0  # Initial index of NDfilter
 
     ## Creating command instances and attaching to associated functions
     for com in cmdlist:
@@ -314,15 +313,22 @@ class controlcmd():
           self.gpio.adc_read(2), self.gpio.ntc_read(0), self.gpio.rtd_read(1))
     self.update(string)
 
-  def make_standard_line(self, time, lumi_data):
+  def make_standard_line(self, lumi_data, chip_id=-100, time=0.0):
+    """
+    This will be the standard format of readout:
+    > Timestamp chipID gantry_x g_y g_z led_bias led_temp sipm_temp readouts
+    The readout data can be an arbitrarily long iterable object.
+    """
     string = ''
-    string = string + '{time:.2f} {x:.1f} {y:.1f} {z:.1f}'.format(
-        time=time, x=self.gcoder.opx, y=self.gcoder.opy, z=self.gcoder.opz)
+    string = string + '{time:.2f} {chipid} '.format(time=time, chipid=chip_id)
+    string = string + '{x:.1f} {y:.1f} {z:.1f}'.format(
+        x=self.gcoder.opx, y=self.gcoder.opy, z=self.gcoder.opz)
     string = string + ' {bias:.2f} {led:.3f} {sipm:.3f}'.format(
         bias=self.gpio.adc_read(2),
         led=self.gpio.ntc_read(0),
         sipm=self.gpio.rtd_read(1))
     string = string + ' ' + ' '.join(['{:.2f}'.format(x) for x in lumi_data])
+    string = string + '\n'  ## Must be a line!
     return string
 
   def run(self, args):
@@ -403,7 +409,7 @@ class controlcmd():
                                    'position will be used.'))
     self.parser.add_argument('-c',
                              '--chipid',
-                             type=str,
+                             type=int,
                              help=('Specify x-y coordinates via chip id, input '
                                    'negative value to indicate that the chip is '
                                    'a calibration one (so you can still specify '
@@ -420,7 +426,7 @@ class controlcmd():
                                    '2:ADC, -1:Predefined model'))
     self.parser.add_argument('--channel',
                              type=int,
-                             default=0,
+                             default=None,
                              help='Input channel to use')
     self.parser.add_argument('--samples',
                              type=int,
@@ -487,8 +493,16 @@ class controlcmd():
     """
     Parsing the readout option
     """
+
+    ## Defaulting to the chip id if it exists
+    if not args.channel and hasattr(args, 'chipid') and args.chipid >= 0:
+      args.channel = int(args.chipid)
+
+    ## Resetting mode to current mode if it doesn't already exists
     if not args.mode:
       args.mode = self.readout.mode
+
+    ## Double checking the readout channel is sensible
     if args.mode == self.readout.MODE_PICO:
       if args.channel < 0 or args.channel > 1:
         raise Exception('Channel for PICOSCOPE can only be 0 or 1')
@@ -496,6 +510,8 @@ class controlcmd():
     elif args.mode == self.readout.MODE_ADC:
       if args.channel < 0 or args.channel > 3:
         raise Exception('Channel for ADC can only be 0--3')
+      self.readout.set_mode(args.mode)
+    else:
       self.readout.set_mode(args.mode)
 
   def make_hscan_mesh(self, args):
@@ -543,7 +559,13 @@ class controlcmd():
       args.zlist.extend(
           np.linspace(minz, maxz, (maxz - minz) / sep, endpoint=False))
     args.zlist = [x for x in args.zlist if x < gcoder.GCoder.max_z()]
-    args.zlist.sort()  ## Returning sorted result
+
+    ## Returning sorted results, STL or LTS depending on the first two entries
+    if len(args.zlist) > 1:
+      if args.zlist[0] > args.zlist[1]:
+        args.zlist.sort(reverse=True)  ## Returning sorted result
+      else:
+        args.zlist.sort()  ## Returning sorted result
 
   def parse_xychip_options(self, args, add_visoffset=False, raw_coord=False):
     """
@@ -555,13 +577,13 @@ class controlcmd():
     # If not directly specifying the chip id, assuming some calibration chip
     # with specified coordinate system. Exit immediately.
     if args.chipid == None:
-      args.chipid = '-100'
+      args.chipid = -100
       if not args.x: args.x = self.gcoder.opx
       if not args.y: args.y = self.gcoder.opy
       return
 
     ## Attempt to get a board specified chip position.
-    if not args.chipid in board.chips():
+    if not str(args.chipid) in board.chips():
       raise Exception('Chip id was not specified in board type')
 
     ## Raising exception when attempting to overide chip position with raw
@@ -569,9 +591,12 @@ class controlcmd():
     if args.x or args.y:
       raise Exception('You can either specify chip-id or x y, not both')
 
+    # Converting to string (Keys must be strings in json files)
+    chipid = str(args.chipid)
+
     # Early exit if raw coordinates requested
     if raw_coord:
-      args.x, args.y = board.orig_coord[args.chipid]
+      args.x, args.y = board.orig_coord[chipid]
       return
 
     # Determining current z value ( from argument first, otherwise guessing
@@ -581,29 +606,26 @@ class controlcmd():
                  self.gcoder.opz
 
     if add_visoffset:
-      if any(self.board.vis_coord[args.chipid]):
-        closest_z = self.find_closest_z(self.board.vis_coord[args.chipid],
-                                        current_z)
-        args.x = board.vis_coord[args.chipid][closest_z][0]
-        args.y = board.vis_coord[args.chipid][closest_z][1]
+      if any(self.board.vis_coord[chipid]):
+        closest_z = self.find_closest_z(self.board.vis_coord[chipid], current_z)
+        args.x = board.vis_coord[chipid][closest_z][0]
+        args.y = board.vis_coord[chipid][closest_z][1]
       else:
         x_offset, y_offset = self.find_xyoffset(current_z)
-        args.x = board.orig_coord[args.chipid][0] + x_offset
-        args.y = board.orig_coord[args.chipid][1] + y_offset
+        args.x = board.orig_coord[chipid][0] + x_offset
+        args.y = board.orig_coord[chipid][1] + y_offset
     else:
-      if any(board.lumi_coord[args.chipid]):
-        closest_z = self.find_closest_z(self.board.lumi_coord[args.chipid],
-                                        current_z)
-        args.x = board.lumi_coord[args.chipid][closest_z][0]
-        args.y = board.lumi_coord[args.chipid][closest_z][2]
-      elif any(board.vis_coord[args.chipid]):
+      if any(board.lumi_coord[chipid]):
+        closest_z = self.find_closest_z(self.board.lumi_coord[chipid], current_z)
+        args.x = board.lumi_coord[chipid][closest_z][0]
+        args.y = board.lumi_coord[chipid][closest_z][2]
+      elif any(board.vis_coord[chipid]):
         x_offset, y_offset = self.find_xyoffset(current_z)
-        closest_z = self.find_closest_z(self.board.vis_coord[args.chipid],
-                                        current_z)
-        args.x = board.vis_coord[args.chipid][closest_z][0] - x_offset
-        args.y = board.vis_coord[args.chipid][closest_z][1] - y_offset
+        closest_z = self.find_closest_z(self.board.vis_coord[chipid], current_z)
+        args.x = board.vis_coord[chipid][closest_z][0] - x_offset
+        args.y = board.vis_coord[chipid][closest_z][1] - y_offset
       else:
-        args.x, args.y = board.orig_coord[args.chipid]
+        args.x, args.y = board.orig_coord[chipid]
 
   @staticmethod
   def find_closest_z(my_map, current_z):
@@ -656,6 +678,12 @@ class controlcmd():
     # Adding time stamp filenames
     timestring = datetime.datetime.now().strftime('%Y%m%d_%H00')
     filename = re.sub('<TIMESTAMP>', timestring, filename, flags=re.IGNORECASE)
+
+    # Adding boardid to the settings
+    filename = re.sub('<BOARDID>',
+                      str(self.board.boardid),
+                      filename,
+                      flags=re.IGNORECASE)
 
     # Substituting tokens for argument values
     for action in self.parser._actions:

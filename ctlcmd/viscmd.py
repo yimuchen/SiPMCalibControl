@@ -66,7 +66,7 @@ class visualhscan(cmdbase.controlcmd):
   Performing horizontal scan with camera system
   """
 
-  DEFAULT_SAVEFILE = 'vhscan_<SCANZ>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'vhscan_<BOARDID>_<CHIPID>_<SCANZ>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[VIS HSCAN]')
 
   def __init__(self, cmd):
