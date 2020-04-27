@@ -7,8 +7,11 @@ class SigHandle:
   def __init__(self):
     self.terminate = False
     ## SIG_INT is Ctl+C
-    signal.signal(signal.SIGINT, self.receive_term)
-    signal.signal(signal.SIGTERM, self.receive_term)
+    try:
+      signal.signal(signal.SIGINT, self.receive_term)
+      signal.signal(signal.SIGTERM, self.receive_term)
+    except:
+      pass
 
   def receive_term(self, signum, frame):
     self.terminate = True
