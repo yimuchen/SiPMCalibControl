@@ -132,7 +132,7 @@ private:
   // I2C interface continuous streaming.
   bool i2c_flush;
   std::thread i2c_flush_thread;
-  std::array<FixedQueue<float, 100>, 4> i2c_flush_array;
+  float i2c_flush_array[4];
 };
 
 void
@@ -464,7 +464,7 @@ GPIO::SetPWM( const unsigned c,
 float
 GPIO::ReadADC( const unsigned channel ) const
 {
-  return i2c_flush_array[channel].back();
+  return i2c_flush_array[channel];
 }
 
 void
@@ -614,14 +614,14 @@ void GPIO::FlushLoop()
                               range == ADS_RANGE_1V  ? 1024.0 / 32678.0 :
                               range == ADS_RANGE_p5V ?  512.0 / 32678.0 :
                               256.0 / 32678.0;
-        i2c_flush_array[channel].push( adc * conv );
+        i2c_flush_array[channel] = adc * conv;
         usleep( 1e5 );
       }
     } else {
-      i2c_flush_array[0].push( 200.3 );
-      i2c_flush_array[1].push( 200.3 );
-      i2c_flush_array[2].push( 200.3 );
-      i2c_flush_array[3].push( 200.3 );
+      i2c_flush_array[0] = 2500;
+      i2c_flush_array[1] = 2500;
+      i2c_flush_array[2] = 2500;
+      i2c_flush_array[3] = 2500;
     }
   }
 }
@@ -692,16 +692,16 @@ BOOST_PYTHON_MODULE( gpio )
                     .def( "pwm_status",  &GPIO::StatusPWM           )
   ;
 
-  gpio_class.attr( "ADS_RANGE_6V" )    = GPIO::ADS_RANGE_6V;
-  gpio_class.attr( "ADS_RANGE_4V" )    = GPIO::ADS_RANGE_4V;
-  gpio_class.attr( "ADS_RANGE_2V" )    = GPIO::ADS_RANGE_2V;
-  gpio_class.attr( "ADS_RANGE_1V" )    = GPIO::ADS_RANGE_1V;
-  gpio_class.attr( "ADS_RANGE_p5V" )   = GPIO::ADS_RANGE_p5V;
-  gpio_class.attr( "ADS_RANGE_p25V" )  = GPIO::ADS_RANGE_p25V;
-  gpio_class.attr( "ADS_RATE_8SPS" )   = GPIO::ADS_RATE_8SPS;
-  gpio_class.attr( "ADS_RATE_16SPS" )  = GPIO::ADS_RATE_16SPS;
-  gpio_class.attr( "ADS_RATE_32SPS" )  = GPIO::ADS_RATE_32SPS;
-  gpio_class.attr( "ADS_RATE_64SPS" )  = GPIO::ADS_RATE_64SPS;
+  gpio_class.attr( "ADS_RANGE_6V"    ) = GPIO::ADS_RANGE_6V;
+  gpio_class.attr( "ADS_RANGE_4V"    ) = GPIO::ADS_RANGE_4V;
+  gpio_class.attr( "ADS_RANGE_2V"    ) = GPIO::ADS_RANGE_2V;
+  gpio_class.attr( "ADS_RANGE_1V"    ) = GPIO::ADS_RANGE_1V;
+  gpio_class.attr( "ADS_RANGE_p5V"   ) = GPIO::ADS_RANGE_p5V;
+  gpio_class.attr( "ADS_RANGE_p25V"  ) = GPIO::ADS_RANGE_p25V;
+  gpio_class.attr( "ADS_RATE_8SPS"   ) = GPIO::ADS_RATE_8SPS;
+  gpio_class.attr( "ADS_RATE_16SPS"  ) = GPIO::ADS_RATE_16SPS;
+  gpio_class.attr( "ADS_RATE_32SPS"  ) = GPIO::ADS_RATE_32SPS;
+  gpio_class.attr( "ADS_RATE_64SPS"  ) = GPIO::ADS_RATE_64SPS;
   gpio_class.attr( "ADS_RATE_128SPS" ) = GPIO::ADS_RATE_128SPS;
   gpio_class.attr( "ADS_RATE_250SPS" ) = GPIO::ADS_RATE_250SPS;
   gpio_class.attr( "ADS_RATE_475SPS" ) = GPIO::ADS_RATE_475SPS;
