@@ -87,7 +87,8 @@ class Board(object):
                   reverse=True)
 
   def add_calib_chip(self, chipid):
-    if chipid not in self.orig_coord and int(chipid) < 0:
+    chipid = str(chipid)
+    if schipid not in self.orig_coord and int(chipid) < 0:
       self.orig_coord[chipid] = [-100, -100]  # Non-existent calibration chip
       self.vis_coord[chipid] = {}
       self.visM[chipid] = {}
@@ -95,30 +96,39 @@ class Board(object):
 
   # Get/Set calibration measures with additional parsing
   def add_vis_coord(self, chip, z, data):
+    chip = str(chip)
     self.vis_coord[chip][self.roundz(z)] = data
 
   def add_visM(self, chip, z, data):
+    chip = str(chip)
     self.visM[chip][self.roundz(z)] = data
 
   def add_lumi_coord(self, chip, z, data):
+    chip = str(chip)
     self.lumi_coord[chip][self.roundz(z)] = data
 
   def get_vis_coord(self, chip, z):
+    chip = str(chip)
     return self.vis_coord[chip][self.roundz(z)]
 
   def get_visM(self, chip, z):
+    chip = str(chip)
     return self.visM[chip][self.roundz(z)]
 
   def get_lumi_coord(self, chip, z):
+    chip = str(chip)
     return self.vis_coord[chip][self.roundz(z)]
 
   def vis_coord_hasz(self, chip, z):
+    chip = str(chip)
     return self.roundz(z) in self.vis_coord[chip]
 
   def visM_hasz(self, chip, z):
+    chip = str(chip)
     return self.roundz(z) in self.visM[chip]
 
   def lumi_coord_hasz(self, chip, z):
+    chip = str(chip)
     return self.roundz(z) in self.lumi_coord[chip]
 
   def empty(self):

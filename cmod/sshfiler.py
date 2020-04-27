@@ -18,12 +18,17 @@ class SSHFiler(paramiko.SSHClient):
     self.host = ""
     self.remotepath = SSHFiler.default_path
 
+    ## Objects for holding the read/write file objects
+    self.writefile = None
+    self.readfile = None
+
   def reconnect(self, remotehost):
     # Closing existing section
     if self.get_transport():
       self.sftp.close()
       self.close()
 
+    ## TODO: Use local user SSH config for kerberose settings as well
     ## Nothing is saved in memory!
     self.connect(remotehost,
                  username=input(
@@ -47,17 +52,26 @@ class SSHFiler(paramiko.SSHClient):
       self.close()
 
   def remotefile(self, filename, wipefile):
+    """
+    Here we open the file once for writing and once for writing. In this case,
+    any update to the file can be monitored by the readfile.read() method.
+    Allowing for easier interactions between systems.
+    """
+    if self.writefile and not self.writefile.closed:
+      self.writefile.close()
+    if self.readfile and not self.readfile.closed:
+      self.readfile.close()
+
     ## Always try to open in append mode
     if self.get_transport():
-      if wipefile:
-        return self.sftp.open(self.remotefilename(filename), 'w')
-      else:
-        return self.sftp.open(self.remotefilename(filename), 'a')
+      w_mode = 'w' if wipefile else 'a'
+      self.writefile = self.sftp.open(self.remotefilename(filename), w_mode)
+      self.readfile = self.sftp.open(self.remotefilename(filename), 'r')
     else:
-      if wipefile:
-        return open(filename, 'w')
-      else:
-        return open(filename, 'a+')
+      w_mode = 'w' if wipefile else 'a+'
+      self.writefile = open(filename, w_mode)
+      self.readfile = open(filename, 'r')
+    return self.writefile
 
   def remotefilename(self, filename):
     return str(self.remotepath + filename)
@@ -82,14 +96,16 @@ class SSHFiler(paramiko.SSHClient):
 ## For testing
 if __name__ == "__main__":
   ssh = SSHFiler()
-  ssh.reconnect('10.42.0.1')
-  ssh.setremotepath('/data/ensc/Homework_Largefiles/StandTest')
+  ssh.reconnect('192.168.1.160')
+  ssh.setremotepath('/data/ensc/Homework/SiPMCalib')
 
   import random
 
   def randomstring():
-    return ''.join(random.choice('0123456789abcedf') for x in range(250))
+    return ''.join(random.choice('0123456789abcedf') for x in range(65536))
 
-  for i in range(1000000):
-    ssh.writeto('test.txt', randomstring() + '\n')
+  remotefile = ssh.remotefile('test.txt',True)
+  for i in range(10000):
+    remotefile.write(randomstring()+'\n')
+    # remotefile.flush()
   #ssh.sftp.put("/tmp/test2.txt", "test2.txt")
