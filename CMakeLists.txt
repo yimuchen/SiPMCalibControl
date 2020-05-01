@@ -96,10 +96,11 @@ target_compile_definitions(gpio_test.exe PUBLIC "STANDALONE" )
 target_link_libraries(gpio_test.exe Threads::Threads)
 
 ## Making the GUI stuff
-file(GLOB CSS_FILES server/static/sass/*.scss)
-add_custom_command(OUTPUT server/static/style.css
-  COMMAND "sass" "style.scss:style.css" "--style=compressed"
+file(GLOB CSS_FILES ${PROJECT_SOURCE_DIR}/server/static/sass/*.scss)
+add_custom_target(gen_server_css ALL
+  COMMAND "sass" "style.scss:style.css"
+  SOURCES ${CSS_FILES}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/server/static
-  MAIN_DEPENDENCY ${CSS_FILES}
 )
-add_custom_target(gen_server_css ALL DEPENDS server/static/style.css)
+#add_custom_target(gen_server_css ALL DEPENDS server/static/style.css)
+#add_dependencies(gen_server_css ${CSS_FILES})
