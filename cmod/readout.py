@@ -135,6 +135,7 @@ class readout(object):
     return val
 
   # Constants for fake model
+  ZMIN = 10
   NPIX = 1000  ## Maximum number of pixels
   GAIN = 120
   LAMBDA = 0.03
@@ -148,7 +149,7 @@ class readout(object):
   DC_DISTRIBUTION = DarkCurrentDistribution(GAIN, EPSILON)
 
   def GetNumPixels(r0, z):
-    N0 = 2000 * 10
+    N0 = readout.NPIX * 3 * readout.ZMIN**2
     Nraw = N0 * z / (r0**2 + z**2)**1.5
     return readout.NPIX * (1 - np.exp(-Nraw / readout.NPIX))
 
