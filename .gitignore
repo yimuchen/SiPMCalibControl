@@ -27,6 +27,8 @@ build/**
 *.pdf
 data/**
 
+server/templates/playground.html
+
 # inclusive directories
 !CMakeLists.txt
 !dofiles/*.txt
