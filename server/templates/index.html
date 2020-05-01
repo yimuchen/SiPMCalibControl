@@ -19,7 +19,6 @@
   <script src="{{url_for('static',filename='js/graphics.js')}}"></script>
   <script src="{{url_for('static',filename='js/inputsync.js')}}"></script>
   <script src="{{url_for('static',filename='js/monitor.js')}}"></script>
-  <script src="{{url_for('static',filename='js/tilelayout.js')}}"></script>
 </head>
 
 <body>
@@ -63,29 +62,7 @@
           <span>Chip details</span>
           <i class="fa fa=fa-angle-left"></i>
         </div>
-        <div class="tab-content hidden">
-          <div id="chip-list">
-            <a href="#chip0-detail">0</a>
-            <a href="#chip1-detail">1</a>
-          </div>
-          <div id="chip0-detail">
-            <div class="chip-name">Chip ID: 0</div>
-            <div class="plot" id="chip0-intensity-plot">
-            </div>
-            <div class="plot" id="chip0-lowlight-plot">
-            </div>
-            <div id="chip1-status">
-            </div>
-          </div>
-          <div id="chip1-detail">
-            <div class="chip-name">Chip ID: 1</div>
-            <div class="plot" id="chip1-intensity-plot">
-            </div>
-            <div class="plot" id="chip1-lowlight-plot">
-            </div>
-            <div id="chip1-status">
-            </div>
-          </div>
+        <div class="tab-content" id="chip-details-content">
         </div>
       </div>
     </div>
@@ -99,13 +76,12 @@
           <i class="fa fa=fa-angle-left"></i>
         </div>
         <div class="tab-content">
+          Board ID:<input type="text" id="std-calibration-boardid"></br>
+          Board type:
+          <input type="radio" name="std-calibration-boardtype" value="Tileboard_mock">Mock Tileboard<br>
+          <input type="radio" name="std-calibration-boardtype" value="Tileboard_Dummy">Dummy<br>
           <div class="button-container">
-            <button id="standard-d8">Calib. D8</button>
-            <button id="standard-d7">Calib. D7</button>
-            <button id="standard-d6">Calib. D6</button>
-            <button id="standard-d5">Calib. D5</button>
-            <button id="standard-d4">Calib. D4</button>
-            <button id="standard-d3">Calib. D3</button>
+            <button id="std-calibration">Run Tileboard calibration</button>
           </div>
         </div>
       </div>
@@ -292,7 +268,7 @@
           <i class="fa fa-angle-left"></i>
         </div>
         <div class="tab-content">
-          <input type="text" id="raw-cmd-input-text"/>
+          <input type="text" id="raw-cmd-input-text" />
           <button id="raw-cmd-input">Run</button>
         </div>
       </div>

@@ -13,6 +13,8 @@ $(document).ready(function () {
    * main server, also, for every button pressed, disable all buttons until the
    * board type is released. Release signal will be handled by server side.
    */
+
+  console.log('Document ready!');
   $('button').each(function () {
     $(this).prop('disabled', true);
     $(this).on('click', function () {
@@ -23,10 +25,13 @@ $(document).ready(function () {
   });
 
 
+  console.log('Trying to connect to action socket');
   action_socket
     = io.connect('http://' + window.location.hostname + ':9100/action');
 
+
   action_socket.on('connect', function () {
+    console.log('action socket connected!');
     console.log('action socket connected!');
   });
 
@@ -38,15 +43,28 @@ $(document).ready(function () {
   });
 
   action_socket.on('action-complete', function () {
-    console.log('action-complete recived!');
+    console.log('action-complete received!');
     $('button').each(function () {
       $(this).prop('disabled', false);
     });
   });
 
-  $('#standard-d8').on('click', function () {
-    emit_action_cmd($(this).prop('id'), { 'section': 'this is a test' })
-    console.log('Standard-d8 activated');
+  action_socket.on('useraction', function (msg) {
+    console.log(msg);
+    alert(msg);
+    action_socket.emit('complete-user-action', '');
+  })
+
+
+  // Standard calibration actions!
+  $('#std-calibration').on('click', function () {
+    boardid = $('#std-calibration-boardid').val()
+    boardtype = $('input[name="std-calibration-boardtype"]:checked').val();
+    emit_action_cmd($(this).prop('id'), {
+      'boardid': boardid,
+      'boardtype': boardtype
+    });
+    console.log('Calibration sequence started activated');
   })
 
   $('#raw-cmd-input').on('click', function () {
@@ -61,6 +79,8 @@ $(document).ready(function () {
   });
   $('#image-setting-update').on('click', image_setting_update);
 });
+
+
 
 
 function emit_action_cmd(id, msg) {

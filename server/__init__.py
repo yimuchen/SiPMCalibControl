@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, Response
 from flask_socketio import SocketIO
 import datetime
 
@@ -12,65 +12,57 @@ import ctlcmd.picocmd as picocmd
 import cmod.logger as logger
 import sys
 import copy
+import io
 
-socketio = SocketIO(
-  debug=False,
-  async_mode='threading', )
-  #cors_allow_origins='*' )
-start_time = datetime.datetime.now()
+socketio = SocketIO(debug=False, async_mode='threading', )
+#cors_allow_origins='*' )
 
-## importing local socket functions after socketio declaration
-from .sockets import __dummy__
+from .sockets import session
+from .sockets.parsing import *
 
 def create_server_flask(debug=False):
   """
-  Generating the server instance
+  Generating the server instance, keeping the app instance as a member of the
+  global socketio object so other members can use this.
   """
-  app = Flask(__name__)
-  app.debug = debug
+  socketio.app = Flask(__name__)
+  socketio.app.debug = debug
 
   # Since this is a single paged document
-  @app.route('/')
+  @socketio.app.route('/')
   def index():
     return render_template('index.html')
 
-  ## Resetting the socket application stuff
-  socketio.init_app(app)
+  ## Defining all unique socket signal handles
+  @socketio.on('connect', namespace='/action')
+  def action_connect():
+    ActionConnect(socketio)
 
-  # Spawning cmdcontrol instance as a objected stored in the socketio object so
-  # that every python function used for processing javascript input can use said
-  # object.
-  socketio.cmd = cmdbase.controlterm([
-      motioncmd.moveto,
-      motioncmd.movespeed,
-      motioncmd.sendhome,
-      motioncmd.halign,
-      motioncmd.zscan,
-      motioncmd.timescan,
-      motioncmd.showreadout,
-      viscmd.visualset,
-      viscmd.visualhscan,
-      viscmd.visualzscan,
-      viscmd.visualmaxsharp,
-      viscmd.visualshowchip,
-      viscmd.visualcenterchip,
-      getset.set,
-      getset.get,
-      getset.getcoord,
-      getset.savecalib,
-      getset.loadcalib,
-      getset.lighton,
-      getset.lightoff,
-      getset.promptaction,
-      digicmd.pulse,
-      picocmd.picoset,
-      picocmd.picorunblock,
-      picocmd.picorange,
-  ])
+  @socketio.on('run-action-cmd', namespace='/action')
+  def run_action(msg):
+    print('received action signal')
+    RunAction(socketio, msg)
+
+  @socketio.on('connect', namespace='/monitor')
+  def monitor_connect():
+    print('Monitor client connected')
+    MonitorConnect(socketio)
+
+  @socketio.on('get-configuration', namespace='/monitor')
+  def get_system_configuration(msg):
+    RunMonitor(socketio, msg)
+
+  @socketio.on('complete-user-action', namespace='/action')
+  def complete_user_action(msg):
+    CompleteUserAction(socketio)
+
+  ## Resetting the socket application stuff
+  socketio.init_app(socketio.app)
+
   # Duplicating the session to allow for default override.
-  prog_parser = copy.deepcopy(socketio.cmd.set.parser)
+  prog_parser = copy.deepcopy(session.cmd.set.parser)
   # Augmenting help messages
-  prog_parser.prog = "control.py"
+  prog_parser.prog = "gui_control.py"
   prog_parser.add_argument('-h',
                            '--help',
                            action='store_true',
@@ -98,14 +90,12 @@ def create_server_flask(debug=False):
     sys.exit(0)
 
   try:
-    socketio.cmd.set.run(args)
-    socketio.cmd.gpio.init()
+    session.cmd.set.run(args)
+    session.cmd.gpio.init()
   except Exception as err:
     logger.printerr(str(err))
     logger.printwarn(
         'There was error in the setup process, program will '
         'continue but will most likely misbehave! Use at your own risk!')
 
-
-  return app
-
+  return socketio.app

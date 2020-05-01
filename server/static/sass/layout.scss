@@ -135,6 +135,30 @@
       max-width: 90%;
       min-width: 30%;
     }
+
+    div.chip-details{
+      text-align: center;
+      display: block;
+
+    }
+  }
+}
+
+div.chip-details-content{
+ display:block;
+ width:100%;
+ .chip-name{
+   width:100%
+ }
+}
+
+div.calib-plot-container {
+  display:flex;
+  width:100%;
+
+  .calib-plot {
+    width:45%;
+    height:300px;
   }
 }
 
