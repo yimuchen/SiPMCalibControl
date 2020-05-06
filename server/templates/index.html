@@ -26,9 +26,23 @@
     <div id="main-column">
       <h2>Monitoring</h2>
 
+      <div class="tab invisible" id="user-action">
+        <div class="tab-title">
+          <span>USER ACTION REQUIRED</span>
+          <i class="fa fa=fa-angle-left"></i>
+        </div>
+        <div class="tab-content" id="user-action-content">
+          <div id="user-action-msg">
+          </div><br />
+
+          <button id="user-action-complete">Completed</button>
+        </div>
+
+      </div>
+
       <div class="tab" id="real-time">
         <div class="tab-title">
-          <span>System Real Time</span>
+          <span>System Status</span>
           <i class="fa fa=fa-angle-left"></i>
         </div>
         <div class="tab-content">
@@ -37,10 +51,11 @@
           <div id="up-time-since">
 
           </div>
-          <div class="plot" id="temperature-plot">
-          </div>
-
-          <div class="plot" id="voltage-plot">
+          <div class="plot-container">
+            <div class="plot" id="temperature-plot">
+            </div>
+            <div class="plot" id="voltage-plot">
+            </div>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+
 #setting-column {
   background-color: darkblue;
   h2{
@@ -29,6 +30,11 @@
       background-color: peachpuff;
       color:black;
     }
+    //Special case for user action part
+    .tab-content#user-action-content{
+      background-color: lighten(red, 20);
+      color:black;
+    }
   }
 
   .plot {
@@ -36,6 +42,23 @@
     border-width: 2px;
     border-style: solid;
   }
+
+  // Special case for the user ACTION part, making it read to make sure it stands
+  // out
+  #user-action {
+    background-color: darkred;
+    .tab {
+    background-color: darkred;
+    .tab-title{
+      color:yellow;
+    }
+    .tab-content{
+      background-color: red;
+      color:black;
+    }
+  }
+  }
+
 }
 
 
@@ -54,3 +77,6 @@
     }
   }
 }
+
+
+

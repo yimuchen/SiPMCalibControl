@@ -49,11 +49,6 @@ $(document).ready(function () {
     });
   });
 
-  action_socket.on('useraction', function (msg) {
-    console.log(msg);
-    alert(msg);
-    action_socket.emit('complete-user-action', '');
-  })
 
 
   // Standard calibration actions!
@@ -67,6 +62,7 @@ $(document).ready(function () {
     console.log('Calibration sequence started activated');
   })
 
+  // Standard calibration actions
   $('#raw-cmd-input').on('click', function () {
     var line = $(this).siblings('#raw-cmd-input-text').val();
     emit_action_cmd($(this).prop('id'), {
@@ -74,10 +70,17 @@ $(document).ready(function () {
     });
   })
 
+  // Image settings actions.
   $('#image-setting-clear').on('click', function () {
     emit_action_cmd($(this).prop('id'), {});
   });
   $('#image-setting-update').on('click', image_setting_update);
+
+  // User action related functions
+  action_socket.on('useraction', display_user_action);
+
+  // User action complete actions
+  $('#user-action-complete').on('click', complete_user_action);
 });
 
 
@@ -99,4 +102,18 @@ function image_setting_update(event) {
     'ratio': $('#image-ratio-text').val(),
     'poly': $('#image-poly-text').val()
   });
+}
+
+function display_user_action(msg){
+  $('#user-action').removeClass('invisible');
+  $('#user-action-msg').html(msg);
+  // Re-enable the button used for completing the user action.
+  $('#user-action-complete').prop('disabled', false );
+}
+
+
+function complete_user_action() {
+  $('#user-action').addClass('invisible');
+  action_socket.emit('complete-user-action', '');
+
 }
