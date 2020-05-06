@@ -338,7 +338,6 @@ class promptaction(cmdbase.controlcmd):
         return log.YELLOW(x)
       return x
 
-    self.init_handle()
     is_defined = args.string[0] in self.action.shorthands()
 
     msg = self.action.getmessage(args.string[0]) if is_defined \

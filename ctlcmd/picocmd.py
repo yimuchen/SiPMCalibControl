@@ -133,7 +133,6 @@ class picorunblock(cmdbase.controlcmd):
     return args
 
   def run(self, args):
-    self.init_handle()
     ## First line in file contains convertion information
     if args.savefile.tell() == 0:
       args.savefile.write("{0} {1} {2} {3} {4}\n".format(

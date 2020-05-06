@@ -188,7 +188,9 @@ class controlcmd():
     Execution of the commands automatically handles the parsing in the parse
     method. Additional parsing is allowed by overloading the parse method in the
     children classes. The actual execution of the function is handled in the run
-    method.
+    method. The global signal handler is also triggered at the start of the
+    command, so that signals like CTL+C will have additional handling in
+    iterative commands so that data collection isn't completely lost.
     """
     def print_tracestack():
       exc_msg = traceback.format_exc()
@@ -222,15 +224,20 @@ class controlcmd():
       self.printerr(str(err))
       return controlcmd.PARSE_ERROR
 
+    return_value = controlcmd.EXIT_SUCCESS
+
+    self.sighandle.reset()
     try:
       self.run(args)
+      self.release_handle()
     except Exception as err:
       print_tracestack()
       self.printerr(str(err))
-      return controlcmd.EXECUTE_ERROR
+      return_value = controlcmd.EXECUTE_ERROR
 
     log.clear_update()
-    return controlcmd.EXIT_SUCCESS
+    self.sighandle.release()
+    return return_value
 
   def callhelp(self):
     """
@@ -352,12 +359,6 @@ class controlcmd():
       self.printerr(str(err))
       raise Exception('Cannot parse input')
     return arg
-
-  def init_handle(self):
-    """
-    Resetting the handle to idle state
-    """
-    self.sighandle.reset()
 
   def check_handle(self, args):
     """

@@ -91,7 +91,6 @@ class visualhscan(cmdbase.controlcmd):
     return args
 
   def run(self, args):
-    self.init_handle()
     x, y = self.make_hscan_mesh(args)
 
     ## New container to account for chip not found in FOV
@@ -344,7 +343,6 @@ class visualzscan(cmdbase.controlcmd):
     return args
 
   def run(self, args):
-    self.init_handle()
     laplace = []
     reco_x = []
     reco_y = []

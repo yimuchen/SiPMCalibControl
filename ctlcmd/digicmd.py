@@ -27,8 +27,6 @@ class pulse(cmdbase.controlcmd):
                              help='Time (in microseconds) between triggers')
 
   def run(self, args):
-    self.init_handle()
-
     for i in range(args.n):
       self.check_handle(args)
       self.gpio.pulse(1, args.wait)
@@ -89,10 +87,6 @@ class setadcref(cmdbase.controlcmd):
     for channel in args.channel:
       self.gpio.adc_setref(channel,args.val)
 
-
-
-
-
 class showadc(cmdbase.controlcmd):
   """
   Printing the ADC values that are stored in memory
@@ -114,7 +108,6 @@ class showadc(cmdbase.controlcmd):
                              help='Time interval between updates [seconds]')
 
   def run(self, args):
-    self.init_handle()
     start_time = time.time()
     end_time = time.time()
     while (end_time - start_time) < args.time:
@@ -129,3 +122,4 @@ class showadc(cmdbase.controlcmd):
                   self.gpio.adc_read(3) / 1000)))
       time.sleep(args.interval)
       end_time = time.time()
+    self.

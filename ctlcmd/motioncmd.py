@@ -100,7 +100,6 @@ class halign(cmdbase.controlcmd):
     return args
 
   def run(self, args):
-    self.init_handle()
     x, y = self.make_hscan_mesh(args)
     lumi = []
     unc = []
@@ -204,7 +203,6 @@ class zscan(cmdbase.controlcmd):
     return args
 
   def run(self, args):
-    self.init_handle()
     lumi = []
     unc = []
 
@@ -270,7 +268,6 @@ class lowlightcollect(cmdbase.controlcmd):
     return args
 
   def run(self, args):
-    self.init_handle()
     self.move_gantry(args.x, args.y, args.zlist[0], False)
 
     nparts = int(args.samples / 1000) + 1
@@ -327,7 +324,6 @@ class timescan(cmdbase.controlcmd):
     return args
 
   def run(self, args):
-    self.init_handle()
     start_time = time.time_ns()
     pwmindex = 0
 
@@ -379,7 +375,6 @@ class showreadout(cmdbase.controlcmd):
     return args
 
   def run(self, args):
-    self.init_handle()
     val = []
 
     for i in range(1000):
