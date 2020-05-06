@@ -95,6 +95,11 @@ target_include_directories(gpio_test.exe PRIVATE src/)
 target_compile_definitions(gpio_test.exe PUBLIC "STANDALONE" )
 target_link_libraries(gpio_test.exe Threads::Threads)
 
+add_executable(logger_test.exe bin/logger_test.cc )
+target_include_directories(logger_test.exe PRIVATE src/)
+target_compile_definitions(logger_test.exe PUBLIC "STANDALONE" )
+target_link_libraries(logger_test.exe logger)
+
 ## Making the GUI stuff
 file(GLOB CSS_FILES ${PROJECT_SOURCE_DIR}/server/static/sass/*.scss)
 add_custom_target(gen_server_css ALL
