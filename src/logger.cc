@@ -14,11 +14,14 @@ public:
   void ClearUpdate();
   void FlushUpdate();
 
+  void SetOutputDescriptor( const int fd );
+
 private:
   std::map<std::string, std::string> _update;
   void screenclear_update();
   void screenflush_update();
   void screenprint_update();
+  FILE* outputptr;
 };
 
 // ** Global object
@@ -94,9 +97,22 @@ printerr( const std::string& x )
   GlobalLogger.PrintMessage( x, RED( "[ERROR]" ) );
 }
 
+void
+setloggingdescriptor( const int fd )
+{
+  GlobalLogger.SetOutputDescriptor( fd );
+}
+
 /// Implementation of Logger class
-Logger::Logger() {}
-Logger::~Logger() {}
+Logger::Logger()
+{
+  // By default setup the logger such that it outputs to STDOUT
+  outputptr = stdout;
+}
+Logger::~Logger()
+{
+  fclose( outputptr );
+}
 
 void
 Logger::Update( const std::string& key, const std::string& msg )
@@ -111,10 +127,10 @@ Logger::PrintMessage( const std::string& msg, const std::string& header )
 {
   // screenclear_update();
   if( header != "" ){
-    fprintf( stdout, "%s ", header.c_str() );
+    fprintf( outputptr, "%s ", header.c_str() );
   }
-  fprintf( stdout, "%s\n", msg.c_str() );
-  fflush( stdout );
+  fprintf( outputptr, "%s\n", msg.c_str() );
+  fflush( outputptr );
 }
 
 void
@@ -138,7 +154,7 @@ Logger::screenclear_update()
   char clearline[1024]         = {0};
 
   for( auto it = _update.rbegin(); it != _update.rend(); ++it ){
-    const auto& p = *it;
+    const auto& p               = *it;
     const unsigned total_length = p.first.length() + p.second.length() + 1;
 
     for( unsigned i = 0; i < total_length; ++i ){
@@ -146,19 +162,36 @@ Logger::screenclear_update()
     }
 
     clearline[total_length] = '\0';//
-    fprintf( stdout, "%s\r%s\r", prevline, clearline );
-    fflush( stdout );
+    fprintf( outputptr, "%s\r%s\r", prevline, clearline );
+    fflush( outputptr );
   }
 }
 
 void
 Logger::screenprint_update()
 {
-  for( auto it = _update.begin() ; it != _update.end() ; ++it ){
-    fprintf( stdout, "%s %s\n", it->first.c_str(), it->second.c_str() );
-    fflush( stdout );
+  for( auto it = _update.begin(); it != _update.end(); ++it ){
+    fprintf( outputptr, "%s %s\n", it->first.c_str(), it->second.c_str() );
+    fflush( outputptr );
   }
 }
+
+void
+Logger::SetOutputDescriptor( const int fd )
+{
+  /// We will not be closing the file associated with the file descriptor!
+  // The file object will have to be handled by external FILE* pointer that is
+  // used to obtain the file descriptor
+
+  if( fd == stdout->_fileno ){
+    outputptr = stdout;
+  } else if( fd == stderr->_fileno ){
+    outputptr = stderr ;
+  } else {
+    outputptr = fdopen( fd, "w" );// Open file descriptor to open mode
+  }
+}
+
 
 /******************************** BOOST PYTHON STUFF ***************************/
 
@@ -174,16 +207,17 @@ printmsg_header( const std::string& x, const std::string& y )
 
 BOOST_PYTHON_MODULE( logger )
 {
-  boost::python::def( "GREEN",        &GREEN  );
-  boost::python::def( "RED",          &RED    );
-  boost::python::def( "YELLOW",       &YELLOW );
-  boost::python::def( "CYAN",         &CYAN   );
+  boost::python::def( "GREEN",                  &GREEN  );
+  boost::python::def( "RED",                    &RED    );
+  boost::python::def( "YELLOW",                 &YELLOW );
+  boost::python::def( "CYAN",                   &CYAN   );
 
-  boost::python::def( "update",       &update            );
-  boost::python::def( "clear_update", &clear_update      );
-  boost::python::def( "flush_update", &flush_update      );
-  boost::python::def( "printmsg",     &printmsg_header   );
-  boost::python::def( "printmsg",     &printmsg_noheader );
-  boost::python::def( "printwarn",    &printwarn         );
-  boost::python::def( "printerr",     &printerr          );
+  boost::python::def( "update",                 &update               );
+  boost::python::def( "clear_update",           &clear_update         );
+  boost::python::def( "flush_update",           &flush_update         );
+  boost::python::def( "printmsg",               &printmsg_header      );
+  boost::python::def( "printmsg",               &printmsg_noheader    );
+  boost::python::def( "printwarn",              &printwarn            );
+  boost::python::def( "printerr",               &printerr             );
+  boost::python::def( "set_logging_descriptor", &setloggingdescriptor );
 }
