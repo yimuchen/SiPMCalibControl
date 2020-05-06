@@ -79,7 +79,7 @@ class halign(cmdbase.controlcmd):
   range... etc. You will still need the picoset command.
   """
 
-  DEFAULT_SAVEFILE = 'halign_<BOARDID>_<CHIPID>_<SCANZ>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'halign_<BOARDTYPE>_<BOARDID>_<CHIPID>_<SCANZ>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[LUMI ALIGN]')
 
   def __init__(self, cmd):
@@ -187,7 +187,7 @@ class zscan(cmdbase.controlcmd):
   Performing z scanning at a certain x-y coordinate
   """
 
-  DEFAULT_SAVEFILE = 'zscan_<BOARDID>_<CHIPID>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'zscan_<BOARDTYPE>_<BOARDID>_<CHIPID>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[LUMI ZSCAN]')
 
   def __init__(self, cmd):
@@ -249,7 +249,7 @@ class lowlightcollect(cmdbase.controlcmd):
   Collection of low light data at a single gantry position, collecting data as
   fast as possible no waiting.
   """
-  DEFAULT_SAVEFILE = 'lowlight_<BOARDID>_<CHIPID>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'lowlight_<BOARDTYPE>_<BOARDID>_<CHIPID>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[LUMI LOWLIGHT]')
 
   def __init__(self, cmd):
