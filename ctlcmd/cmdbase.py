@@ -45,6 +45,7 @@ class controlterm(cmd.Cmd):
     self.gpio = gpio.GPIO()
     self.readout = readout.readout(self)  # Must be after picoscope setup
     self.action = actionlist.ActionList()
+    self.sighandle = sig.SigHandle()
 
     ## Creating command instances and attaching to associated functions
     for com in cmdlist:
@@ -180,6 +181,7 @@ class controlcmd():
     self.readout = cmdsession.readout  # Must be after pico setup
     self.gpio = cmdsession.gpio
     self.action = cmdsession.action
+    self.sighandle = cmdsession.sighandle
 
   def do(self, line):
     """
@@ -353,10 +355,9 @@ class controlcmd():
 
   def init_handle(self):
     """
-    Creating the a new instance of the signal handling class to be used for
-    process handling.
+    Resetting the handle to idle state
     """
-    self.sighandle = sig.SigHandle()
+    self.sighandle.reset()
 
   def check_handle(self, args):
     """

@@ -16,6 +16,9 @@ class SigHandle:
   def receive_term(self, signum, frame):
     self.terminate = True
 
+  def reset(self):
+    self.terminate = False
+
 ## Testing library
 if __name__ == '__main__':
   import time
