@@ -9,6 +9,7 @@ class Board(object):
 
   def __init__(self):
     self.boardtype = ""
+    self.boarddescription = ""
     self.boardid = ""
     self.orig_coord = {}
     self.vis_coord = {}
@@ -23,6 +24,7 @@ class Board(object):
 
     jsontemp = json.loads(open(file, 'r').read())
     self.boardtype = jsontemp['board type']
+    self.boarddescription = jsontemp['board description']
     self.boardid = jsontemp['board id']
 
     ## Getting the original coordinate list

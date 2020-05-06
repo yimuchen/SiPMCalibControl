@@ -470,7 +470,12 @@ class controlcmd():
                                    ' specified using <ARG> to indicate '
                                    'placeholders to be used by argument values. '
                                    'The placeholder <TIMESTAMP> can be used for '
-                                   'a string representing the current time'))
+                                   'a string representing the current time.',
+                                   'The placeholder <BOARDID> can be used for '
+                                   'the (unique) board id string.'
+                                   'The placeholde <BOARDTYPE> can be used for '
+                                   'the board type string (like T3, '
+                                   'TBMOCK...etc).'))
     self.parser.add_argument('--wipefile',
                              action='store_true',
                              help='Wipe existing content in output file')
@@ -683,6 +688,11 @@ class controlcmd():
     # Adding boardid to the settings
     filename = re.sub('<BOARDID>',
                       str(self.board.boardid),
+                      filename,
+                      flags=re.IGNORECASE)
+    # Adding boardtype to the settings
+    filename = re.sub('<BOARDTYPE>',
+                      str(self.board.boardtype),
                       filename,
                       flags=re.IGNORECASE)
 
