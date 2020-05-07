@@ -1,0 +1,9 @@
+{
+  "board type": "SYSMOCK",
+  "board description" : "Mock up of system reference board",
+  "board id": "",
+  "default coordinate": {
+    "-100": [ 45, 136 ],
+    "-101": [ 45, 205 ]
+  }
+}
