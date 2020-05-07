@@ -136,18 +136,19 @@ class visualhscan(cmdbase.controlcmd):
               fity[1], np.sqrt(covar_y[1][1])  ) )
 
     ## Generating calibration chip id if using chip coordinates
-    if not args.chipid in self.board.visM and int(args.chipid) < 0:
+    chipid = str(args.chipid)
+    if not chipid in self.board.visM and int(args.chipid) < 0:
       self.board.add_calib_chip(args.chipid)
 
     ## Saving rounded coordinates
-    if (not self.gcoder.opz in self.board.visM[args.chipid] or args.overwrite):
-      self.board.add_visM(args.chipid, self.gcoder.opz,
+    if (not self.gcoder.opz in self.board.visM[chipid] or args.overwrite):
+      self.board.add_visM(chipid, self.gcoder.opz,
                           [[fitx[0], fitx[1]], [fity[0], fity[1]]])
-    elif self.gcoder.opz in self.board.visM[args.chipid]:
-      if self.cmd.prompt(
+    elif self.gcoder.opz in self.board.visM[chipid]:
+      if self.cmd.prompt_yn(
           'Tranformation equation for z={0:.1f} already exists, overwrite?'.
           format(args.scanz), 'no'):
-        self.board.add_visM(args.chipid, self.gcoder.opz,
+        self.board.add_visM(chipid, self.gcoder.opz,
                             [[fitx[0], fitx[1]], [fity[0], fity[1]]])
 
     ## Moving back to center

@@ -164,8 +164,9 @@ class halign(cmdbase.controlcmd):
           np.sqrt(fitcovar[1][1])
       ]
     elif args.scanz in self.board.lumi_coord[chipid]:
-      if self.cmd.prompt(('A lumi alignment for z={0:.1f} already exists for '
-                          'the current session, overwrite?').format(args.scanz)):
+      if self.cmd.prompt_yn(
+          str('A lumi alignment for z={0:.1f} already exists for the current session, overwrite?'
+          .format(args.scanz))):
         self.board.lumi_coord[chipid][args.scanz] = [
             fitval[1],
             np.sqrt(fitcovar[1][1]), fitval[2],

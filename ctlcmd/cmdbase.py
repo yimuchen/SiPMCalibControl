@@ -112,7 +112,7 @@ class controlterm(cmd.Cmd):
     return controlcmd.globcomp(text)
 
   @staticmethod
-  def yn_prompt(question, default='no'):
+  def prompt_yn(question, default='no'):
     """
     Ask a yes/no question via input() and return their answer.
 
@@ -125,16 +125,16 @@ class controlterm(cmd.Cmd):
     """
     valid = {'yes': True, 'ye': True, 'y': True, 'no': False, 'n': False}
     if default is None:
-      prompt = ' [y/n] '
+      prompt_str = ' [y/n] '
     elif default.lower() == 'yes':
-      prompt = ' [Y/n] '
+      prompt_str = ' [Y/n] '
     elif default.lower() == 'no':
-      prompt = ' [y/N] '
+      prompt_str = ' [y/N] '
     else:
       raise ValueError('invalid default answer: {0}'.format(default))
 
     while True:
-      print(question + prompt)
+      print(question + prompt_str)
       choice = input().lower()
       if default is not None and choice == '':
         return valid[default]
