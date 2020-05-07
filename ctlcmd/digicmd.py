@@ -122,4 +122,3 @@ class showadc(cmdbase.controlcmd):
                   self.gpio.adc_read(3) / 1000)))
       time.sleep(args.interval)
       end_time = time.time()
-    self.

@@ -47,6 +47,9 @@ class controlterm(cmd.Cmd):
     self.action = actionlist.ActionList()
     self.sighandle = sig.SigHandle()
 
+    ## Defaulting signal handle to be the system default
+    self.sighandle.release()
+
     ## Creating command instances and attaching to associated functions
     for com in cmdlist:
       comname = com.__name__.lower()
@@ -170,7 +173,6 @@ class controlcmd():
         add_help=False,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     self.cmd = cmdsession
-    self.sighandle = None
 
     ## Reference to control objects for all commands
     self.sshfiler = cmdsession.sshfiler
@@ -229,7 +231,7 @@ class controlcmd():
     self.sighandle.reset()
     try:
       self.run(args)
-      self.release_handle()
+      self.sighandle.release()
     except Exception as err:
       print_tracestack()
       self.printerr(str(err))

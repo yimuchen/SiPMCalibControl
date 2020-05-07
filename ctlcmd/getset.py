@@ -183,6 +183,9 @@ class get(cmdbase.controlcmd):
     matrix_header = log.GREEN('[VIS_MATRIX]')
     vis_header = log.GREEN('[VIS__ALIGN]')
     chip_format = log.YELLOW(' CHIP{0:3d}')
+
+    print('Printing alignment information')
+
     for chip in self.board.chips():
       chip_str = chip_format.format(int(chip))
       for z in self.board.lumi_coord[chip].keys():

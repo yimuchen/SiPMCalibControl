@@ -147,25 +147,26 @@ class halign(cmdbase.controlcmd):
     self.printmsg('Fit  z:{0:.2f}+-{1:.3f}'.format(fitval[3],
                                                    np.sqrt(fitcovar[3][3])))
 
+    chipid = str(args.chipid) ## Ensuring string convention in using this
     ## Generating calibration chip id if using chip coordinates
-    if not args.chipid in self.board.visM and int(args.chipid) < 0:
-      self.board.add_calib_chip(args.chipid)
+    if not chipid in self.board.chips() and int(chipid) < 0:
+      self.board.add_calib_chip(chipid)
 
     ## Saving session information
-    if (not args.chipid in self.board.lumi_coord
-        or not args.scanz in self.board.lumi_coord[args.chipid]
+    if (not chipid in self.board.lumi_coord
+        or not args.scanz in self.board.lumi_coord[chipid]
         or args.overwrite):
-      if not args.chipid in self.board.lumi_coord:
-        self.board.lumi_coord[args.chipid] = {}
-      self.board.lumi_coord[args.chipid][args.scanz] = [
+      if not chipid in self.board.lumi_coord:
+        self.board.lumi_coord[chipid] = {}
+      self.board.lumi_coord[chipid][args.scanz] = [
           fitval[1],
           np.sqrt(fitcovar[1][1]), fitval[2],
           np.sqrt(fitcovar[1][1])
       ]
-    elif args.scanz in self.board.lumi_coord[args.chipid]:
+    elif args.scanz in self.board.lumi_coord[chipid]:
       if self.cmd.prompt(('A lumi alignment for z={0:.1f} already exists for '
                           'the current session, overwrite?').format(args.scanz)):
-        self.board.lumi_coord[args.chipid][args.scanz] = [
+        self.board.lumi_coord[chipid][args.scanz] = [
             fitval[1],
             np.sqrt(fitcovar[1][1]), fitval[2],
             np.sqrt(fitcovar[1][1])
