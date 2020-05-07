@@ -167,11 +167,9 @@ class controlcmd():
     Each command will have accession to the cmd session, and by extension,
     every control object the could potentially be used
     """
-    self.parser = argparse.ArgumentParser(
-        prog=self.__class__.__name__.lower(),
-        description=self.__class__.__doc__,
-        add_help=False,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    self.parser = argparse.ArgumentParser(prog=self.__class__.__name__.lower(),
+                                          description=self.__class__.__doc__,
+                                          add_help=False)
     self.cmd = cmdsession
 
     ## Reference to control objects for all commands
@@ -435,7 +433,8 @@ class controlcmd():
     self.parser.add_argument('--samples',
                              type=int,
                              default=5000,
-                             help='Number of samples to take the average')
+                             help=('Number of samples to take the average '
+                                   '(default=%(default)d)'))
 
   def add_hscan_options(self, scanz=20, hrange=5, distance=1):
     """
@@ -447,19 +446,21 @@ class controlcmd():
                              '--scanz',
                              type=float,
                              default=scanz,
-                             help=('Height to perform horizontal scan [mm], '
-                                   'using present coordinates if not specified'))
+                             help=('Height to perform horizontal scan [mm] '
+                                   '(default: %(default)f[mm]).'))
     self.parser.add_argument('-r',
                              '--range',
                              type=float,
                              default=hrange,
                              help=('Range to perform x-y scanning from central '
-                                   'position [mm]'))
+                                   'position [mm] '
+                                   '(default=%(default)f)'))
     self.parser.add_argument('-d',
                              '--distance',
                              type=float,
                              default=distance,
-                             help='Horizontal sampling distance [mm]')
+                             help=('Horizontal sampling distance [mm]'
+                                   ' (default=%(default)f)'))
 
   def add_savefile_options(self, default_filename):
     """
@@ -473,12 +474,13 @@ class controlcmd():
                                    ' specified using <ARG> to indicate '
                                    'placeholders to be used by argument values. '
                                    'The placeholder <TIMESTAMP> can be used for '
-                                   'a string representing the current time.',
+                                   'a string representing the current time.'
                                    'The placeholder <BOARDID> can be used for '
                                    'the (unique) board id string.'
                                    'The placeholde <BOARDTYPE> can be used for '
                                    'the board type string (like T3, '
-                                   'TBMOCK...etc).'))
+                                   'TBMOCK...etc).\n'
+                                   'default=%(default)s'))
     self.parser.add_argument('--wipefile',
                              action='store_true',
                              help='Wipe existing content in output file')
