@@ -90,7 +90,7 @@ class Board(object):
 
   def add_calib_chip(self, chipid):
     chipid = str(chipid)
-    if schipid not in self.orig_coord and int(chipid) < 0:
+    if chipid not in self.orig_coord and int(chipid) < 0:
       self.orig_coord[chipid] = [-100, -100]  # Non-existent calibration chip
       self.vis_coord[chipid] = {}
       self.visM[chipid] = {}
