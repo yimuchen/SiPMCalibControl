@@ -114,10 +114,16 @@ class readout(object):
     chip_y = self.parent.board.orig_coord[str(channel)][1]
 
     r0 = ((x - chip_x)**2 + (y - chip_y)**2)**0.5
-    N_mean = readout.GetNumPixels(r0=r0, z=z)
 
-    pe_list = readout.GetGPList(N_mean, samples)
-    return readout.GetSmearedGP(pe_list)
+    if channel >= 0 or channel % 2 == 0:
+      ## This is a typical readout, expcet a SiPM output,
+      N_mean = readout.GetNumPixels(r0=r0, z=z)
+      pe_list = readout.GetGPList(N_mean, samples)
+      return readout.GetSmearedGP(pe_list)
+    else:
+      ## This is a linear photo diode readout
+      readout_mean = readout.GetPhotoDiodeValue(r0=r0,z=z)
+      return np.random.normal(readout_mean,readout.GAIN/2,samples)
 
   def read_pico(self, channel=0, samples=10000):
     """
@@ -196,6 +202,13 @@ class readout(object):
 
       ans.append(x)
     return ans
+
+  def GetPhotoDiodeValue( r0, z ):
+    ## Setting this to have the same readout value at the low light end for
+    ## Easier comparison.
+    N0 = readout.NPIX * 3  * readout.ZMIN *2
+    return readout.GAIN *  N0 * z / (r0**2 + z**2)**1.5
+
 
   def calc_general_poisson(x, mean, Lambda):
     y = mean + x * Lambda
