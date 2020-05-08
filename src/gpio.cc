@@ -623,6 +623,8 @@ void GPIO::FlushLoop()
       i2c_flush_array[2] = 2500;
       i2c_flush_array[3] = 2500;
     }
+
+    usleep(50000); // 50 milliseconds
   }
 }
 
