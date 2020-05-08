@@ -218,15 +218,3 @@ class readout(object):
     ans = ans + np.log(mean) - np.log(y)
     return np.exp(-y + ans)
 
-
-if __name__ == "__main__":
-  import matplotlib.pyplot as plt
-
-  N_Points = 1000
-  k_list = readout.GetGPList(2.5, N_Points)
-  r_list = readout.GetSmearedGP(k_list)
-
-  fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
-  axs[0].hist(k_list, bins=100, log=True)
-  axs[1].hist(r_list, bins=100, log=True)
-  plt.show()
