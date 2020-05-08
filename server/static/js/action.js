@@ -50,6 +50,12 @@ $(document).ready(function () {
   });
 
 
+  $('#run-system-calibration').on('click', function () {
+    boardtype = $('input[name="system-calib-boardtype"]:checked').val()
+    emit_action_cmd($(this).prop('id'), {
+      'boardtype': boardtype
+    });
+  })
 
   // Standard calibration actions!
   $('#std-calibration').on('click', function () {
@@ -87,6 +93,7 @@ $(document).ready(function () {
 
 
 function emit_action_cmd(id, msg) {
+  $('#display-message').html('');
   action_socket.emit('run-action-cmd', {
     'id': id,
     'data': msg
@@ -104,11 +111,11 @@ function image_setting_update(event) {
   });
 }
 
-function display_user_action(msg){
+function display_user_action(msg) {
   $('#user-action').removeClass('invisible');
   $('#user-action-msg').html(msg);
   // Re-enable the button used for completing the user action.
-  $('#user-action-complete').prop('disabled', false );
+  $('#user-action-complete').prop('disabled', false);
 }
 
 

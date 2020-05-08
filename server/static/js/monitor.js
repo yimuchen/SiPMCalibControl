@@ -10,17 +10,18 @@ var monitor_voltage2 = [];
 /**
  * Global variables for tileboard layout stuff
  */
-var chip_x_list = []
-var chip_y_list = []
-var chip_lumi_x_list = []
-var chip_lumi_y_list = []
-var chip_vis_x_list = []
-var chip_vis_y_list = []
+var chip_id_list = [];
+var chip_coordinates = {};
 
 /**
  * Global variable for monitoring socket
  */
 var monitor_socket = null
+
+/**
+ * Global variable for progress monitoring
+ */
+var progress = {}
 
 /**
  * The main function for real-time status monitoring
@@ -31,6 +32,7 @@ $(document).ready(function () {
 
   monitor_socket.on('connect', function (msg) {
     console.log('Connected to monitor socket!');
+    monitor_socket.emit('get-configuration', 'progress');
     monitor_socket.emit('get-configuration', 'tileboard-layout');
     monitor_socket.emit('get-configuration', 'readout');
   });
@@ -41,6 +43,9 @@ $(document).ready(function () {
   monitor_socket.on('visual-settings-update', visual_settings_update);
   monitor_socket.on('tileboard-layout', init_tileboard_layout);
   monitor_socket.on('update-readout-results', update_readout_result);
+  monitor_socket.on('display-message', display_message);
+  monitor_socket.on('progress-update', progress_update);
+  monitor_socket.on('clear-display', clear_display);
 });
 
 function connect_update(msg) {
@@ -52,6 +57,17 @@ function connect_update(msg) {
   monitor_temperature2 = [];
   monitor_voltage1 = [];
   monitor_voltage2 = [];
+}
+
+function clear_display(msg) {
+  $('#display-message').html('');
+  $('#tile-layout-gird').html('');
+  $('#single-chip-summary').html('');
+  $('#chip-details-content').html('');
+}
+
+function display_message(msg) {
+  $('#display-message').html(msg);
 }
 
 function monitor_update(msg) {
@@ -117,6 +133,7 @@ function generate_plotly_temp_data() {
 
 function generate_plotly_temp_layout() {
   return {
+    autosize: true,
     xaxis: {
       title: "Time (since system start) [sec]",
       nticks: 10,
@@ -127,7 +144,7 @@ function generate_plotly_temp_layout() {
       ]
     },
     yaxis: {
-      title: "Temperature [C]",
+      title: "Temperature [°C]",
       range: [
         Math.min(15, Math.min(Math.min(...monitor_temperature1),
           Math.min(...monitor_temperature2))),
@@ -139,13 +156,11 @@ function generate_plotly_temp_layout() {
     plot_bgcolor: 'rgba(0,0,0,0)',
     margin: {
       l: '40',
-      r: '0',
+      r: '5',
       b: '40',
       t: '10',
       pad: 0
     },
-    width: 400,
-    height: 400,
     legend: {
       x: 0.5,
       y: 0.9
@@ -172,6 +187,7 @@ function generate_plotly_volt_data() {
 
 function generate_plotly_volt_layout() {
   return {
+    autosize: true,
     xaxis: {
       title: "Time (since system start) [sec]",
       nticks: 10,
@@ -193,14 +209,12 @@ function generate_plotly_volt_layout() {
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',
     margin: {
-      l: '40',
-      r: '0',
+      l: '60',
+      r: '5',
       b: '40',
       t: '10',
       pad: 0
     },
-    width: 400,
-    height: 400,
     legend: {
       x: 0.5,
       y: 0.9
@@ -221,164 +235,201 @@ function visual_settings_update(msg) {
 }
 
 function init_tileboard_layout(msg) {
-  var coord = JSON.parse(msg);
-
   // Resetting global variables
   chip_id_list = []
-  chip_x_list = []
-  chip_y_list = []
-  chip_lumi_x_list = []
-  chip_lumi_y_list = []
-  chip_vis_x_list = []
-  chip_vis_y_list = []
-  chip_info_text = []
-  for (const chipid in coord['orig_x']) {
-    chip_id_list.push(chipid);
-    var chip_x = coord['orig_x'][chipid];
-    var chip_y = coord['orig_y'][chipid];
-    var lumi_x = coord['lumi_x'][chipid] != -100 ?
-      coord['lumi_x'][chipid] : NaN;
-    var lumi_y = coord['lumi_x'][chipid] != -100 ?
-      coord['lumi_y'][chipid] : NaN;
-    var vis_x = coord['vis_x'][chipid] != -100 ?
-      coord['vis_x'][chipid] : NaN;
-    var vis_y = coord['vis_x'][chipid] != -100 ?
-      coord['vis_y'][chipid] : NaN;
+  chip_coordinates = JSON.parse(String(msg));
 
-    chip_x_list.push(chip_x);
-    chip_y_list.push(chip_y);
-    chip_lumi_x_list.push(lumi_x);
-    chip_lumi_y_list.push(lumi_y);
-    chip_vis_x_list.push(vis_x);
-    chip_vis_y_list.push(vis_y);
+  for (var chipid in chip_coordinates) {
+    var push = false;
 
-    chip_info_text.push('Chip ID: ' + chipid + '<br />'
-      + 'Vis: (' + vis_x + ',' + chip_y + ') <br />'
-      + 'Lumi: (' + lumi_x + ',' + lumi_y + ') <br />'
-    );
+    if (chip_id_list.length == 0) {
+      push = true;
+    } else {
+      if (chipid >= 0) {
+        push = true;
+      } else if (chip_id_list[0] < 0) {
+        push = true;
+      }
+    }
+
+    if (push) {
+      chip_id_list.push(chipid);
+    }
   }
 
-  update_chip_details_content(coord);
-  update_tileboard_layout_plot();
+  update_tileboard_layout_summary();
 }
 
-function update_tileboard_layout_plot() {
-  var plot_data = [{
-    x: chip_x_list,
-    y: chip_y_list,
-    hovertemplate: 'Est: (%{x:.1f},%{y:.1f})<br />' + '%{text}',
-    text: chip_info_text,
-    type: 'scatter',
-    mode: 'markers',
-    name: 'In-built'
-  }, {
-    x: chip_lumi_x_list,
-    y: chip_lumi_y_list,
-    hoverinfo: 'skip',
-    type: 'scatter',
-    mode: 'markers',
-    name: 'Lumi. pos.'
-  }, {
-    x: chip_vis_x_list,
-    y: chip_vis_y_list,
-    hoverinfo: 'skip',
-    type: 'scatter',
-    mode: 'markers',
-    name: 'Vis. pos.'
-  }]
-
-  var layout = {
-    xaxis: {
-      title: "x [mm]",
-      nticks: 10,
-      range: [0, 500]
-    },
-    yaxis: {
-      title: "y [mm]",
-      nticks: 10,
-      range: [0, 500]
-    },
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    margin: {
-      l: '40',
-      r: '0',
-      b: '40',
-      t: '10',
-      pad: 0
-    },
-    width: 400,
-    height: 400,
-    legend: {
-      x: 1,
-      y: 1
-    }
-
+function make_tileboard_grid_html() {
+  if (chip_id_list.length == 64) {
+    $('#tile-layout-grid').css('grid-template-columns',
+      'auto auto auto auto auto auto auto auto');
+  } else {
+    $('#tile-layout-grid').css('grid-template-columns', 'auto');
   }
 
-  Plotly.newPlot('tile-layout-plot', plot_data, layout);
+  chip_sort_list = []
 
-  // Plotly uses vanilla javascript to access page elements
-  var layout_plot = document.getElementById('tile-layout-plot');
+  for (var i = 0; i < chip_id_list.length; ++i) {
+    chip_sort_list.push({
+      'id': chip_id_list[i],
+      'x': chip_coordinates[chip_id_list[i]]['orig'][0],
+      'y': chip_coordinates[chip_id_list[i]]['orig'][1]
+    });
+  }
 
-  layout_plot.on('plotly_click', function (data) {
-    var id = data.points[0].pointNumber;
-    var elem = '#chip' + id + '-detail';
-    if ($(elem).length) {
-      $(document).scrollTop($(elem).offset().top);
+  chip_sort_list.sort((a, b) => (b.y - a.y) * 5000 + (a.x - b.x));
+
+  var new_html = ''
+
+  for (var i = 0; i < chip_sort_list.length; ++i) {
+    chipid = chip_sort_list[i].id
+    new_html += '<div '
+      + ' id="chip-on-grid-' + chipid + '"'
+      + ' onclick="show_chip_summary(' + chipid + ')">'
+      + chipid + '</div>';
+  }
+
+  $('#tile-layout-grid').html(new_html);
+
+}
+
+function make_single_chip_summary_html() {
+  // Making a bunch of hidden divs
+  new_html = '';
+  for (var i = 0; i < chip_id_list.length; ++i) {
+    chipid = chip_id_list[i];
+    new_html += '<div class="hidden" id="single-chip-summary-' + chipid + '" >'
+    new_html += '<div class="input-align">'
+
+    new_html += '<div class="input-row">'
+    new_html += '<span class="input-name">Chip ID:</span>'
+    new_html += '<span class="input-units">' + chipid + '</span>';
+    new_html += '</div>\n'; // END ROW
+
+    new_html += '<div class="input-row">'
+    new_html += '<span class="input-name">Coordinates:</span>'
+    new_html += '<span class="input-units" id="coord_orig"> ('
+      + String(chip_coordinates[chipid]['orig'][0]) + ','
+      + String(chip_coordinates[chipid]['orig'][1]) + ')</span>';
+    new_html += '</div>\n'; // ENDROW
+
+    new_html += '<div class="input-row">'
+    new_html += '<span class="input-name">Lumi. coord:</span>'
+    new_html += '<span class="input-units" id="coord-lumi"> (' +
+      (chip_coordinates[chipid]['lumi'][0] >= 0 ?
+        String(chip_coordinates[chipid]['lumi'][0]) + ','
+        + String(chip_coordinates[chipid]['lumi'][1]) :
+        'NOT DONE')
+      + ')</span>';
+    new_html += '</div>\n'; // END ROW
+
+    new_html += '<div class="input-row">'
+    new_html += '<span class="input-name">Vis. coord:</span>'
+    new_html += '<span class="input-units" id="coord_vis"> (' +
+      (chip_coordinates[chipid]['vis'][0] >= 0 ?
+        String(chip_coordinates[chipid]['vis'][0]) + ','
+        + String(chip_coordinates[chipid]['vis'][1]) :
+        'NOT DONE')
+      + ')</span>';
+    new_html += '</div>\n';
+
+    for (const tag in progress) {
+      if (tag == 'current') { continue; }
+      if (!(String(chipid) in progress[tag])) { continue; }
+
+      var status = progress[tag][chipid] == 0 ? 'Complete' :
+        progress[tag][chipid] == 1 ? 'Pending' :
+          progress[tag][chipid] == 2 ? 'Running' :
+            'Error'
+      var color = progress[tag][chipid] == 0 ? '#00FF00' :
+        progress[tag][chipid] == 1 ? 'none' :
+          progress[tag][chipid] == 2 ? 'yellow' :
+            'red'
+      var name = tag == 'vis_align' ? 'Visual alignment' :
+        tag == 'zscan' ? 'Intensity scan' :
+          tag == 'lowlight' ? 'Low light profile' :
+            'Custom'
+
+      new_html += '<div class="input-row">'
+      new_html += '<span class="input-name" id="process-' + tag + '"'
+        + '  style="background-color:' + color + '"  '
+        + ' > ' + status + ' </span > ';
+      new_html += '<span class="input-units"> '
+        + name + '</span>';
+      new_html += '</div>\n'; // END ROW
     }
+
+
+    new_html += '</div>\n'; // END OF ALIGNED DISPLAY
+
+
+    // Creating the plots place holders
+    for (const tag in progress) {
+      if (tag == 'current') { continue; }
+      if (!(String(chipid) in progress[tag])) { continue; }
+
+      var plotname = (tag == 'zscan') ? 'intensity-scan' :
+        (tag == 'lowlight') ? 'low-light-scan' :
+          ''
+      console.log(tag, plotname);
+      if (plotname == '') { continue; }
+
+      plotname = 'single-chip-summary-plot-' + chipid + '-' + plotname;
+      new_html += '<div class="plot" id="' + plotname + '"></div>';
+    }
+
+    new_html += '</div>' // END OF SINGLE CHIP DIV
+  }
+
+
+  $('#single-chip-summary').html(new_html);
+}
+
+function update_tileboard_layout_summary() {
+  if ($('#tile-layout-grid').html() == '') {
+    make_tileboard_grid_html();
+  }
+
+  if ($('#single-chip-summary').html() == '') {
+    make_single_chip_summary_html();
+  }
+}
+
+function show_chip_summary(chipid) {
+  $('#single-chip-summary').children().each(function () {
+    $(this).addClass('hidden');
   });
+
+  $('#single-chip-summary').children('#single-chip-summary-' + chipid).removeClass('hidden');
 }
+
+
+function scroll_to_chip_details(chipid) {
+  $('html, body').animate({
+    scrollTop: $("#chip" + chipid + '-detail').offset().top
+  }, 100);
+}
+
 
 function chip_id_attr(tag, id) {
   return tag + id;
 }
 
 
+/**
+ * Gloabl object for zscan data
+ */
 var zscan_data = {}
 var lowlight_data = {}
 
-function update_chip_details_content(orig_coord) {
-  // Clearin the content
-  $('#chip-details-content').html('');
-
-  var list_html = '<div id="chip-list">';
-  var chip_html = '';
-  for (const chipid in orig_coord['orig_x']) {
-    list_html += '<a href="#chip' + chipid + '-detail">' + chipid + '</a>\n';
-    chip_html += '<div id="chip' + chipid + '-detail" class="chip-details-content">'
-      + '<div class="chip-name">Chip ID: ' + chipid + '</div><br/>'
-      + '<div class="calib-plot-container">'
-      + '<div '
-      + ' class="calib-plot" '
-      + ' id="intensity_plot_' + chipid + '" '
-      + '/>'
-      + '<div '
-      + ' class="calib-plot" '
-      + ' id="lowlight_plot_' + chipid + '" '
-      + ' />'
-      + "</div>"
-      + '<div id="chip' + chipid + '-status"></div>'
-      + '</div>'
-  }
-
-  $('#chip-details-content').html(list_html + chip_html);
-}
-
 
 function update_readout_result(msg) {
-  console.log('Chip updates recieved', msg);
-
-  console.log(msg['zscan']);
-  console.log(msg['lowlight']);
-
   for (const chipid in msg['zscan']) {
-    console.log('Making zscan plot', chipid)
     make_zscan_plot(chipid, msg['zscan'][chipid]);
   }
 
   for (const chipid in msg['lowlight']) {
-    console.log('Making lowlight plot', chipid);
     make_lowlight_plot(chipid, msg['lowlight'][chipid]);
   }
 
@@ -386,7 +437,7 @@ function update_readout_result(msg) {
   setTimeout(function () {
     console.log('Requesting update')
     monitor_socket.emit('get-configuration', 'readout');
-  }, 1000);
+  }, 500);
 }
 
 
@@ -433,13 +484,15 @@ function make_zscan_plot(chipid, data) {
   var config = {
     'displayModeBar': false
   }
+  var plotname = 'single-chip-summary-plot-' + chipid + '-intensity-scan';
+  $('#' + plotname).css('height', '300px');
+  $('#' + plotname).css('width', '400px');
 
-  Plotly.newPlot('intensity_plot_' + chipid, plot_data, layout, config);
+
+  Plotly.newPlot(plotname, plot_data, layout, config);
 }
 
 function make_lowlight_plot(chipid, data) {
-  console.log('In make_lowlight_plot function...');
-  console.log(data);
   x = []
   y = []
   for (var i = 0; i < data[0].length; ++i) {
@@ -479,9 +532,141 @@ function make_lowlight_plot(chipid, data) {
   };
 
   var config = {
+    'responsive': true,
     'displayModeBar': false
   }
 
+  var plotname = 'single-chip-summary-plot-' + chipid + '-low-light-scan';
 
-  Plotly.newPlot('lowlight_plot_' + chipid, plot_data, layout, config);
+  $('#' + plotname).css('height', '300px');
+  $('#' + plotname).css('width', '400px');
+
+  Plotly.newPlot(plotname, plot_data, layout, config);
+}
+
+function progress_update(prog) {
+
+  // updating the global variable
+  progress = prog
+
+  var total_jobs = 0;
+  var error_jobs = 0;
+  var complete = 0;
+  var running_chip = 2147483647;
+  var wait_jobs = 0;
+
+  for (const tag in progress) {
+    if (tag == "current") {
+      continue;
+    }
+    for (const chipid in progress[tag]) {
+      total_jobs++;
+      if (progress[tag][chipid] == 1) { wait_jobs++; }
+      else if (progress[tag][chipid] == 2) { running_chip = chipid; }
+      else if (progress[tag][chipid] == 0) { complete++; }
+      else { error_jobs++; }
+    }
+  }
+
+
+  var complete_percent = 100.0 * complete / total_jobs;
+  var error_percent = 100.0 * error_jobs / total_jobs;
+  var running_percent = running_chip != 2147483647 ? 100.0 / total_jobs : 0;
+
+  var bar_elem = $('#session-progress').children('.progress-bar-container');
+
+  bar_elem.children('.progress-complete').css('width', complete_percent + '%');
+  bar_elem.children('.progress-running').css('width', running_percent + '%');
+  bar_elem.children('.progress-error').css('width', error_percent + '%');
+
+
+  // Making the command progress bar
+  if ('current' in progress) {
+    var command_total = progress['current'][1];
+    var command_completed = progress['current'][0];
+    var percent = 100.0 * command_completed / command_total;
+
+    $('#command-progress').children('.progress-bar-container')
+      .children('.progress-complete').css('width', percent + '%');
+  } else {
+    $('#command-progress').children('.progress-bar-container')
+      .children('.progress-complete').css('width', '0%');
+  }
+
+  // Updating the tile layout summary
+  for (var i = 0; i < chip_id_list.length; ++i) {
+    var chipid = chip_id_list[i];
+    if (String(chipid) == String(running_chip)) {
+      $('#chip-on-grid-' + chipid).css('background-color', 'yellow');
+    } else {
+      var total_chip_jobs = 0;
+      var complete_chip_jobs = 0;
+      for (const tag in progress) {
+        if (tag == "current") {
+          continue;
+        }
+        if (chipid in progress[tag]) {
+          total_chip_jobs++;
+          if (progress[tag][chipid] == 0) {
+            complete_chip_jobs++;
+          }
+        }
+      }
+
+      var base_color = '#00FF00';
+      var lighten = 200.0 * (total_chip_jobs - complete_chip_jobs)
+        / total_chip_jobs;
+
+      $('#chip-on-grid-' + chipid).css('background-color',
+        LightenDarkenColor(base_color, lighten));
+
+    }
+  }
+
+  // Updating the single chip status
+  for (const tag in progress) {
+    if (tag == 'current') { continue };
+    for (const chipid in progress[tag]) {
+      var element = $('#single-chip-summary-' + chipid).find('#process-' + tag);
+      var color = progress[tag][chipid] == 0 ? '#00FF00' :
+        progress[tag][chipid] == 1 ? 'none' :
+          progress[tag][chipid] == 2 ? 'yellow' :
+            'red';
+      var status = progress[tag][chipid] == 0 ? 'Complete' :
+        progress[tag][chipid] == 1 ? 'Pending' :
+          progress[tag][chipid] == 2 ? 'Running' :
+            'Error'
+      element.css('background-color', color);
+      element.html(status);
+    }
+  }
+
+
+  // Waiting 0.5 seconds before updating the images
+  if (complete + error_jobs != total_chip_jobs) {
+    setTimeout(function () {
+      console.log('Requesting progress update')
+      monitor_socket.emit('get-configuration', 'progress');
+    }, 500);
+  }
+}
+
+
+function LightenDarkenColor(col, amt) {
+  var usePound = false;
+  if (col[0] == "#") {
+    col = col.slice(1);
+    usePound = true;
+  }
+  var num = parseInt(col, 16);
+  var r = (num >> 16) + amt;
+  if (r > 255) r = 255;
+  else if (r < 0) r = 0;
+  var b = ((num >> 8) & 0x00FF) + amt;
+  if (b > 255) b = 255;
+  else if (b < 0) b = 0;
+  var g = (num & 0x0000FF) + amt;
+  if (g > 255) g = 255;
+  else if (g < 0) g = 0;
+  return (usePound ? "#" : "") + (g | (b << 8) | (r << 16)).toString(16);
 }

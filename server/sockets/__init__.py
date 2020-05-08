@@ -21,13 +21,30 @@ class Session(object):
 
   def __init__(self):
     self.cmd = cmdbase.controlterm([
-        motioncmd.moveto, motioncmd.movespeed, motioncmd.sendhome,
-        motioncmd.zscan, motioncmd.lowlightcollect, viscmd.visualset,
-        viscmd.visualhscan, viscmd.visualzscan, viscmd.visualmaxsharp,
-        viscmd.visualshowchip, viscmd.visualcenterchip, getset.set, getset.get,
-        getset.getcoord, getset.savecalib, getset.loadcalib, getset.lighton,
-        getset.lightoff, getset.promptaction, digicmd.pulse, picocmd.picoset,
-        picocmd.picorunblock, picocmd.picorange,
+        motioncmd.moveto,
+        motioncmd.movespeed,
+        motioncmd.sendhome,
+        motioncmd.zscan,
+        motioncmd.lowlightcollect,
+        motioncmd.halign,
+        viscmd.visualset,
+        viscmd.visualhscan,
+        viscmd.visualzscan,
+        viscmd.visualmaxsharp,
+        viscmd.visualshowchip,
+        viscmd.visualcenterchip,
+        getset.set,
+        getset.get,
+        getset.getcoord,
+        getset.savecalib,
+        getset.loadcalib,
+        getset.lighton,
+        getset.lightoff,
+        getset.promptaction,
+        digicmd.pulse,
+        picocmd.picoset,
+        picocmd.picorunblock,
+        picocmd.picorange,
     ])
 
     ## Allowing for the socket to receive commands immediately on start up
@@ -35,8 +52,6 @@ class Session(object):
 
     ## Self monitoring thread
     self.start_time = datetime.datetime.now()
-
-    ## Self
     self.monitor_thread = None
 
     ## Data caching
@@ -44,6 +59,9 @@ class Session(object):
     self.lowlight_cache = {}
     self.zscan_updates = []
     self.lowlight_updates = []
+
+    ## Progress keeping stuff
+    self.progress_check = {}
 
 
 ## declaration of global object

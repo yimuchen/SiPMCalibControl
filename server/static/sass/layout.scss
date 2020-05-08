@@ -39,6 +39,22 @@
   }
 }
 
+.column-container {
+  display: flex;
+  .left-column{
+    flex:50%;
+    padding-top: 10px;
+    padding-right: 5px;
+    padding-left: 5px;
+  }
+  .right-column{
+    flex:50%;
+    padding-right: 5px;
+    padding-left: 5px;
+  }
+}
+
+
 #main-column{
   position: absolute;
   top: 0px;
@@ -134,9 +150,50 @@
   .tab-content{
     text-align: center;
 
-    div.plot{
-      max-width: 90%;
-      min-width: 30%;
+    div.time-container{
+      display:flex;
+      width:100%;
+      #up-time{
+        text-align: left;
+        width: 50%;
+      }
+      #up-time-since{
+        text-align: right;
+        width:50%
+      }
+    }
+
+    div#display-message-container{
+      width:100%;
+      text-align: center;
+    }
+
+    div.monitor-plot-container{
+      display: flex;
+      max-height: 300px;
+      div.plot{
+        height:300px;
+        width: 50%;
+      }
+    }
+
+    div#tile-layout-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: auto ;
+      div {
+        padding-top: 5px;
+        padding-bottom: 5px;
+        border:black;
+        border-width: 1px;
+        border-style: solid;
+        cursor: pointer;
+      }
+    }
+
+    div#single-chip-summary {
+      width:100%;
+      text-align: left;
     }
 
     div.chip-details{
@@ -145,6 +202,35 @@
 
     }
   }
+}
+
+div.chip-progress-legend {
+  display:flex;
+  .left-limit {
+    text-align: left;
+    flex:33%;
+  }
+  .middle-limit{
+    text-align: center;
+    flex:34%;
+  }
+  .right-limit{
+    text-align: right;
+    flex: 33%;
+  }
+}
+
+
+.legend{
+  display: flex;
+  div {
+    width: 100px;
+    text-align: center;
+  }
+}
+
+div.flex-container {
+  display: flex;
 }
 
 div.chip-details-content{
@@ -163,6 +249,10 @@ div.calib-plot-container {
     width:45%;
     height:300px;
   }
+}
+
+.hidden{
+  display:none;
 }
 
 @media screen and (max-width: 1000px) {

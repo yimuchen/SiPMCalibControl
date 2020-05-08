@@ -61,19 +61,51 @@
 
 }
 
+.chip-progress-legend{
+  background-image: linear-gradient(to right, #C8FFC8, #00FF00);
+}
+
+
+.progress-error {
+  background-color: #FF0000;
+}
+
+.progress-complete {
+  background-color:#00FF00;
+}
+
+.progress-running {
+  background-color: yellow;
+}
+
+div#tile-layout-grid {
+  div {
+    background-color: #64FF64;
+  }
+}
 
 #action-column{
   background-color: chartreuse;
   h2{
     color:darkgreen;
   }
-  .tab{
+  .tab.user-action{
     .tab-title{
       color:black;
     }
     .tab-content{
       background-color: greenyellow;
       color:black;
+    }
+  }
+  .tab.expert-action {
+    background-color:desaturate(chartreuse, 10);
+    .tab-title {
+      color: lighten(black, 20);
+    }
+    .tab-content{
+      background-color: desaturate(greenyellow, 20);
+      color: lighten(black,20);
     }
   }
 }

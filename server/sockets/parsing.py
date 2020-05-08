@@ -24,7 +24,7 @@ def ActionConnect(socketio):
     print('Session is idle')
     ActionComplete(socketio)
   elif session.state == session.STATE_WAIT_USER:
-    print("Waiting user with message!");
+    print("Waiting user with message!")
     MessageUserAction(socketio, session.waiting_msg)
 
 
@@ -38,12 +38,14 @@ def RunAction(socketio, msg):
     visual_settings_update(socketio, msg['data'])
   elif msg['id'] == 'std-calibration':
     StandardCalibration(socketio, msg['data'])
+  elif msg['id'] == 'run-system-calibration':
+    SystemCalibration(socketio, msg['data'])
 
   else:
     print(msg)
     time.sleep(5)
 
-  session.state = STATE_IDLE
+  session.state = session.STATE_IDLE
   ActionComplete(socketio)
 
 
@@ -59,7 +61,7 @@ def MonitorConnect(socketio):
   visual_settings_update(socketio, {})
 
   ## Updating the existing cache
-  StartReadoutMonitor(socketio);
+  StartReadoutMonitor(socketio)
 
   ## Starting the continuous monitoring thread.
   if not session.monitor_thread:
@@ -75,6 +77,8 @@ def RunMonitor(socketio, msg):
     ReturnTileboardLayout(socketio)
   elif msg == 'readout':
     ReturnReadoutUpdate(socketio)
+  elif msg == 'progress':
+    ReturnProgress(socketio)
 
 
 def RunCmdInput(msg):

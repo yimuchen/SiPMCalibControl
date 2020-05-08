@@ -1,6 +1,7 @@
 from flask import Flask, render_template, Response
 from flask_socketio import SocketIO
 import datetime
+import logging ## System logging that is used by the application
 
 ## Command interface
 import ctlcmd.cmdbase as cmdbase
@@ -14,7 +15,8 @@ import sys
 import copy
 import io
 
-socketio = SocketIO(debug=False, async_mode='threading', )
+
+socketio = SocketIO(debug=False, async_mode='threading',)
 #cors_allow_origins='*' )
 
 from .sockets import session
@@ -70,11 +72,11 @@ def create_server_flask(debug=False):
 
   ## Using map to store Default values:
   default_overide = {
-      '-printerdev': '/dev/ttyUSB0',
-      '-camdev': '/dev/video0',
+      '--printerdev': '/dev/ttyUSB0',
+      '--camdev': '/dev/video3',
       #'-boardtype': 'cfg/static_calib.json',
-      '-action': 'cfg/useractions.json',
-      '-picodevice': 'MYSERIAL',  #Cannot actually set. Just dummy for now
+      '--action': 'cfg/useractions.json',
+      '--picodevice': 'MYSERIAL',  #Cannot actually set. Just dummy for now
       #'-remotehost' : ['hepcms.umd.edu', '']
   }
 

@@ -22,6 +22,11 @@
 </head>
 
 <body>
+
+  <div onclick="topFunction()" id="goto_top_button" title="Go to top">
+    <i class="fa fa-angle-double-up"></i>
+  </div>
+
   <div id="column-container">
     <div id="main-column">
       <h2>Monitoring</h2>
@@ -46,12 +51,39 @@
           <i class="fa fa=fa-angle-left"></i>
         </div>
         <div class="tab-content">
-          <div id="up-time">
+          <div class=time-container>
+            <div id="up-time"></div>
+            <div id="up-time-since"></div>
           </div>
-          <div id="up-time-since">
 
+          <div class="legend">
+            <div class="progress-complete">Complete</div>
+            <div class="progress-running">Running</div>
+            <div class="progress-error">Error</div>
           </div>
-          <div class="plot-container">
+
+          <div class="input-align" id="bar-container">
+            <div class="input-row" id="session-progress">
+              <span class="input-name">Session Progress</span>
+              <div class="input-unit progress-bar-container">
+                <div class="progress-complete"></div>
+                <div class="progress-running"></div>
+                <div class="progress-error"></div>
+              </div>
+            </div>
+            <div class="input-row" id="command-progress">
+              <span class="input-name">Command progress</span>
+              <div class="input-unit progress-bar-container">
+                <div class="progress-complete" style="width:50%"></div>
+              </div>
+            </div>
+          </div>
+
+
+          <div id="display-message-container">
+            <p id="display-message"></p>
+          </div>
+          <div class="monitor-plot-container">
             <div class="plot" id="temperature-plot">
             </div>
             <div class="plot" id="voltage-plot">
@@ -59,242 +91,112 @@
           </div>
         </div>
       </div>
+
       <div class="tab" id="tile-layout">
         <div class="tab-title">
           <span>Tile Layout</span>
           <i class="fa fa=fa-angle-left"></i>
         </div>
         <div class="tab-content">
-          <div class="plot" id="tile-layout-plot"></div>
-          <div id="tile-layout-chiphoverinfo"></div>
-          <div class="plot" id="chip-status-plot">
+
+
+
+          <div class="column-container">
+            <div class="left-column">
+              <div class="chip-progress-legend">
+                <div class="left-limit">0%</div>
+                <div class="middle-limit">50%</div>
+                <div class="right-limit">100%</div>
+              </div>
+              <div class="tilegrid" id="tile-layout-grid"></div>
+            </div>
+
+            <div class="right-column">
+              <div id="single-chip-summary"></div>
+            </div>
 
           </div>
         </div>
       </div>
-      <div class="tab" id="chip-details">
-        <div class="tab-title">
-          <span>Chip details</span>
-          <i class="fa fa=fa-angle-left"></i>
-        </div>
-        <div class="tab-content" id="chip-details-content">
-        </div>
-      </div>
+
     </div>
 
 
     <div id="action-column">
       <h2>Action</h2>
-      <div class="tab" id="standard-calib">
+
+      <div class="tab user-action" id="system-calib">
+        <div class="tab-title">
+          <span>System calibrations</span>
+          <i class="fa fa=fa-angle-left"></i>
+        </div>
+        <div class="tab-content">
+          <div class="input-align">
+            <div class="input-row">
+              <span class="input-name">Board type</span>
+              <input type="radio" name="system-calib-boardtype" value="reference_mock" />
+              <span class="input-units">Mock reference</span>
+            </div>
+            <div class="input-row">
+              <span class="input-name"></span>
+              <input type="radio" name="system-calib-boardtype" value="dummy" />
+              <span class="input-units">Dummy</span>
+            </div>
+          </div>
+          <div class="button-container">
+            <button id="run-system-calibration">Run system calibration</button>
+          </div>
+          <div id="system-calib-exist">
+
+          </div>
+        </div>
+      </div>
+
+      <div class="tab user-action" id="standard-calib">
         <div class="tab-title">
           <span>Standard calibrations</span>
           <i class="fa fa=fa-angle-left"></i>
         </div>
         <div class="tab-content">
-          Board ID:<input type="text" id="std-calibration-boardid"></br>
-          Board type:
-          <input type="radio" name="std-calibration-boardtype" value="Tileboard_mock">Mock Tileboard<br>
-          <input type="radio" name="std-calibration-boardtype" value="Tileboard_Dummy">Dummy<br>
+          <div class="input-align">
+            <div class="input-row">
+              <span class="input-name">Board ID</span>
+              <input type="text" id="std-calibration-boardid" />
+            </div>
+          </div>
+          <div class="input-align">
+            <div class="input-row">
+              <span class="input-name">Boardtype</span>
+              <input type="radio" name="std-calibration-boardtype" value="Tileboard_mock" />
+              <span class="input-units">Mock 64 chip Tileboard</span>
+            </div>
+            <div class="input-row">
+              <span class="input-name"></span>
+              <input type="radio" name="std-calibration-boardtype" value="Tileboard_dummy" />
+              <span class="input-units">Dummy</span>
+            </div>
+          </div>
+          <div class="input-align" id="reference-system-calibration">
+            <div class="input-row">
+              <span class="input-name">Reference</span>
+              <input type="radio" name="ref-calibration" value="summary_MOCK_20191004" />
+              <span class="input-units">MOCK_20191004</span>
+            </div>
+            <div class="input-row">
+              <span class="input-name"></span>
+              <input type="radio" name="ref-calibration" value="summary_MOCK_20191004" />
+              <span class="input-units">MOCK_20191004</span>
+            </div>
+          </div>
           <div class="button-container">
             <button id="std-calibration">Run Tileboard calibration</button>
           </div>
         </div>
       </div>
 
-      <div class="tab" id="debug-calib">
+      <div class="tab expert-action" id="picoscope">
         <div class="tab-title">
-          <span>System calibrations</span>
-          <i class="fa fa=fa-angle-left"></i>
-        </div>
-        <div class="tab-content hidden">
-          <div class="button-container">
-            <button id="debug-type-1">Calib. T1</button>
-            <button id="debug-type-2">Calib. T2</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="tab" id="lumiscan">
-        <div class="tab-title">
-          <span>Luminosity scan</span>
-          <i class="fa fa-angle-right"></i>
-        </div>
-        <div class="tab-content hidden">
-          <table>
-            <td>
-              <span class="input-name">Chip ID</span>
-              <input type="text" id="lumiscan-chip" />
-            </td>
-            <td class="input-align">
-              <div class="input-row">
-                <span class="input-name">X</span>
-                <input type="text" id="lumiscan-x" />
-                <span class="input-units">mm</span>
-              </div>
-              <div class="input-row">
-                <span class="input-name">Y</span>
-                <input type="text" id="lumiscan-y" />
-                <span class="input-units">mm</span>
-              </div>
-              <div class="input-row">
-                <span class="input-name">chan.</span>
-                <input type="text" id="lumiscan-channel" />
-                <span class="input-units"></span>
-              </div>
-            </td>
-
-          </table>
-
-          <div class="input-align">
-            <div class="input-row">
-              <span class="input-name">Z</span>
-              <input type="text" id="lumiscan-z" />
-              <span class="input-units">mm</span>
-            </div>
-            <div class="input-row">
-              <span class="input-name">sampling</span>
-              <input type="text" id="lumiscan-samples" />
-              <span class="input-units">--</span>
-            </div>
-            <div class="input-row">
-              <span class="input-name">Range</span>
-              <input type="text" id="lumiscan-scanrange-text" />
-              <span class="input-units">mm</span>
-              <input type="range" min="1" max="60" step="0.5" id="lumiscan-scanrange-range" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">Sep.</span>
-              <input type="text" id="lumiscan-step-text" />
-              <span class="input-units">mm</span>
-              <input type="range" min="0.2" max="10" step="0.2" id="lumiscan-step-range" />
-            </div>
-          </div>
-          <div class="button-container">
-            <button>Run</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="tab" id="zscan">
-        <div class="tab-title">
-          <span>Intensity scan</span>
-          <i class="fa fa-angle-right"></i>
-        </div>
-        <div class="tab-content hidden">
-          <table>
-            <td>
-              <span class="input-name">Chip ID</span>
-              <input type="text" id="intscan-chip" />
-            </td>
-            <td class="input-align">
-              <div class="input-row">
-                <span class="input-name">X</span>
-                <input type="text" id="intscan-x" />
-                <span class="input-units">mm</span>
-              </div>
-              <div class="input-row">
-                <span class="input-name">Y</span>
-                <input type="text" id="intscan-y" />
-                <span class="input-units">mm</span>
-              </div>
-              <div class="input-row">
-                <span class="input-name">chan.</span>
-                <input type="text" id="intscan-channel" />
-                <span class="input-units"></span>
-              </div>
-            </td>
-
-          </table>
-
-          <div class="input-align">
-            <div class="input-row">
-              <span class="input-name">sampling</span>
-              <input type="text" id="intscan-samples" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">Z List [mm]</span>
-              <input type="text" id="intscan-zlist" />
-            </div>
-          </div>
-          <div class="button-container">
-            <button>Run</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="tab" id="visualscan">
-        <div class="tab-title">
-          <span>Visual Contruction</span>
-          <i class="fa fa-angle-right"></i>
-        </div>
-        <div class="tab-content hidden">
-          <table>
-            <td>
-              <span class="input-name">Chip ID</span>
-              <input type="text" id="visscan-chip" />
-            </td>
-            <td class="input-align">
-              <div class="input-row">
-                <span class="input-name">X</span>
-                <input type="text" id="visscan-x" />
-                <span class="input-units">mm</span>
-              </div>
-              <div class="input-row">
-                <span class="input-name">Y</span>
-                <input type="text" id="visscan-y" />
-                <span class="input-units">mm</span>
-              </div>
-              <div class="input-row">
-                <span class="input-name">chan.</span>
-                <input type="text" id="visscan-channel" />
-                <span class="input-units"></span>
-              </div>
-            </td>
-
-          </table>
-
-          <div class="input-align">
-            <div class="input-row">
-              <span class="input-name">Z</span>
-              <input type="text" id="visscan-z" />
-              <span class="input-units">mm</span>
-            </div>
-            <div class="input-row">
-              <span class="input-name">Range</span>
-              <input type="text" id="visscan-scanrange-text" />
-              <span class="input-units">mm</span>
-              <input type="range" min="1" max="20" step="0.5" id="visscan-scanrange-range" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">Sep.</span>
-              <input type="text" id="visscan-step-text" />
-              <span class="input-units">mm</span>
-              <input type="range" min="0.2" max="5" step="0.1" id="visscan-step-range" />
-            </div>
-          </div>
-          <div class="button-container">
-            <button>Run</button>
-          </div>
-        </div>
-      </div>
-      <div class="tab" id="rawcmd">
-        <div class="tab-title">
-          <span>Direct Command</span>
-          <i class="fa fa-angle-left"></i>
-        </div>
-        <div class="tab-content">
-          <input type="text" id="raw-cmd-input-text" />
-          <button id="raw-cmd-input">Run</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="setting-column">
-      <h2>Settings</h2>
-
-      <div class="tab" id="picoscope">
-        <div class="tab-title">
-          <span>Scope settings</span>
+          <span>Scope settings (EXP ONLY)</span>
           <i class="fa fa-angle-left"></i>
         </div>
         <div class="tab-content hidden">
@@ -373,44 +275,9 @@
 
       </div>
 
-      <div class="tab" id="pwm-settings">
+      <div class="tab expert-action" id="imaging-settings">
         <div class="tab-title">
-          <span>Power settings</span>
-          <i class="fa fa-angle-left"></i>
-        </div>
-        <div class="tab-content hidden">
-          <div class="input-align">
-            <div class="input-row">
-              <div class="input-name" title="This is a help text">PWM1</div>
-              <input type="text" id="pwm1" />
-              <div class="input-units">V</div>
-            </div>
-            <div class="input-row">
-              <div class="input-name">PWM2
-                <span class="input-help"></span>
-              </div>
-              <input type="text" id="pwm2" />
-              <div class="input-units">V</div>
-            </div>
-            <div class="input-row">
-              <span class="input-name">Frequency
-                <span class="input-help"></span>
-              </span>
-              <input type="text" id="pwm_freq" />
-              <span class=input-units>kHz</span>
-            </div>
-          </div>
-          <div class=button-container>
-            <button id="pwm_undo">Clear</button>
-            <button id="pwm_update" disabled>Update</button>
-          </div>
-        </div>
-      </div>
-
-
-      <div class="tab" id="imaging-settings">
-        <div class="tab-title">
-          <span>Image processing</span>
+          <span>Image processing (EXP ONLY)</span>
           <i class="fa fa-angle-left"></i>
         </div>
         <div class="tab-content hidden">
@@ -460,9 +327,9 @@
         </div>
       </div>
 
-      <div class="tab" id="device-settings">
+      <div class="tab expert-action" id="device-settings">
         <div class="tab-title">
-          <span>Device settings</span>
+          <span>Device settings (EXP ONLY)</span>
           <i class="fa fa-angle-left"></i>
         </div>
         <div class="tab-content hidden">
@@ -479,13 +346,22 @@
               <span class="input-name">Scope</span>
               <input type="text" id="scope-dev" />
             </div>
-            <div class="input-row">
-              <span class="input-name">Board type</span>
-              <input type="text" id="scope-dev" />
-            </div>
           </div>
         </div>
       </div>
+
+      <div class="tab expert-action" id="rawcmd">
+        <div class="tab-title">
+          <span>Direct Command (EXP ONLY)</span>
+          <i class="fa fa-angle-left"></i>
+        </div>
+        <div class="tab-content hidden">
+          <input type="text" id="raw-cmd-input-text" />
+          <button id="raw-cmd-input">Run</button>
+        </div>
+      </div>
+
+
 
     </div>
   </div>
