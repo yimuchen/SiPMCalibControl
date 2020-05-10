@@ -35,26 +35,23 @@ def create_server_flask(debug=False):
   def index():
     return render_template('index.html')
 
-  ## Defining all unique socket signal handles
-  @socketio.on('connect', namespace='/action')
-  def action_connect():
+  @socketio.on('connect', namespace='/sessionsocket')
+  def monitor_connect():
+    print('Monitor client connected')
+    MonitorConnect(socketio)
     ActionConnect(socketio)
 
-  @socketio.on('run-action-cmd', namespace='/action')
+  @socketio.on('get-configuration', namespace='/sessionsocket')
+  def get_system_configuration(msg):
+    RunMonitor(socketio, msg)
+
+  @socketio.on('run-action-cmd', namespace='/sessionsocket')
   def run_action(msg):
     print('received action signal')
     RunAction(socketio, msg)
 
-  @socketio.on('connect', namespace='/monitor')
-  def monitor_connect():
-    print('Monitor client connected')
-    MonitorConnect(socketio)
 
-  @socketio.on('get-configuration', namespace='/monitor')
-  def get_system_configuration(msg):
-    RunMonitor(socketio, msg)
-
-  @socketio.on('complete-user-action', namespace='/action')
+  @socketio.on('complete-user-action', namespace='/sessionsocket')
   def complete_user_action(msg):
     CompleteUserAction(socketio)
 

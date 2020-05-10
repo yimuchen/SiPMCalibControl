@@ -368,7 +368,7 @@ def ReturnReadoutUpdate(socketio):
         }
     },
                   broadcast=True,
-                  namespace='/monitor')
+                  namespace='/sessionsocket')
   except:
     print(session.zscan_updates)
     print(session.lowlight_updates)
@@ -397,7 +397,7 @@ def ReturnProgress(socketio):
   socketio.emit('progress-update',
                 session.progress_check,
                 broadcast=True,
-                namespace='/monitor')
+                namespace='/sessionsocket')
 
 
 def StartReadoutMonitor(socketio):

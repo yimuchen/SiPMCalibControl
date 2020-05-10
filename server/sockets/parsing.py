@@ -14,7 +14,10 @@ files for the sake of clarity.
 
 def ActionComplete(socketio):
   if session.state == session.STATE_IDLE:
-    socketio.emit('action-complete', '', namespace='/action', broadcast=True)
+    socketio.emit('action-complete',
+                  '',
+                  namespace='/sessionsocket',
+                  broadcast=True)
 
 
 def ActionConnect(socketio):
@@ -30,18 +33,23 @@ def ActionConnect(socketio):
 
 def RunAction(socketio, msg):
   print('received action signal')
-  socketio.emit('action-received', '', namespace='/action', boardcast=True)
+  socketio.emit('action-received',
+                '',
+                namespace='/sessionsocket',
+                boardcast=True)
   session.state = session.STATE_RUN_PROCESS
   if msg['id'] == 'raw-cmd-input':
     RunCmdInput(msg['data'])
   elif msg['id'] in ['image-setting-clear', 'image-setting-update']:
     visual_settings_update(socketio, msg['data'])
-  elif msg['id'] == 'std-calibration':
+  elif msg['id'] == 'run-std-calibration':
     StandardCalibration(socketio, msg['data'])
   elif msg['id'] == 'run-system-calibration':
     SystemCalibration(socketio, msg['data'])
-
   else:
+    """
+    Defaulting to printing a messeage and leaving
+    """
     print(msg)
     time.sleep(5)
 
@@ -55,7 +63,7 @@ def MonitorConnect(socketio):
   socketio.emit('confirm',
                 {'start': session.start_time.strftime('%Y/%m/%d/ %H:%M:%S')},
                 broadcast=True,
-                namespace='/monitor')
+                namespace='/sessionsocket')
 
   ## Getting system settings
   visual_settings_update(socketio, {})

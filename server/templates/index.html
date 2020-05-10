@@ -14,18 +14,15 @@
   <script src="{{url_for('static', filename='js/external/plotly-1.51.1.min.js')}}"></script>
 
   <!--Custom Javascript-->
+  <script src="{{url_for('static',filename='js/main.js')}}"></script>
   <script src="{{url_for('static',filename='js/action.js')}}"></script>
-  <script src="{{url_for('static',filename='js/animation.js')}}"></script>
   <script src="{{url_for('static',filename='js/graphics.js')}}"></script>
-  <script src="{{url_for('static',filename='js/inputsync.js')}}"></script>
+  <script src="{{url_for('static',filename='js/input_sync.js')}}"></script>
+  <script src="{{url_for('static',filename='js/monitor_style.js')}}"></script>
   <script src="{{url_for('static',filename='js/monitor.js')}}"></script>
 </head>
 
 <body>
-
-  <div onclick="topFunction()" id="goto_top_button" title="Go to top">
-    <i class="fa fa-angle-double-up"></i>
-  </div>
 
   <div id="column-container">
     <div id="main-column">
@@ -189,7 +186,7 @@
             </div>
           </div>
           <div class="button-container">
-            <button id="std-calibration">Run Tileboard calibration</button>
+            <button id="run-std-calibration">Run Tileboard calibration</button>
           </div>
         </div>
       </div>

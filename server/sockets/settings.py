@@ -18,7 +18,7 @@ def monitor_update(socketio):
         'volt2': str(session.cmd.gpio.adc_read(3))
     },
                   broadcast=True,
-                  namespace='/monitor')
+                  namespace='/sessionsocket')
     time.sleep(1)
 
 def visual_settings_update(socketio, data):
@@ -37,4 +37,4 @@ def visual_settings_update(socketio, data):
       'ratio': session.cmd.visual.ratio_cutoff * 100,
       'poly': session.cmd.visual.poly_range * 100,
   },
-                namespace='/monitor')
+                namespace='/sessionsocket')
