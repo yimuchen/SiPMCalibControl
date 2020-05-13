@@ -400,13 +400,11 @@ BOOST_PYTHON_MODULE( gcoder )
   .def_readwrite( "opx",      &GCoder::opx )
   .def_readwrite( "opy",      &GCoder::opy )
   .def_readwrite( "opz",      &GCoder::opz )
+
   // Static methods
-  .def( "max_x", &GCoder::max_x )
-  .staticmethod( "max_x" )
-  .def( "max_y", &GCoder::max_y )
-  .staticmethod( "max_y" )
-  .def( "max_z", &GCoder::max_z )
-  .staticmethod( "max_z" )
+  .def( "max_x", &GCoder::max_x ).staticmethod( "max_x" )
+  .def( "max_y", &GCoder::max_y ).staticmethod( "max_y" )
+  .def( "max_z", &GCoder::max_z ).staticmethod( "max_z" )
   ;
 }
 #endif
