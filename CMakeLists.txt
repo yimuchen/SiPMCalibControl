@@ -29,11 +29,7 @@ set(PICO_INCLUDE_PATH "${PICO_FIND_PATH}/include/")
 set(PICO_LIBRARY_PATH "${PICO_FIND_PATH}/lib/")
 
 ## Different architecture library differences.
-if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
-  set(PICO_HEADERS "libps5000/ps5000Api.h")
-else()
-  set(PICO_HEADERS "libps5000-1.5/ps5000Api.h")
-endif()
+set(PICO_HEADERS "libps5000/ps5000Api.h")
 
 ## Finding additional libraries
 find_package(PythonLibs   3 REQUIRED)
