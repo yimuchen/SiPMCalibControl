@@ -47,6 +47,8 @@ public:
   void SetPWM( const unsigned channel,
                const double   duty_cycle,
                const double   frequency );
+  // Only storing the duty cycle for external reference.
+  float GetPWM( unsigned channel );
 
   // High level functions for I2C ADC chip interface
   void  SetADCRange( const int );
@@ -99,8 +101,8 @@ private:
   static int  GPIORead( const int fd );
   static void GPIOWrite( const int fd, const unsigned val );
 
-  void InitPWM();
-  void ClosePWM();
+  void  InitPWM();
+  void  ClosePWM();
 
   static constexpr int ads_default_address = 0x48;
   static int InitI2C();
@@ -122,6 +124,9 @@ private:
   int pwm_enable[2];
   int pwm_duty[2];
   int pwm_period[2];
+
+  // Storing present duty cycle settings .
+  float pwm_duty_value[2];
 
   uint8_t adc_range;
   uint8_t adc_rate;
@@ -179,6 +184,11 @@ GPIO::GPIO() :
   pwm_enable[1] = UNOPENED;
   pwm_duty[1]   = UNOPENED;
   pwm_period[1] = UNOPENED;
+
+  i2c_flush_array[0] = 2500.0;
+  i2c_flush_array[1] = 2500.0;
+  i2c_flush_array[2] = 2500.0;
+  i2c_flush_array[3] = 2500.0;
 
   reference_voltage[0] = 5000.0;
   reference_voltage[1] = 5000.0;
@@ -449,13 +459,33 @@ GPIO::SetPWM( const unsigned c,
   if( pwm_enable[channel] == OPEN_FAILED ){
     sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip%u settings", c );
     throw std::runtime_error( errmsg );
+  } else if( pwm_enable[channel] == UNOPENED ){
+    // In the case that the PWM is unopened. Simply modify the previous
+    // The content of the system
+    if( channel == 0 ){
+      i2c_flush_array[2] = duty_cycle * 5000.0;
+    } else if( channel == 1 ){
+      i2c_flush_array[3] = duty_cycle * 5000.0;
+    }
+
+  } else {
+    write( pwm_enable[channel], "0",        1          );
+    write( pwm_period[channel], period_str, period_len );
+    write( pwm_duty[channel],   duty_str,   duty_len   );
+    write( pwm_enable[channel], "1",        1          );
   }
 
-  write( pwm_enable[channel], "0",        1          );
-  write( pwm_period[channel], period_str, period_len );
-  write( pwm_duty[channel],   duty_str,   duty_len   );
-  write( pwm_enable[channel], "1",        1          );
+  // Storing the PWM value for external reference.
+  pwm_duty_value[channel] = duty_cycle;
 }
+
+float
+GPIO::GetPWM( const unsigned c )
+{
+  const unsigned channel = std::min( unsigned(1), c );
+  return pwm_duty_value[channel];
+}
+
 
 // ******************************************************************************
 // I2C related functions
@@ -618,13 +648,13 @@ void GPIO::FlushLoop()
         usleep( 1e5 );
       }
     } else {
-      i2c_flush_array[0] = 2500;
-      i2c_flush_array[1] = 2500;
-      i2c_flush_array[2] = 2500;
-      i2c_flush_array[3] = 2500;
+      i2c_flush_array[0] = i2c_flush_array[0];
+      i2c_flush_array[1] = i2c_flush_array[1];
+      i2c_flush_array[2] = i2c_flush_array[2];
+      i2c_flush_array[3] = i2c_flush_array[3];
     }
 
-    usleep(50000); // 50 milliseconds
+    usleep( 50000 );// 50 milliseconds
   }
 }
 
@@ -683,6 +713,7 @@ BOOST_PYTHON_MODULE( gpio )
                     .def( "light_on",    &GPIO::LightsOn            )
                     .def( "light_off",   &GPIO::LightsOff           )
                     .def( "pwm",         &GPIO::SetPWM              )
+                    .def( "pwm_duty",    &GPIO::GetPWM              )
                     .def( "adc_read",    &GPIO::ReadADC             )
                     .def( "adc_range",   &GPIO::SetADCRange         )
                     .def( "adc_rate",    &GPIO::SetADCRate          )

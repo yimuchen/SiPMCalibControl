@@ -65,7 +65,7 @@ def update_cache():
     if len(lumi_data) == 2:
       ## Scan type data
       session.zscan_updates.append(chipid)
-      session.zscan_cache[chipid].append((z, lumi_data[0]))
+      session.zscan_cache[chipid].append((z, lumi_data[0], bias))
     elif len(lumi_data) > 2:
       ## Scan type data
       session.lowlight_updates.append(chipid)
@@ -240,6 +240,7 @@ def StandardCalibration(socketio, msg):
       10, 12, 14, 16, 18, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250, 300
   ]
   std_zlist_str = [str(z) for z in std_zlist]
+  power_list = [0.1, 0.5, 0.8, 1.0]
 
   for index, chipid in enumerate(reversed(chip_list)):
 
@@ -249,12 +250,15 @@ def StandardCalibration(socketio, msg):
         'zscan --chipid {chipid} '
         '      --zlist {zlist} '
         '      --sample 100 '
+        '      --power {powerlist}'
         '      --wipefile'
     ).format(
         chipid=chipid,
-        zlist=' '.join(std_zlist_str if even_line else reversed(std_zlist_str)))
+        zlist=' '.join(std_zlist_str if even_line else reversed(std_zlist_str)),
+        powerlist=' '.join([str(x) for x in power_list]))
     lowlight_line = ('lowlightcollect --chipid {chipid} '
-                     '                --sample 100000 '
+                     '                --sample 10000 '
+                     '                --power  0.5 '
                      '                -z {zmax} '
                      '                --wipefile').format(chipid=chipid,
                                                           zmax=max(std_zlist))
@@ -266,6 +270,28 @@ def StandardCalibration(socketio, msg):
       RunLineInThread(zscan_line, 'zscan', chipid)
 
     ## Updating again after command has finished to get all the final results
+
+
+def init_sys_progress_check():
+  session.progress_check = {
+      'vhscan': {
+          list(session.cmd.board.chips())[0]: 1
+      },
+      'vis_align': {chipid: 1
+                    for chipid in session.cmd.board.chips()},
+      'lumi_align': {chipid: 1
+                     for chipid in session.cmd.board.chips()},
+      'zscan': {
+          chipid: 1
+          for chipid in session.cmd.board.chips()
+          if int(chipid) % 2 == 1
+      },
+      'lowlight': {
+          chipid: 1
+          for chipid in session.cmd.board.chips()
+          if int(chipid) % 2 == 0
+      }
+  }
 
 
 def SystemCalibration(socketio, msg):
@@ -290,6 +316,10 @@ def SystemCalibration(socketio, msg):
     return
 
   init_cache()
+  init_sys_progress_check()
+  ReturnClearExisting(socketio)
+  ReturnProgress(socketio)
+  ReturnTileboardLayout(socketio)
 
   WaitUserAction(
       socketio,
@@ -298,17 +328,20 @@ def SystemCalibration(socketio, msg):
        'board is placed in the correct position, and that the <b>HIGH VOLTAGE '
        'POWER</b> for photo detectors is <b>OFF</b> before continuing!'))
 
-  # Use the first chip in the list to perform the list
-  ReturnTileboardLayout(socketio)
-
+  # Use the first chip in the list to perform the transformation matrix
+  # generation
   set_light('on')
-  session.cmd.onecmd(
-      'visualhscan --chipid={chipid} -z 10 --overwrite -f=/dev/null'.format(
-          chipid=list(session.cmd.board.chips())[0]))
+
+  first_chip = list(session.board.chips())[0]
+
+  vishscan_line = ('visualhscan --chipid={chipid} '
+                   '            -z 10             '
+                   '            --overwrite -f=/dev/null').format(
+                       chipid=first_chip)
+  RunLineNoMonitor(vishscan_line, '', first_chip)
   for chipid in session.cmd.board.chips():
-    session.cmd.onecmd(
-        'visualcenterchip --chipid={chipid} -z 10 --overwrite '.format(
-            chipid=chipid))
+    line = 'visualcenterchip --chipid={chipid} -z 10 --overwrite '.format(chipid)
+    RunLineNoMonitor(line, 'vis_align', chipid)
     ReturnTileboardLayout(socketio)
 
   set_light('off')
@@ -320,23 +353,32 @@ def SystemCalibration(socketio, msg):
       'before continuing!'))
 
   for chipid in session.cmd.board.chips():
-    session.cmd.onecmd(
-        ('halign --chipid={chipid} --channel={chipid} '
-         '       --sample=100 -z 10  --overwrite '
-         '       --range=10 --distance=2'
-         '       -f=calib/halign_<BOARDTYPE>_<CHIPID>_<TIMESTAMP>.txt').format(
-             chipid=chipid))
+    line = (
+        'halign --chipid={chipid} --channel={chipid} '
+        '       --sample=100 -z 10  --overwrite '
+        '       --range=10 --distance=2'
+        '       -f=calib/halign_<BOARDTYPE>_<CHIPID>_<TIMESTAMP>.txt').format(
+            chipid=chipid)
+    RunLineInThread(line, 'lumi_align', chipid)
     ReturnTileboardLayout(socketio)
 
   # Generating a luminosity profile from the photo diode on the reference board
+  # Otherwise generate a low light profile for a relative efficiency reference.
   for chipid in session.cmd.board.chips():
     if (int(chipid) % 2 == 1):
-      session.cmd.onecmd(
-          ('zscan --chipid={chipid} --channel={chipid}'
+      line('zscan --chipid={chipid} --channel={chipid}'
            '      --sample=100 --wipefile '
            '      -f=calib/zprofile_<BOARDTYPE>_<CHIPID>_<TIMESTAMP>.txt'
            '      -z 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300'
-           ).format(chipid=chipid))
+           ).format(chipid=chipid)
+      RunLineInThread(line, 'zscan', chipid)
+    else:
+      lowlight_line = ('lowlightcollect --chipid {chipid} '
+                       '                --sample 10000 '
+                       '                -z 300'
+                       '                --wipefile').format(chipid=chipid,
+                                                            zmax=max(std_zlist))
+      RunLineInThread(line, 'lowlight', chipid)
 
   session.cmd.onecmd('savecalib -f=calib/calib_<BOARDTYPE>_<TIMESTAMP>.json')
 

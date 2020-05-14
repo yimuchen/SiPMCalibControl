@@ -165,7 +165,7 @@ class halign(cmdbase.controlcmd):
     elif args.scanz in self.board.lumi_coord[chipid]:
       if self.cmd.prompt_yn(
           str('A lumi alignment for z={0:.1f} already exists for the current session, overwrite?'
-          .format(args.scanz))):
+              .format(args.scanz))):
         self.board.lumi_coord[chipid][args.scanz] = [
             fitval[1],
             np.sqrt(fitcovar[1][1]), fitval[2],
@@ -194,6 +194,12 @@ class zscan(cmdbase.controlcmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.add_zscan_options()
     self.add_savefile_options(zscan.DEFAULT_SAVEFILE)
+    self.parser.add_argument('--power',
+                             '-p',
+                             nargs='*',
+                             type=float,
+                             help=('Give a list of pwm duty cycle values to '
+                                   'try for each coordinate point'))
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
@@ -201,6 +207,9 @@ class zscan(cmdbase.controlcmd):
     self.parse_zscan_options(args)
     self.parse_readout_options(args)
     self.parse_savefile(args)
+    if not args.power:
+      print(args.power)
+      args.power = [self.gpio.pwm_duty(0)]  ## Getting the PWM value
     return args
 
   def run(self, args):
@@ -208,37 +217,40 @@ class zscan(cmdbase.controlcmd):
     unc = []
 
     for idx, z in enumerate(args.zlist):
-      self.check_handle(args)
       self.move_gantry(args.x, args.y, z, False)
+      for power in args.power:
+        self.check_handle(args)
 
-      lumival = 0
-      uncval = 0
-      while 1:
-        lumival, uncval = self.readout.read(channel=args.channel,
-                                            samples=args.samples)
-        if self.readout.mode == self.readout.MODE_PICO:
-          wmax = self.pico.waveformmax(args.channel)
-          if wmax < 100 and self.pico.range > self.pico.rangemin():
-            self.pico.setrange(self.pico.range - 1)
-          elif wmax > 200 and self.pico.range < self.pico.rangemax():
-            self.pico.setrange(self.pico.range + 1)
+        self.gpio.pwm(0, power, 1e5)  # Maximum PWM frequency
+
+        lumival = 0
+        uncval = 0
+        while 1:
+          lumival, uncval = self.readout.read(channel=args.channel,
+                                              samples=args.samples)
+          if self.readout.mode == self.readout.MODE_PICO:
+            wmax = self.pico.waveformmax(args.channel)
+            if wmax < 100 and self.pico.range > self.pico.rangemin():
+              self.pico.setrange(self.pico.range - 1)
+            elif wmax > 200 and self.pico.range < self.pico.rangemax():
+              self.pico.setrange(self.pico.range + 1)
+            else:
+              break
           else:
             break
-        else:
-          break
 
-      lumi.append(lumival)
-      unc.append(uncval)
+        lumi.append(lumival)
+        unc.append(uncval)
 
-      # Writing to screen
-      self.update_luminosity(lumival,
-                             uncval,
-                             Progress=(idx, len(args.zlist)),
-                             Temperature=True)
-      # Writing to file
-      args.savefile.write(
-          self.make_standard_line((lumival, uncval), chip_id=args.chipid))
-      args.savefile.flush()
+        # Writing to screen
+        self.update_luminosity(lumival,
+                               uncval,
+                               Progress=(idx, len(args.zlist)),
+                               Temperature=True)
+        # Writing to file
+        args.savefile.write(
+            self.make_standard_line((lumival, uncval), chip_id=args.chipid))
+        args.savefile.flush()
 
     self.close_savefile(args)
 
@@ -255,6 +267,11 @@ class lowlightcollect(cmdbase.controlcmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.add_zscan_options()
     self.add_savefile_options(lowlightcollect.DEFAULT_SAVEFILE)
+    self.parser.add_argument('--power',
+                             '-p',
+                             type=float,
+                             help=('PWM duty cycle for data collection, using '
+                                   'current value if not specified'))
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
@@ -262,7 +279,8 @@ class lowlightcollect(cmdbase.controlcmd):
     self.parse_zscan_options(args)
     self.parse_readout_options(args)
     self.parse_savefile(args)
-
+    if not args.power:
+      args.power = args.gpio.pwm_duty(0)
     if len(args.zlist) != 1:
       raise Exception("This functions accepts exactly 1 z-value.")
 
@@ -270,7 +288,7 @@ class lowlightcollect(cmdbase.controlcmd):
 
   def run(self, args):
     self.move_gantry(args.x, args.y, args.zlist[0], False)
-
+    self.gpio.pwm(0, args.power, 1e5)
     nparts = int(args.samples / 1000) + 1
     for i in range(nparts):
       self.check_handle(args)
@@ -322,6 +340,8 @@ class timescan(cmdbase.controlcmd):
     args = cmdbase.controlcmd.parse(self, line)
     self.parse_readout_options(args)
     self.parse_savefile(args)
+    if not args.testpwm:
+      args.testpwm = [self.gpio.pwm_duty(0)]
     return args
 
   def run(self, args):
@@ -330,8 +350,8 @@ class timescan(cmdbase.controlcmd):
 
     for i in range(args.nslice):
       self.check_handle(args)
-      if (i % args.pwmslices == 0) and args.testpwm and (len(args.testpwm) > 0):
-        self.cmd.onecmd('pwm -c 0 -d {0}'.format(args.testpwm[pwmindex]))
+      if (i % args.pwmslices == 0):
+        self.gpio.pwm(0, args.testpwm[pwmindex], 1e5)
         pwmindex = (pwmindex + 1) % len(args.testpwm)
 
       lumival, uncval = self.readout.read(channel=args.channel,

@@ -208,6 +208,7 @@ function make_single_chip_summary_html() {
   // Making a bunch of hidden divs
   new_html = '';
   const plot_processes = ['zscan', 'lowlight'];
+  const can_rerun_process = ['zscan', 'lowlight'];
 
 
   for (var i = 0; i < chip_id_list.length; ++i) {
@@ -231,11 +232,17 @@ function make_single_chip_summary_html() {
     coord_html += `<div class="input-row">
                   <span class="input-name">Lumi. coord:</span>
                   <span class="input-units" id="coord-lumi">${lumi_string}</span>
+                  <span class="input-units">
+                  <button id="rerun-lumi-scan-${chipid}" disabled>Rerun</button>
+                  </span>
                   </div>`;
 
     coord_html += `<div class="input-row">
                   <span class="input-name">Vis. coord:</span>
                   <span class="input-units" id="coord-lumi">${vis_string}</span>
+                  <span class="input-units">
+                  <button id="rerun-vis-scan-${chipid}" disabled>Rerun</button>
+                  </span>
                   </div>`;
 
     var progress_html = '';
@@ -254,8 +261,14 @@ function make_single_chip_summary_html() {
                               style="background-color:${color};">
                               ${status}
                         </span >
-                        <span class="input-units">${fullname}</span>
-                        </div>\n`;
+                        <span class="input-units">${fullname}</span>`
+      if (can_rerun_process.includes(tag)) {
+        progress_html += `<span class="input-units">
+                          <button id="rerun-${tag}-${chipid}" disabled>Rerun
+                          </button>
+                          </span>`
+      }
+      progress_html += `</div>\n`;
 
 
       if (!plot_processes.includes(tag)) { continue; }
@@ -312,15 +325,22 @@ function update_readout_result(msg) {
 function make_zscan_plot(chipid, data) {
   var x = []
   var y = []
+  var b = []
 
   for (var i = 0; i < data.length; ++i) {
     x.push(data[i][0]);
     y.push(data[i][1]);
+    b.push(data[i][2]);
   }
 
   var plot_data = [{
     x: x,
     y: y,
+    marker: {
+      size: 5,
+      color: b,
+      colorscale: 'RdBu',
+    },
     type: 'scatter',
     mode: 'markers',
     name: 'Readout value'

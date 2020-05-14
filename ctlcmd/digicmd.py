@@ -44,8 +44,11 @@ class pwm(cmdbase.controlcmd):
                              choices=[0, 1],
                              required=True,
                              help='PWM channel to alter')
-    self.parser.add_argument('--duty', '-d', type=float,
-    required=True,help='Duty cycle')
+    self.parser.add_argument('--duty',
+                             '-d',
+                             type=float,
+                             required=True,
+                             help='Duty cycle of the PWM')
     self.parser.add_argument('--frequency',
                              '-f',
                              type=float,

@@ -87,7 +87,6 @@ class readout(object):
     else:
       return readout_list
 
-
   def read_adc(self, channel=0, samples=100):
     """
     Getting the averaged readout from the ADC chip
@@ -114,16 +113,17 @@ class readout(object):
     chip_y = self.parent.board.orig_coord[str(channel)][1]
 
     r0 = ((x - chip_x)**2 + (y - chip_y)**2)**0.5
+    pwm_val = self.parent.gpio.pwm_duty(0)
 
     if channel >= 0 or channel % 2 == 0:
       ## This is a typical readout, expcet a SiPM output,
-      N_mean = readout.GetNumPixels(r0=r0, z=z)
+      N_mean = readout.GetNumPixels(r0=r0, z=z, pwm=pwm_val)
       pe_list = readout.GetGPList(N_mean, samples)
       return readout.GetSmearedGP(pe_list)
     else:
       ## This is a linear photo diode readout
-      readout_mean = readout.GetPhotoDiodeValue(r0=r0,z=z)
-      return np.random.normal(readout_mean,readout.GAIN/2,samples)
+      readout_mean = readout.GetPhotoDiodeValue(r0=r0, z=z, pwm=pwm_val)
+      return np.random.normal(readout_mean, readout.GAIN / 2, samples)
 
   def read_pico(self, channel=0, samples=10000):
     """
@@ -131,13 +131,13 @@ class readout(object):
     """
 
     val = []
-    while len(val) < samples :
+    while len(val) < samples:
       self.pico.setblocknums(1000, self.pico.postsamples, self.pico.presamples)
       self.pico.startrapidblocks()
       while not self.pico.isready():
         self.parent.gpio.pulse(self.pico.ncaptures, 100)
       self.pico.flushbuffer()
-      val.extend( self.pico.waveformsum(channel, x) for x in range(1000) )
+      val.extend(self.pico.waveformsum(channel, x) for x in range(1000))
     return val
 
   # Constants for fake model
@@ -154,8 +154,8 @@ class readout(object):
   ## Defining global dark current distribution for faster computation
   DC_DISTRIBUTION = DarkCurrentDistribution(GAIN, EPSILON)
 
-  def GetNumPixels(r0, z):
-    N0 = readout.NPIX * 3 * readout.ZMIN**2
+  def GetNumPixels(r0, z, pwm):
+    N0 = readout.NPIX * 3 * readout.ZMIN**2 * readout.PWMMultiper(pwm)
     Nraw = N0 * z / (r0**2 + z**2)**1.5
     return readout.NPIX * (1 - np.exp(-Nraw / readout.NPIX))
 
@@ -203,12 +203,14 @@ class readout(object):
       ans.append(x)
     return ans
 
-  def GetPhotoDiodeValue( r0, z ):
+  def GetPhotoDiodeValue(r0, z, pwm):
     ## Setting this to have the same readout value at the low light end for
     ## Easier comparison.
-    N0 = readout.NPIX * 3  * readout.ZMIN *2
-    return readout.GAIN *  N0 * z / (r0**2 + z**2)**1.5
+    N0 = readout.NPIX * 3 * readout.ZMIN * 2 * readout.PWMMultiper(pwm)
+    return readout.GAIN * N0 * z / (r0**2 + z**2)**1.5
 
+  def PWMMultiper(duty):
+    return 0.5 * (1 + duty**2)
 
   def calc_general_poisson(x, mean, Lambda):
     y = mean + x * Lambda
@@ -217,4 +219,3 @@ class readout(object):
       ans = ans + np.log(y) - np.log(index)
     ans = ans + np.log(mean) - np.log(y)
     return np.exp(-y + ans)
-

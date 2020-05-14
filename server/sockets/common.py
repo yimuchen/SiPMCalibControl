@@ -70,5 +70,9 @@ def ReturnTileboardLayout(socketio):
 def ReturnClearExisting(socketio):
   socketio.emit('clear-display', '', broadcast=True, namespace='/sessionsocket')
 
+
 def DisplayMessage(socketio, msg):
-  socketio.emit('display-message', msg, boardcast=True, namespace='/sessionsocket')
+  socketio.emit('display-message',
+                msg,
+                boardcast=True,
+                namespace='/sessionsocket')
