@@ -55,7 +55,6 @@ def RunAction(socketio, msg):
   """
   Processing of user action input
   """
-  print('received action signal')
   socketio.emit('action-received',
                 '',
                 namespace='/sessionsocket',
@@ -69,12 +68,10 @@ def RunAction(socketio, msg):
     StandardCalibration(socketio, msg['data'])
   elif msg['id'] == 'run-system-calibration':
     SystemCalibration(socketio, msg['data'])
-  elif msg['id'] == 'system-calibration-signoff':
-    SystemCalibrationSignoff(socketio, msg['data'])
-  elif msg['id'] == 'standard-calibration-signoff':
-    StandardCalibrationSignoff(socketio, msg['data'])
+  elif msg['id'].endswith('calibration-signoff'):
+    CalibrationSignoff(socketio, msg['data'], msg['id'].startswith('system'))
   elif msg['id'] == 'rerun-single':
-    RerunCalibration(socketio, msg['data']['action'], msg['data']['detid'])
+    RerunCalibration(socketio, msg['data'])
   else:
     """
     Defaulting to printing a messeage and leaving

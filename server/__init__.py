@@ -46,7 +46,6 @@ def create_server_flask(debug=False):
 
   @socketio.on('run-action-cmd', namespace='/sessionsocket')
   def run_action(msg):
-    print('received action signal')
     RunAction(socketio, msg)
 
 

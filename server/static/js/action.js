@@ -63,10 +63,11 @@ function system_calibration_signoff() {
   });
 
   emit_action_cmd('system-calibration-signoff', {
-    'comments': comment_map
+    'comments': comment_map,
+    'user': $('#sys-calib-user-id').val(),
+    'pwd': $('#sys-calib-user-pwd').val()
   });
 
-  clear_display();
 }
 
 function standard_calibration_signoff() {
@@ -87,10 +88,11 @@ function standard_calibration_signoff() {
   });
 
   emit_action_cmd('standard-calibration-signoff', {
-    'comments': comment_map
+    'comments': comment_map,
+    'user': $('#standard-calib-user-id').val(),
+    'pwd': $('#standard-calib-user-pwd').val()
   });
 
-  clear_display();
 }
 
 
@@ -126,24 +128,32 @@ function run_std_calibration() {
 };
 
 
-function rerun_single(action_tag, detid) {
+function rerun_single(action_tag, detid, extend) {
   emit_action_cmd('rerun-single', {
     'action': action_tag,
-    'detid': detid
+    'detid': detid,
+    'extend': extend,
   });
   const plot_processes = ['zscan', 'lowlight', 'lumialign'];
 
   // Adding the plotting section if the plotting section didn't already exists
 
-  if ( plot_processes.indexOf(action_tag) > 0 ) {
+  if (plot_processes.indexOf(action_tag) > 0) {
     console.log(action_tag);
     console.log($(`#single-det-summary-plot-${detid}-${action_tag}`).length);
 
-    if(($(`#single-det-summary-plot-${detid}-${action_tag}`).length == 0)) {
+    if (($(`#single-det-summary-plot-${detid}-${action_tag}`).length == 0)) {
+      // Generating a new plot div for data display
       $(`#det-plot-container-${detid}`).children(".plot-container").append(
         `<div class="plot" id="single-det-summary-plot-${detid}-${action_tag}">
        </div>`
       )
+    } else {
+      if (!extend) {
+        Plotly.purge(`single-det-summary-plot-${detid}-${action_tag}`);
+        $(`#single-det-summary-plot-${detid}-${action_tag}`).html('');
+      }
+
     }
   }
 }
@@ -167,7 +177,7 @@ function image_setting_update(event) {
 }
 
 function display_user_action(msg) {
-  $('#user-action').removeClass('invisible');
+  $('#user-action').removeClass('hidden');
   $('#user-action-msg').html(msg);
   // Re-enable the button used for completing the user action.
   $('#user-action-complete').prop('disabled', false);
@@ -175,6 +185,6 @@ function display_user_action(msg) {
 
 
 function complete_user_action() {
-  $('#user-action').addClass('invisible');
+  $('#user-action').addClass('hidden');
   socketio.emit('complete-user-action', '');
 }

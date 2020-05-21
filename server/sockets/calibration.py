@@ -3,8 +3,11 @@ import time
 import json
 import re
 import os
+import sys
 import datetime
 import subprocess
+import paramiko
+import traceback
 import numpy as np
 
 from . import session
@@ -183,7 +186,7 @@ def RunLineInThread(line, progress_tag, detid):
     session.run_results = session.cmd.onecmd(line)
 
   if progress_tag not in session.progress_check:
-    session.progress_check[progress_tag] = { str(detid): 1 }
+    session.progress_check[progress_tag] = {str(detid): 1}
 
   with open('/tmp/logging_temp', 'w') as logfile:
     set_logging_descriptor(logfile.fileno())
@@ -386,7 +389,11 @@ def SystemCalibration(socketio, msg):
       RunLineInThread(line, 'lowlight', detid)
 
 
-def RerunCalibration(socketio, action, detid):
+def RerunCalibration(socketio, msg):
+  action = msg['action']
+  detid = msg['detid']
+  extend = msg['extend']
+
   line = ''
   update_progress = False
   if action == 'lumialign':
@@ -399,9 +406,21 @@ def RerunCalibration(socketio, action, detid):
     line = CmdZScan(detid, dense=True if int(detid) < 0 else False, rev=False)
     update_progress = True
 
+  ## Manually removing the `wipefile` options if the extend flag is available
+  if extend:
+    line = line.replace('--wipefile', '')
+  else:
+    ## Manually wiping the data cache in the session
+    if action == 'lumialign':
+      session.lumialign_cache[detid] = []
+    elif action == 'lowlight':
+      session.lowlight_cache[detid] = []
+    elif action == 'zscan':
+      session.zscan_cache[detid] = []
+
   ## Updating the process tag initially which allow for trigger more stuff
   if action not in session.progress_check:
-    session.progress_check[action] = {str(detid): 1 }
+    session.progress_check[action] = {str(detid): 1}
   else:
     session.progress_check[action][str(detid)] = 1
 
@@ -420,7 +439,7 @@ def RerunCalibration(socketio, action, detid):
       ReportTileboardLayout(socketio)
 
 
-def SystemCalibrationSignoff(socketio, data):
+def CalibrationSignoff(socketio, data, store):
   ## Saving the calibration results and comments
   session.cmd.onecmd(
       'savecalib -f={filename}'.format(filename=CalibFilename('summary')))
@@ -428,19 +447,52 @@ def SystemCalibrationSignoff(socketio, data):
   comment_file = session.cmd.sshfiler.remotefile(CalibFilename('comment'),
                                                  wipefile=True)
 
-  data = {key: data['comments'][key].split('\n') for key in data['comments']}
-  comment_file.write(json.dumps(data))
+  comments = {key: data['comments'][key].split('\n') for key in data['comments']}
+  comment_file.write(json.dumps(comments))
 
   ## Generating tarball for file transmission
   tar_file = CalibDirectory() + '.tar.gz'
   directory = CalibDirectory()
 
-  # Copying the calibration session over to the data display server over ssh
-  subprocess.run(['tar', 'zcvf', tar_file, directory])
-  subprocess.run(['scp', tar_file, '/tmp'])
-
   # Making a local copy for future reference
-  subprocess.run(['cp', '-r', directory, 'calib/'])
+  if store and not os.path.isdir('calib/' + directory):
+    subprocess.run(['cp', '-r', directory, 'calib/'])
+
+  # Copying the calibration session over to the data display server over ssh
+  subprocess.run(
+      ['tar', 'zcvf',
+       os.path.basename(tar_file),
+       os.path.basename(directory)],
+      cwd='results/')
+  subprocess.run(['mv', tar_file, os.path.basename(tar_file)])
+  tar_file = os.path.basename(tar_file)
+
+  # Copying the data over scp using user login data using paramiko
+  counter = 0
+  while counter < 5:
+    try:
+      ssh = paramiko.SSHClient()
+      ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+      ssh.connect('hepcms-in2.umd.edu',
+                  username=data['user'],
+                  password=data['pwd'])
+      sftp = ssh.open_sftp()
+      sftp.banner_timeout = 200000
+      sftp.chdir('/data/users/yichen/SiPMCalib/tar')
+      print( tar_file , os.path.exists(tar_file) )
+      sftp.put(tar_file, tar_file)
+      sftp.close()
+      ssh.close()
+      break
+    except Exception as e:
+      traceback.print_stack()
+      DisplayMessage(socketio, str(e))
+      counter = counter + 1
+      time.sleep(2)
+
+  if counter >= 5:
+    DisplayMessage(socketio, "Failed to transfer file")
+    return
 
   ## Cleaning the file in the results directory
   subprocess.run(['rm', '-rf', tar_file])
@@ -448,28 +500,7 @@ def SystemCalibrationSignoff(socketio, data):
 
   update_reference_list()
   clear_cache()
-
-
-def StandardCalibrationSignoff(socketio, data):
-  session.cmd.onecmd(
-      'savecalib -f={filename}'.format(filename=CalibFilename('summary')))
-  comment_file = session.cmd.sshfiler.remotefile(CalibFilename('comment'),
-                                                 wipefile=True)
-  data = {key: data['comments'][key].split('\n') for key in data['comments']}
-  comment_file.write(json.dumps(data))
-
-  tar_file = CalibDirectory() + '.tar.gz'
-  directory = CalibDirectory()
-
-  # Copying the calibration session over to the data display server over ssh
-  subprocess.run(['tar', 'zcvf', tar_file, directory])
-  subprocess.run(['scp', tar_file, '/tmp'])
-
-  ## Cleaning the file in the results directory
-  subprocess.run(['rm', '-rf', tar_file])
-  subprocess.run(['rm', '-rf', directory])
-
-  clear_cache()
+  SignoffComplete(socketio)
 
 
 def update_reference_list():

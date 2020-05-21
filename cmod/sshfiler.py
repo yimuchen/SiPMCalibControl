@@ -101,8 +101,8 @@ class SSHFiler(paramiko.SSHClient):
 ## For testing
 if __name__ == "__main__":
   ssh = SSHFiler()
-  ssh.reconnect('192.168.1.160')
-  ssh.setremotepath('/data/ensc/Homework/SiPMCalib')
+  ssh.reconnect('hepcms-in2.umd.edu')
+  ssh.setremotepath('/data/users/yichen/ServerTest')
 
   import random
 

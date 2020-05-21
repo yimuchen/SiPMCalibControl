@@ -222,7 +222,7 @@ function Status_Color(integer) {
  *******************************************************************************/
 function ProcessFullname(tag) {
   switch (tag) {
-    case 'vhscan': return 'Visual transformation construction';
+    case 'vhscan': return 'Visual Matrix';
     case 'visalign': return 'Visual alignment';
     case 'zscan': return 'Intensity scan';
     case 'lowlight': return 'Low light profile';

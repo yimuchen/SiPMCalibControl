@@ -81,3 +81,9 @@ input#standard-calib-user-pwd {
   width:10em;
   text-align: left;
 }
+
+button[id^="rerun-"]{
+  padding-left: 0px;
+  padding-right: 0px;
+  font-size: 0.8em;
+}

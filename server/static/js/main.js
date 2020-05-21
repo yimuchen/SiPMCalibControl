@@ -36,6 +36,7 @@ $(document).ready(function () {
   socketio.on('clear-display', clear_display);
   socketio.on('report-valid-reference', update_valid_reference);
   socketio.on('report-sign-off', show_sign_off);
+  socketio.on('signoff-complete', complete_signoff);
 
   /**
    * Listing socket actions to perform on specific button presses

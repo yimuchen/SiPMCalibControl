@@ -226,13 +226,16 @@ function make_single_det_summary_html() {
   var plot_figure_html = '';
   const plot_processes = ['zscan', 'lowlight', 'lumialign'];
   const can_rerun_process = ['zscan', 'lowlight'];
+  const can_extend_process = ['zscan', 'lowlight'];
 
 
   for (var i = 0; i < det_id_list.length; ++i) {
-    const detid = det_id_list[i];
+    var detid = det_id_list[i];
     const orig_string = make_coordinate_string(detid, 'orig');
     const lumi_string = make_coordinate_string(detid, 'lumi');
     const vis_string = make_coordinate_string(detid, 'vis');
+
+    console.log(detid);
 
 
     var coord_html = ''
@@ -240,6 +243,8 @@ function make_single_det_summary_html() {
                   <span class="input-name">Det ID:</span>
                   <span class="input-units"> ${detid} </span>
                   </div>`;
+    console.log(detid);
+    console.log(coord_html);
 
     coord_html += `<div class="input-row">
                   <span class="input-name">Coordinates:</span>
@@ -252,7 +257,7 @@ function make_single_det_summary_html() {
                   <span class="input-units">
                   <button id="rerun-lumi-scan-${detid}"
                           class="action-button",
-                          onclick="rerun_single('lumialign','${detid}')"
+                          onclick="rerun_single('lumialign','${detid}',false)"
                           disabled>
                           Rerun</button>
                   </span>
@@ -264,7 +269,7 @@ function make_single_det_summary_html() {
                   <span class="input-units">
                   <button class="action-button"
                           id="rerun-vis-scan-${detid}"
-                          onclick="rerun_single('visalign','${detid}')"
+                          onclick="rerun_single('visalign','${detid}',false)"
                           disabled>
                           Rerun</button>
                   </span>
@@ -287,18 +292,29 @@ function make_single_det_summary_html() {
                               ${status}
                         </span >
                         <span class="input-units">${fullname}</span>`
+
       if (can_rerun_process.includes(tag)) {
         progress_html += `<span class="input-units">
                           <button id="rerun-${tag}-${detid}"
-                                  class="action-button"
-                                  onclick="rerun_single('${tag}','${detid}')"
-                                  disabled>
+                             class="action-button"
+                             onclick="rerun_single('${tag}','${detid}',false)"
+                             disabled>
                                   Rerun
                           </button>
                           </span>`
       }
-      progress_html += `</div>\n`;
+      if (can_extend_process.includes(tag)) {
+        progress_html += `<span class="input-units">
+                          <button id="rerun-${tag}-${detid}"
+                             class="action-button"
+                             onclick="rerun_single('${tag}','${detid}',true)"
+                             disabled>
+                                  Extend
+                          </button>
+                          </span>`
+      }
 
+      progress_html += `</div>`
 
       if (!plot_processes.includes(tag)) { continue; }
       plot_html += `<div class="plot"
@@ -306,18 +322,21 @@ function make_single_det_summary_html() {
                     </div>`;
     }
 
+    console.log(detid)
+
     summary_html += `<div id="single-det-summary-${detid}" class="hidden">
                       <div class="input-align">
                       ${coord_html} ${progress_html}
                      </div>
-                     </div>`
+                     </div>`;
 
     plot_figure_html += `<div class="hidden" id="det-plot-container-${detid}">
                          <div class="plot-container">
                          ${plot_html}
                          </div>
-                         </div>`
+                         </div>`;
   }
+
 
   $('#single-det-summary').html(summary_html);
   $('#det-plot-and-figure').html(plot_figure_html);
@@ -603,4 +622,10 @@ function update_valid_reference(data) {
 
 function show_sign_off(data) {
   $(`#${data}-calib-signoff-container`).removeClass("hidden");
+}
+
+function complete_signoff() {
+  clear_display();
+  $('#system-calib-signoff-container').addClass("hidden");
+  $('#standard-calib-signoff-container').addClass("hidden");
 }

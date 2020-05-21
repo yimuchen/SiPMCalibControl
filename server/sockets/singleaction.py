@@ -34,6 +34,14 @@ def DisplayMessage(socketio, msg):
                 boardcast=True,
                 namespace='/sessionsocket')
 
+
+def SignoffComplete(socketio):
+  socketio.emit('signoff-complete',
+                '',
+                boardcast=True,
+                namespace='/sessionsocket')
+
+
 def RunCmdInput(msg):
   execute_cmd = msg['input']
   session.cmd.onecmd(execute_cmd)

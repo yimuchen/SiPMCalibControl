@@ -1,9 +1,9 @@
 #column-container {
   position: relative;
   margin: 0 auto;
-  max-width: 80%;
+  max-width: 100%;
   min-width: 1000px;
-  min-height: 2000px;
+  min-height: 1500px;
 }
 
 #setting-column {
@@ -42,13 +42,13 @@
 .column-container {
   display: flex;
   .left-column{
-    flex:50%;
+    flex:33%;
     padding-top: 10px;
     padding-right: 5px;
     padding-left: 5px;
   }
   .right-column{
-    flex:50%;
+    flex:66%;
     padding-right: 5px;
     padding-left: 5px;
   }
