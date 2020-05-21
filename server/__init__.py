@@ -38,12 +38,11 @@ def create_server_flask(debug=False):
   @socketio.on('connect', namespace='/sessionsocket')
   def monitor_connect():
     print('Monitor client connected')
-    MonitorConnect(socketio)
-    ActionConnect(socketio)
+    SocketConnect(socketio)
 
-  @socketio.on('get-configuration', namespace='/sessionsocket')
+  @socketio.on('get-report', namespace='/sessionsocket')
   def get_system_configuration(msg):
-    RunMonitor(socketio, msg)
+    RunReport(socketio, msg)
 
   @socketio.on('run-action-cmd', namespace='/sessionsocket')
   def run_action(msg):

@@ -1,25 +1,25 @@
 function sync_text_to_range(event) {
-  var range_id = event.target.id ;
+  var range_id = event.target.id;
   var text_id = range_id.replace('-range', '-text');
-  $('#'+text_id).val($('#'+range_id).val());
+  $('#' + text_id).val($('#' + range_id).val());
 }
 
 function sync_range_to_text(event) {
   var id = event.target.id;
   var range_id = id.replace('-text', '-range');
-  var max_val = parseFloat($('#'+range_id).attr('max'));
-  var min_val = parseFloat($('#'+range_id).attr('min'));
-  if ($('#'+id).val() > max_val) {
-    $('#'+id).val(max_val);
-  } else if ($('#'+id).val() < min_val) {
-    $('#'+id).val(min_val);
+  var max_val = parseFloat($('#' + range_id).attr('max'));
+  var min_val = parseFloat($('#' + range_id).attr('min'));
+  if ($('#' + id).val() > max_val) {
+    $('#' + id).val(max_val);
+  } else if ($('#' + id).val() < min_val) {
+    $('#' + id).val(min_val);
   }
-  $('#'+range_id).val($('#'+id).val());
+  $('#' + range_id).val($('#' + id).val());
 }
 
 function sync_pico_range(event) {
   var id = event.target.id;
-  var myval = $('#'+ id).val();
+  var myval = $('#' + id).val();
   var out = $(`#${id}-value`)
   var html = ''
   switch (myval) {
@@ -77,7 +77,6 @@ function update_indicator() {
   });
 }
 
-
 function tab_click(element) {
   if (element.siblings('.tab-content').is(":hidden")) {
     element.children('i').removeClass('fa-angle-left');
@@ -87,4 +86,23 @@ function tab_click(element) {
     element.children('i').addClass('fa-angle-left');
   }
   element.siblings('.tab-content').slideToggle('fast');
+}
+
+function add_comment_line(element) {
+  var det_select_html = `<select class="comment-header">
+                         <option value="general">General</option>`
+  for (var i = 0; i < det_id_list.length; ++i) {
+    var det_id = det_id_list[i];
+    det_select_html += `<option value="det${det_id}">Det ${det_id}</option>`
+  }
+  det_select_html += '</select>'
+
+  var new_html = `<div class="input-row">
+                <div class="input-name">${det_select_html}</div>
+                <div class="input-units comment-content">
+                  <input type="text" class="comment-text"></input>
+                </div>
+              </div>`
+
+  element.siblings('.signoff-comment-lines').append(new_html);
 }

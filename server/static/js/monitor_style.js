@@ -66,7 +66,7 @@ function Layout_Voltage_Plot() {
       ]
     },
     yaxis: {
-      title: "Measured Voltage [mV]",
+      title: "Voltage [mV]",
       range: [
         Math.min(0, Math.min(Math.min(...monitor_voltage1),
           Math.min(...monitor_voltage1))),
@@ -151,6 +151,40 @@ function Layout_LowLight_Plot() {
   return layout_lowlight_plot;
 }
 
+const lowlight_bar_color =  'rgb(41,55,199)';
+
+/********************************************************************************
+ * Plot layout for low-light plots
+ *******************************************************************************/
+const layout_lumialign_plot = {
+  autosize: true,
+  xaxis: {
+    title: "x position [mm]",
+    autorange: true
+  },
+  yaxis: {
+    title: "y position [mm]",
+    autorange: true
+  },
+  zaxis : {
+    title: "Readout V-ns",
+    autorange: true
+  },
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  plot_bgcolor: 'rgba(0,0,0,0)',
+  margin: {
+    l: 60,
+    r: 20,
+    b: 40,
+    t: 20,
+    pad: 5
+  }, title: false
+}
+
+function Layout_LumiAlign_Plot() {
+  return layout_lumialign_plot;
+}
+
 /********************************************************************************
  * Common configurations for plotting
  *******************************************************************************/
@@ -188,9 +222,11 @@ function Status_Color(integer) {
  *******************************************************************************/
 function ProcessFullname(tag) {
   switch (tag) {
-    case 'vis_align': return 'Visual alignment';
-    case 'zscan'    : return 'Intensity scan';
-    case 'lowlight' : return 'Low light profile';
+    case 'vhscan': return 'Visual transformation construction';
+    case 'visalign': return 'Visual alignment';
+    case 'zscan': return 'Intensity scan';
+    case 'lowlight': return 'Low light profile';
+    case 'lumialign': return 'Luminosity alignment';
     default: return 'Custom';
   }
 }

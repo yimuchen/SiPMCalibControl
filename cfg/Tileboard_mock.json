@@ -1,6 +1,6 @@
 {
   "board type": "TBMOCK",
-  "board description": "64 chip tileboard mockup",
+  "board description": "64 det tileboard mockup",
   "board id": "1",
   "default coordinate": {
     "0":  [20,30],

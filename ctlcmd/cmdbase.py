@@ -322,14 +322,14 @@ class controlcmd():
           self.gpio.adc_read(2), self.gpio.ntc_read(0), self.gpio.rtd_read(1))
     self.update(string)
 
-  def make_standard_line(self, lumi_data, chip_id=-100, time=0.0):
+  def make_standard_line(self, lumi_data, det_id=-100, time=0.0):
     """
     This will be the standard format of readout:
-    > Timestamp chipID gantry_x g_y g_z led_bias led_temp sipm_temp readouts
+    > Timestamp detID gantry_x g_y g_z led_bias led_temp sipm_temp readouts
     The readout data can be an arbitrarily long iterable object.
     """
     string = ''
-    string = string + '{time:.2f} {chipid} '.format(time=time, chipid=chip_id)
+    string = string + '{time:.2f} {detid} '.format(time=time, detid=det_id)
     string = string + '{x:.1f} {y:.1f} {z:.1f}'.format(
         x=self.gcoder.opx, y=self.gcoder.opy, z=self.gcoder.opz)
     string = string + ' {bias:.2f} {led:.3f} {sipm:.3f}'.format(
@@ -395,7 +395,7 @@ class controlcmd():
       self.gcoder.opz = z
       pass
 
-  def add_xychip_options(self):
+  def add_xydet_options(self):
     """
     Adding XY motion commands
     """
@@ -410,10 +410,10 @@ class controlcmd():
                                    ' If none is given the current gantry '
                                    'position will be used.'))
     self.parser.add_argument('-c',
-                             '--chipid',
+                             '--detid',
                              type=int,
-                             help=('Specify x-y coordinates via chip id, input '
-                                   'negative value to indicate that the chip is '
+                             help=('Specify x-y coordinates via det id, input '
+                                   'negative value to indicate that the det is '
                                    'a calibration one (so you can still specify '
                                    'coordinates with it)'))
 
@@ -440,7 +440,7 @@ class controlcmd():
     """
     Common arguments for performing x-y scan
     """
-    self.add_xychip_options()
+    self.add_xydet_options()
     self.add_readout_option()
     self.parser.add_argument('-z',
                              '--scanz',
@@ -489,7 +489,7 @@ class controlcmd():
     """
     Common arguments for scaning values along the z axis
     """
-    self.add_xychip_options()
+    self.add_xydet_options()
     self.add_readout_option()
     self.parser.add_argument('-z',
                              '--zlist',
@@ -505,9 +505,9 @@ class controlcmd():
     Parsing the readout option
     """
 
-    ## Defaulting to the chip id if it exists
-    if not args.channel and hasattr(args, 'chipid') and args.chipid >= 0:
-      args.channel = int(args.chipid)
+    ## Defaulting to the det id if it exists
+    if not args.channel and hasattr(args, 'detid') and args.detid >= 0:
+      args.channel = int(args.detid)
 
     ## Resetting mode to current mode if it doesn't already exists
     if not args.mode:
@@ -578,36 +578,36 @@ class controlcmd():
       else:
         args.zlist.sort()  ## Returning sorted result
 
-  def parse_xychip_options(self, args, add_visoffset=False, raw_coord=False):
+  def parse_xydet_options(self, args, add_visoffset=False, raw_coord=False):
     """
-    Parsing the x-y-chip position arguments
+    Parsing the x-y-det position arguments
     """
     ## Setting up alias for board
     board = self.board
 
-    # If not directly specifying the chip id, assuming some calibration chip
+    # If not directly specifying the det id, assuming some calibration det
     # with specified coordinate system. Exit immediately.
-    if args.chipid == None:
-      args.chipid = -100
+    if args.detid == None:
+      args.detid = -100
       if not args.x: args.x = self.gcoder.opx
       if not args.y: args.y = self.gcoder.opy
       return
 
-    ## Attempt to get a board specified chip position.
-    if not str(args.chipid) in board.chips():
-      raise Exception('Chip id was not specified in board type')
+    ## Attempt to get a board specified det position.
+    if not str(args.detid) in board.dets():
+      raise Exception('Det id was not specified in board type')
 
-    ## Raising exception when attempting to overide chip position with raw
+    ## Raising exception when attempting to overide det position with raw
     ## x-y values
     if args.x or args.y:
-      raise Exception('You can either specify chip-id or x y, not both')
+      raise Exception('You can either specify det-id or x y, not both')
 
     # Converting to string (Keys must be strings in json files)
-    chipid = str(args.chipid)
+    detid = str(args.detid)
 
     # Early exit if raw coordinates requested
     if raw_coord:
-      args.x, args.y = board.orig_coord[chipid]
+      args.x, args.y = board.orig_coord[detid]
       return
 
     # Determining current z value ( from argument first, otherwise guessing
@@ -617,26 +617,26 @@ class controlcmd():
                  self.gcoder.opz
 
     if add_visoffset:
-      if any(self.board.vis_coord[chipid]):
-        closest_z = self.find_closest_z(self.board.vis_coord[chipid], current_z)
-        args.x = board.vis_coord[chipid][closest_z][0]
-        args.y = board.vis_coord[chipid][closest_z][1]
+      if any(self.board.vis_coord[detid]):
+        closest_z = self.find_closest_z(self.board.vis_coord[detid], current_z)
+        args.x = board.vis_coord[detid][closest_z][0]
+        args.y = board.vis_coord[detid][closest_z][1]
       else:
         x_offset, y_offset = self.find_xyoffset(current_z)
-        args.x = board.orig_coord[chipid][0] + x_offset
-        args.y = board.orig_coord[chipid][1] + y_offset
+        args.x = board.orig_coord[detid][0] + x_offset
+        args.y = board.orig_coord[detid][1] + y_offset
     else:
-      if any(board.lumi_coord[chipid]):
-        closest_z = self.find_closest_z(self.board.lumi_coord[chipid], current_z)
-        args.x = board.lumi_coord[chipid][closest_z][0]
-        args.y = board.lumi_coord[chipid][closest_z][2]
-      elif any(board.vis_coord[chipid]):
+      if any(board.lumi_coord[detid]):
+        closest_z = self.find_closest_z(self.board.lumi_coord[detid], current_z)
+        args.x = board.lumi_coord[detid][closest_z][0]
+        args.y = board.lumi_coord[detid][closest_z][2]
+      elif any(board.vis_coord[detid]):
         x_offset, y_offset = self.find_xyoffset(current_z)
-        closest_z = self.find_closest_z(self.board.vis_coord[chipid], current_z)
-        args.x = board.vis_coord[chipid][closest_z][0] - x_offset
-        args.y = board.vis_coord[chipid][closest_z][1] - y_offset
+        closest_z = self.find_closest_z(self.board.vis_coord[detid], current_z)
+        args.x = board.vis_coord[detid][closest_z][0] - x_offset
+        args.y = board.vis_coord[detid][closest_z][1] - y_offset
       else:
-        args.x, args.y = board.orig_coord[chipid]
+        args.x, args.y = board.orig_coord[detid]
 
   @staticmethod
   def find_closest_z(my_map, current_z):
@@ -648,38 +648,38 @@ class controlcmd():
     existing calibration
     """
 
-    # If no calibration chip exists, just return a default value (from gantry
+    # If no calibration det exists, just return a default value (from gantry
     # head design.)
     DEFAULT_XOFFSET = -40
     DEFAULT_YOFFSET = 0
-    if not any(self.board.calibchips()):
+    if not any(self.board.calibdets()):
       return DEFAULT_XOFFSET, DEFAULT_YOFFSET
 
-    # Calculations will be based on the "first" calibration chip available
+    # Calculations will be based on the "first" calibration det available
     # That has both lumi and visual alignment offsets
-    for calibchip in self.board.calibchips():
+    for calibdet in self.board.calibdets():
       lumi_x = None
       lumi_y = None
       vis_x = None
       vis_y = None
 
       # Trying to get the luminosity alignment with closest z value
-      if any(self.board.lumi_coord[calibchip]):
-        closestz = self.find_closest_z(self.board.lumi_coord[calibchip],
+      if any(self.board.lumi_coord[calibdet]):
+        closestz = self.find_closest_z(self.board.lumi_coord[calibdet],
                                        currentz)
-        lumi_x = self.board.lumi_coord[calibchip][closestz][0]
-        lumi_y = self.board.lumi_coord[calibchip][closestz][2]
+        lumi_x = self.board.lumi_coord[calibdet][closestz][0]
+        lumi_y = self.board.lumi_coord[calibdet][closestz][2]
 
       # Trying to get the visual alignment with closest z value
-      if any(self.board.vis_coord[calibchip]):
-        closestz = self.find_closest_z(self.board.vis_coord[calibchip], currentz)
-        vis_x = self.board.vis_coord[calibchip][closestz][0]
-        vis_y = self.board.vis_coord[calibchip][closestz][1]
+      if any(self.board.vis_coord[calibdet]):
+        closestz = self.find_closest_z(self.board.vis_coord[calibdet], currentz)
+        vis_x = self.board.vis_coord[calibdet][closestz][0]
+        vis_y = self.board.vis_coord[calibdet][closestz][1]
 
       if lumi_x and lumi_y and vis_x and vis_y:
         return vis_x - lumi_x, vis_y - lumi_y
 
-    # If no calibration chip has both calibration values
+    # If no calibration det has both calibration values
     # Just return the original calibration value.
     return DEFAULT_XOFFSET, DEFAULT_YOFFSET
 

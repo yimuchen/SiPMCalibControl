@@ -89,7 +89,7 @@ class readout(object):
 
   def read_adc(self, channel=0, samples=100):
     """
-    Getting the averaged readout from the ADC chip
+    Getting the averaged readout from the ADC det
     """
     val = []
     for i in range(samples):
@@ -100,7 +100,7 @@ class readout(object):
 
   def read_adc_raw(self, channel):
     """
-    Reading a single ADC value from ADC chip
+    Reading a single ADC value from ADC det
     """
     return self.gpio.adc_read(channel)
 
@@ -109,10 +109,10 @@ class readout(object):
     y = self.parent.gcoder.opy
     z = self.parent.gcoder.opz
 
-    chip_x = self.parent.board.orig_coord[str(channel)][0]
-    chip_y = self.parent.board.orig_coord[str(channel)][1]
+    det_x = self.parent.board.orig_coord[str(channel)][0]
+    det_y = self.parent.board.orig_coord[str(channel)][1]
 
-    r0 = ((x - chip_x)**2 + (y - chip_y)**2)**0.5
+    r0 = ((x - det_x)**2 + (y - det_y)**2)**0.5
     pwm_val = self.parent.gpio.pwm_duty(0)
 
     if channel >= 0 or channel % 2 == 0:
@@ -219,3 +219,7 @@ class readout(object):
       ans = ans + np.log(y) - np.log(index)
     ans = ans + np.log(mean) - np.log(y)
     return np.exp(-y + ans)
+
+if __name__ == "__main__":
+  for r0 in [0,10,20,30]:
+    print(readout.GetNumPixels(r0=r0,z=10,pwm=1.0))

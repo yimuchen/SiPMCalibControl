@@ -50,7 +50,7 @@ public:
   // Only storing the duty cycle for external reference.
   float GetPWM( unsigned channel );
 
-  // High level functions for I2C ADC chip interface
+  // High level functions for I2C ADC det interface
   void  SetADCRange( const int );
   void  SetADCRate( const int );
   float ReadADC( const unsigned channel ) const;
@@ -194,6 +194,9 @@ GPIO::GPIO() :
   reference_voltage[1] = 5000.0;
   reference_voltage[2] = 5000.0;
   reference_voltage[3] = 5000.0;
+
+  pwm_duty_value[0] = 0.5;
+  pwm_duty_value[1] = 0.5;
 }
 
 GPIO::~GPIO()// Turning off LED light when the process has ended.
@@ -378,9 +381,9 @@ GPIO::InitPWM()
 {
   char errmsg[1024];
 
-  int fd = open( "/sys/class/pwm/pwmchip0/export", O_WRONLY );
+  int fd = open( "/sys/class/pwm/pwmdet0/export", O_WRONLY );
   if( fd == OPEN_FAILED ){
-    sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip0/export" );
+    sprintf( errmsg, "Failed to open /sys/class/pwm/pwmdet0/export" );
     pwm_enable[0] = -1;// Flagging the PWM stuff as unopened.
     throw std::runtime_error( errmsg );
   }
@@ -388,22 +391,22 @@ GPIO::InitPWM()
   write( fd, "1", 1 );
 
   // Waiting for the sysfs to generated the corresponding file
-  while( access( "/sys/class/pwm/pwmchip0/pwm0/enable", F_OK ) == OPEN_FAILED ){
+  while( access( "/sys/class/pwm/pwmdet0/pwm0/enable", F_OK ) == OPEN_FAILED ){
     usleep( 1e5 );
   }
 
-  while( access( "/sys/class/pwm/pwmchip0/pwm1/enable", F_OK ) == OPEN_FAILED ){
+  while( access( "/sys/class/pwm/pwmdet0/pwm1/enable", F_OK ) == OPEN_FAILED ){
     usleep( 1e5 );
   }
 
   // Opening the various files for IO
-  pwm_enable[0] = open( "/sys/class/pwm/pwmchip0/pwm0/enable",     O_WRONLY );
-  pwm_duty[0]   = open( "/sys/class/pwm/pwmchip0/pwm0/duty_cycle", O_WRONLY );
-  pwm_period[0] = open( "/sys/class/pwm/pwmchip0/pwm0/period",     O_WRONLY );
+  pwm_enable[0] = open( "/sys/class/pwm/pwmdet0/pwm0/enable",     O_WRONLY );
+  pwm_duty[0]   = open( "/sys/class/pwm/pwmdet0/pwm0/duty_cycle", O_WRONLY );
+  pwm_period[0] = open( "/sys/class/pwm/pwmdet0/pwm0/period",     O_WRONLY );
 
-  pwm_enable[1] = open( "/sys/class/pwm/pwmchip0/pwm0/enable",     O_WRONLY );
-  pwm_duty[1]   = open( "/sys/class/pwm/pwmchip0/pwm0/duty_cycle", O_WRONLY );
-  pwm_period[1] = open( "/sys/class/pwm/pwmchip0/pwm0/period",     O_WRONLY );
+  pwm_enable[1] = open( "/sys/class/pwm/pwmdet0/pwm0/enable",     O_WRONLY );
+  pwm_duty[1]   = open( "/sys/class/pwm/pwmdet0/pwm0/duty_cycle", O_WRONLY );
+  pwm_period[1] = open( "/sys/class/pwm/pwmdet0/pwm0/period",     O_WRONLY );
 
   close( fd );
 }
@@ -420,10 +423,10 @@ GPIO::ClosePWM()
       close( pwm_duty[channel] );
       close( pwm_period[channel] );
 
-      sprintf( errmsg, "/sys/class/pwm/pwmchip%u/unexport", channel );
+      sprintf( errmsg, "/sys/class/pwm/pwmdet%u/unexport", channel );
       int fd = open( errmsg, O_WRONLY );
       if( fd == OPEN_FAILED ){
-        sprintf( errmsg, "Failed /sys/class/pwm/pwmchip%u/unexport", channel );
+        sprintf( errmsg, "Failed /sys/class/pwm/pwmdet%u/unexport", channel );
         throw std::runtime_error( errmsg );
       }
       write( fd, "0", 1 );
@@ -457,7 +460,7 @@ GPIO::SetPWM( const unsigned c,
   unsigned period_len = sprintf( period_str,  "%u", period );
 
   if( pwm_enable[channel] == OPEN_FAILED ){
-    sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip%u settings", c );
+    sprintf( errmsg, "Failed to open /sys/class/pwm/pwmdet%u settings", c );
     throw std::runtime_error( errmsg );
   } else if( pwm_enable[channel] == UNOPENED ){
     // In the case that the PWM is unopened. Simply modify the previous

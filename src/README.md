@@ -56,7 +56,7 @@ library dependencies, and to allow for fast switching for raw trigger controls
 - For references of raw gpio controls (trigger and switches), see the [linux
   kernel documentation][gpio-elinux].
 - For references of PWM related controls, see [here][pwm]
-- For references of ADS1115s ADC chip controls via i2c see [here][ads1115]
+- For references of ADS1115s ADC det controls via i2c see [here][ads1115]
 - For additional PIN reference of the raspberry pi, look at the outputs of the
   [wiring-pi][wiringpi] library.
 
@@ -64,7 +64,7 @@ library dependencies, and to allow for fast switching for raw trigger controls
 
 Files: [visual.cc](visual.cc)
 
-We are using OpenCV to process the inputs of a video stream to find a chip. It
+We are using OpenCV to process the inputs of a video stream to find a det. It
 uses a relatively simple contouring algorithm and dark square finding algorithm
 define the photo-detector position. Details of the implementation are documented
 in the function itself.

@@ -28,17 +28,17 @@ class visualset(cmdbase.controlcmd):
                              type=int,
                              help=('Maximum luminosity threshold of the '
                                    'interior of a contour to be selected as a '
-                                   'chip candidate (typically 0-255)'))
+                                   'det candidate (typically 0-255)'))
     self.parser.add_argument('--size',
                              '-s',
                              type=int,
                              help=('Minimum size of a contour to be '
-                                   'selected as a chip candidate [pixels]'))
+                                   'selected as a det candidate [pixels]'))
     self.parser.add_argument('--ratio',
                              '-r',
                              type=float,
                              help=('Maximum Ratio of the two dimension of a '
-                                   'contour to be selected as a chip '
+                                   'contour to be selected as a det '
                                    'candidate (>1)'))
     self.parser.add_argument('--poly',
                              '-p',
@@ -66,7 +66,7 @@ class visualhscan(cmdbase.controlcmd):
   Performing horizontal scan with camera system
   """
 
-  DEFAULT_SAVEFILE = 'vhscan_<BOARDTYPE>_<BOARDID>_<CHIPID>_<SCANZ>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'vhscan_<BOARDTYPE>_<BOARDID>_<DETID>_<SCANZ>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[VIS HSCAN]')
 
   def __init__(self, cmd):
@@ -86,14 +86,14 @@ class visualhscan(cmdbase.controlcmd):
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
-    self.parse_xychip_options(args, add_visoffset=True)
+    self.parse_xydet_options(args, add_visoffset=True)
     self.parse_savefile(args)
     return args
 
   def run(self, args):
     x, y = self.make_hscan_mesh(args)
 
-    ## New container to account for chip not found in FOV
+    ## New container to account for det not found in FOV
     gantry_x = []
     gantry_y = []
     reco_x = []
@@ -104,7 +104,7 @@ class visualhscan(cmdbase.controlcmd):
       self.check_handle(args)
       self.move_gantry(xval, yval, args.scanz, False)
 
-      center = self.visual.find_chip(args.monitor)
+      center = self.visual.find_det(args.monitor)
 
       if center.x > 0 and center.y > 0:
         gantry_x.append(xval)
@@ -135,20 +135,20 @@ class visualhscan(cmdbase.controlcmd):
               fity[0], np.sqrt(covar_y[0][0]),
               fity[1], np.sqrt(covar_y[1][1])  ) )
 
-    ## Generating calibration chip id if using chip coordinates
-    chipid = str(args.chipid)
-    if not chipid in self.board.visM and int(args.chipid) < 0:
-      self.board.add_calib_chip(args.chipid)
+    ## Generating calibration det id if using det coordinates
+    detid = str(args.detid)
+    if not detid in self.board.visM and int(args.detid) < 0:
+      self.board.add_calib_det(args.detid)
 
     ## Saving rounded coordinates
-    if (not self.gcoder.opz in self.board.visM[chipid] or args.overwrite):
-      self.board.add_visM(chipid, self.gcoder.opz,
+    if (not self.gcoder.opz in self.board.visM[detid] or args.overwrite):
+      self.board.add_visM(detid, self.gcoder.opz,
                           [[fitx[0], fitx[1]], [fity[0], fity[1]]])
-    elif self.gcoder.opz in self.board.visM[chipid]:
+    elif self.gcoder.opz in self.board.visM[detid]:
       if self.cmd.prompt_yn(
           'Tranformation equation for z={0:.1f} already exists, overwrite?'.
           format(args.scanz), 'no'):
-        self.board.add_visM(chipid, self.gcoder.opz,
+        self.board.add_visM(detid, self.gcoder.opz,
                             [[fitx[0], fitx[1]], [fity[0], fity[1]]])
 
     ## Moving back to center
@@ -160,16 +160,16 @@ class visualhscan(cmdbase.controlcmd):
     return a * x + b * y + c
 
 
-class visualcenterchip(cmdbase.controlcmd):
+class visualcenterdet(cmdbase.controlcmd):
   """
-  Moving the gantry so that the chip is in the center of the field of view
+  Moving the gantry so that the det is in the center of the field of view
   """
 
   LOG = log.GREEN('[VIS ALIGN]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    self.add_xychip_options()
+    self.add_xydet_options()
     self.parser.add_argument('-z',
                              '--scanz',
                              type=float,
@@ -183,16 +183,16 @@ class visualcenterchip(cmdbase.controlcmd):
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
-    self.parse_xychip_options(args, add_visoffset=True)
+    self.parse_xydet_options(args, add_visoffset=True)
     if not args.scanz:
       raise Exception('Specify the height to perform the centering operation')
 
-    args.calibchip = args.chipid if (self.board.visM_hasz(
-        args.chipid, args.scanz)) else next(
-            (x for x in self.board.calibchips()
+    args.calibdet = args.detid if (self.board.visM_hasz(
+        args.detid, args.scanz)) else next(
+            (x for x in self.board.calibdets()
              if self.board.visM_hasz(x, args.scanz)), None)
 
-    if args.calibchip == None:
+    if args.calibdet == None:
       self.printerr(('Motion transformation equation was not found for '
                      'position z={0:.1f}mm, please run command '
                      '[visualhscan] first').format(args.scanz))
@@ -207,14 +207,14 @@ class visualcenterchip(cmdbase.controlcmd):
 
       ## Try to find center for a maximum of 3 times
       for findtime in range(10):
-        center = self.visual.find_chip(False)
+        center = self.visual.find_det(False)
         if center.x > 0:
           break
 
-      ## Early exit if chip is not found.
+      ## Early exit if det is not found.
       if (center.x < 0 or center.y < 0):
-        raise Exception(('Chip lost! Check current camera position with '
-                         'command visualchipshow'))
+        raise Exception(('Det lost! Check current camera position with '
+                         'command visualdetshow'))
 
       deltaxy = np.array([
           self.visual.frame_width() / 2 - center.x,
@@ -222,7 +222,7 @@ class visualcenterchip(cmdbase.controlcmd):
       ])
 
       motionxy = np.linalg.solve(
-          np.array(self.board.get_visM(args.calibchip, self.gcoder.opz)),
+          np.array(self.board.get_visM(args.calibdet, self.gcoder.opz)),
           deltaxy)
 
       ## Early exit if difference from center is small
@@ -232,13 +232,13 @@ class visualcenterchip(cmdbase.controlcmd):
                          self.gcoder.opy + motionxy[1], self.gcoder.opz, False)
       time.sleep(0.1)  ## Waiting for the gantry to stop moving
 
-    center = self.visual.find_chip(False)
+    center = self.visual.find_det(False)
     self.printmsg(
       'Gantry position: x={0:.1f} y={1:.1f} | '\
-      'Chip FOV position: x={2:.1f} y={3:.1f}'.
+      'Det FOV position: x={2:.1f} y={3:.1f}'.
         format(self.gcoder.opx, self.gcoder.opy, center.x, center.y))
     self.printmsg(
-      'Chip corner coordinate: '\
+      'Det corner coordinate: '\
       '[{0:d},{1:d}], [{2},{3}], [{4},{5}], [{6},{7}]'.format(
         center.poly_x1, center.poly_y1,
         center.poly_x2, center.poly_y2,
@@ -247,26 +247,26 @@ class visualcenterchip(cmdbase.controlcmd):
       )
     )
 
-    if (not self.board.vis_coord_hasz(args.chipid, self.gcoder.opz)
+    if (not self.board.vis_coord_hasz(args.detid, self.gcoder.opz)
         or args.overwrite):
-      self.board.add_vis_coord(args.chipid, self.gcoder.opz,
+      self.board.add_vis_coord(args.detid, self.gcoder.opz,
                                [self.gcoder.opx, self.gcoder.opy])
 
     # Luminosity calibrated coordinate doesn't exists. displaying the
-    # estimated position from calibration chip position
-    if not self.board.lumi_coord_hasz(args.chipid, self.gcoder.opz):
+    # estimated position from calibration det position
+    if not self.board.lumi_coord_hasz(args.detid, self.gcoder.opz):
       deltax = None
       deltay = None
       currentz = self.gcoder.opz
-      for calibchip in self.board.calibchips():
-        if (self.board.vis_coord_hasz(calibchip, currentz)
-            and any(self.board.lumi_coord[calibchip])):
-          closestz = min(self.board.lumi_coord[calibchip].keys(),
+      for calibdet in self.board.calibdets():
+        if (self.board.vis_coord_hasz(calibdet, currentz)
+            and any(self.board.lumi_coord[calibdet])):
+          closestz = min(self.board.lumi_coord[calibdet].keys(),
                          key=lambda x: abs(x - currentz))
-          deltax = self.board.get_vis_coord(calibchip, currentz)[0] \
-                  - self.board.get_lumi_coord(calibchip,closestz)[0]
-          deltay = self.board.get_vis_coord(calibchip,currentz)[1] \
-                  - self.board.get_lumi_coord(calibchip, closestz)[2]
+          deltax = self.board.get_vis_coord(calibdet, currentz)[0] \
+                  - self.board.get_lumi_coord(calibdet,closestz)[0]
+          deltay = self.board.get_vis_coord(calibdet,currentz)[1] \
+                  - self.board.get_lumi_coord(calibdet, closestz)[2]
         if deltax != None and deltay != None:
           self.printmsg('Estimated Lumi center: x={0} y={1}'.format(
               self.gcoder.opx - deltax, self.gcoder.opy - deltay))
@@ -280,7 +280,7 @@ class visualmaxsharp(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    self.add_xychip_options()
+    self.add_xydet_options()
     self.parser.add_argument('-z',
                              '--startz',
                              type=float,
@@ -296,7 +296,7 @@ class visualmaxsharp(cmdbase.controlcmd):
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
-    self.parse_xychip_options(args, add_visoffset=True)
+    self.parse_xydet_options(args, add_visoffset=True)
     return args
 
   def run(self, args):
@@ -323,7 +323,7 @@ class visualzscan(cmdbase.controlcmd):
   Scanning focus to calibrate z distance
   """
 
-  DEFAULT_SAVEFILE = 'vscan_<CHIPID>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'vscan_<DETID>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[VISZSCAN]')
 
   def __init__(self, cmd):
@@ -339,7 +339,7 @@ class visualzscan(cmdbase.controlcmd):
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
     self.parse_zscan_options(args)
-    self.parse_xychip_options(args, add_visoffset=True)
+    self.parse_xydet_options(args, add_visoffset=True)
     self.parse_savefile(args)
     return args
 
@@ -355,7 +355,7 @@ class visualzscan(cmdbase.controlcmd):
       self.check_handle(args)
       self.move_gantry(args.x, args.y, z, False)
 
-      reco = self.visual.find_chip(args.monitor)
+      reco = self.visual.find_det(args.monitor)
       laplace.append(self.visual.sharpness(args.monitor))
       reco_x.append(reco.x)
       reco_y.append(reco.y)
@@ -385,9 +385,9 @@ class visualzscan(cmdbase.controlcmd):
 # Helper commands for debugging
 
 
-class visualshowchip(cmdbase.controlcmd):
+class visualshowdet(cmdbase.controlcmd):
   """
-  Long display of chip position, until termination signal is obtained.
+  Long display of det position, until termination signal is obtained.
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -399,7 +399,7 @@ class visualshowchip(cmdbase.controlcmd):
     self.init_handle()
     while True:
       self.check_handle(args)
-      self.visual.find_chip(True)
+      self.visual.find_det(True)
       if cv2.waitKey(100) > 0:  ## If any key is pressed
         break
     cv2.destroyAllWindows()

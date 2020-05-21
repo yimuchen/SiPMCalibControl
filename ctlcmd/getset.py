@@ -15,7 +15,7 @@ class set(cmdbase.controlcmd):
                              '-b',
                              type=argparse.FileType(mode='r'),
                              help=('Setting board type via a configuration json '
-                                   'file that lists CHIP_ID with x-y '
+                                   'file that lists DET_ID with x-y '
                                    'coordinates.'))
     self.parser.add_argument('--boardid',
                              '-i',
@@ -125,7 +125,7 @@ class get(cmdbase.controlcmd):
     self.parser.add_argument('--boardtype', action='store_true')
     self.parser.add_argument('--printerdev', action='store_true')
     self.parser.add_argument('--camdev', action='store_true')
-    self.parser.add_argument('--origchip', action='store_true')
+    self.parser.add_argument('--origdet', action='store_true')
     self.parser.add_argument('--align', action='store_true')
     self.parser.add_argument('--pico', action='store_true')
     self.parser.add_argument('--readout', action='store_true')
@@ -151,13 +151,13 @@ class get(cmdbase.controlcmd):
 
   def print_board(self):
     header = log.GREEN('[BOARDTYPE]')
-    msg_format = 'Chip:{0:>4s} | x:{1:5.1f}, y:{2:5.1f}'
+    msg_format = 'Det:{0:>4s} | x:{1:5.1f}, y:{2:5.1f}'
     log.printmsg(header, str(self.board.boardtype))
     log.printmsg(header, str(self.board.boarddescription))
     log.printmsg(header, 'Board ID: ' + self.board.boardid)
-    for chip in self.board.chips():
-      msg = msg_format.format(chip, self.board.orig_coord[chip][0],
-                              self.board.orig_coord[chip][1])
+    for det in self.board.dets():
+      msg = msg_format.format(det, self.board.orig_coord[det][0],
+                              self.board.orig_coord[det][1])
       log.printmsg(header, msg)
 
   def print_printer(self):
@@ -182,34 +182,34 @@ class get(cmdbase.controlcmd):
     lumi_header = log.GREEN('[LUMI_ALIGN]')
     matrix_header = log.GREEN('[VIS_MATRIX]')
     vis_header = log.GREEN('[VIS__ALIGN]')
-    chip_format = log.YELLOW(' CHIP{0:3d}')
+    det_format = log.YELLOW(' DET{0:3d}')
 
     print('Printing alignment information')
 
-    for chip in self.board.chips():
-      chip_str = chip_format.format(int(chip))
-      for z in self.board.lumi_coord[chip].keys():
+    for det in self.board.dets():
+      det_str = det_format.format(int(det))
+      for z in self.board.lumi_coord[det].keys():
         log.printmsg(
-            lumi_header + chip_str,
+            lumi_header + det_str,
             'x:{0:.2f}+-{1:.2f} y:{2:.2f}+-{3:.2f} | at z={4:.1f}'.format(
-                self.board.vis_coord[chip][z][0],
-                self.board.vis_coord[chip][z][2],
-                self.board.vis_coord[chip][z][1],
-                self.board.vis_coord[chip][z][3], z))
-      for z in self.board.visM[chip].keys():
-        log.printmsg(matrix_header + chip_str, '{0} | at z={1:.1f}'.format(
-            self.board.visM[chip][z], z))
-      for z in self.board.vis_coord[chip].keys():
+                self.board.vis_coord[det][z][0],
+                self.board.vis_coord[det][z][2],
+                self.board.vis_coord[det][z][1],
+                self.board.vis_coord[det][z][3], z))
+      for z in self.board.visM[det].keys():
+        log.printmsg(matrix_header + det_str, '{0} | at z={1:.1f}'.format(
+            self.board.visM[det][z], z))
+      for z in self.board.vis_coord[det].keys():
         log.printmsg(
-            vis_header + chip_str, 'x:{0:.2f} y:{1:.2f} | at z={2:.1f}'.format(
-                self.board.vis_coord[chip][z][0],
-                self.board.vis_coord[chip][z][1], z))
+            vis_header + det_str, 'x:{0:.2f} y:{1:.2f} | at z={2:.1f}'.format(
+                self.board.vis_coord[det][z][0],
+                self.board.vis_coord[det][z][1], z))
 
   def print_readout(self):
     log.printmsg(
       log.GREEN('[READOUT]'),
       'PICOSCOPE' if self.readout.mode == readout.MODE_PICO else \
-      'ADC CHIP'  if self.readout.mode == readout.MODE_ADC  else \
+      'ADC DET'  if self.readout.mode == readout.MODE_ADC  else \
       'PREDEFINED MODEL')
 
   def print_action(self):

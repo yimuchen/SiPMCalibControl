@@ -1,192 +1,192 @@
-visualcenterchip --chipid 0 -z 10 --overwrite
-visualcenterchip --chipid 1 -z 10 --overwrite
-visualcenterchip --chipid 2 -z 10 --overwrite
-visualcenterchip --chipid 3 -z 10 --overwrite
-visualcenterchip --chipid 4 -z 10 --overwrite
-visualcenterchip --chipid 5 -z 10 --overwrite
-visualcenterchip --chipid 6 -z 10 --overwrite
-visualcenterchip --chipid 7 -z 10 --overwrite
-visualcenterchip --chipid 15 -z 10 --overwrite
-visualcenterchip --chipid 14 -z 10 --overwrite
-visualcenterchip --chipid 13 -z 10 --overwrite
-visualcenterchip --chipid 12 -z 10 --overwrite
-visualcenterchip --chipid 11 -z 10 --overwrite
-visualcenterchip --chipid 10 -z 10 --overwrite
-visualcenterchip --chipid 9 -z 10 --overwrite
-visualcenterchip --chipid 8 -z 10 --overwrite
-visualcenterchip --chipid 16 -z 10 --overwrite
-visualcenterchip --chipid 17 -z 10 --overwrite
-visualcenterchip --chipid 18 -z 10 --overwrite
-visualcenterchip --chipid 19 -z 10 --overwrite
-visualcenterchip --chipid 20 -z 10 --overwrite
-visualcenterchip --chipid 21 -z 10 --overwrite
-visualcenterchip --chipid 22 -z 10 --overwrite
-visualcenterchip --chipid 23 -z 10 --overwrite
-visualcenterchip --chipid 31 -z 10 --overwrite
-visualcenterchip --chipid 30 -z 10 --overwrite
-visualcenterchip --chipid 29 -z 10 --overwrite
-visualcenterchip --chipid 28 -z 10 --overwrite
-visualcenterchip --chipid 27 -z 10 --overwrite
-visualcenterchip --chipid 26 -z 10 --overwrite
-visualcenterchip --chipid 25 -z 10 --overwrite
-visualcenterchip --chipid 24 -z 10 --overwrite
-visualcenterchip --chipid 32 -z 10 --overwrite
-visualcenterchip --chipid 33 -z 10 --overwrite
-visualcenterchip --chipid 34 -z 10 --overwrite
-visualcenterchip --chipid 35 -z 10 --overwrite
-visualcenterchip --chipid 36 -z 10 --overwrite
-visualcenterchip --chipid 37 -z 10 --overwrite
-visualcenterchip --chipid 38 -z 10 --overwrite
-visualcenterchip --chipid 39 -z 10 --overwrite
-visualcenterchip --chipid 47 -z 10 --overwrite
-visualcenterchip --chipid 46 -z 10 --overwrite
-visualcenterchip --chipid 45 -z 10 --overwrite
-visualcenterchip --chipid 44 -z 10 --overwrite
-visualcenterchip --chipid 43 -z 10 --overwrite
-visualcenterchip --chipid 42 -z 10 --overwrite
-visualcenterchip --chipid 41 -z 10 --overwrite
-visualcenterchip --chipid 40 -z 10 --overwrite
-visualcenterchip --chipid 48 -z 10 --overwrite
-visualcenterchip --chipid 49 -z 10 --overwrite
-visualcenterchip --chipid 50 -z 10 --overwrite
-visualcenterchip --chipid 51 -z 10 --overwrite
-visualcenterchip --chipid 52 -z 10 --overwrite
-visualcenterchip --chipid 53 -z 10 --overwrite
-visualcenterchip --chipid 54 -z 10 --overwrite
-visualcenterchip --chipid 55 -z 10 --overwrite
-visualcenterchip --chipid 63 -z 10 --overwrite
-visualcenterchip --chipid 62 -z 10 --overwrite
-visualcenterchip --chipid 61 -z 10 --overwrite
-visualcenterchip --chipid 60 -z 10 --overwrite
-visualcenterchip --chipid 59 -z 10 --overwrite
-visualcenterchip --chipid 58 -z 10 --overwrite
-visualcenterchip --chipid 57 -z 10 --overwrite
-visualcenterchip --chipid 56 -z 10 --overwrite
-zscan --chipid 0 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 0 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 1 --sample 100000 -z 300 --wipefile
-zscan --chipid 1 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 2 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 2 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 3 --sample 100000 -z 300 --wipefile
-zscan --chipid 3 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 4 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 4 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 5 --sample 100000 -z 300 --wipefile
-zscan --chipid 5 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 6 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 6 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 7 --sample 100000 -z 300 --wipefile
-zscan --chipid 7 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 15 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 15 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 14 --sample 100000 -z 300 --wipefile
-zscan --chipid 14 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 13 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 13 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 12 --sample 100000 -z 300 --wipefile
-zscan --chipid 12 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 11 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 11 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 10 --sample 100000 -z 300 --wipefile
-zscan --chipid 10 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 9 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 9 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 8 --sample 100000 -z 300 --wipefile
-zscan --chipid 8 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 16 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 16 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 17 --sample 100000 -z 300 --wipefile
-zscan --chipid 17 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 18 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 18 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 19 --sample 100000 -z 300 --wipefile
-zscan --chipid 19 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 20 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 20 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 21 --sample 100000 -z 300 --wipefile
-zscan --chipid 21 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 22 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 22 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 23 --sample 100000 -z 300 --wipefile
-zscan --chipid 23 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 31 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 31 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 30 --sample 100000 -z 300 --wipefile
-zscan --chipid 30 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 29 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 29 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 28 --sample 100000 -z 300 --wipefile
-zscan --chipid 28 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 27 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 27 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 26 --sample 100000 -z 300 --wipefile
-zscan --chipid 26 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 25 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 25 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 24 --sample 100000 -z 300 --wipefile
-zscan --chipid 24 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 32 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 32 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 33 --sample 100000 -z 300 --wipefile
-zscan --chipid 33 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 34 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 34 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 35 --sample 100000 -z 300 --wipefile
-zscan --chipid 35 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 36 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 36 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 37 --sample 100000 -z 300 --wipefile
-zscan --chipid 37 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 38 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 38 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 39 --sample 100000 -z 300 --wipefile
-zscan --chipid 39 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 47 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 47 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 46 --sample 100000 -z 300 --wipefile
-zscan --chipid 46 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 45 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 45 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 44 --sample 100000 -z 300 --wipefile
-zscan --chipid 44 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 43 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 43 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 42 --sample 100000 -z 300 --wipefile
-zscan --chipid 42 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 41 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 41 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 40 --sample 100000 -z 300 --wipefile
-zscan --chipid 40 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 48 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 48 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 49 --sample 100000 -z 300 --wipefile
-zscan --chipid 49 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 50 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 50 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 51 --sample 100000 -z 300 --wipefile
-zscan --chipid 51 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 52 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 52 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 53 --sample 100000 -z 300 --wipefile
-zscan --chipid 53 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 54 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 54 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 55 --sample 100000 -z 300 --wipefile
-zscan --chipid 55 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 63 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 63 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 62 --sample 100000 -z 300 --wipefile
-zscan --chipid 62 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 61 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 61 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 60 --sample 100000 -z 300 --wipefile
-zscan --chipid 60 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 59 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 59 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 58 --sample 100000 -z 300 --wipefile
-zscan --chipid 58 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
-zscan --chipid 57 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
-lowlightcollect --chipid 57 --sample 100000 -z 300 --wipefile
-lowlightcollect --chipid 56 --sample 100000 -z 300 --wipefile
-zscan --chipid 56 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+visualcenterdet --detid 0 -z 10 --overwrite
+visualcenterdet --detid 1 -z 10 --overwrite
+visualcenterdet --detid 2 -z 10 --overwrite
+visualcenterdet --detid 3 -z 10 --overwrite
+visualcenterdet --detid 4 -z 10 --overwrite
+visualcenterdet --detid 5 -z 10 --overwrite
+visualcenterdet --detid 6 -z 10 --overwrite
+visualcenterdet --detid 7 -z 10 --overwrite
+visualcenterdet --detid 15 -z 10 --overwrite
+visualcenterdet --detid 14 -z 10 --overwrite
+visualcenterdet --detid 13 -z 10 --overwrite
+visualcenterdet --detid 12 -z 10 --overwrite
+visualcenterdet --detid 11 -z 10 --overwrite
+visualcenterdet --detid 10 -z 10 --overwrite
+visualcenterdet --detid 9 -z 10 --overwrite
+visualcenterdet --detid 8 -z 10 --overwrite
+visualcenterdet --detid 16 -z 10 --overwrite
+visualcenterdet --detid 17 -z 10 --overwrite
+visualcenterdet --detid 18 -z 10 --overwrite
+visualcenterdet --detid 19 -z 10 --overwrite
+visualcenterdet --detid 20 -z 10 --overwrite
+visualcenterdet --detid 21 -z 10 --overwrite
+visualcenterdet --detid 22 -z 10 --overwrite
+visualcenterdet --detid 23 -z 10 --overwrite
+visualcenterdet --detid 31 -z 10 --overwrite
+visualcenterdet --detid 30 -z 10 --overwrite
+visualcenterdet --detid 29 -z 10 --overwrite
+visualcenterdet --detid 28 -z 10 --overwrite
+visualcenterdet --detid 27 -z 10 --overwrite
+visualcenterdet --detid 26 -z 10 --overwrite
+visualcenterdet --detid 25 -z 10 --overwrite
+visualcenterdet --detid 24 -z 10 --overwrite
+visualcenterdet --detid 32 -z 10 --overwrite
+visualcenterdet --detid 33 -z 10 --overwrite
+visualcenterdet --detid 34 -z 10 --overwrite
+visualcenterdet --detid 35 -z 10 --overwrite
+visualcenterdet --detid 36 -z 10 --overwrite
+visualcenterdet --detid 37 -z 10 --overwrite
+visualcenterdet --detid 38 -z 10 --overwrite
+visualcenterdet --detid 39 -z 10 --overwrite
+visualcenterdet --detid 47 -z 10 --overwrite
+visualcenterdet --detid 46 -z 10 --overwrite
+visualcenterdet --detid 45 -z 10 --overwrite
+visualcenterdet --detid 44 -z 10 --overwrite
+visualcenterdet --detid 43 -z 10 --overwrite
+visualcenterdet --detid 42 -z 10 --overwrite
+visualcenterdet --detid 41 -z 10 --overwrite
+visualcenterdet --detid 40 -z 10 --overwrite
+visualcenterdet --detid 48 -z 10 --overwrite
+visualcenterdet --detid 49 -z 10 --overwrite
+visualcenterdet --detid 50 -z 10 --overwrite
+visualcenterdet --detid 51 -z 10 --overwrite
+visualcenterdet --detid 52 -z 10 --overwrite
+visualcenterdet --detid 53 -z 10 --overwrite
+visualcenterdet --detid 54 -z 10 --overwrite
+visualcenterdet --detid 55 -z 10 --overwrite
+visualcenterdet --detid 63 -z 10 --overwrite
+visualcenterdet --detid 62 -z 10 --overwrite
+visualcenterdet --detid 61 -z 10 --overwrite
+visualcenterdet --detid 60 -z 10 --overwrite
+visualcenterdet --detid 59 -z 10 --overwrite
+visualcenterdet --detid 58 -z 10 --overwrite
+visualcenterdet --detid 57 -z 10 --overwrite
+visualcenterdet --detid 56 -z 10 --overwrite
+zscan --detid 0 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 0 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 1 --sample 100000 -z 300 --wipefile
+zscan --detid 1 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 2 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 2 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 3 --sample 100000 -z 300 --wipefile
+zscan --detid 3 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 4 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 4 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 5 --sample 100000 -z 300 --wipefile
+zscan --detid 5 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 6 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 6 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 7 --sample 100000 -z 300 --wipefile
+zscan --detid 7 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 15 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 15 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 14 --sample 100000 -z 300 --wipefile
+zscan --detid 14 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 13 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 13 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 12 --sample 100000 -z 300 --wipefile
+zscan --detid 12 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 11 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 11 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 10 --sample 100000 -z 300 --wipefile
+zscan --detid 10 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 9 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 9 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 8 --sample 100000 -z 300 --wipefile
+zscan --detid 8 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 16 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 16 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 17 --sample 100000 -z 300 --wipefile
+zscan --detid 17 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 18 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 18 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 19 --sample 100000 -z 300 --wipefile
+zscan --detid 19 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 20 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 20 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 21 --sample 100000 -z 300 --wipefile
+zscan --detid 21 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 22 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 22 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 23 --sample 100000 -z 300 --wipefile
+zscan --detid 23 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 31 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 31 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 30 --sample 100000 -z 300 --wipefile
+zscan --detid 30 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 29 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 29 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 28 --sample 100000 -z 300 --wipefile
+zscan --detid 28 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 27 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 27 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 26 --sample 100000 -z 300 --wipefile
+zscan --detid 26 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 25 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 25 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 24 --sample 100000 -z 300 --wipefile
+zscan --detid 24 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 32 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 32 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 33 --sample 100000 -z 300 --wipefile
+zscan --detid 33 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 34 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 34 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 35 --sample 100000 -z 300 --wipefile
+zscan --detid 35 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 36 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 36 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 37 --sample 100000 -z 300 --wipefile
+zscan --detid 37 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 38 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 38 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 39 --sample 100000 -z 300 --wipefile
+zscan --detid 39 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 47 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 47 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 46 --sample 100000 -z 300 --wipefile
+zscan --detid 46 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 45 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 45 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 44 --sample 100000 -z 300 --wipefile
+zscan --detid 44 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 43 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 43 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 42 --sample 100000 -z 300 --wipefile
+zscan --detid 42 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 41 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 41 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 40 --sample 100000 -z 300 --wipefile
+zscan --detid 40 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 48 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 48 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 49 --sample 100000 -z 300 --wipefile
+zscan --detid 49 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 50 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 50 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 51 --sample 100000 -z 300 --wipefile
+zscan --detid 51 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 52 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 52 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 53 --sample 100000 -z 300 --wipefile
+zscan --detid 53 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 54 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 54 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 55 --sample 100000 -z 300 --wipefile
+zscan --detid 55 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 63 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 63 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 62 --sample 100000 -z 300 --wipefile
+zscan --detid 62 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 61 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 61 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 60 --sample 100000 -z 300 --wipefile
+zscan --detid 60 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 59 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 59 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 58 --sample 100000 -z 300 --wipefile
+zscan --detid 58 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile
+zscan --detid 57 --zlist 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300 --sample 100 --wipefile
+lowlightcollect --detid 57 --sample 100000 -z 300 --wipefile
+lowlightcollect --detid 56 --sample 100000 -z 300 --wipefile
+zscan --detid 56 --zlist 300 250 200 150 100 90 80 70 60 50 40 30 20 18 16 14 12 10 --sample 100 --wipefile

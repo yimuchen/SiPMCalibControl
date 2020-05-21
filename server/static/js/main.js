@@ -13,9 +13,13 @@ $(document).ready(function () {
 
   socketio.on('connect', function (msg) {
     console.log('Connected to socket!');
-    socketio.emit('get-configuration', 'progress');
-    socketio.emit('get-configuration', 'tileboard-layout');
-    socketio.emit('get-configuration', 'readout');
+    socketio.emit('get-report', 'status');
+    // Progress must be initialized before tileboard layout and readout!
+    socketio.emit('get-report', 'progress');
+    socketio.emit('get-report', 'tileboard-layout');
+    socketio.emit('get-report', 'readout');
+    socketio.emit('get-report', 'valid-reference')
+    socketio.emit('get-report', 'sign-off');
   });
 
   /**
@@ -23,13 +27,15 @@ $(document).ready(function () {
    * Functions here will be implemented in the monitor.js file
    */
   socketio.on('confirm', connect_update);
-  socketio.on('monitor-update', monitor_update);
+  socketio.on('report-status', status_update);
   // socketio.on('visual-settings-update', visual_settings_update);
   socketio.on('tileboard-layout', init_tileboard_layout);
   socketio.on('update-readout-results', update_readout_result);
   socketio.on('display-message', display_message);
   socketio.on('progress-update', progress_update);
   socketio.on('clear-display', clear_display);
+  socketio.on('report-valid-reference', update_valid_reference);
+  socketio.on('report-sign-off', show_sign_off);
 
   /**
    * Listing socket actions to perform on specific button presses
@@ -45,10 +51,14 @@ $(document).ready(function () {
   $('#raw-cmd-input').on('click', raw_cmd_input);
   $('#image-setting-update').on('click', image_setting_update);
   $('#user-action-complete').on('click', complete_user_action);
+  $('#system-calib-signoff').on('click', system_calibration_signoff);
+  $('#standard-calib-signoff').on('click', standard_calibration_signoff);
 
   // Disable all buttons by default
   // Buttons will be released by action-complete signal from the server.
-  $('button').each(function () { $(this).prop('disabled', true); });
+  $('button.action-button').each(function () {
+    $(this).prop('disabled', true);
+  });
 
 
   /**
@@ -64,6 +74,8 @@ $(document).ready(function () {
   $('input[id^="channel-"][id$="-range"]').on('input', sync_pico_range);
   $('input[id^="trigger-level"]').on('input', sync_pico_trigger);
   $('.tab-title').on('click', function () { tab_click($(this)); });
-
+  $('.add-comment-line').on('click',
+    function () { add_comment_line($(this)); });
   update_indicator(); /** Updating all the close-tag icons */
+
 });

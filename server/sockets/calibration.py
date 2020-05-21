@@ -2,40 +2,57 @@ import threading
 import time
 import json
 import re
+import os
+import datetime
+import subprocess
 import numpy as np
-from io import StringIO
-from contextlib import redirect_stdout
 
 from . import session
-from .common import *
+from .singleaction import *
+from .report import *
+from .format import *
+
+## For redirecting logging output
 from ..cmod.logger import *
+
+
+def clear_cache():
+  session.zscan_cache = {}
+  session.lumialign_cache = {}
+  session.lowlight_cache = {}
+  session.zscan_updates = []
+  session.lowlight_updates = []
+  session.lumialign_updates = []
+  session.progress_check = {}
+  session.calib_session_time = None
+  session.cmd.board.clear()
 
 
 def init_cache():
   """
   Initializing data cache to store calibration results
   """
-  session.zscan_cache = {chipid: [] for chipid in session.cmd.board.chips()}
-  session.lowlight_cache = {chipid: [] for chipid in session.cmd.board.chips()}
+  session.zscan_cache = {detid: [] for detid in session.cmd.board.dets()}
+  session.lumialign_cache = {detid: [] for detid in session.cmd.board.dets()}
+  session.lowlight_cache = {detid: [] for detid in session.cmd.board.dets()}
   session.zscan_updates = []
   session.lowlight_updates = []
-  """
-  Creating the empty figures if it doesn't already exits
-  """
+  session.lumialign_updates = []
+  session.calib_session_time = datetime.datetime.now()
 
 
 def init_calib_progress_check():
   session.progress_check = {
-      'vis_align': {chipid: 1
-                    for chipid in session.cmd.board.chips()},
-      'zscan': {chipid: 1
-                for chipid in session.cmd.board.chips()},
-      'lowlight': {chipid: 1
-                   for chipid in session.cmd.board.chips()}
+      'visalign': {detid: 1
+                   for detid in session.cmd.board.dets()},
+      'zscan': {detid: 1
+                for detid in session.cmd.board.dets()},
+      'lowlight': {detid: 1
+                   for detid in session.cmd.board.dets()}
   }
 
 
-def update_cache():
+def update_cache(progress_tag):
   """
   Updating the files from the readfile results
   """
@@ -46,42 +63,56 @@ def update_cache():
     """
     return
 
+  def update_zscan(detid, tokens):
+    z = float(tokens[4])
+    bias = float(tokens[5])
+    lumi = [float(token) for token in tokens[8:]]
+    if len(lumi) == 2:  # Must satisfy standard format
+      session.zscan_updates.append(detid)
+      session.zscan_cache[detid].append([z, lumi[0], bias])
+
+  def update_lowlight(detid, tokens):
+    lumi = [float(token) for token in tokens[8:]]
+    if len(lumi) > 10:
+      session.lowlight_updates.append(detid)
+      if len(session.lowlight_cache[detid]) == 0:
+        content, bins = np.histogram(lumi, 40)
+        session.lowlight_cache[detid] = [content, bins]
+      else:  ## Appending a histogram!
+        session.lowlight_cache[detid][0] += np.histogram(
+            lumi, bins=session.lowlight_cache[detid][1])[0]
+
+  def update_lumiscan(detid, tokens):
+    x = float(tokens[2])
+    y = float(tokens[3])
+    lumi = [float(token) for token in tokens[8:]]
+    if len(lumi) == 2:
+      session.lumialign_updates.append(detid)
+      session.lumialign_cache[detid].append([x, y, lumi[0]])
+
   lines = session.cmd.sshfiler.readfile.read().split('\n')
   for line in lines:
     tokens = line.split()
     if len(tokens) < 9:
       ## Ignoring lines that are not of standard format
       continue
-    chipid = str(tokens[1])
-    if not chipid in session.cmd.board.orig_coord:
+    detid = str(tokens[1])
+    if not detid in session.cmd.board.orig_coord:
       # Ignoring lines where the data is wrongly parsed
-      # And the result chip id turn out to be garbage.
+      # And the result det id turn out to be garbage.
       continue
 
-    z = float(tokens[4])
-    bias = float(tokens[5])
-    lumi_data = [float(token) for token in tokens[8:]]
-
-    if len(lumi_data) == 2:
-      ## Scan type data
-      session.zscan_updates.append(chipid)
-      session.zscan_cache[chipid].append((z, lumi_data[0], bias))
-    elif len(lumi_data) > 2:
-      ## Scan type data
-      session.lowlight_updates.append(chipid)
-      try:  ## Occassionally crashes here.
-        if len(session.lowlight_cache[chipid]) == 0:
-          session.lowlight_cache[chipid] = np.histogram(lumi_data, 40)
-        else:
-          ## Appending a histogram!
-          session.lowlight_cache[chipid][0] += np.histogram(
-              lumi_data, bins=session.lowlight_cache[chipid][1])[0]
-      except:
-        pass
+    if progress_tag == 'zscan':
+      update_zscan(detid, tokens)
+    elif progress_tag == 'lowlight':
+      update_lowlight(detid, tokens)
+    elif progress_tag == 'lumialign':
+      update_lumiscan(detid, tokens)
 
   ## Sorting to unique.
   session.zscan_updates = sorted(set(session.zscan_updates))
   session.lowlight_updates = sorted(set(session.lowlight_updates))
+  session.lumialign_updates = sorted(set(session.lumialign_updates))
 
 
 def update_progress():
@@ -114,46 +145,49 @@ def set_light(state):
     pass
 
 
-def GetSortedChips():
+def GetSortedDets():
   """
-  Very Naive algorithm for finding the shortest path within the list of chips.
-  Starting from the 0th chip, keep finding the closest unvisited neighbor until
+  Very Naive algorithm for finding the shortest path within the list of dets.
+  Starting from the 0th det, keep finding the closest unvisited neighbor until
   the list is exhausted.
   """
-  chip_sort_list = []
+  det_sort_list = []
 
-  chip_sort_list.append(list(session.cmd.board.chips())[0])
+  det_sort_list.append(list(session.cmd.board.dets())[0])
 
-  while len(chip_sort_list) < len(session.cmd.board.chips()):
-    x0, y0 = session.cmd.board.orig_coord[chip_sort_list[-1]]
+  while len(det_sort_list) < len(session.cmd.board.dets()):
+    x0, y0 = session.cmd.board.orig_coord[det_sort_list[-1]]
 
     distance = [{
-        'id': chipid,
+        'id': detid,
         'dist': [abs(c[0] - x0), abs(c[1] - y0)]
     }
-                for chipid, c in session.cmd.board.orig_coord.items()
-                if chipid not in chip_sort_list]
+                for detid, c in session.cmd.board.orig_coord.items()
+                if detid not in det_sort_list]
 
     def compare(a):
       return ((a['dist'][0]**2 + a['dist'][1]**2) * 1000 * 1000 +
               a['dist'][0] * 1000 + a['dist'][1])
 
-    next_chip = min(distance, key=compare)
-    chip_sort_list.append(next_chip['id'])
+    next_det = min(distance, key=compare)
+    det_sort_list.append(next_det['id'])
 
-  return chip_sort_list
+  return det_sort_list
 
 
-def RunLineInThread(line, progress_tag, chipid):
+def RunLineInThread(line, progress_tag, detid):
   """
   Running a single line in a separate thread to allow for parallel monitoring
   """
   def run_with_save(line):
     session.run_results = session.cmd.onecmd(line)
 
+  if progress_tag not in session.progress_check:
+    session.progress_check[progress_tag] = { str(detid): 1 }
+
   with open('/tmp/logging_temp', 'w') as logfile:
     set_logging_descriptor(logfile.fileno())
-    session.progress_check[progress_tag][chipid] = 2
+    session.progress_check[progress_tag][detid] = 2
 
     ## Strange syntax to avoid string splitting  :/
     cmdthread = threading.Thread(target=run_with_save, args=(line, ))
@@ -162,25 +196,29 @@ def RunLineInThread(line, progress_tag, chipid):
     ## Waiting for command to update
     while cmdthread.is_alive():
       time.sleep(0.1)  # Update every 0.1 second max
-      update_cache()
-      session.progress_check[progress_tag][chipid] = 2
+      update_cache(progress_tag)
+      session.progress_check[progress_tag][detid] = 2
       update_progress()
 
   set_logging_descriptor(1)  ## Setting back to STDOUT
-  session.progress_check[progress_tag][chipid] = session.run_results
-  update_cache()
+  session.progress_check[progress_tag][detid] = session.run_results
+  update_cache(progress_tag)
   update_progress()
+
+  ## Forcing 100% Completion on command exit
+  if 'current' in session.progress_check:
+    session.progress_check['current'][0] = session.progress_check['current'][1]
   print('Finished: ', line)
 
 
-def RunLineNoMonitor(line, progress_tag, chipid):
+def RunLineNoMonitor(line, progress_tag, detid):
   """
   Running single command without thread. Meant for fast commands such as visual
   calibration.
   """
   with open('/tmp/logging_temp', 'w') as logfile:
     set_logging_descriptor(logfile.fileno())
-    session.progress_check[progress_tag][chipid] = session.cmd.onecmd(line)
+    session.progress_check[progress_tag][detid] = session.cmd.onecmd(line)
     update_progress()
   set_logging_descriptor(1)  # MOVING BACK TO STDOUT
   print('Finished: ', line)
@@ -190,7 +228,7 @@ def StandardCalibration(socketio, msg):
   """
   Running a standard calibration sequence
   """
-  print(msg)
+  clear_cache()
 
   ## Resetting the cache
   status = session.cmd.onecmd(
@@ -207,10 +245,10 @@ def StandardCalibration(socketio, msg):
   init_calib_progress_check()
   ReturnClearExisting(socketio)
 
-  ReturnProgress(socketio)
-  ## Updating list of expected actions before giving a list of chips
-  ReturnTileboardLayout(socketio)
-  chip_list = GetSortedChips()
+  ## Updating list of expected actions before giving a list of dets
+  ReportProgress(socketio)
+  ReportTileboardLayout(socketio)
+  det_list = GetSortedDets()
 
   WaitUserAction(socketio,
                  ('Starting visual calibration sequences, please make sure the '
@@ -220,11 +258,12 @@ def StandardCalibration(socketio, msg):
   ## Turn lights on
   set_light('on')
 
-  for chipid in chip_list:
-    line = 'visualcenterchip --chipid {chipid} -z 10 --overwrite'.format(
-        chipid=chipid)
-    RunLineNoMonitor(line, 'vis_align', chipid)
-    ReturnTileboardLayout(socketio)
+  for detid in det_list:
+    line = ('visualcenterdet --detid {detid}'
+            '                -z 10 '
+            '                --overwrite').format(detid=detid)
+    RunLineNoMonitor(line, 'visalign', detid)
+    ReportTileboardLayout(socketio)
     ## Returning tileboard layout after visual calibration
 
   set_light('off')
@@ -234,63 +273,40 @@ def StandardCalibration(socketio, msg):
                   '<b>HIGH VOLTAGE POWER</b> on the SiPM is <b>ON</b> before '
                   'continuing!'))
 
-  ReturnReadoutUpdate(socketio)
+  ReportReadout(socketio)
 
-  std_zlist = [
-      10, 12, 14, 16, 18, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250, 300
-  ]
-  std_zlist_str = [str(z) for z in std_zlist]
-  power_list = [0.1, 0.5, 0.8, 1.0]
-
-  for index, chipid in enumerate(reversed(chip_list)):
-
+  for index, detid in enumerate(reversed(det_list)):
     even_line = bool((index % 2) == 0)
-
-    zscan_line = (
-        'zscan --chipid {chipid} '
-        '      --zlist {zlist} '
-        '      --sample 100 '
-        '      --power {powerlist}'
-        '      --wipefile'
-    ).format(
-        chipid=chipid,
-        zlist=' '.join(std_zlist_str if even_line else reversed(std_zlist_str)),
-        powerlist=' '.join([str(x) for x in power_list]))
-    lowlight_line = ('lowlightcollect --chipid {chipid} '
-                     '                --sample 10000 '
-                     '                --power  0.5 '
-                     '                -z {zmax} '
-                     '                --wipefile').format(chipid=chipid,
-                                                          zmax=max(std_zlist))
+    zscan_line = CmdZScan(detid=detid,
+                          dense=False,
+                          rev=False if even_line else True)
+    lowlight_line = CmdLowLightCollect(detid)
     if even_line:
-      RunLineInThread(zscan_line, 'zscan', chipid)
-      RunLineInThread(lowlight_line, 'lowlight', chipid)
+      RunLineInThread(zscan_line, 'zscan', detid)
+      RunLineInThread(lowlight_line, 'lowlight', detid)
     else:
-      RunLineInThread(lowlight_line, 'lowlight', chipid)
-      RunLineInThread(zscan_line, 'zscan', chipid)
-
+      RunLineInThread(lowlight_line, 'lowlight', detid)
+      RunLineInThread(zscan_line, 'zscan', detid)
     ## Updating again after command has finished to get all the final results
 
 
 def init_sys_progress_check():
   session.progress_check = {
       'vhscan': {
-          list(session.cmd.board.chips())[0]: 1
+          list(session.cmd.board.dets())[0]: 1
       },
-      'vis_align': {chipid: 1
-                    for chipid in session.cmd.board.chips()},
-      'lumi_align': {chipid: 1
-                     for chipid in session.cmd.board.chips()},
-      'zscan': {
-          chipid: 1
-          for chipid in session.cmd.board.chips()
-          if int(chipid) % 2 == 1
-      },
-      'lowlight': {
-          chipid: 1
-          for chipid in session.cmd.board.chips()
-          if int(chipid) % 2 == 0
-      }
+      'visalign': {detid: 1
+                   for detid in session.cmd.board.dets()},
+      'lumialign': {detid: 1
+                    for detid in session.cmd.board.dets()},
+      'zscan':
+      {detid: 1
+       for detid in session.cmd.board.dets()
+       if int(detid) % 2 == 1},
+      'lowlight':
+      {detid: 1
+       for detid in session.cmd.board.dets()
+       if int(detid) % 2 == 0}
   }
 
 
@@ -298,12 +314,11 @@ def SystemCalibration(socketio, msg):
   """
   System calibration with a specified calibration board.
   """
+  clear_cache()
   ## Resetting the cache
   status = session.cmd.onecmd(
       'set --boardtype cfg/{type}.json'.format(type=msg['boardtype']))
 
-  for i in range(10):
-    print(status)
   if status != 0:
     """
     Early exit on not being able to setup board status
@@ -318,8 +333,9 @@ def SystemCalibration(socketio, msg):
   init_cache()
   init_sys_progress_check()
   ReturnClearExisting(socketio)
-  ReturnProgress(socketio)
-  ReturnTileboardLayout(socketio)
+  ## Triggering the first layout update
+  ReportProgress(socketio)
+  ReportTileboardLayout(socketio)
 
   WaitUserAction(
       socketio,
@@ -328,23 +344,25 @@ def SystemCalibration(socketio, msg):
        'board is placed in the correct position, and that the <b>HIGH VOLTAGE '
        'POWER</b> for photo detectors is <b>OFF</b> before continuing!'))
 
-  # Use the first chip in the list to perform the transformation matrix
+  # Use the first det in the list to perform the transformation matrix
   # generation
   set_light('on')
 
-  first_chip = list(session.board.chips())[0]
+  first_det = list(session.cmd.board.dets())[0]
 
-  vishscan_line = ('visualhscan --chipid={chipid} '
-                   '            -z 10             '
+  vishscan_line = ('visualhscan --detid={detid} '
+                   '            -z 10           '
                    '            --overwrite -f=/dev/null').format(
-                       chipid=first_chip)
-  RunLineNoMonitor(vishscan_line, '', first_chip)
-  for chipid in session.cmd.board.chips():
-    line = 'visualcenterchip --chipid={chipid} -z 10 --overwrite '.format(chipid)
-    RunLineNoMonitor(line, 'vis_align', chipid)
-    ReturnTileboardLayout(socketio)
+                       detid=first_det)
+  RunLineNoMonitor(vishscan_line, 'vhscan', first_det)
+  for detid in session.cmd.board.dets():
+    line = 'visualcenterdet --detid={detid} -z 10 --overwrite '.format(
+        detid=detid)
+    RunLineNoMonitor(line, 'visalign', detid)
+    ReportTileboardLayout(socketio)
 
   set_light('off')
+  ReportReadout(socketio)
 
   ## Running the luminosity scan calibrations
   WaitUserAction(socketio, (
@@ -352,97 +370,123 @@ def SystemCalibration(socketio, msg):
       'sure the <b>HIGH VOLTAGE POWER</b> for photo detectors is <b>ON</b> '
       'before continuing!'))
 
-  for chipid in session.cmd.board.chips():
-    line = (
-        'halign --chipid={chipid} --channel={chipid} '
-        '       --sample=100 -z 10  --overwrite '
-        '       --range=10 --distance=2'
-        '       -f=calib/halign_<BOARDTYPE>_<CHIPID>_<TIMESTAMP>.txt').format(
-            chipid=chipid)
-    RunLineInThread(line, 'lumi_align', chipid)
-    ReturnTileboardLayout(socketio)
+  for detid in session.cmd.board.dets():
+    line = CmdLumiAlign(detid=detid)
+    RunLineInThread(line, 'lumialign', detid)
+    ReportTileboardLayout(socketio)
 
   # Generating a luminosity profile from the photo diode on the reference board
   # Otherwise generate a low light profile for a relative efficiency reference.
-  for chipid in session.cmd.board.chips():
-    if (int(chipid) % 2 == 1):
-      line('zscan --chipid={chipid} --channel={chipid}'
-           '      --sample=100 --wipefile '
-           '      -f=calib/zprofile_<BOARDTYPE>_<CHIPID>_<TIMESTAMP>.txt'
-           '      -z 10 12 14 16 18 20 30 40 50 60 70 80 90 100 150 200 250 300'
-           ).format(chipid=chipid)
-      RunLineInThread(line, 'zscan', chipid)
+  for detid in session.cmd.board.dets():
+    if (int(detid) % 2 == 1):
+      line = CmdZScan(detid=detid, dense=True, rev=False)
+      RunLineInThread(line, 'zscan', detid)
     else:
-      lowlight_line = ('lowlightcollect --chipid {chipid} '
-                       '                --sample 10000 '
-                       '                -z 300'
-                       '                --wipefile').format(chipid=chipid,
-                                                            zmax=max(std_zlist))
-      RunLineInThread(line, 'lowlight', chipid)
-
-  session.cmd.onecmd('savecalib -f=calib/calib_<BOARDTYPE>_<TIMESTAMP>.json')
-
-  ## Saving the calibration results.
-  pass
+      line = CmdLowLightCollect(detid=detid)
+      RunLineInThread(line, 'lowlight', detid)
 
 
-def ReturnReadoutUpdate(socketio):
-  if session.state != session.STATE_RUN_PROCESS:
-    """
-    Only update if the session is currently not idle
-    """
-    return
+def RerunCalibration(socketio, action, detid):
+  line = ''
+  update_progress = False
+  if action == 'lumialign':
+    line = CmdLumiAlign(detid)
+    update_progress = True
+  elif action == 'lowlight':
+    line = CmdLowLightCollect(detid)
+    update_progress = True
+  elif action == 'zscan':
+    line = CmdZScan(detid, dense=True if int(detid) < 0 else False, rev=False)
+    update_progress = True
 
-  try:
-    socketio.emit('update-readout-results', {
-        'zscan': {
-            chipid: session.zscan_cache[chipid]
-            for chipid in session.zscan_updates
-            if len(session.zscan_cache[chipid]) > 0
-        },
-        'lowlight': {
-            chipid: [
-                session.lowlight_cache[chipid][0].tolist(),
-                session.lowlight_cache[chipid][1].tolist()
-            ]
-            for chipid in session.lowlight_updates
-            if len(session.lowlight_cache[chipid]) > 0
-        }
-    },
-                  broadcast=True,
-                  namespace='/sessionsocket')
-  except:
-    print(session.zscan_updates)
-    print(session.lowlight_updates)
-    print({
-        'zscan': {
-            chipid: session.zscan_cache[chipid]
-            for chipid in session.zscan_updates
-            if len(session.zscan_cache[chipid]) > 0
-        },
-        'lowlight': {
-            chipid: [
-                session.lowlight_cache[chipid][0].tolist(),
-                session.lowlight_cache[chipid][1].tolist()
-            ]
-            for chipid in session.lowlight_updates
-            if len(session.lowlight_cache[chipid]) > 0
-        }
-    })
+  ## Updating the process tag initially which allow for trigger more stuff
+  if action not in session.progress_check:
+    session.progress_check[action] = {str(detid): 1 }
+  else:
+    session.progress_check[action][str(detid)] = 1
 
-  ## Wiping the list after the update has been performed
-  session.zscan_updates = []
-  session.lowlight_updates = []
+  ## Running the progress
+  if line != '':
+    if update_progress == True:
+      ## Rerunning the report stack
+      ReportProgress(socketio)
+      ReportTileboardLayout(socketio)
+      ReportReadout(socketio)
+      RunLineInThread(line, action, detid)
+      ReportTileboardLayout(socketio)
+    else:
+      ReportProgress(socketio)
+      RunLineNoMonitor(line, action, detid)
+      ReportTileboardLayout(socketio)
 
 
-def ReturnProgress(socketio):
-  socketio.emit('progress-update',
-                session.progress_check,
-                broadcast=True,
-                namespace='/sessionsocket')
+def SystemCalibrationSignoff(socketio, data):
+  ## Saving the calibration results and comments
+  session.cmd.onecmd(
+      'savecalib -f={filename}'.format(filename=CalibFilename('summary')))
+
+  comment_file = session.cmd.sshfiler.remotefile(CalibFilename('comment'),
+                                                 wipefile=True)
+
+  data = {key: data['comments'][key].split('\n') for key in data['comments']}
+  comment_file.write(json.dumps(data))
+
+  ## Generating tarball for file transmission
+  tar_file = CalibDirectory() + '.tar.gz'
+  directory = CalibDirectory()
+
+  # Copying the calibration session over to the data display server over ssh
+  subprocess.run(['tar', 'zcvf', tar_file, directory])
+  subprocess.run(['scp', tar_file, '/tmp'])
+
+  # Making a local copy for future reference
+  subprocess.run(['cp', '-r', directory, 'calib/'])
+
+  ## Cleaning the file in the results directory
+  subprocess.run(['rm', '-rf', tar_file])
+  subprocess.run(['rm', '-rf', directory])
+
+  update_reference_list()
+  clear_cache()
 
 
-def StartReadoutMonitor(socketio):
-  if session.state == session.STATE_RUN_PROCESS:
-    session.zscan_updates.extend(session.zscan_cache.keys())
-    session.lowlight_updates.extend(session.lowlight_cache.keys())
+def StandardCalibrationSignoff(socketio, data):
+  session.cmd.onecmd(
+      'savecalib -f={filename}'.format(filename=CalibFilename('summary')))
+  comment_file = session.cmd.sshfiler.remotefile(CalibFilename('comment'),
+                                                 wipefile=True)
+  data = {key: data['comments'][key].split('\n') for key in data['comments']}
+  comment_file.write(json.dumps(data))
+
+  tar_file = CalibDirectory() + '.tar.gz'
+  directory = CalibDirectory()
+
+  # Copying the calibration session over to the data display server over ssh
+  subprocess.run(['tar', 'zcvf', tar_file, directory])
+  subprocess.run(['scp', tar_file, '/tmp'])
+
+  ## Cleaning the file in the results directory
+  subprocess.run(['rm', '-rf', tar_file])
+  subprocess.run(['rm', '-rf', directory])
+
+  clear_cache()
+
+
+def update_reference_list():
+  calib_fmt = re.compile(r'[a-zA-Z\_]+_\d{8}-\d{4}$')
+  filelist = [f for f in os.listdir('calib') if calib_fmt.match(f)]
+
+  time_now = datetime.datetime.now()
+
+  def time_of_file(f):
+    return datetime.datetime.strptime(f[-13:], '%Y%m%d-%H%M')
+
+  for f in filelist:
+    time_then = time_of_file(f)
+    if (time_now - time_then).days < 1:  ## Calibrations are valid for a day
+      session.valid_reference_list.append(f)
+
+  ## Getting unique and sort according to date
+  session.valid_reference_list = sorted(set(session.valid_reference_list),
+                                        key=time_of_file)
+  session.valid_reference_list.reverse()  ## Making newest file appear first

@@ -165,14 +165,14 @@
 
     div#display-message-container{
       width:100%;
-      text-align: center;
+      text-align: left;
     }
 
     div.monitor-plot-container{
       display: flex;
       max-height: 300px;
       div.plot{
-        height:300px;
+        height:150px;
         width: 50%;
       }
     }
@@ -191,12 +191,12 @@
       }
     }
 
-    div#single-chip-summary {
+    div#single-det-summary {
       width:100%;
       text-align: left;
     }
 
-    div.chip-details{
+    div.det-details{
       text-align: center;
       display: block;
 
@@ -204,7 +204,7 @@
   }
 }
 
-div.chip-progress-legend {
+div.det-progress-legend {
   display:flex;
   .left-limit {
     text-align: left;
@@ -233,20 +233,22 @@ div.flex-container {
   display: flex;
 }
 
-div.chip-details-content{
+div.det-details-content{
  display:block;
  width:100%;
- .chip-name{
+ .det-name{
    width:100%
  }
 }
 
-div.calib-plot-container {
+div.plot-container {
   display:flex;
-  width:100%;
+  flex-wrap: wrap;
+  width:820px;
+  margin-top: 10px;
 
-  .calib-plot {
-    width:45%;
+  div.plot {
+    width:400px;
     height:300px;
   }
 }

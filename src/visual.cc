@@ -18,7 +18,7 @@ public:
   void init_dev( const std::string& );
   std::string dev_path;
 
-  struct ChipResult
+  struct DetResult
   {
     double x;
     double y;
@@ -34,7 +34,7 @@ public:
     int    poly_y4;
   };
 
-  ChipResult find_chip( const bool );
+  DetResult find_det( const bool );
   double     sharpness( const bool );
 
   void save_frame( const std::string& filename );
@@ -65,7 +65,7 @@ private:
   double    GetContourSize( const Contour_t& ) const;
   double    GetContourMaxMeasure( const Contour_t& ) const;
 
-  void ShowFindChip(
+  void ShowFindDet(
     const cv::Mat&,
     const ContourList&,
     const ContourList&,
@@ -138,8 +138,8 @@ Visual::frame_height() const
   return cam.get( cv::CAP_PROP_FRAME_HEIGHT );
 }
 
-Visual::ChipResult
-Visual::find_chip( const bool monitor )
+Visual::DetResult
+Visual::find_det( const bool monitor )
 {
   // Operational variables
   cv::Mat img;
@@ -188,11 +188,11 @@ Visual::find_chip( const bool monitor )
   std::sort( hulls.begin(), hulls.end(), Visual::CompareContourSize );
 
   if( monitor ){
-    ShowFindChip( img, failed_ratio, failed_lumi, failed_rect, hulls );
+    ShowFindDet( img, failed_ratio, failed_lumi, failed_rect, hulls );
   }
 
   if( hulls.empty() ){
-    return ChipResult{ -1, -1, 0, 0,
+    return DetResult{ -1, -1, 0, 0,
                        0, 0, 0, 0,
                        0, 0, 0, 0 };
   } else {
@@ -203,7 +203,7 @@ Visual::find_chip( const bool monitor )
     const double distmax = GetContourMaxMeasure( hulls.at( 0 ) );
     const Contour_t poly = GetPolyApprox( hulls.at( 0 ) );
 
-    return ChipResult{
+    return DetResult{
       m.m10/m.m00, m.m01/m.m00,  m.m00, distmax,
       poly.at( 0 ).x,
       poly.at( 1 ).x,
@@ -218,7 +218,7 @@ Visual::find_chip( const bool monitor )
 }
 
 void
-Visual::ShowFindChip(
+Visual::ShowFindDet(
   const cv::Mat&     img,
   const ContourList& failed_ratio,
   const ContourList& failed_lumi,
@@ -226,7 +226,7 @@ Visual::ShowFindChip(
   const ContourList& hulls  ) const
 {
   // Drawing variables
-  static const std::string winname = "FINDCHIP_MONITOR";
+  static const std::string winname = "FINDDET_MONITOR";
   char msg[1024];
 
   // Window will be created, if already exists, this function does nothing
@@ -410,7 +410,7 @@ BOOST_PYTHON_MODULE( visual )
 {
   boost::python::class_<Visual>( "Visual" )
   .def( "init_dev",     &Visual::init_dev )
-  .def( "find_chip",    &Visual::find_chip )
+  .def( "find_det",    &Visual::find_det )
   .def( "sharpness",    &Visual::sharpness )
   .def( "save_frame",   &Visual::save_frame )
   .def( "frame_width",  &Visual::frame_width )
@@ -425,18 +425,18 @@ BOOST_PYTHON_MODULE( visual )
   ;
 
   // Required for coordinate caluclation
-  boost::python::class_<Visual::ChipResult>( "ChipResult" )
-  .def_readwrite( "x",       &Visual::ChipResult::x )
-  .def_readwrite( "y",       &Visual::ChipResult::y )
-  .def_readwrite( "area",    &Visual::ChipResult::area )
-  .def_readwrite( "maxmeas", &Visual::ChipResult::maxmeas )
-  .def_readwrite( "poly_x1", &Visual::ChipResult::poly_x1 )
-  .def_readwrite( "poly_x2", &Visual::ChipResult::poly_x2 )
-  .def_readwrite( "poly_x3", &Visual::ChipResult::poly_x3 )
-  .def_readwrite( "poly_x4", &Visual::ChipResult::poly_x4 )
-  .def_readwrite( "poly_y1", &Visual::ChipResult::poly_y1 )
-  .def_readwrite( "poly_y2", &Visual::ChipResult::poly_y2 )
-  .def_readwrite( "poly_y3", &Visual::ChipResult::poly_y3 )
-  .def_readwrite( "poly_y4", &Visual::ChipResult::poly_y4 )
+  boost::python::class_<Visual::DetResult>( "DetResult" )
+  .def_readwrite( "x",       &Visual::DetResult::x )
+  .def_readwrite( "y",       &Visual::DetResult::y )
+  .def_readwrite( "area",    &Visual::DetResult::area )
+  .def_readwrite( "maxmeas", &Visual::DetResult::maxmeas )
+  .def_readwrite( "poly_x1", &Visual::DetResult::poly_x1 )
+  .def_readwrite( "poly_x2", &Visual::DetResult::poly_x2 )
+  .def_readwrite( "poly_x3", &Visual::DetResult::poly_x3 )
+  .def_readwrite( "poly_x4", &Visual::DetResult::poly_x4 )
+  .def_readwrite( "poly_y1", &Visual::DetResult::poly_y1 )
+  .def_readwrite( "poly_y2", &Visual::DetResult::poly_y2 )
+  .def_readwrite( "poly_y3", &Visual::DetResult::poly_y3 )
+  .def_readwrite( "poly_y4", &Visual::DetResult::poly_y4 )
   ;
 }

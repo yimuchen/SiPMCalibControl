@@ -20,6 +20,12 @@ input#raw-cmd-input-text{
   width: 95%;
 }
 
+.signoff-comment-lines {
+  input[type="text"].comment-text{
+    width: 100%;
+  }
+}
+
 
 /// CSS for go to top button
 #goto_top_button {
@@ -47,5 +53,31 @@ input#raw-cmd-input-text{
     border-width: thin;
     border-color:#00FF00;
     border-style: solid;
+    padding: 0px;
   }
+}
+
+input#std-calibration-boardid {
+  width:20em;
+  text-align: left;
+}
+
+input#sys-calib-user-id {
+  width:10em;
+  text-align: left;
+}
+
+input#sys-calib-user-pwd {
+  width:10em;
+  text-align: left;
+}
+
+input#standard-calib-user-id {
+  width:10em;
+  text-align: left;
+}
+
+input#standard-calib-user-pwd {
+  width:10em;
+  text-align: left;
 }

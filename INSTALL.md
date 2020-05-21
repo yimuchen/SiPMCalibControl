@@ -98,13 +98,13 @@ SUBSYSTEM=="gpio", GROUP="gpio", MODE="0660"
 SUBSYSTEM=="gpio*", PROGRAM="/bin/sh -c '\
         chown -R root:gpio /sys/class/gpio           && chmod -R 770 /sys/class/gpio;\
         chown -R root:gpio /sys/devices/virtual/gpio && chmod -R 770 /sys/devices/virtual/gpio;\
-        chown -R root:gpio sys/devices/platform/soc/*.gpio/gpiochip0/gpio && chmod -R 770 /sys/devices/platform/soc/*.gpio/gpiochip0/gpio;\
+        chown -R root:gpio sys/devices/platform/soc/*.gpio/gpiodet0/gpio && chmod -R 770 /sys/devices/platform/soc/*.gpio/gpiodet0/gpio;\
         chown -R root:gpio /sys$devpath && chmod -R 770 /sys$devpath\
 '"
 ## For PWM
 SUBSYSTEM=="pwm*", PROGRAM="/bin/sh -c '\
         chown -R root:gpio /sys/class/pwm && chmod -R 770 /sys/class/pwm;\
-        chown -R root:gpio /sys/devices/platform/soc/*.pwm/pwm/pwmchip* && chmod -R 770 /sys/devices/platform/soc/*.pwm/pwm/pwmchip*\
+        chown -R root:gpio /sys/devices/platform/soc/*.pwm/pwm/pwmdet* && chmod -R 770 /sys/devices/platform/soc/*.pwm/pwm/pwmdet*\
 '"
 
 ## For the I2C interface

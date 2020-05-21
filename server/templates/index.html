@@ -16,7 +16,6 @@
   <!--Custom Javascript-->
   <script src="{{url_for('static',filename='js/main.js')}}"></script>
   <script src="{{url_for('static',filename='js/action.js')}}"></script>
-  <script src="{{url_for('static',filename='js/graphics.js')}}"></script>
   <script src="{{url_for('static',filename='js/input_sync.js')}}"></script>
   <script src="{{url_for('static',filename='js/monitor_style.js')}}"></script>
   <script src="{{url_for('static',filename='js/monitor.js')}}"></script>
@@ -53,33 +52,6 @@
             <div id="up-time-since"></div>
           </div>
 
-          <div class="legend">
-            <div class="progress-complete">Complete</div>
-            <div class="progress-running">Running</div>
-            <div class="progress-error">Error</div>
-          </div>
-
-          <div class="input-align" id="bar-container">
-            <div class="input-row" id="session-progress">
-              <span class="input-name">Session Progress</span>
-              <div class="input-unit progress-bar-container">
-                <div class="progress-complete"></div>
-                <div class="progress-running"></div>
-                <div class="progress-error"></div>
-              </div>
-            </div>
-            <div class="input-row" id="command-progress">
-              <span class="input-name">Command progress</span>
-              <div class="input-unit progress-bar-container">
-                <div class="progress-complete" style="width:50%"></div>
-              </div>
-            </div>
-          </div>
-
-
-          <div id="display-message-container">
-            <p id="display-message"></p>
-          </div>
           <div class="monitor-plot-container">
             <div class="plot" id="temperature-plot">
             </div>
@@ -89,18 +61,54 @@
         </div>
       </div>
 
+      <div class="tab" id="session-progress-tab">
+        <div class="tab-title">
+          <span>Calibration Process</span>
+          <i class="fa fa=fa-angle-left"></i>
+        </div>
+
+        <div class='tab-content'>
+          <div class="legend" style="width:100%">
+            <div class="progress-complete" style="width:33%;">Complete</div>
+            <div class="progress-running" style="width:34%;">Running</div>
+            <div class="progress-error" style="width:33%;">Error</div>
+          </div>
+
+          <div class="input-align" id="bar-container">
+            <div class="input-row" id="session-progress">
+              <span class="input-name">Session Progress</span>
+              <div class="input-units progress-bar-container">
+                <div class="progress-complete"></div>
+                <div class="progress-running"></div>
+                <div class="progress-error"></div>
+              </div>
+            </div>
+            <div class="input-row" id="command-progress">
+              <span class="input-name">Command progress</span>
+              <div class="input-units progress-bar-container">
+                <div class="progress-complete" style="width:50%"></div>
+              </div>
+            </div>
+          </div>
+          <div id="display-message-container">
+            <p>Last Error message</p>
+            <p id="display-message"></p>
+          </div>
+        </div>
+
+
+      </div>
+
+
       <div class="tab" id="tile-layout">
         <div class="tab-title">
           <span>Tile Layout</span>
           <i class="fa fa=fa-angle-left"></i>
         </div>
         <div class="tab-content">
-
-
-
           <div class="column-container">
             <div class="left-column">
-              <div class="chip-progress-legend">
+              <div class="det-progress-legend">
                 <div class="left-limit">0%</div>
                 <div class="middle-limit">50%</div>
                 <div class="right-limit">100%</div>
@@ -109,8 +117,11 @@
             </div>
 
             <div class="right-column">
-              <div id="single-chip-summary"></div>
+              <div id="single-det-summary"></div>
             </div>
+          </div>
+
+          <div id="det-plot-and-figure">
 
           </div>
         </div>
@@ -141,13 +152,40 @@
             </div>
           </div>
           <div class="button-container">
-            <button id="run-system-calibration">Run system calibration</button>
+            <button id="run-system-calibration" class="action-button">Run system calibration</button>
           </div>
           <div id="system-calib-exist">
 
           </div>
+          <div id="system-calib-submit-error"></div>
+
+          <div id="system-calib-signoff-container" class="hidden">
+            <hr>
+            <div class="input-align">
+              <div class="input-row">
+                <span class="input-name">UMD ID</span>
+                <span class="input-units">
+                  <input type="text" id="sys-calib-user-id">
+                  </input>
+                </span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">password</span>
+                <span class="input-units">
+                  <input type="password" id="sys-calib-user-pwd">
+                  </input>
+                </span>
+              </div>
+            </div>
+            Sign-off Notes:<button class="add-comment-line">Add line</button><br />
+            <div class="signoff-comment-lines input-align">
+            </div>
+            <br />
+            <button id="system-calib-signoff" class="action-button">Sign-off</button>
+          </div>
         </div>
       </div>
+
 
       <div class="tab user-action" id="standard-calib">
         <div class="tab-title">
@@ -158,35 +196,58 @@
           <div class="input-align">
             <div class="input-row">
               <span class="input-name">Board ID</span>
-              <input type="text" id="std-calibration-boardid" />
+              <span class="input-units"></span>
+              <input type="text" id="std-calibration-boardid" class="input-units" />
             </div>
-          </div>
-          <div class="input-align">
             <div class="input-row">
               <span class="input-name">Boardtype</span>
-              <input type="radio" name="std-calibration-boardtype" value="Tileboard_mock" />
-              <span class="input-units">Mock 64 chip Tileboard</span>
+              <span class="input-units">
+                <input type="radio" name="std-calibration-boardtype" value="Tileboard_mock" />
+              </span>
+              <span class="input-units">Mock 64 SiPM Tileboard</span>
             </div>
             <div class="input-row">
               <span class="input-name"></span>
-              <input type="radio" name="std-calibration-boardtype" value="Tileboard_dummy" />
-              <span class="input-units">Dummy</span>
+              <span class="input-units">
+                <input type="radio" name="std-calibration-boardtype" value="Test_SiPM2" />
+              </span>
+              <span class="input-units">2 SiPM Test board</span>
             </div>
           </div>
           <div class="input-align" id="reference-system-calibration">
-            <div class="input-row">
-              <span class="input-name">Reference</span>
-              <input type="radio" name="ref-calibration" value="summary_MOCK_20191004" />
-              <span class="input-units">MOCK_20191004</span>
-            </div>
-            <div class="input-row">
-              <span class="input-name"></span>
-              <input type="radio" name="ref-calibration" value="summary_MOCK_20191004" />
-              <span class="input-units">MOCK_20191004</span>
-            </div>
           </div>
           <div class="button-container">
-            <button id="run-std-calibration">Run Tileboard calibration</button>
+            <button id="run-std-calibration" class="action-button">Run Tileboard
+              calibration</button>
+          </div>
+
+          <div id="standard-calib-submit-error"></div>
+
+          <div id="standard-calib-signoff-container" class="hidden">
+            <hr>
+
+            <div class="input-align">
+              <div class="input-row">
+                <span class="input-name">UMD ID</span>
+                <span class="input-units">
+                  <input type="text" id="standard-calib-user-id">
+                  </input>
+                </span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">password</span>
+                <span class="input-units">
+                  <input type="password" id="standard-calib-user-pwd">
+                  </input>
+                </span>
+              </div>
+            </div>
+
+            Sign-off Notes:<button class="add-comment-line">Add line</button><br />
+            <div class="signoff-comment-lines input-align">
+            </div>
+            <br />
+            <button id="standard-calib-signoff" class="action-button">Sign-off</button>
           </div>
         </div>
       </div>
@@ -232,7 +293,7 @@
 
                 <div class="input-row">
                   <span class="input-name">Trig. dir.</span>
-                  <span class="input-unit">
+                  <span class="input-units">
                     <input type="radio" name="trigger_direction" id="trigger_direction_up">
                     <input type="radio" name="trigger_direction" id="trigger_direction_down">
                     <input type="radio" name="trigger_direction" id="trigger_direction_both">
@@ -244,29 +305,29 @@
                 <div class="input-row">
                   <span class="input-name">Delay</span>
                   <input type="text" id="trigger-delay" />
-                  <span class="input-unit">ns</span>
+                  <span class="input-units">ns</span>
                 </div>
                 <div class="input-row">
                   <span class="input-name">Pre-samp.</span>
                   <input type="text" id="trigger-presample" />
-                  <span class="input-unit">-</span>
+                  <span class="input-units">-</span>
                 </div>
                 <div class="input-row">
                   <span class="input-name">Post-samp</span>
                   <input type="text" id="trigger-postsample" />
-                  <span class="input-unit">-</span>
+                  <span class="input-units">-</span>
                 </div>
                 <div class="input-row">
                   <span class="input-name">Num. blocks</span>
                   <input type="text" id="trigger-blocksize" />
-                  <span class="input-unit">-</span>
+                  <span class="input-units">-</span>
                 </div>
               </td>
             </tr>
           </table>
           <div class="button-container">
-            <button id="picoscope_undo">Clear</button>
-            <button id="picoscope_update">Update</button>
+            <button id="picoscope_undo" class="action-button">Clear</button>
+            <button id="picoscope_update" class="action-button">Update</button>
           </div>
         </div>
 
@@ -282,44 +343,44 @@
             <div class="input-row">
               <span class="input-name">Threshold</span>
               <input type="text" id="image-threshold-text" />
-              <span class="input-unit"></span>
+              <span class="input-units"></span>
               <input type="range" min="0" max="255" id="image-threshold-range" />
             </div>
             <div class="input-row">
               <span class="input-name">Blur</span>
               <input type="text" id="image-blur-text" />
-              <span class="input-unit">Pixels</span>
+              <span class="input-units">Pixels</span>
               <input type="range" min="0" max="20" id="image-blur-range" />
             </div>
             <div class="input-row">
               <span class="input-name">Luminosity</span>
               <input type="text" id="image-lumi-text" />
-              <span class="input-unit">Pixels</span>
+              <span class="input-units">Pixels</span>
               <input type="range" min="0" max="255" id="image-lumi-range" />
             </div>
             <div class="input-row">
               <span class="input-name">Min. Size</span>
               <input type="text" id="image-size-text" />
-              <span class="input-unit">Pixels</span>
+              <span class="input-units">Pixels</span>
               <input type="range" min="0" max="1000" id="image-size-range" />
             </div>
             <div class="input-row">
               <span class="input-name">Max Ratio</span>
               <input type="text" id="image-ratio-text" />
-              <span class="input-unit">%</span>
+              <span class="input-units">%</span>
               <input type="range" min="100" max="500" id="image-ratio-range" />
             </div>
             <div class="input-row">
               <span class="input-name">Poly rang.</span>
               <input type="text" id="image-poly-text" />
-              <span class="input-unit"></span>
+              <span class="input-units"></span>
               <input type="range" min="0" max="100" id="image-poly-range" />
             </div>
           </div>
 
           <div class="button-container">
-            <button id="image-setting-clear">Clear</button>
-            <button id="image-setting-update">Update</button>
+            <button id="image-setting-clear" class="action-button">Clear</button>
+            <button id="image-setting-update" class="action-button">Update</button>
           </div>
         </div>
       </div>
@@ -354,7 +415,7 @@
         </div>
         <div class="tab-content hidden">
           <input type="text" id="raw-cmd-input-text" />
-          <button id="raw-cmd-input">Run</button>
+          <button id="raw-cmd-input" class="action-button">Run</button>
         </div>
       </div>
 

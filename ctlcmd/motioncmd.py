@@ -7,12 +7,12 @@ import time
 
 class moveto(cmdbase.controlcmd):
   """
-  Moving the gantry head to a specific location, either by chip ID or by raw
+  Moving the gantry head to a specific location, either by det ID or by raw
   x-y-z coordinates. Units for the x-y-z inputs is millimeters.
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    self.add_xychip_options()
+    self.add_xydet_options()
     self.parser.add_argument('-z',
                              type=float,
                              help=('Specifying the z coordinate explicitly [mm].'
@@ -21,7 +21,7 @@ class moveto(cmdbase.controlcmd):
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
-    self.parse_xychip_options(args)
+    self.parse_xydet_options(args)
     if not args.z: args.z = self.gcoder.opz
     return args
 
@@ -79,7 +79,7 @@ class halign(cmdbase.controlcmd):
   range... etc. You will still need the picoset command.
   """
 
-  DEFAULT_SAVEFILE = 'halign_<BOARDTYPE>_<BOARDID>_<CHIPID>_<SCANZ>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'halign_<BOARDTYPE>_<BOARDID>_<DETID>_<SCANZ>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[LUMI ALIGN]')
 
   def __init__(self, cmd):
@@ -90,13 +90,20 @@ class halign(cmdbase.controlcmd):
                              action='store_true',
                              help=('Forcing the storage of scan results as '
                                    'session information'))
+    self.parser.add_argument('--power',
+                             '-p',
+                             type=float,
+                             help=('PWM duty cycle for data collection, using '
+                                   'current value if not specified'))
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
-    self.parse_xychip_options(args)
+    self.parse_xydet_options(args)
     self.parse_readout_options(args)
     self.parse_savefile(args)
-    print('Finish parsing')
+    if not args.power:
+      print(args.power)
+      args.power = [self.gpio.pwm_duty(0)]  ## Getting the PWM value
     return args
 
   def run(self, args):
@@ -104,6 +111,8 @@ class halign(cmdbase.controlcmd):
     lumi = []
     unc = []
     total = len(x)
+
+    self.gpio.pwm(0, args.power, 1e5)  # Maximum PWM frequency
 
     ## Running over mesh.
     for idx, (xval, yval) in enumerate(zip(x, y)):
@@ -120,7 +129,7 @@ class halign(cmdbase.controlcmd):
       unc.append(uncval)
       ## Writing to file
       args.savefile.write(
-          self.make_standard_line((lumival, uncval), chip_id=args.chipid))
+          self.make_standard_line((lumival, uncval), det_id=args.detid))
       args.savefile.flush()
 
     self.close_savefile(args)
@@ -147,26 +156,26 @@ class halign(cmdbase.controlcmd):
     self.printmsg('Fit  z:{0:.2f}+-{1:.3f}'.format(fitval[3],
                                                    np.sqrt(fitcovar[3][3])))
 
-    chipid = str(args.chipid)  ## Ensuring string convention in using this
-    ## Generating calibration chip id if using chip coordinates
-    if not chipid in self.board.chips() and int(chipid) < 0:
-      self.board.add_calib_chip(chipid)
+    detid = str(args.detid)  ## Ensuring string convention in using this
+    ## Generating calibration det id if using det coordinates
+    if not detid in self.board.dets() and int(detid) < 0:
+      self.board.add_calib_det(detid)
 
     ## Saving session information
-    if (not chipid in self.board.lumi_coord
-        or not args.scanz in self.board.lumi_coord[chipid] or args.overwrite):
-      if not chipid in self.board.lumi_coord:
-        self.board.lumi_coord[chipid] = {}
-      self.board.lumi_coord[chipid][args.scanz] = [
+    if (not detid in self.board.lumi_coord
+        or not args.scanz in self.board.lumi_coord[detid] or args.overwrite):
+      if not detid in self.board.lumi_coord:
+        self.board.lumi_coord[detid] = {}
+      self.board.lumi_coord[detid][args.scanz] = [
           fitval[1],
           np.sqrt(fitcovar[1][1]), fitval[2],
           np.sqrt(fitcovar[1][1])
       ]
-    elif args.scanz in self.board.lumi_coord[chipid]:
+    elif args.scanz in self.board.lumi_coord[detid]:
       if self.cmd.prompt_yn(
           str('A lumi alignment for z={0:.1f} already exists for the current session, overwrite?'
               .format(args.scanz))):
-        self.board.lumi_coord[chipid][args.scanz] = [
+        self.board.lumi_coord[detid][args.scanz] = [
             fitval[1],
             np.sqrt(fitcovar[1][1]), fitval[2],
             np.sqrt(fitcovar[1][1])
@@ -187,7 +196,7 @@ class zscan(cmdbase.controlcmd):
   Performing z scanning at a certain x-y coordinate
   """
 
-  DEFAULT_SAVEFILE = 'zscan_<BOARDTYPE>_<BOARDID>_<CHIPID>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'zscan_<BOARDTYPE>_<BOARDID>_<DETID>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[LUMI ZSCAN]')
 
   def __init__(self, cmd):
@@ -203,7 +212,7 @@ class zscan(cmdbase.controlcmd):
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
-    self.parse_xychip_options(args)
+    self.parse_xydet_options(args)
     self.parse_zscan_options(args)
     self.parse_readout_options(args)
     self.parse_savefile(args)
@@ -249,7 +258,7 @@ class zscan(cmdbase.controlcmd):
                                Temperature=True)
         # Writing to file
         args.savefile.write(
-            self.make_standard_line((lumival, uncval), chip_id=args.chipid))
+            self.make_standard_line((lumival, uncval), det_id=args.detid))
         args.savefile.flush()
 
     self.close_savefile(args)
@@ -260,7 +269,7 @@ class lowlightcollect(cmdbase.controlcmd):
   Collection of low light data at a single gantry position, collecting data as
   fast as possible no waiting.
   """
-  DEFAULT_SAVEFILE = 'lowlight_<BOARDTYPE>_<BOARDID>_<CHIPID>_<TIMESTAMP>.txt'
+  DEFAULT_SAVEFILE = 'lowlight_<BOARDTYPE>_<BOARDID>_<DETID>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[LUMI LOWLIGHT]')
 
   def __init__(self, cmd):
@@ -275,12 +284,12 @@ class lowlightcollect(cmdbase.controlcmd):
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
-    self.parse_xychip_options(args)
+    self.parse_xydet_options(args)
     self.parse_zscan_options(args)
     self.parse_readout_options(args)
     self.parse_savefile(args)
     if not args.power:
-      args.power = args.gpio.pwm_duty(0)
+      args.power = self.gpio.pwm_duty(0)
     if len(args.zlist) != 1:
       raise Exception("This functions accepts exactly 1 z-value.")
 
@@ -296,7 +305,7 @@ class lowlightcollect(cmdbase.controlcmd):
       readout = self.readout.read(channel=args.channel,
                                   samples=1000,
                                   average=False)
-      args.savefile.write(self.make_standard_line(readout, chip_id=args.chipid))
+      args.savefile.write(self.make_standard_line(readout, det_id=args.detid))
       args.savefile.flush()
       self.update_luminosity(readout[-1],
                              readout[-2],
@@ -360,7 +369,7 @@ class timescan(cmdbase.controlcmd):
       timestamp = (sample_time - start_time) / 1e9
       args.savefile.write(
           self.make_standard_line((lumival, uncval),
-                                  chip_id=-100,
+                                  det_id=-100,
                                   time=timestamp))
       args.savefile.flush()
       self.update_luminosity(lumival,

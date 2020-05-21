@@ -1,8 +1,8 @@
 import paramiko
 import getpass
 import shutil
+import os
 import cmod.logger as log
-#import logger as log
 
 
 class SSHFiler(paramiko.SSHClient):
@@ -68,6 +68,11 @@ class SSHFiler(paramiko.SSHClient):
       self.writefile = self.sftp.open(self.remotefilename(filename), w_mode)
       self.readfile = self.sftp.open(self.remotefilename(filename), 'r')
     else:
+      # For local files, try to create the parent directory if it doesn't
+      # already exist.
+      if os.path.dirname(filename) and not os.path.isdir(
+          os.path.dirname(filename)):
+        os.mkdir(os.path.dirname(filename))
       w_mode = 'w' if wipefile else 'a+'
       self.writefile = open(filename, w_mode)
       self.readfile = open(filename, 'r')
@@ -104,8 +109,8 @@ if __name__ == "__main__":
   def randomstring():
     return ''.join(random.choice('0123456789abcedf') for x in range(65536))
 
-  remotefile = ssh.remotefile('test.txt',True)
+  remotefile = ssh.remotefile('test.txt', True)
   for i in range(10000):
-    remotefile.write(randomstring()+'\n')
+    remotefile.write(randomstring() + '\n')
     # remotefile.flush()
   #ssh.sftp.put("/tmp/test2.txt", "test2.txt")
