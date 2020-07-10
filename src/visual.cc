@@ -23,7 +23,7 @@ public:
   void init_dev( const std::string& );
   std::string dev_path;
 
-  struct DetResult
+  struct VisResult
   {
     double x;
     double y;
@@ -42,7 +42,7 @@ public:
 
   unsigned                      frame_width() const;
   unsigned                      frame_height() const;
-  DetResult                     GetLatestCalc();
+  VisResult                     get_result();
   boost::python::numpy::ndarray get_image();
   PyObject*                     get_image_bytes();
 
@@ -57,7 +57,7 @@ private:
   cv::VideoCapture cam;
   cv::Mat image;
   cv::Mat display;
-  DetResult latest;
+  VisResult latest;
 
   // Variables for storing the thread handling
   std::thread loop_thread;
@@ -72,7 +72,7 @@ private:
   // Helper function for
   void init_var_default();
 
-  DetResult find_det();
+  VisResult find_det();
 
   // Private methods for easier image processing
   typedef std::vector<cv::Point> Contour_t;
@@ -91,6 +91,7 @@ private:
                          const ContourList&,
                          const ContourList&,
                          const ContourList& );
+  cv::Mat get_image_cv();
 
   static bool CompareContourSize( const Contour_t&, const Contour_t& );
 };
@@ -197,13 +198,13 @@ Visual::end_thread()
 void
 Visual::RunMainLoop( std::atomic<bool>& run_loop )
 {
-  // Private function for getting a
-  auto get_time = []( void )->size_t {
-                    return std::chrono::duration_cast<std::chrono::microseconds>(
-                      std::chrono::high_resolution_clock::now()
-                      .time_since_epoch()
-                      ).count();
-                  };
+  namespace st = std::chrono;
+  auto get_time
+    = []( void )->size_t {
+        return st::duration_cast<st::microseconds>(
+          st::high_resolution_clock::now().time_since_epoch()
+          ).count();
+      };
 
   while( run_loop == true ){
     const size_t time_start = get_time();
@@ -220,17 +221,17 @@ Visual::RunMainLoop( std::atomic<bool>& run_loop )
     loop_mutex.unlock();
 
     while( time_end - time_start < 1e5 ){// Updating at 10fps
-      std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+      std::this_thread::sleep_for( st::milliseconds( 1 ) );
       time_end = get_time();
     }
   }
 }
 
 
-Visual::DetResult
+Visual::VisResult
 Visual::find_det()
 {
-  static const DetResult empty_return = DetResult { -1, -1, 0, 0, 0,
+  static const VisResult empty_return = VisResult { -1, -1, 0, 0, 0,
                                                     0, 0, 0, 0,
                                                     0, 0, 0, 0 };
 
@@ -242,12 +243,11 @@ Visual::find_det()
   // Reducing image size to spped up algorithm
   cv::resize( image, image, cv::Size( 0, 0 ), 0.5, 0.5 );
 
-  const std::vector<Contour_t> contours = GetContours( image );
-
-  std::vector<Contour_t> failed_ratio;
-  std::vector<Contour_t> failed_lumi;
-  std::vector<Contour_t> failed_rect;
-  std::vector<Contour_t> hulls;
+  const ContourList contours = GetContours( image );
+  ContourList failed_ratio;
+  ContourList failed_lumi;
+  ContourList failed_rect;
+  ContourList hulls;
 
   // Calculating all contour properties
   for( unsigned i = 0; i < contours.size(); i++ ){
@@ -301,7 +301,7 @@ Visual::find_det()
                                           , bound.height*2 );
     const double sharp = sharpness( image, double_bound );
 
-    return DetResult {
+    return VisResult {
       m.m10/m.m00, m.m01/m.m00,
       sharp,
       m.m00, distmax,
@@ -344,17 +344,9 @@ Visual::generate_display( const ContourList& failed_ratio,
                   };
 
   PlotContourList( failed_ratio, white );
-  PlotText( "Failed Ratio", cv::Point( 50, 700 ), white );
-
-  PlotContourList( failed_lumi, green );
-  PlotText( "Failed Lumi", cv::Point( 50, 750 ), green );
-
+  PlotContourList( failed_lumi,  green );
   PlotContourList( failed_rect, yellow );
-  PlotText( "Failed Rect", cv::Point( 50, 800 ), yellow );
-
-  PlotContourList( hulls, cyan );
-  PlotText( "Candidate", cv::Point( 50, 850 ), cyan );
-
+  PlotContourList( hulls,         cyan );
   if( hulls.empty() ){
     PlotText( "NOT FOUND", cv::Point( 20, 20 ), red );
   } else {
@@ -365,7 +357,7 @@ Visual::generate_display( const ContourList& failed_ratio,
     sprintf( msg, "x:%.1lf y:%.1lf", x, y ),
     cv::drawContours( display, hulls, 0, red, 3 );
     cv::circle( display, cv::Point( x, y ), 3, red, cv::FILLED );
-    PlotText( msg, cv::Point( 50, 100 ), red );
+    PlotText( msg, cv::Point( 20, 20 ), red );
   }
 }
 
@@ -479,40 +471,18 @@ Visual::sharpness( const cv::Mat& img, const cv::Rect& crop ) const
   return sigma.val[0] * sigma.val[0];
 }
 
-Visual::DetResult
-Visual::GetLatestCalc()
+Visual::VisResult
+Visual::get_result()
 {
   loop_mutex.lock();
-  DetResult ans = latest;
+  VisResult ans = latest;
   loop_mutex.unlock();
   return ans;
 }
 
 
-boost::python::numpy::ndarray
-ConvertMatToNDArray( const cv::Mat& mat )
-{
-  boost::python::tuple shape = boost::python::make_tuple( mat.rows
-                                                        , mat.cols
-                                                        , mat.channels() );
-  boost::python::tuple stride = boost::python::make_tuple(
-    mat.channels() * mat.cols * sizeof( uchar ),
-    mat.channels() * sizeof( uchar ),
-    sizeof( uchar ) );
-  boost::python::numpy::dtype dt
-    = boost::python::numpy::dtype::get_builtin<uchar>();
-  boost::python::numpy::ndarray ndImg
-    = boost::python::numpy::from_data( mat.data,
-    dt,
-    shape,
-    stride, boost::python::object() );
-
-  return ndImg;
-}
-
-
-boost::python::numpy::ndarray
-Visual::get_image()
+cv::Mat
+Visual::get_image_cv()
 {
   static const cv::Mat blank_frame(
     cv::Size( frame_width(), frame_height() ),
@@ -523,25 +493,39 @@ Visual::get_image()
                     display;
   loop_mutex.unlock();
 
-  return ConvertMatToNDArray( ans_mat );
+  return ans_mat;
+}
 
+boost::python::numpy::ndarray
+Visual::get_image()
+{
+  cv::Mat mat = get_image_cv();
+
+  namespace bp = boost::python;
+
+  bp::tuple shape = bp::make_tuple( mat.rows
+                                  , mat.cols
+                                  , mat.channels() );
+  bp::tuple stride = bp::make_tuple(
+    mat.channels() * mat.cols * sizeof( uchar ),
+    mat.channels() * sizeof( uchar ),
+    sizeof( uchar ) );
+
+  return bp::numpy::from_data( mat.data
+                             , bp::numpy::dtype::get_builtin<uchar>()
+                             , shape
+                             , stride
+                             , bp::object() );
 }
 
 PyObject*
 Visual::get_image_bytes()
 {
-  static const cv::Mat blank_frame(
-    cv::Size( frame_width(), frame_height() ),
-    CV_8UC3, cv::Scalar( 0, 0, 0 ) );
-
-  loop_mutex.lock();
-  cv::Mat ans_mat = ( display.empty() || display.cols == 0 ) ? blank_frame :
-                    display;
-  loop_mutex.unlock();
-
-  // Buffer containing the string
-  std::vector<uchar> buf;
-  cv::imencode( ".jpg", ans_mat, buf );// Running the cv image encoder
+  // Returning the image generated from the detection algorithm as a byte
+  // sequence to be returned by a HTTP image request.
+  std::vector<uchar> buf;// Storage required by opencv.
+  cv::Mat mat = get_image_cv();
+  cv::imencode( ".jpg", mat, buf );
 
   // Conversion of bytes sequence to python objects
   // https://www.auctoris.co.uk/2017/12/21/
@@ -550,18 +534,17 @@ Visual::get_image_bytes()
     PyMemoryView_FromMemory( (char*)buf.data(), buf.size(), PyBUF_READ ) );
 }
 
-
 #include <boost/python.hpp>
 
 BOOST_PYTHON_MODULE( visual )
 {
   boost::python::class_<Visual, boost::noncopyable>( "Visual" )
-  .def( "init_dev",        &Visual::init_dev      )
-  .def( "frame_width",     &Visual::frame_width   )
-  .def( "frame_height",    &Visual::frame_height  )
-  .def( "get_latest",      &Visual::GetLatestCalc )
-  .def( "get_image",       &Visual::get_image     )
-  .def( "get_image_bytes", &Visual::get_image_bytes     )
+  .def( "init_dev",        &Visual::init_dev        )
+  .def( "frame_width",     &Visual::frame_width     )
+  .def( "frame_height",    &Visual::frame_height    )
+  .def( "get_latest",      &Visual::get_result   )
+  .def( "get_image",       &Visual::get_image       )
+  .def( "get_image_bytes", &Visual::get_image_bytes )
   .def_readonly( "dev_path", &Visual::dev_path  )
   .def_readwrite( "threshold",    &Visual::threshold    )
   .def_readwrite( "blur_range",   &Visual::blur_range   )
@@ -572,19 +555,19 @@ BOOST_PYTHON_MODULE( visual )
   ;
 
   // Required for coordinate calculation
-  boost::python::class_<Visual::DetResult>( "DetResult" )
-  .def_readwrite( "x",         &Visual::DetResult::x         )
-  .def_readwrite( "y",         &Visual::DetResult::y         )
-  .def_readwrite( "sharpness", &Visual::DetResult::sharpness )
-  .def_readwrite( "area",      &Visual::DetResult::area      )
-  .def_readwrite( "maxmeas",   &Visual::DetResult::maxmeas   )
-  .def_readwrite( "poly_x1",   &Visual::DetResult::poly_x1   )
-  .def_readwrite( "poly_x2",   &Visual::DetResult::poly_x2   )
-  .def_readwrite( "poly_x3",   &Visual::DetResult::poly_x3   )
-  .def_readwrite( "poly_x4",   &Visual::DetResult::poly_x4   )
-  .def_readwrite( "poly_y1",   &Visual::DetResult::poly_y1   )
-  .def_readwrite( "poly_y2",   &Visual::DetResult::poly_y2   )
-  .def_readwrite( "poly_y3",   &Visual::DetResult::poly_y3   )
-  .def_readwrite( "poly_y4",   &Visual::DetResult::poly_y4   )
+  boost::python::class_<Visual::VisResult>( "VisResult" )
+  .def_readwrite( "x",         &Visual::VisResult::x         )
+  .def_readwrite( "y",         &Visual::VisResult::y         )
+  .def_readwrite( "sharpness", &Visual::VisResult::sharpness )
+  .def_readwrite( "area",      &Visual::VisResult::area      )
+  .def_readwrite( "maxmeas",   &Visual::VisResult::maxmeas   )
+  .def_readwrite( "poly_x1",   &Visual::VisResult::poly_x1   )
+  .def_readwrite( "poly_x2",   &Visual::VisResult::poly_x2   )
+  .def_readwrite( "poly_x3",   &Visual::VisResult::poly_x3   )
+  .def_readwrite( "poly_x4",   &Visual::VisResult::poly_x4   )
+  .def_readwrite( "poly_y1",   &Visual::VisResult::poly_y1   )
+  .def_readwrite( "poly_y2",   &Visual::VisResult::poly_y2   )
+  .def_readwrite( "poly_y3",   &Visual::VisResult::poly_y3   )
+  .def_readwrite( "poly_y4",   &Visual::VisResult::poly_y4   )
   ;
 }
