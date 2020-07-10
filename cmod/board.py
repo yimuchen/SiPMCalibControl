@@ -2,28 +2,70 @@ import cmod.logger as logger
 import cmod.gcoder as gcoder
 import json
 
+
+class Detector(object):
+  """
+  A detector is defined as an object with a specific readout mode, a
+  corresponding channel, and at least one set of coordinates. The handling of the
+  detector ID will be handled by the paraent Board class
+  """
+  def __init__(self, jsonmap):
+    self.mode = int(jsonmap['mode'])
+    self.channel = int(jsonmap['channel'])
+    self.orig_coord = jsonmap['default coordinates']
+
+    if (self.orig_coord[0] > gcoder.GCoder.max_x()
+        or self.orig_coord[1] > gcoder.GCoder.max_y() or self.orig_coord[0] < 0
+        or self.orig_coord[1] < 0):
+      logger.printwarn(('The det position  (x:{1},y:{2}) '
+                        'is outside of the gantry boundaries (0-{3},0-{4}). '
+                        'For safety of operation, the det position will be '
+                        'adjusted. This might lead to unexpected '
+                        'behavior').format(self.orig_coord[0],
+                                           self.orig_coord[1],
+                                           gcoder.GCoder.max_x(),
+                                           gcoder.GCoder.max_y()))
+      self.orig_coord[0] = max(
+          [min([self.orig_coord[0], gcoder.GCoder.max_x()]), 0])
+      self.orig_coord[1] = max(
+          [min([self.orig_coord[1], gcoder.GCoder.max_y()]), 0])
+
+    ## Initialization calibrated coordinates to be empty
+    # Since all calibrations are done with respect to some z value,
+    # All calibration results will be some map to a certain
+    self.vis_coord = {}
+    self.vis_M = {}
+    self.lumi_coord = {}
+
+  def __str__(self):
+    return str(self.__dict__())
+
+  def __dict__(self):
+    return {
+        'mode': self.mode,
+        'channel': self.channel,
+        'default coordinates': self.orig_coord,
+        'Luminosity coordinates': self.lumi_coord,
+        'Visual coordinates': self.vis_coord,
+        'FOV transformation': self.vis_M
+    }
+
+
 class Board(object):
   """
   Class for storing a board type an a list of det x-y positions
   """
-
   def __init__(self):
     self.boardtype = ""
     self.boarddescription = ""
     self.boardid = ""
-    self.orig_coord = {}
-    self.vis_coord = {}
-    self.visM = {}
-    self.lumi_coord = {}
+    self.det_map = {}
 
   def clear(self):
     self.boardtype = ""
     self.boarddescription = ""
     self.boardid = ""
-    self.orig_coord = {}
-    self.vis_coord = {}
-    self.visM = {}
-    self.lumi_coord = {}
+    self.det_map = {}
 
   def set_boardtype(self, file):
     if any(self.dets()) or not self.empty():
@@ -31,124 +73,115 @@ class Board(object):
                         'boardtype will erase any existing configuration '
                         'for the current session'))
 
-    jsontemp = json.loads(open(file, 'r').read())
-    self.boardtype = jsontemp['board type']
-    self.boarddescription = jsontemp['board description']
-    self.boardid = jsontemp['board id']
+    jsonmap = json.loads(open(file, 'r').read())
+    self.boardtype = jsonmap['board type']
+    self.boarddescription = jsonmap['board description']
+    self.boardid = jsonmap['board id']
 
-    ## Getting the original coordinate list
-    for key in jsontemp['default coordinate']:
-      self.orig_coord[str(key)] = jsontemp['default coordinate'][key]
-      if (self.orig_coord[str(key)][0] > gcoder.GCoder.max_x()
-          or self.orig_coord[str(key)][1] > gcoder.GCoder.max_y()
-          or self.orig_coord[str(key)][0] < 0
-          or self.orig_coord[str(key)][1] < 0):
-        logger.printwarn(('The det position for det {0} (x:{1},y:{2}) '
-                          'is outside of the gantry boundaries (0-{3},0-{4}). '
-                          'For safety of operation, the det position will be '
-                          'adjusted. This might lead to unexpected '
-                          'behavior').format(key, self.orig_coord[str(key)][0],
-                                             self.orig_coord[str(key)][1],
-                                             gcoder.GCoder.max_x(),
-                                             gcoder.GCoder.max_y()))
-        self.orig_coord[str(key)][0] = max(
-            [min([self.orig_coord[str(key)][0],
-                  gcoder.GCoder.max_x()]), 0])
-        self.orig_coord[str(key)][1] = max(
-            [min([self.orig_coord[str(key)][1],
-                  gcoder.GCoder.max_y()]), 0])
-
-      self.vis_coord[str(key)] = {}
-      self.visM[str(key)] = {}
-      self.lumi_coord[str(key)] = {}
+    for detid in jsonmap['detectors']:
+      self.det_map[detid] = Detector(jsonmap['detectors'][detid])
 
   def load_calib_file(self, file):
     if not self.empty():
       logger.printwarn(('The current session is not empty. Loading a new '
                         'boardtype will erase any existing configuration '
                         'for the current session'))
-    jsontemp = json.loads(open(file, 'r').read())
+    jsonmap = json.loads(open(file, 'r').read())
 
-    def make_fz_dict(ext_dict):
-      return {
-          detid: {float(z): obj
-                   for z, obj in ext_dict[detid].items()}
-          for detid in self.dets()
-      }
+    for det in jsonmap:
+      if det not in self.det_map:
+        if int(det) >= 0:
+          logger.printwarn(('Detector recorded in the calibration file but not '
+                            'defined in the calibration, ignoring'))
+          continue
+        else:
+          self.add_calib_det(self, det)
 
-    self.lumi_coord = make_fz_dict(jsontemp['Lumi scan calibration'])
-    self.vis_coord = make_fz_dict(jsontemp['FOV scan calibration'])
-    self.visM = make_fz_dict(jsontemp['FOV transformation matrix'])
+      def format_dict(original_dict):
+        return {float(z): original_dict[z] for z in original_dict}
+
+      self.det_map[det].lumi_coord = format_dict(
+          jsonmap[det]['Luminosity coordinates'])
+      self.det_map[det].vis_coord = format_dict(
+          jsonmap[det]['Visual coordinates'])
+      self.det_map[det].vis_M = format_dict(jsonmap[det]['FOV transformation'])
 
   def save_calib_file(self, file):
-    dicttemp = {
-        'Lumi scan calibration': self.lumi_coord,
-        'FOV scan calibration': self.vis_coord,
-        'FOV transformation matrix': self.visM
-    }
+    dicttemp = {det: self.det_map[det].__dict__() for det in self.det_map}
 
     with open(file, 'w') as f:
       f.write(json.dumps(dicttemp, indent=2))
 
-  def dets(self):
-    return self.orig_coord.keys()
+  def get_det(self, detid):
+    return self.det_map[detid]
 
-  def calibdets(self):
-    return sorted([k for k in self.orig_coord.keys() if int(k) < 0],
-                  reverse=True)
+  def dets(self):
+    return self.det_map.keys()
+
+  def calib_dets(self):
+    return sorted([k for k in self.dets() if int(k) < 0], reverse=True)
 
   def add_calib_det(self, detid):
     detid = str(detid)
-    if detid not in self.orig_coord and int(detid) < 0:
-      self.orig_coord[detid] = [-100, -100]  # Non-existent calibration det
-      self.vis_coord[detid] = {}
-      self.visM[detid] = {}
-      self.lumi_coord[detid] = {}
+    if detid not in self.dets and int(detid) < 0:
+      self.det_map[detid] = Detector({
+          "mode": -1,
+          "channel": -1,
+          "default coordinates": [-100, -100]
+      })
 
   # Get/Set calibration measures with additional parsing
   def add_vis_coord(self, det, z, data):
     det = str(det)
-    self.vis_coord[det][self.roundz(z)] = data
+    self.det_map[det].vis_coord[self.roundz(z)] = data
 
   def add_visM(self, det, z, data):
     det = str(det)
-    self.visM[det][self.roundz(z)] = data
+    self.det_map[det].visM[self.roundz(z)] = data
 
   def add_lumi_coord(self, det, z, data):
     det = str(det)
-    self.lumi_coord[det][self.roundz(z)] = data
+    self.det_map[det].lumi_coord[self.roundz(z)] = data
 
   def get_vis_coord(self, det, z):
     det = str(det)
-    return self.vis_coord[det][self.roundz(z)]
+    return self.det_map[det].vis_coord[self.roundz(z)]
 
   def get_visM(self, det, z):
     det = str(det)
-    return self.visM[det][self.roundz(z)]
+    return self.det_map[det].vis_M[self.roundz(z)]
 
   def get_lumi_coord(self, det, z):
     det = str(det)
-    return self.vis_coord[det][self.roundz(z)]
+    return self.det_map[det].vis_coord[self.roundz(z)]
 
   def vis_coord_hasz(self, det, z):
     det = str(det)
-    return self.roundz(z) in self.vis_coord[det]
+    return self.roundz(z) in self.det_map[det].vis_coord
 
   def visM_hasz(self, det, z):
     det = str(det)
-    return self.roundz(z) in self.visM[det]
+    return self.roundz(z) in self.det_map[det].vis_M
 
   def lumi_coord_hasz(self, det, z):
     det = str(det)
-    return self.roundz(z) in self.lumi_coord[det]
+    return self.roundz(z) in self.det_map[det].lumi_coord
 
   def empty(self):
-    for det in self.dets():
-      if (any(self.vis_coord[det]) or any(self.visM[det])
-          or any(self.lumi_coord[det])):
+    for det in self.det_map:
+      if (any(self.det_map[det].vis_coord) or any(self.det_map[det].vis_M)
+          or any(self.det_map[det].lumi_coord)):
         return False
     return True
 
   @staticmethod
   def roundz(rawz):
     return round(rawz, 1)
+
+
+## In file unit testing
+if __name__ == "__main__":
+  board = Board()
+  board.set_boardtype('cfg/reference_single.json')
+  print(board.det_map['-100'])
+  board.save_calib_file('test.json')

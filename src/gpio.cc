@@ -9,24 +9,11 @@
 #include <unistd.h>
 
 #include <array>
+#include <atomic>
 #include <deque>
 #include <queue>
 #include <stdexcept>
 #include <thread>
-
-template<typename T, int maxlength, typename Container = std::deque<T> >
-class FixedQueue : public std::queue<T, Container>
-{
-public:
-  void push( const T& value )
-  {
-    if( this->size() == maxlength ){
-      this->c.pop_front();
-    }
-    std::queue<T, Container>::push( value );
-  }
-};
-
 
 class GPIO
 {
@@ -101,14 +88,14 @@ private:
   static int  GPIORead( const int fd );
   static void GPIOWrite( const int fd, const unsigned val );
 
-  void  InitPWM();
-  void  ClosePWM();
+  void InitPWM();
+  void ClosePWM();
 
   static constexpr int ads_default_address = 0x48;
   static int InitI2C();
   void       PushADCSetting();
   int16_t    ADCReadRaw();
-  void       FlushLoop();
+  void       FlushLoop( std::atomic<bool>& );
   void       InitI2CFlush();
   void       CloseI2CFlush();
 
@@ -135,7 +122,7 @@ private:
   float reference_voltage[4];
 
   // I2C interface continuous streaming.
-  bool i2c_flush;
+  std::atomic<bool> i2c_flush;
   std::thread i2c_flush_thread;
   float i2c_flush_array[4];
 };
@@ -150,16 +137,16 @@ GPIO::Init()
 
     InitPWM();
 
-    if( gpio_adc != -1 ){
+    if( gpio_adc != UNOPENED ){
       CloseI2CFlush();
     }
 
     gpio_adc = InitI2C();
-    if( gpio_adc != -1 ){
+    if( gpio_adc != OPEN_FAILED && gpio_adc != UNOPENED ){
       PushADCSetting();
       InitI2CFlush();
     }
-  } catch( std::exception& e ){
+  } catch( std::runtime_error& e ){
     // For local testing, this start the I2C monitoring flush even if
     // Something failed, (The ADC readout will just be a random stream)
     InitI2CFlush();
@@ -176,7 +163,8 @@ GPIO::GPIO() :
   gpio_adc( UNOPENED ),
   adc_range( ADS_RANGE_4V ),
   adc_rate( ADS_RATE_250SPS ),
-  adc_channel( 0 )
+  adc_channel( 0 ),
+  i2c_flush( false )
 {
   pwm_enable[0] = UNOPENED;
   pwm_duty[0]   = UNOPENED;
@@ -381,9 +369,9 @@ GPIO::InitPWM()
 {
   char errmsg[1024];
 
-  int fd = open( "/sys/class/pwm/pwmdet0/export", O_WRONLY );
+  int fd = open( "/sys/class/pwm/pwmchip0/export", O_WRONLY );
   if( fd == OPEN_FAILED ){
-    sprintf( errmsg, "Failed to open /sys/class/pwm/pwmdet0/export" );
+    sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip0/export" );
     pwm_enable[0] = -1;// Flagging the PWM stuff as unopened.
     throw std::runtime_error( errmsg );
   }
@@ -391,23 +379,34 @@ GPIO::InitPWM()
   write( fd, "1", 1 );
 
   // Waiting for the sysfs to generated the corresponding file
-  while( access( "/sys/class/pwm/pwmdet0/pwm0/enable", F_OK ) == OPEN_FAILED ){
+  while( access( "/sys/class/pwm/pwmchip0/pwm0/enable", F_OK ) == OPEN_FAILED ){
+    printf( "Waiting for /sys/class/pwm/pwmchip0/pwm0/enable" );
     usleep( 1e5 );
   }
 
-  while( access( "/sys/class/pwm/pwmdet0/pwm1/enable", F_OK ) == OPEN_FAILED ){
+  while( access( "/sys/class/pwm/pwmchip0/pwm1/enable", F_OK ) == OPEN_FAILED ){
+    printf( "Waiting for /sys/class/pwm/pwmchip0/pwm1/enable" );
     usleep( 1e5 );
   }
 
-  // Opening the various files for IO
-  pwm_enable[0] = open( "/sys/class/pwm/pwmdet0/pwm0/enable",     O_WRONLY );
-  pwm_duty[0]   = open( "/sys/class/pwm/pwmdet0/pwm0/duty_cycle", O_WRONLY );
-  pwm_period[0] = open( "/sys/class/pwm/pwmdet0/pwm0/period",     O_WRONLY );
+  // Small loop to continuously try to open the PWM interface. If the interface
+  // cannot be opened. An exception would have been raised at the start of the
+  // function.
+  do{
+    pwm_enable[0] = open( "/sys/class/pwm/pwmchip0/pwm0/enable",      O_WRONLY );
+    pwm_duty[0]   = open( "/sys/class/pwm/pwmchip0/pwm0/duty_cycle",  O_WRONLY );
+    pwm_period[0] = open( "/sys/class/pwm/pwmchip0/pwm0/period",      O_WRONLY );
 
-  pwm_enable[1] = open( "/sys/class/pwm/pwmdet0/pwm0/enable",     O_WRONLY );
-  pwm_duty[1]   = open( "/sys/class/pwm/pwmdet0/pwm0/duty_cycle", O_WRONLY );
-  pwm_period[1] = open( "/sys/class/pwm/pwmdet0/pwm0/period",     O_WRONLY );
+    pwm_enable[1] = open( "/sys/class/pwm/pwmchip0/pwm0/enable",      O_WRONLY );
+    pwm_duty[1]   = open( "/sys/class/pwm/pwmchip0/pwm0/duty_cycle",  O_WRONLY );
+    pwm_period[1] = open( "/sys/class/pwm/pwmchip0/pwm0/period",      O_WRONLY );
+    usleep( 1e5 );
+  }while( pwm_enable[0] == UNOPENED || pwm_enable[0] == OPEN_FAILED );
 
+  if( pwm_enable[0] == OPEN_FAILED ){
+    sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip0/pwm0/enable" );
+    throw std::runtime_error( errmsg );
+  }
   close( fd );
 }
 
@@ -423,15 +422,16 @@ GPIO::ClosePWM()
       close( pwm_duty[channel] );
       close( pwm_period[channel] );
 
-      sprintf( errmsg, "/sys/class/pwm/pwmdet%u/unexport", channel );
-      int fd = open( errmsg, O_WRONLY );
-      if( fd == OPEN_FAILED ){
-        sprintf( errmsg, "Failed /sys/class/pwm/pwmdet%u/unexport", channel );
-        throw std::runtime_error( errmsg );
-      }
-      write( fd, "0", 1 );
-      write( fd, "1", 1 );
     }
+
+    sprintf( errmsg, "/sys/class/pwm/pwmchip0/unexport" );
+    int fd = open( errmsg, O_WRONLY );
+    if( fd == OPEN_FAILED ){
+      sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip0/unexport" );
+      throw std::runtime_error( errmsg );
+    }
+    write( fd, "0", 1 );
+    write( fd, "1", 1 );
   }
 }
 
@@ -460,7 +460,7 @@ GPIO::SetPWM( const unsigned c,
   unsigned period_len = sprintf( period_str,  "%u", period );
 
   if( pwm_enable[channel] == OPEN_FAILED ){
-    sprintf( errmsg, "Failed to open /sys/class/pwm/pwmdet%u settings", c );
+    sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip%u settings", c );
     throw std::runtime_error( errmsg );
   } else if( pwm_enable[channel] == UNOPENED ){
     // In the case that the PWM is unopened. Simply modify the previous
@@ -586,7 +586,8 @@ GPIO::ADCReadRaw()
 }
 
 
-float GPIO::ReadNTCTemp( const unsigned channel ) const
+float
+GPIO::ReadNTCTemp( const unsigned channel ) const
 {
   // Standard values for NTC resistors used in circuit;
   static const float T_0 = 25 + 273.15;
@@ -606,7 +607,8 @@ float GPIO::ReadNTCTemp( const unsigned channel ) const
   return ( T_0 * B )/( B + T_0* std::log( R/R_0 ) ) - 273.15;
 }
 
-float GPIO::ReadRTDTemp( const unsigned channel ) const
+float
+GPIO::ReadRTDTemp( const unsigned channel ) const
 {
   // Typical value of RTDs in circuit
   static const float R_0 = 10000;
@@ -626,29 +628,38 @@ float GPIO::ReadRTDTemp( const unsigned channel ) const
   return T_0 + ( R - R_0 )/( R_0 * a ) - 273.15;
 }
 
-void GPIO::SetReferenceVoltage( const unsigned channel, const float val )
+void
+GPIO::SetReferenceVoltage( const unsigned channel, const float val )
 {
   reference_voltage[channel] = val;
 }
 
-void GPIO::FlushLoop()
+void
+GPIO::FlushLoop( std::atomic<bool>& i2d_flush )
 {
   while( i2c_flush == true ){
     if( gpio_adc >= NORMAL_PTR ){
       for( unsigned channel = 0; channel < 4; ++channel ){
         adc_channel = channel;
-        PushADCSetting();
+        try { // This is incase the GPIO interface is open but not addressable
+          PushADCSetting();
 
-        const int16_t adc   = ADCReadRaw();
-        const uint8_t range = adc_range& 0x7;
-        const float conv    = range == ADS_RANGE_6V  ? 6144.0 / 32678.0 :
-                              range == ADS_RANGE_4V  ? 4096.0 / 32678.0 :
-                              range == ADS_RANGE_2V  ? 2048.0 / 32678.0 :
-                              range == ADS_RANGE_1V  ? 1024.0 / 32678.0 :
-                              range == ADS_RANGE_p5V ?  512.0 / 32678.0 :
-                              256.0 / 32678.0;
-        i2c_flush_array[channel] = adc * conv;
-        usleep( 1e5 );
+          const int16_t adc   = ADCReadRaw();
+          const uint8_t range = adc_range& 0x7;
+          const float conv    = range == ADS_RANGE_6V  ? 6144.0 / 32678.0 :
+                                range == ADS_RANGE_4V  ? 4096.0 / 32678.0 :
+                                range == ADS_RANGE_2V  ? 2048.0 / 32678.0 :
+                                range == ADS_RANGE_1V  ? 1024.0 / 32678.0 :
+                                range == ADS_RANGE_p5V ?  512.0 / 32678.0 :
+                                256.0 / 32678.0;
+          i2c_flush_array[channel] = adc * conv;
+          usleep( 1e5 );
+        } catch( std::exception& e ){
+          i2c_flush_array[0] = i2c_flush_array[0];
+          i2c_flush_array[1] = i2c_flush_array[1];
+          i2c_flush_array[2] = i2c_flush_array[2];
+          i2c_flush_array[3] = i2c_flush_array[3];
+        }
       }
     } else {
       i2c_flush_array[0] = i2c_flush_array[0];
@@ -661,36 +672,43 @@ void GPIO::FlushLoop()
   }
 }
 
-void GPIO::InitI2CFlush()
+void
+GPIO::InitI2CFlush()
 {
   i2c_flush        = true;
   i2c_flush_thread = std::thread( [this] {
-    this->FlushLoop();
+    this->FlushLoop( std::ref( i2c_flush ) );
   } );
 }
 
-void GPIO::CloseI2CFlush()
+void
+GPIO::CloseI2CFlush()
 {
-  i2c_flush = false;
-  i2c_flush_thread.join();
+  if( i2c_flush == true ){
+    i2c_flush = false;
+    i2c_flush_thread.join();
+  }
 }
 
 // ******************************************************************************
 // Simple parser of status from file pointer results
 // ******************************************************************************
-bool GPIO::StatusGPIO() const
+bool
+GPIO::StatusGPIO() const
 {
   return gpio_trigger >= NORMAL_PTR &&
          gpio_light   >= NORMAL_PTR &&
          gpio_spare   >= NORMAL_PTR;
 }
 
-bool GPIO::StatusADC() const
+bool
+GPIO::StatusADC() const
 {
   return gpio_adc >= NORMAL_PTR;
 }
 
-bool GPIO::StatusPWM() const
+bool
+GPIO::StatusPWM() const
 {
   return pwm_enable[0] >= NORMAL_PTR &&
          pwm_duty[0]   >= NORMAL_PTR &&

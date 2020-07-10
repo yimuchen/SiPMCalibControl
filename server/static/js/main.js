@@ -20,6 +20,13 @@ $(document).ready(function () {
     socketio.emit('get-report', 'readout');
     socketio.emit('get-report', 'valid-reference')
     socketio.emit('get-report', 'sign-off');
+
+    // Getting the system settings
+    socketio.emit('get-report', 'image-settings');
+    socketio.emit('get-report', 'zscan-settings');
+    socketio.emit('get-report', 'lowlight-settings');
+    socketio.emit('get-report', 'lumialign-settings');
+    socketio.emit('get-report', 'picoscope-settings');
   });
 
   /**
@@ -50,7 +57,7 @@ $(document).ready(function () {
   $('#run-system-calibration').on('click', run_system_calibration);
   $('#run-std-calibration').on('click', run_std_calibration);
   $('#raw-cmd-input').on('click', raw_cmd_input);
-  $('#image-setting-update').on('click', image_setting_update);
+  $('#image-settings-update').on('click', image_setting_update);
   $('#user-action-complete').on('click', complete_user_action);
   $('#system-calib-signoff').on('click', system_calibration_signoff);
   $('#standard-calib-signoff').on('click', standard_calibration_signoff);
@@ -60,6 +67,30 @@ $(document).ready(function () {
   $('button.action-button').each(function () {
     $(this).prop('disabled', true);
   });
+
+  /**
+   * Settings actions
+   *
+   * Button here will be used to get change the settings used for standard
+   * calibration algorithms.
+   *
+   * Functions defined the settings.js
+   */
+  $('#image-settings-update').on('click', image_settings_update);
+  $('#image-settings-clear').on('click', image_settings_clear);
+  socketio.on('report-image-settings', sync_image_settings);
+  $('#zscan-settings-update').on('click', zscan_settings_update);
+  $('#zscan-settings-clear').one('click', zscan_settings_clear);
+  socketio.on('report-zscan-settings', sync_zscan_settings);
+  $('#lowlight-settings-update').on('click', lowlight_settings_update);
+  $('#lowlight-settings-clear').one('click', lowlight_settings_clear);
+  socketio.on('report-lowlight-settings', sync_lowlight_settings);
+  $('#lumialign-settings-update').on('click', lumialign_settings_update);
+  $('#lumialign-settings-clear').one('click', lumialign_settings_clear);
+  socketio.on('report-lumialign-settings', sync_lumialign_settings);
+  $('#picoscope-settings-update').on('click', picoscope_settings_update);
+  $('#picoscope-settings-clear').on('click', picoscope_settings_clear);
+  socketio.on('report-picoscope-settings',sync_picoscope_settings);
 
 
   /**
@@ -78,5 +109,6 @@ $(document).ready(function () {
   $('.add-comment-line').on('click',
     function () { add_comment_line($(this)); });
   update_indicator(); /** Updating all the close-tag icons */
+
 
 });

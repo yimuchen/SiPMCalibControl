@@ -19,6 +19,7 @@
   <script src="{{url_for('static',filename='js/input_sync.js')}}"></script>
   <script src="{{url_for('static',filename='js/monitor_style.js')}}"></script>
   <script src="{{url_for('static',filename='js/monitor.js')}}"></script>
+  <script src="{{url_for('static',filename='js/settings.js')}}"></script>
 </head>
 
 <body>
@@ -56,6 +57,30 @@
             <div class="plot" id="temperature-plot">
             </div>
             <div class="plot" id="voltage-plot">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab" id="visual-monitoring">
+        <div class="tab-title">
+          <span>Visual system</span>
+          <i class="fa fa=fa-angle-left"></i>
+        </div>
+        <div class="tab-content">
+
+          <div class="column-container">
+            <div class="left-column">
+              <img src="{{ url_for('video_monitor') }}" style="width:600px;" />
+            </div>
+            <div class="right-column">
+              <ul style="text-align: left;">
+                <li><a style="color:white">Failed bounding box ratio</a></li>
+                <li><a style="color:green">Failed internal luminosity cutoff</a></li>
+                <li><a style="color:yellow">Failed rectangular approximation</a></li>
+                <li><a style="color:cyan">Candidate contour (not largest)</a></li>
+                <li><a style="color:red">Found result</a></li>
+              </ul>
             </div>
           </div>
         </div>
@@ -147,8 +172,8 @@
             </div>
             <div class="input-row">
               <span class="input-name"></span>
-              <input type="radio" name="system-calib-boardtype" value="dummy" />
-              <span class="input-units">Dummy</span>
+              <input type="radio" name="system-calib-boardtype" value="reference_single" />
+              <span class="input-units">Single detector reference</span>
             </div>
           </div>
           <div class="button-container">
@@ -265,27 +290,25 @@
               <td>Ext.</td>
             </tr>
             <tr>
-              <td><input type="radio" name="trigger-channel" id="trigger-channel-A" /></td>
-              <td><input type="radio" name="trigger-channel" id="trigger-channel-B" /></td>
-              <td><input type="radio" name="trigger-channel" id="trigger-channel-EXT" /></td>
+              <td><input type="radio" name="trigger-channel" value="0" /></td>
+              <td><input type="radio" name="trigger-channel" value="1" /></td>
+              <td><input type="radio" name="trigger-channel" value="4" /></td>
               <td class="input-align">
                 <div class="input-row">
                   <span class="input-name">Trig.</span>
                   <input type="text" id="trigger-level-text" />
                   <span class="setting-unit">ADC</span>
                   <span id="trigger-level-converted"></span>
-                  <input type="range" min="-128" max="127" id="trigger-level-range" />
+                  <input type="range" min="-32768" max="32767" id="trigger-level-range" />
                 </div>
               </td>
             <tr>
               <td>
-                <input type="range" class="vertical" orient="vertical" id="channel-a-range" min="3" max="10"
-                  value={{scope_channel_a_range}} /><br>
+                <input type="range" class="vertical" orient="vertical" id="channel-a-range" min="3" max="10" /><br>
                 <div id="channel-a-range-value">20V</div>
               </td>
               <td>
-                <input type="range" class="vertical" orient="vertical" id="channel-b-range" min="3" max="10"
-                  value={{scope_channel_a_range}} /><br>
+                <input type="range" class="vertical" orient="vertical" id="channel-b-range" min="3" max="10" /><br>
                 <div id="channel-b-range-value">20V</div>
               </td>
               <td></td>
@@ -294,9 +317,9 @@
                 <div class="input-row">
                   <span class="input-name">Trig. dir.</span>
                   <span class="input-units">
-                    <input type="radio" name="trigger_direction" id="trigger_direction_up">
-                    <input type="radio" name="trigger_direction" id="trigger_direction_down">
-                    <input type="radio" name="trigger_direction" id="trigger_direction_both">
+                    <input type="radio" name="trigger-direction" value="2">
+                    <input type="radio" name="trigger-direction" value="3">
+                    <input type="radio" name="trigger-direction" value="4">
                     <br>up/down/both
                 </div>
                 <p></p>
@@ -305,7 +328,7 @@
                 <div class="input-row">
                   <span class="input-name">Delay</span>
                   <input type="text" id="trigger-delay" />
-                  <span class="input-units">ns</span>
+                  <span class="input-units">x 10 ns</span>
                 </div>
                 <div class="input-row">
                   <span class="input-name">Pre-samp.</span>
@@ -326,8 +349,8 @@
             </tr>
           </table>
           <div class="button-container">
-            <button id="picoscope_undo" class="action-button">Clear</button>
-            <button id="picoscope_update" class="action-button">Update</button>
+            <button id="picoscope-settings-clear" class="action-button">Clear</button>
+            <button id="picoscope-settings-update" class="action-button">Update</button>
           </div>
         </div>
 
@@ -379,31 +402,110 @@
           </div>
 
           <div class="button-container">
-            <button id="image-setting-clear" class="action-button">Clear</button>
-            <button id="image-setting-update" class="action-button">Update</button>
+            <button id="image-settings-clear" class="action-button">Clear</button>
+            <button id="image-settings-update" class="action-button">Update</button>
           </div>
         </div>
       </div>
 
       <div class="tab expert-action" id="device-settings">
         <div class="tab-title">
-          <span>Device settings (EXP ONLY)</span>
+          <span>Intensity scan Sequence (EXP ONLY)</span>
           <i class="fa fa-angle-left"></i>
         </div>
         <div class="tab-content hidden">
           <div class="input-align">
             <div class="input-row">
-              <span class="input-name">3D Printer</span>
-              <input type="text" id="printer-dev" />
+              <span class="input-name">Total Samples</span>
+              <input type="text" class="input-units" id="zscan-settings-samples" />
             </div>
             <div class="input-row">
-              <span class="input-name">Camera</span>
-              <input type="text" id="camera-dev" />
+              <span class="input-name">PWM duty cycle test points</span>
+              <input type="text" class="input-units" id="zscan-settings-pwm" />
             </div>
             <div class="input-row">
-              <span class="input-name">Scope</span>
-              <input type="text" id="scope-dev" />
+              <span class="input-name">Z List (For system calib.)</span>
+              <input type="text" class="input-units" id="zscan-settings-zval-dense" />
+              <span class="input-units">mm</span>
             </div>
+            <div class="input-row">
+              <span class="input-name">Z List (For std. calib.)</span>
+              <input type="text" class="input-units" id="zscan-settings-zval-sparse" />
+              <span class="input-units">mm</span>
+            </div>
+          </div>
+
+          <div class="button-container">
+            <button id="zscan-settings-clear" class="action-button">Clear</button>
+            <button id="zscan-settings-update" class="action-button">Update</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab expert-action" id="device-settings">
+        <div class="tab-title">
+          <span>Low light Calibration Sequence (EXP ONLY)</span>
+          <i class="fa fa-angle-left"></i>
+        </div>
+        <div class="tab-content hidden">
+          <div class="input-align">
+            <div class="input-row">
+              <span class="input-name">Total Samples</span>
+              <input type="text" class="input-units" id="lowlight-settings-samples" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">PWM duty cycle</span>
+              <input type="text" class="input-units" id="lowlight-settings-pwm" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">Collection Z height</span>
+              <input type="text" class="input-units" id="lowlight-settings-zval" />
+              <span class="input-units">mm</span>
+            </div>
+          </div>
+
+          <div class="button-container">
+            <button id="lowlight-settings-clear" class="action-button">Clear</button>
+            <button id="lowlight-settings-update" class="action-button">Update</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab expert-action" id="device-settings">
+        <div class="tab-title">
+          <span>Lumi alignment calibration Sequence (EXP ONLY)</span>
+          <i class="fa fa-angle-left"></i>
+        </div>
+        <div class="tab-content hidden">
+          <div class="input-align">
+            <div class="input-row">
+              <span class="input-name">Total Samples</span>
+              <input type="text" class="input-units" id="lumialign-settings-samples" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">PWM duty cycle</span>
+              <input type="text" class="input-units" id="lumialign-settings-pwm" />
+            </div>
+            <div class="input-row">
+              <span class="input-name">Collection Z height</span>
+              <input type="text" class="input-units" id="lumialign-settings-zval" />
+              <span class="input-units">mm</span>
+            </div>
+            <div class="input-row">
+              <span class="input-name">Horizontal Range</span>
+              <input type="text" class="input-units" id="lumialign-settings-range" />
+              <span class="input-units">mm</span>
+            </div>
+            <div class="input-row">
+              <span class="input-name">Horizontal separation</span>
+              <input type="text" class="input-units" id="lumialign-settings-distance" />
+              <span class="input-units">mm</span>
+            </div>
+          </div>
+
+          <div class="button-container">
+            <button id="lumialign-settings-clear" class="action-button">Clear</button>
+            <button id="lumialign-settings-update" class="action-button">Update</button>
           </div>
         </div>
       </div>

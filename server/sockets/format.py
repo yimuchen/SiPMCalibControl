@@ -45,10 +45,15 @@ def CmdZScan(detid, dense, rev):
   if rev: z_list = reversed(z_list)
 
   ans = """
-  zscan --detid={detid}   --channel={detid} --zlist {zlist}
-        --sample=100      --power {powerlist}
+  zscan --detid={detid}
+        --channel={channel} --mode={mode}
+        --zlist {zlist}
+        --sample={samples}      --power {powerlist}
         --savefile={file} --wipefile
   """.format(detid=detid,
+             samples=session.zscan_samples,
+             mode=session.cmd.board.get_det(detid).mode,
+             channel=session.cmd.board.get_det(detid).channel,
              zlist=' '.join([str(z) for z in z_list]),
              powerlist=' '.join([str(p) for p in session.zscan_power_list]),
              file=CalibFilename('zscan', detid))
@@ -58,20 +63,46 @@ def CmdZScan(detid, dense, rev):
 
 def CmdLowLightCollect(detid):
   ans = """
-  lowlightcollect --detid {detid}  --sample 10000 --channel={detid}
-                  --power  0.5     -z {zmax}
-                  --savefile={file}    --wipefile
-  """.format(detid=detid, zmax=300, file=CalibFilename('lowlight', detid))
+    lowlightcollect --detid {detid}  --sample {samples}
+                    --mode={mode}
+                    --channel={channel}
+                    --power  0.75    -z {zval}
+                    --savefile={file}    --wipefile
+    """.format(detid=detid,
+               samples=session.lowlight_samples,
+               mode=session.cmd.board.get_det(detid).mode,
+               channel=session.cmd.board.get_det(detid).channel,
+               zval=session.lowlight_zval,
+               file=CalibFilename('lowlight', detid))
+
   return ReduceCmdSpaces(ans)
 
 
 def CmdLumiAlign(detid):
   ans = """
-  halign --detid={detid} --channel={detid}
-         --sample=100 -z 10  --overwrite
-         --range=6 --distance=3
-         --power=0.5
-         -f={filename}
-         --wipefile
-  """.format(detid=detid, filename=CalibFilename('halign', detid))
+    halign --detid={detid}
+           --channel={channel} --mode={mode}
+           --sample={samples} -z {zval}  --overwrite
+           --range={range} --distance={distance}
+           --power={power}
+           -f={filename}
+           --wipefile
+    """.format(detid=detid,
+               mode=session.cmd.board.get_det(detid).mode,
+               channel=session.cmd.board.get_det(detid).channel,
+               samples=session.lumialign_samples,
+               zval=session.lumialign_zval,
+               range=session.lumialign_range,
+               distance=session.lumialign_distance,
+               power=session.lumialign_pwm,
+               filename=CalibFilename('halign', detid))
+  return ReduceCmdSpaces(ans)
+
+
+def CmdVisualAlign(detid):
+  ans = """
+  visualcenterdet --detid {detid}
+                  -z 20
+                  --overwrite
+  """.format(detid=detid)
   return ReduceCmdSpaces(ans)

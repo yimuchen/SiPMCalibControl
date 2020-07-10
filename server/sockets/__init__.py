@@ -43,21 +43,34 @@ class Session(object):
     self.zscan_cache = {}
     self.lowlight_cache = {}
     self.lumialign_cache = {}
+    self.visual_cache = {}
     self.zscan_updates = []
     self.lowlight_updates = []
     self.lumialign_update = []
+
 
     ## Progress keeping stuff
     self.progress_check = {}
     self.valid_reference_list = []
 
     ## Stuff related to the generation of standard commands
+    self.zscan_samples = 100
     self.zscan_zlist_sparse = [10, 15, 20, 50, 70, 100, 150, 200, 250, 300]
     self.zscan_zlist_dense = [
         10, 12, 14, 16, 18, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250,
         300
     ]
     self.zscan_power_list = [0.1, 0.5, 0.8, 1.0]
+
+    self.lowlight_samples = 10000
+    self.lowlight_pwm = 0.5
+    self.lowlight_zval = 300
+
+    self.lumialign_zval = 10
+    self.lumialign_pwm = 0.5
+    self.lumialign_range = 6
+    self.lumialign_distance = 2
+    self.lumialign_samples = 100
 
 
 ## declaration of global object

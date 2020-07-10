@@ -23,7 +23,7 @@ public:
 
   int  VoltageRangeMax() const;
   int  VoltageRangeMin() const;
-  void SetVoltageRange( int newrange );
+  void SetVoltageRange( const int16_t channel, const int newrange );
 
   void SetTrigger(
     const int16_t  channel,
@@ -46,7 +46,7 @@ public:
     const unsigned sample ) const;
 
   // Conversion method.
-  float adc2mv( int16_t adc ) const;
+  float adc2mv( const int16_t channel, const int16_t adc ) const;
 
   // Debugging methods
   void DumpBuffer() const;
@@ -62,7 +62,7 @@ public:
 public:
   int16_t device;// integer representing device in driver API
 
-  int range;
+  int range[2];
   uint16_t triggerchannel;
   uint16_t triggerdirection;
   float triggerlevel;
@@ -76,6 +76,11 @@ public:
   int maxsamples;// maximum number of time samples
   unsigned ncaptures;// Number of block capture for perform per function call
   int runtime;// storing runtime for Rapid block
+
+  inline int
+  rangeA() const { return range[0]; }
+  inline int
+  rangeB() const { return range[1]; }
 
 private:
   std::vector<std::unique_ptr<int16_t[]> > bufferA;
@@ -92,10 +97,17 @@ static const float inputRanges[PS5000_MAX_RANGES] = {
 
 PicoUnit::PicoUnit() :
   device( 0 ),
+  triggerchannel( PS5000_EXTERNAL ),
+  triggerdirection( FALLING ),
+  triggerlevel( 500 ),
+  triggerdelay( 0 ),
   presamples( 0 ),
   postsamples( 0 ),
   ncaptures( 0 )
-{}
+{
+  range[0] = 6;
+  range[1] = 7;
+}
 
 void
 PicoUnit::Init()
@@ -113,11 +125,15 @@ PicoUnit::Init()
     throw std::runtime_error( errormessage );
   }
 
+  std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+
   // Setting up default settings
-  SetVoltageRange( PS5000_100MV );
-  SetTrigger( PS5000_EXTERNAL, RISING, 2000, 0, 0 );
+  SetVoltageRange( PS5000_CHANNEL_A, PS5000_100MV );
+  SetVoltageRange( PS5000_CHANNEL_B, PS5000_100MV );
+  SetTrigger( PS5000_EXTERNAL, RISING, 500, 0, 0 );
   // 0 delay, indefinite trigger wait time.
-  SetBlockNums( 500, 0, 100 );
+  std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+  SetBlockNums( 5000, 100, 0 );
   findTimeInterval();
 }
 
@@ -127,8 +143,8 @@ PicoUnit::~PicoUnit()
 }
 
 float
-PicoUnit::adc2mv( int16_t adc ) const
-{ return adc * inputRanges[range] / PS5000_MAX_VALUE; }
+PicoUnit::adc2mv( int16_t channel, int16_t adc ) const
+{ return adc * inputRanges[range[channel]] / PS5000_MAX_VALUE; }
 
 int
 PicoUnit::VoltageRangeMin() const
@@ -143,14 +159,14 @@ PicoUnit::VoltageRangeMax() const
 }
 
 void
-PicoUnit::SetVoltageRange( const int newrange )
+PicoUnit::SetVoltageRange( const int16_t channel, const int newrange )
 {
   const static int16_t enable     = 1;
   const static int16_t dc_coupled = 1;
   char errormessage[1024];
 
   auto status = ps5000SetChannel( device,
-    PS5000_CHANNEL_A, enable,
+    (PS5000_CHANNEL)channel, enable,
     dc_coupled, (PS5000_RANGE)newrange );
 
   if( status != PICO_OK ){
@@ -159,17 +175,7 @@ PicoUnit::SetVoltageRange( const int newrange )
     throw std::runtime_error( errormessage );
   }
 
-  status = ps5000SetChannel( device,
-    PS5000_CHANNEL_B, enable,
-    dc_coupled, (PS5000_RANGE)newrange );
-
-  if( status != PICO_OK ){
-    sprintf( errormessage,
-      "Error setting up channel (Error code:%d)", status  );
-    throw std::runtime_error( errormessage );
-  }
-
-  range = newrange;
+  range[channel] = newrange;
 }
 
 void
@@ -184,7 +190,7 @@ PicoUnit::SetTrigger(
 
   const int16_t leveladc
     = channel == PS5000_EXTERNAL ? ( level * PS5000_MAX_VALUE ) / 20000 :
-      ( level * PS5000_MAX_VALUE ) / inputRanges[range];
+      ( level * PS5000_MAX_VALUE ) / inputRanges[range[channel]];
   char errormessage[1024];
 
   // Always setting up such that it waits for a rising external trigger
@@ -376,8 +382,8 @@ PicoUnit::DumpBuffer() const
 
     for( unsigned j = 0; j < ncols; ++j ){
       sprintf( tempstr, "(%8.2f,%8.2f) |",
-        adc2mv( GetBuffer( 0, j, i ) ),
-        adc2mv( GetBuffer( 1, j, i ) ) );
+        adc2mv( 0, GetBuffer( 0, j, i ) ),
+        adc2mv( 1, GetBuffer( 1, j, i ) ) );
       strcat( line, tempstr );
     }
 
@@ -431,7 +437,7 @@ PicoUnit::WaveformSum(
     ans += GetBuffer( channel, capture, i ) / 256;
   }
 
-  return ans * adc2mv( 256 );
+  return ans * adc2mv( channel, 256 );
 }
 
 int
@@ -489,7 +495,9 @@ PicoUnit::PrintInfo() const
   for( int i = minrange; i <= maxrange; ++i ){
     sprintf( line, "%25s | [%c] %2d (%5dmV) [Res: %.3fmV]",
       ( i == minrange ? "Voltage Range index" : "" ),
-      ( i == range ?  'V' : ' ' ),
+      ( i == range[0] ? 'A' :
+        i == range[1] ? 'B' :
+        ' ' ),
       ( i ),
       ( (int)inputRanges[i] ),
       ( (float)inputRanges[i] / PS5000_MAX_VALUE * 256 ) );
@@ -524,8 +532,12 @@ PicoUnit::PrintInfo() const
     triggerlevel,
     int(triggerchannel == PS5000_EXTERNAL ?
         ( triggerlevel * PS5000_MAX_VALUE ) / 20000 :
-        ( triggerlevel * PS5000_MAX_VALUE ) / inputRanges[range]) );
-  // Trigger level
+        ( triggerlevel * PS5000_MAX_VALUE ) / inputRanges[range[triggerchannel]]
+        ) );
+  printmsg( picoinfo, line );
+
+  sprintf( line, "PRE:%10d | POST:%10d | NBLOCKS:%10d",
+    presamples, postsamples, ncaptures );
   printmsg( picoinfo, line );
 }
 
@@ -569,10 +581,11 @@ BOOST_PYTHON_MODULE( pico )
   .def( "waveformstr",      &PicoUnit::WaveformString  )
   .def( "waveformsum",      &PicoUnit::WaveformSum     )
   .def( "waveformmax",      &PicoUnit::WaveformAbsMax  )
+  .def( "rangeA",           &PicoUnit::rangeA          )
+  .def( "rangeB",           &PicoUnit::rangeB          )
 
   // Defining data members as readonly:
   .def_readonly( "device",           &PicoUnit::device           )
-  .def_readonly( "range",            &PicoUnit::range            )
   .def_readonly( "presamples",       &PicoUnit::presamples       )
   .def_readonly( "postsamples",      &PicoUnit::postsamples      )
   .def_readonly( "ncaptures",        &PicoUnit::ncaptures        )

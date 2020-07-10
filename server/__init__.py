@@ -35,6 +35,19 @@ def create_server_flask(debug=False):
   def index():
     return render_template('index.html')
 
+  @socketio.app.route('/video_monitor')
+  def video_monitor():
+    return Response(
+        GetCurrentImage(), # (unfortunately) defined in the parsing.py file
+        mimetype='multipart/x-mixed-replace; boundary=frame' )
+
+  @socketio.app.route('/visual_cache/<detid>')
+  def get_det_image(detid):
+    return Response(
+      GetDetectorImage(detid), # This is also in parsing.py file
+      mimetype='multipart/x-mixed-replace; boundary=frame' )
+
+
   @socketio.on('connect', namespace='/sessionsocket')
   def monitor_connect():
     print('Monitor client connected')
@@ -47,7 +60,6 @@ def create_server_flask(debug=False):
   @socketio.on('run-action-cmd', namespace='/sessionsocket')
   def run_action(msg):
     RunAction(socketio, msg)
-
 
   @socketio.on('complete-user-action', namespace='/sessionsocket')
   def complete_user_action(msg):
@@ -68,7 +80,7 @@ def create_server_flask(debug=False):
   ## Using map to store Default values:
   default_overide = {
       '--printerdev': '/dev/ttyUSB0',
-      '--camdev': '/dev/video3',
+      '--camdev': '/dev/video0',
       #'-boardtype': 'cfg/static_calib.json',
       '--action': 'cfg/useractions.json',
       '--picodevice': 'MYSERIAL',  #Cannot actually set. Just dummy for now

@@ -102,8 +102,7 @@ class halign(cmdbase.controlcmd):
     self.parse_readout_options(args)
     self.parse_savefile(args)
     if not args.power:
-      print(args.power)
-      args.power = [self.gpio.pwm_duty(0)]  ## Getting the PWM value
+      args.power = self.gpio.pwm_duty(0)  ## Getting the PWM value
     return args
 
   def run(self, args):
@@ -142,7 +141,7 @@ class halign(cmdbase.controlcmd):
                                    lumi,
                                    p0=p0,
                                    sigma=unc,
-                                   maxfev=10000)
+                                   maxfev=1000000)
     except Exception as err:
       self.printerr(('Lumi fit failed to converge, check output stored in file '
                      '{0} for collected values').format(args.savefile.name))
@@ -162,24 +161,21 @@ class halign(cmdbase.controlcmd):
       self.board.add_calib_det(detid)
 
     ## Saving session information
-    if (not detid in self.board.lumi_coord
-        or not args.scanz in self.board.lumi_coord[detid] or args.overwrite):
-      if not detid in self.board.lumi_coord:
-        self.board.lumi_coord[detid] = {}
-      self.board.lumi_coord[detid][args.scanz] = [
+    if not self.board.lumi_coord_hasz(detid, args.scanz) or args.overwrite:
+      self.board.add_lumi_coord(detid, args.scanz, [
           fitval[1],
           np.sqrt(fitcovar[1][1]), fitval[2],
           np.sqrt(fitcovar[1][1])
-      ]
-    elif args.scanz in self.board.lumi_coord[detid]:
+      ])
+    elif self.board.lumi_coord_hasz(detid, args.scanz):
       if self.cmd.prompt_yn(
           str('A lumi alignment for z={0:.1f} already exists for the current session, overwrite?'
               .format(args.scanz))):
-        self.board.lumi_coord[detid][args.scanz] = [
+        self.board.add_lumi_coord(detid, args.scanz, [
             fitval[1],
             np.sqrt(fitcovar[1][1]), fitval[2],
             np.sqrt(fitcovar[1][1])
-        ]
+        ])
 
     ## Sending gantry to position
     self.move_gantry(fitval[1], fitval[2], args.scanz, True)
@@ -217,7 +213,6 @@ class zscan(cmdbase.controlcmd):
     self.parse_readout_options(args)
     self.parse_savefile(args)
     if not args.power:
-      print(args.power)
       args.power = [self.gpio.pwm_duty(0)]  ## Getting the PWM value
     return args
 
@@ -239,10 +234,12 @@ class zscan(cmdbase.controlcmd):
                                               samples=args.samples)
           if self.readout.mode == self.readout.MODE_PICO:
             wmax = self.pico.waveformmax(args.channel)
-            if wmax < 100 and self.pico.range > self.pico.rangemin():
-              self.pico.setrange(self.pico.range - 1)
-            elif wmax > 200 and self.pico.range < self.pico.rangemax():
-              self.pico.setrange(self.pico.range + 1)
+            current_range = self.pico.rangeA(
+            ) if args.channel == 0 else self.pico.rangeB()
+            if wmax < 100 and current_range > self.pico.rangemin():
+              self.pico.setrange(args.channel, current_range - 1)
+            elif wmax > 200 and current_range < self.pico.rangemax():
+              self.pico.setrange(args.channel, current_range + 1)
             else:
               break
           else:
@@ -368,8 +365,7 @@ class timescan(cmdbase.controlcmd):
       sample_time = time.time_ns()
       timestamp = (sample_time - start_time) / 1e9
       args.savefile.write(
-          self.make_standard_line((lumival, uncval),
-                                  det_id=-100,
+          self.make_standard_line((lumival, uncval), det_id=-100,
                                   time=timestamp))
       args.savefile.flush()
       self.update_luminosity(lumival,

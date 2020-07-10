@@ -23,6 +23,7 @@ def clear_cache():
   session.zscan_cache = {}
   session.lumialign_cache = {}
   session.lowlight_cache = {}
+  session.visual_cache = {}
   session.zscan_updates = []
   session.lowlight_updates = []
   session.lumialign_updates = []
@@ -38,6 +39,7 @@ def init_cache():
   session.zscan_cache = {detid: [] for detid in session.cmd.board.dets()}
   session.lumialign_cache = {detid: [] for detid in session.cmd.board.dets()}
   session.lowlight_cache = {detid: [] for detid in session.cmd.board.dets()}
+  session.visual_cache = {detid: [] for detid in session.cmd.board.dets()}
   session.zscan_updates = []
   session.lowlight_updates = []
   session.lumialign_updates = []
@@ -100,7 +102,7 @@ def update_cache(progress_tag):
       ## Ignoring lines that are not of standard format
       continue
     detid = str(tokens[1])
-    if not detid in session.cmd.board.orig_coord:
+    if not detid in session.cmd.board.dets():
       # Ignoring lines where the data is wrongly parsed
       # And the result det id turn out to be garbage.
       continue
@@ -128,7 +130,8 @@ def update_progress():
   read_log.close()
 
   if not 'Progress' in last_line:
-    session.progress_check['current'] = []
+    session.progress_check['current'] = [0, 1]
+    ## Initializating as a zero two point function
   else:
     pattern = re.compile(r'.*Progress\s*\[\s*(\d+)\/\s*(\d+)\].*')
     match = pattern.match(last_line)
@@ -159,14 +162,16 @@ def GetSortedDets():
   det_sort_list.append(list(session.cmd.board.dets())[0])
 
   while len(det_sort_list) < len(session.cmd.board.dets()):
-    x0, y0 = session.cmd.board.orig_coord[det_sort_list[-1]]
+    x0, y0 = session.cmd.board.get_det(det_sort_list[-1]).orig_coord
 
     distance = [{
-        'id': detid,
-        'dist': [abs(c[0] - x0), abs(c[1] - y0)]
-    }
-                for detid, c in session.cmd.board.orig_coord.items()
-                if detid not in det_sort_list]
+        'id':
+        detid,
+        'dist': [
+            abs(session.cmd.board.get_det(detid).orig_coord[0] - x0),
+            abs(session.cmd.board.get_det(detid).orig_coord[1] - y0)
+        ]
+    } for detid in session.cmd.board.dets() if detid not in det_sort_list]
 
     def compare(a):
       return ((a['dist'][0]**2 + a['dist'][1]**2) * 1000 * 1000 +
@@ -262,10 +267,9 @@ def StandardCalibration(socketio, msg):
   set_light('on')
 
   for detid in det_list:
-    line = ('visualcenterdet --detid {detid}'
-            '                -z 10 '
-            '                --overwrite').format(detid=detid)
+    line = CmdVisualAlign(detid)
     RunLineNoMonitor(line, 'visalign', detid)
+    session.visual_cache[detid] = session.cmd.visual.get_image_bytes()
     ReportTileboardLayout(socketio)
     ## Returning tileboard layout after visual calibration
 
@@ -353,15 +357,16 @@ def SystemCalibration(socketio, msg):
 
   first_det = list(session.cmd.board.dets())[0]
 
-  vishscan_line = ('visualhscan --detid={detid} '
-                   '            -z 10           '
+  vishscan_line = ('visualhscan --detid={detid}        '
+                   '            -z 20                  '
+                   '            --range 3 --distance 1'
                    '            --overwrite -f=/dev/null').format(
                        detid=first_det)
-  RunLineNoMonitor(vishscan_line, 'vhscan', first_det)
+  RunLineInThread(vishscan_line, 'vhscan', first_det)
   for detid in session.cmd.board.dets():
-    line = 'visualcenterdet --detid={detid} -z 10 --overwrite '.format(
-        detid=detid)
+    line = CmdVisualAlign(detid)
     RunLineNoMonitor(line, 'visalign', detid)
+    session.visual_cache[detid] = session.cmd.visual.get_image_bytes()
     ReportTileboardLayout(socketio)
 
   set_light('off')
@@ -375,6 +380,12 @@ def SystemCalibration(socketio, msg):
 
   for detid in session.cmd.board.dets():
     line = CmdLumiAlign(detid=detid)
+    print("RUNNING LUMI SCAN")
+    print("RUNNING LUMI SCAN")
+    print("RUNNING LUMI SCAN")
+    print("RUNNING LUMI SCAN")
+    print("RUNNING LUMI SCAN")
+    print("RUNNING LUMI SCAN")
     RunLineInThread(line, 'lumialign', detid)
     ReportTileboardLayout(socketio)
 
@@ -405,6 +416,9 @@ def RerunCalibration(socketio, msg):
   elif action == 'zscan':
     line = CmdZScan(detid, dense=True if int(detid) < 0 else False, rev=False)
     update_progress = True
+  elif action == 'visalign':
+    line = CmdVisualAlign(detid)
+    update_progress = False
 
   ## Manually removing the `wipefile` options if the extend flag is available
   if extend:
@@ -437,6 +451,9 @@ def RerunCalibration(socketio, msg):
       ReportProgress(socketio)
       RunLineNoMonitor(line, action, detid)
       ReportTileboardLayout(socketio)
+
+    if action == 'visalign':
+      session.visual_cache[detid] = session.cmd.visual.get_image_bytes()
 
 
 def CalibrationSignoff(socketio, data, store):
@@ -479,7 +496,7 @@ def CalibrationSignoff(socketio, data, store):
       sftp = ssh.open_sftp()
       sftp.banner_timeout = 200000
       sftp.chdir('/data/users/yichen/SiPMCalib/tar')
-      print( tar_file , os.path.exists(tar_file) )
+      print(tar_file, os.path.exists(tar_file))
       sftp.put(tar_file, tar_file)
       sftp.close()
       ssh.close()

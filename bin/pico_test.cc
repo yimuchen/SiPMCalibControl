@@ -9,7 +9,7 @@ main( int argc, char* argv[] )
   PicoUnit pico;
   pico.Init();
   pico.SetBlockNums( 500, 120, 0 );
-  pico.SetVoltageRange( PS5000_100MV );
+  pico.SetVoltageRange( PS5000_CHANNEL_A, PS5000_100MV );
   ///
   pico.SetTrigger( PS5000_EXTERNAL, RISING, 200, 8, 1 );
 

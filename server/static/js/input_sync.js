@@ -1,66 +1,98 @@
+function sync_text_to_range_by_id(range_id) {
+  const text_id = range_id.replace('-range', '-text');
+  $(`#${text_id}`).val($(`#${range_id}`).val());
+}
+
+function sync_range_to_text_by_id(text_id) {
+  var range_id = text_id.replace('-text', '-range');
+  var max_val = parseFloat($(`#${range_id}`).attr('max'));
+  var min_val = parseFloat($(`#${range_id}`).attr('min'));
+
+  // Truncating the range.
+  if ($(`#${text_id}`).val() > max_val) {
+    $(`#${text_id}`).val(max_val);
+  } else if ($(`#${text_id}`).val() < min_val) {
+    $(`#${text_id}`).val(min_val);
+  }
+
+  $(`#${range_id}`).val($(`#${text_id}`).val());
+
+}
+
+
 function sync_text_to_range(event) {
-  var range_id = event.target.id;
-  var text_id = range_id.replace('-range', '-text');
-  $('#' + text_id).val($('#' + range_id).val());
+  sync_text_to_range_by_id(event.target.id);
 }
 
 function sync_range_to_text(event) {
-  var id = event.target.id;
-  var range_id = id.replace('-text', '-range');
-  var max_val = parseFloat($('#' + range_id).attr('max'));
-  var min_val = parseFloat($('#' + range_id).attr('min'));
-  if ($('#' + id).val() > max_val) {
-    $('#' + id).val(max_val);
-  } else if ($('#' + id).val() < min_val) {
-    $('#' + id).val(min_val);
-  }
-  $('#' + range_id).val($('#' + id).val());
+  sync_range_to_text_by_id(event.target.id);
 }
 
-function sync_pico_range(event) {
-  var id = event.target.id;
-  var myval = $('#' + id).val();
-  var out = $(`#${id}-value`)
-  var html = ''
-  switch (myval) {
-    case '3': html = '100mV'; break;
-    case '4': html = '200mV'; break;
-    case '5': html = '500mV'; break;
-    case '6': html = '1V'; break;
-    case '7': html = '2V'; break;
-    case '8': html = '5V'; break;
-    case '9': html = '10V'; break;
-    case '10': html = '20V'; break;
-    default: html = 'N/A'
+
+function range_to_mv(range) {
+  switch (range) {
+    case '3': return 100;
+    case '4': return 200;
+    case '5': return 500;
+    case '6': return 1000;
+    case '7': return 2000;
+    case '8': return 5000;
+    case '9': return 10000;
+    case '10': return 20000;
+    default: return 0;
   }
-  out.html(html);
 }
 
-function sync_pico_trigger(event) {
-  var element = $(event.target);
-  var adc = element.val();
-  var channel = $("input[name='trigger-channel']:checked").attr('id');
-  var range_idx
-    = (channel == "trigger-channel-A") ? $('#channel-a-range').val() :
-      (channel == "trigger-channel-B") ? $('#channel-b-range').val() :
+function value_from_adc(adc, channel) {
+  const range_idx
+    = parseInt(channel) == 0 ? $('#channel-a-range').val() :
+      parseInt(channel) == 1 ? $('#channel-b-range').val() :
         '10';
+  return adc * range_to_mv(range_idx) / 32768.;
+}
 
-  var max = 0;
-  var unit = '';
-  switch (range_idx) {
-    case '3': max = 100; unit = 'mV'; break;
-    case '4': max = 200; unit = 'mV'; break;
-    case '5': max = 500; unit = 'mV'; break;
-    case '6': max = 1; unit = 'V'; break;
-    case '7': max = 2; unit = 'V'; break;
-    case '8': max = 5; unit = 'V'; break;
-    case '9': max = 10; unit = 'V'; break;
-    case '10': max = 20; unit = 'V'; break;
-    default: max = 0; break;
+function adc_from_value(value, channel) {
+  const range_idx
+    = parseInt(channel) == 0 ? $('#channel-a-range').val() :
+      parseInt(channel) == 1 ? $('#channel-b-range').val() :
+        '10';
+  return parseInt(value * 32768. / range_to_mv(range_idx));
+
+}
+
+
+function sync_pico_range() {
+  const id_list = ['channel-a-range', 'channel-b-range'];
+
+  for (var i = 0; i < 2; ++i) {
+    var id = id_list[i];
+    var myval = $(`#${id}`).val();
+    var range_mv = range_to_mv(myval);
+    var out = $(`#${id}-value`);
+    var html = range_mv >= 1000 ? parseInt(range_mv / 1000) + 'V' :
+      parseInt(range_mv) + 'mV';
+    out.html(html);
+  }
+}
+
+
+
+
+function sync_pico_trigger() {
+  var adc = $('#trigger-level-text').val()
+  var channel = $("input[name='trigger-channel']:checked").val();
+  var level = value_from_adc(parseInt(adc), channel);
+  var unit = 'mV'
+  if (level > 1000) {
+    unit = 'V';
+    level /= 1000;
+  } else if (level < -1000) {
+    unit = 'V';
+    level /= 1000;
   }
 
   $('#trigger-level-converted').html(
-    '(' + (max * adc / 128.0).toFixed(1) + unit + ')');
+    '(' + level.toFixed(1) + unit + ')');
 }
 
 function update_indicator() {

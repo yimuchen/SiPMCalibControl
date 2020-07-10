@@ -12,7 +12,8 @@ class picoset(cmdbase.controlcmd):
                              type=int,
                              help=('Voltage range by index, use command '
                                    '"get --pico" for the list of available '
-                                   'numbers'))
+                                   'numbers, both channel will be set to the '
+                                   'same sample'))
 
     ## Trigger related settings
     self.parser.add_argument('--triggerchannel',
@@ -93,7 +94,8 @@ class picoset(cmdbase.controlcmd):
   def run(self, args):
     ## Voltage range stuff
     if args.range:
-      self.pico.setrange(args.range)
+      self.pico.setrange(0, args.range)
+      self.pico.setrange(1, args.range)
 
     self.set_trigger(args)
     self.set_blocks(args)
@@ -137,7 +139,7 @@ class picorunblock(cmdbase.controlcmd):
     if args.savefile.tell() == 0:
       args.savefile.write("{0} {1} {2} {3} {4}\n".format(
           self.pico.timeinterval, self.pico.ncaptures, self.pico.presamples,
-          self.pico.postsamples, self.pico.adc2mv(1)))
+          self.pico.postsamples, self.pico.adc2mv(args.channel,1)))
       args.savefile.flush()
 
     for i in range(args.numblocks):
@@ -149,7 +151,7 @@ class picorunblock(cmdbase.controlcmd):
 
       while not self.pico.isready():
         self.check_handle(args)
-        try: ## For stand alone runs with external trigger
+        try:  ## For stand alone runs with external trigger
           self.gpio.pulse(int(self.pico.ncaptures / 10), 100)
         except:
           pass
@@ -184,23 +186,30 @@ class picorange(cmdbase.controlcmd):
                              type=int,
                              default=0,
                              help='Input channel to base the calculation')
+    self.parser.add_argument('--rangeidx',
+                             type=int,
+                             help=('Specifying the range index for the specific '
+                                   'channel. Leave empty if you want for '
+                                   'automatic determination.'))
 
   def run(self, args):
     # Setting the new number of block to run
     self.pico.setblocknums(args.captures, self.pico.postsamples,
                            self.pico.presamples)
+    if args.rangeidx != None:
+      self.pico.setrange(self.channel, self.rangeidx)
+    else:
+      while 1:
+        self.pico.startrapidblocks()
+        while not self.pico.isready():
+          self.gpio.pulse(self.pico.ncaptures, 500)
+        self.pico.flushbuffer()
 
-    while 1:
-      self.pico.startrapidblocks()
-      while not self.pico.isready():
-        self.gpio.pulse(self.pico.ncaptures, 500)
-      self.pico.flushbuffer()
+        wmax = self.pico.waveformmax(args.channel)
 
-      wmax = self.pico.waveformmax(args.channel)
-
-      if wmax < 100 and self.pico.range > self.pico.rangemin():
-        self.pico.setrange(self.pico.range - 1)
-      elif wmax > 200 and self.pico.range < self.pico.rangemax():
-        self.pico.setrange(self.pico.range + 1)
-      else:
-        break
+        if wmax < 100 and self.pico.range > self.pico.rangemin():
+          self.pico.setrange(args.channel, self.pico.range - 1)
+        elif wmax > 200 and self.pico.range < self.pico.rangemax():
+          self.pico.setrange(args.channel, self.pico.range + 1)
+        else:
+          break

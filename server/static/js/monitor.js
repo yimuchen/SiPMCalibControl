@@ -135,20 +135,6 @@ function update_adc_data_display(msg) {
 }
 
 
-/**
-function visual_settings_update(msg) {
-  var settings_list = [
-    'threshold', 'blur', 'lumi', 'size', 'ratio', 'poly'
-  ]
-
-  settings_list.forEach(function (setting) {
-    var id = '#image-' + setting + '-text';
-    $(id).val(msg[setting]);
-    sync_range_to_text(id);
-  });
-}
-*/
-
 function init_tileboard_layout(msg) {
   // Resetting global variables
   det_id_list = []
@@ -333,6 +319,9 @@ function make_single_det_summary_html() {
     plot_figure_html += `<div class="hidden" id="det-plot-container-${detid}">
                          <div class="plot-container">
                          ${plot_html}
+                         <div class="plot">
+                         <img src="${window.location.href}/visual_cache/${detid}" style="width:100%;"/>
+                         </div>
                          </div>
                          </div>`;
   }

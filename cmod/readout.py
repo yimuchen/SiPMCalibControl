@@ -109,8 +109,8 @@ class readout(object):
     y = self.parent.gcoder.opy
     z = self.parent.gcoder.opz
 
-    det_x = self.parent.board.orig_coord[str(channel)][0]
-    det_y = self.parent.board.orig_coord[str(channel)][1]
+    det_x = self.parent.board.det_map[str(channel)].orig_coord[0]
+    det_y = self.parent.board.det_map[str(channel)].orig_coord[1]
 
     r0 = ((x - det_x)**2 + (y - det_y)**2)**0.5
     pwm_val = self.parent.gpio.pwm_duty(0)
@@ -135,7 +135,10 @@ class readout(object):
       self.pico.setblocknums(1000, self.pico.postsamples, self.pico.presamples)
       self.pico.startrapidblocks()
       while not self.pico.isready():
-        self.parent.gpio.pulse(self.pico.ncaptures, 100)
+        try:
+          self.parent.gpio.pulse(self.pico.ncaptures, 100)
+        except:
+          pass
       self.pico.flushbuffer()
       val.extend(self.pico.waveformsum(channel, x) for x in range(1000))
     return val

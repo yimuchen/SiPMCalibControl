@@ -27,7 +27,7 @@ main( int argc, char** argv )
      }
    */
 
-  for( int i = 0; i < 100; ++i ){
+  for( int i = 0; i < 10; ++i ){
     std::cout << "\r"
               << gpio.ReadNTCTemp( 0 ) << "|"
               << gpio.ReadADC( 0 ) << "\t ***  \t"

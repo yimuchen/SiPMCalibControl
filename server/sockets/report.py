@@ -35,32 +35,30 @@ def ReportSystemStatus(socketio):
 def ReportTileboardLayout(socketio):
   ans = {
       detid: {
-          'orig': session.cmd.board.orig_coord[detid],
-          'lumi': session.cmd.board.orig_coord[detid],
-          'vis': session.cmd.board.orig_coord[detid]
+          'orig': session.cmd.board.get_det(detid).orig_coord,
+          'lumi': session.cmd.board.get_det(detid).orig_coord,
+          'vis': session.cmd.board.get_det(detid).orig_coord
       }
-      for detid in session.cmd.board.orig_coord.keys()
+      for detid in session.cmd.board.dets()
   }
 
-  for det in ans:
+  for detid in ans:
+    det = session.cmd.board.get_det(detid)
     ## Updating the visual coordinates if they exists
-    if any(session.cmd.board.vis_coord[det]):
+    if any(det.vis_coord):
       ## The reference z value would be the one at closest calibration distance
-      z = min(session.cmd.board.vis_coord[det].keys())
-      ans[det]['vis'] = session.cmd.board.vis_coord[det][z]
+      z = min(det.vis_coord.keys())
+      ans[detid]['vis'] = det.vis_coord[z]
     else:
-      ans[det]['vis'] = [-100, -100]
+      ans[detid]['vis'] = [-100, -100]
 
     ## Updating the lumi calibrated coordinates if they exists
-    if any(session.cmd.board.lumi_coord[det]):
+    if any(det.lumi_coord):
       ## The reference z value would be the one at closest calibration distance
-      z = min(session.cmd.board.lumi_coord[det].keys())
-      ans[det]['lumi'] = [
-          session.cmd.board.lumi_coord[det][z][0],
-          session.cmd.board.lumi_coord[det][z][2]
-      ]
+      z = min(det.lumi_coord.keys())
+      ans[detid]['lumi'] = [det.lumi_coord[z][0], det.lumi_coord[z][2]]
     else:
-      ans[det]['lumi'] = [-100, -100]
+      ans[detid]['lumi'] = [-100, -100]
 
   socketio.emit('tileboard-layout',
                 str(ans).replace('\'', '"'),
@@ -86,7 +84,7 @@ def ReportReadout(socketio):
       return
 
   try:
-    socketio.emit('update-readout-results', {
+    report = {
         'zscan': {
             detid: session.zscan_cache[detid]
             for detid in session.zscan_updates
@@ -105,7 +103,12 @@ def ReportReadout(socketio):
             for detid in session.lumialign_updates
             if len(session.lumialign_cache[detid]) > 0
         }
-    },
+    }
+
+    print("Reporting readout")
+    print(report)
+    socketio.emit('update-readout-results',
+                  report,
                   broadcast=True,
                   namespace='/sessionsocket')
   except:

@@ -9,6 +9,7 @@ import cmod.pico as pico
 import cmod.actionlist as actionlist
 import cmod.sighandle as sig
 import numpy as np
+import cv2
 import cmd
 import sys
 import os
@@ -237,6 +238,7 @@ class controlcmd():
 
     log.clear_update()
     self.sighandle.release()
+    cv2.destroyAllWindows()
     return return_value
 
   def callhelp(self):
@@ -506,20 +508,26 @@ class controlcmd():
     """
 
     ## Defaulting to the det id if it exists
-    if not args.channel and hasattr(args, 'detid') and args.detid >= 0:
-      args.channel = int(args.detid)
+    if not args.channel:
+      if hasattr(args, 'detid') and str(args.detid) in self.board.dets():
+        args.channel = self.board.get_det(str(args.detid)).channel
+      else:
+        args.channel = 0
 
     ## Resetting mode to current mode if it doesn't already exists
     if not args.mode:
-      args.mode = self.readout.mode
+      if hasattr(args,'detid') and str(args.detid) in self.board.dets():
+        args.mode = self.board.get_det(str(args.detid)).mode
+      else:
+        args.mode = self.readout.mode
 
     ## Double checking the readout channel is sensible
     if args.mode == self.readout.MODE_PICO:
-      if args.channel < 0 or args.channel > 1:
+      if int(args.channel) < 0 or int(args.channel) > 1:
         raise Exception('Channel for PICOSCOPE can only be 0 or 1')
       self.readout.set_mode(args.mode)
     elif args.mode == self.readout.MODE_ADC:
-      if args.channel < 0 or args.channel > 3:
+      if int(args.channel) < 0 or int(args.channel) > 3:
         raise Exception('Channel for ADC can only be 0--3')
       self.readout.set_mode(args.mode)
     else:
@@ -564,11 +572,11 @@ class controlcmd():
       if len(r) < 2 or len(r) > 3:
         raise Exception(('Range must be in the format [start end (sep)] '
                          'sep is assumed to be 1 if not specified'))
-      minz = min(r[:2])
-      maxz = max(r[:2])
-      sep = 1 if len(r) == 2 else r[2]
+      minz = float(min(r[:2]))
+      maxz = float(max(r[:2]))
+      sep = float(1 if len(r) == 2 else r[2])
       args.zlist.extend(
-          np.linspace(minz, maxz, (maxz - minz) / sep, endpoint=False))
+          np.linspace(minz, maxz, int((maxz - minz) / sep), endpoint=False))
     args.zlist = [x for x in args.zlist if x < gcoder.GCoder.max_z()]
 
     ## Returning sorted results, STL or LTS depending on the first two entries
@@ -607,7 +615,7 @@ class controlcmd():
 
     # Early exit if raw coordinates requested
     if raw_coord:
-      args.x, args.y = board.orig_coord[detid]
+      args.x, args.y = board.get_det(detid).orig_coord
       return
 
     # Determining current z value ( from argument first, otherwise guessing
@@ -616,27 +624,34 @@ class controlcmd():
                  min(args.zlist) if hasattr(args, 'zlist') else \
                  self.gcoder.opz
 
+    det = self.board.get_det(detid)
+
     if add_visoffset:
-      if any(self.board.vis_coord[detid]):
-        closest_z = self.find_closest_z(self.board.vis_coord[detid], current_z)
-        args.x = board.vis_coord[detid][closest_z][0]
-        args.y = board.vis_coord[detid][closest_z][1]
+      if any(det.vis_coord):
+        closest_z = self.find_closest_z(det.vis_coord, current_z)
+        args.x = det.vis_coord[closest_z][0]
+        args.y = det.vis_coord[closest_z][1]
+      elif any(det.lumi_coord):
+        closest_z = self.find_closest_z(det.lumi_coord, current_z)
+        x_offset, y_offset = self.find_xyoffset(current_z)
+        args.x = det.lumi_coord[closest_z][0] + x_offset
+        args.y = det.lumi_coord[closest_z][2] + y_offset
       else:
         x_offset, y_offset = self.find_xyoffset(current_z)
-        args.x = board.orig_coord[detid][0] + x_offset
-        args.y = board.orig_coord[detid][1] + y_offset
+        args.x = det.orig_coord[0] + x_offset
+        args.y = det.orig_coord[1] + y_offset
     else:
-      if any(board.lumi_coord[detid]):
-        closest_z = self.find_closest_z(self.board.lumi_coord[detid], current_z)
-        args.x = board.lumi_coord[detid][closest_z][0]
-        args.y = board.lumi_coord[detid][closest_z][2]
-      elif any(board.vis_coord[detid]):
+      if any(det.lumi_coord):
+        closest_z = self.find_closest_z(det.lumi_coord, current_z)
+        args.x = det.lumi_coord[closest_z][0]
+        args.y = det.lumi_coord[closest_z][2]
+      elif any(det.vis_coord):
         x_offset, y_offset = self.find_xyoffset(current_z)
-        closest_z = self.find_closest_z(self.board.vis_coord[detid], current_z)
-        args.x = board.vis_coord[detid][closest_z][0] - x_offset
-        args.y = board.vis_coord[detid][closest_z][1] - y_offset
+        closest_z = self.find_closest_z(det.vis_coord, current_z)
+        args.x = det.vis_coord[closest_z][0] - x_offset
+        args.y = det.vis_coord[closest_z][1] - y_offset
       else:
-        args.x, args.y = board.orig_coord[detid]
+        args.x, args.y = det.orig_coord
 
   @staticmethod
   def find_closest_z(my_map, current_z):
@@ -652,29 +667,29 @@ class controlcmd():
     # head design.)
     DEFAULT_XOFFSET = -40
     DEFAULT_YOFFSET = 0
-    if not any(self.board.calibdets()):
+    if not any(self.board.calib_dets()):
       return DEFAULT_XOFFSET, DEFAULT_YOFFSET
 
     # Calculations will be based on the "first" calibration det available
     # That has both lumi and visual alignment offsets
-    for calibdet in self.board.calibdets():
+    for detid in self.board.calib_dets():
       lumi_x = None
       lumi_y = None
       vis_x = None
       vis_y = None
+      det = self.board.get_det(detid)
 
       # Trying to get the luminosity alignment with closest z value
-      if any(self.board.lumi_coord[calibdet]):
-        closestz = self.find_closest_z(self.board.lumi_coord[calibdet],
-                                       currentz)
-        lumi_x = self.board.lumi_coord[calibdet][closestz][0]
-        lumi_y = self.board.lumi_coord[calibdet][closestz][2]
+      if any(det.lumi_coord):
+        closestz = self.find_closest_z(det.lumi_coord, currentz)
+        lumi_x = det.lumi_coord[closestz][0]
+        lumi_y = det.lumi_coord[closestz][2]
 
       # Trying to get the visual alignment with closest z value
-      if any(self.board.vis_coord[calibdet]):
-        closestz = self.find_closest_z(self.board.vis_coord[calibdet], currentz)
-        vis_x = self.board.vis_coord[calibdet][closestz][0]
-        vis_y = self.board.vis_coord[calibdet][closestz][1]
+      if any(det.vis_coord):
+        closestz = self.find_closest_z(det.vis_coord, currentz)
+        vis_x = det.vis_coord[closestz][0]
+        vis_y = det.vis_coord[closestz][1]
 
       if lumi_x and lumi_y and vis_x and vis_y:
         return vis_x - lumi_x, vis_y - lumi_y

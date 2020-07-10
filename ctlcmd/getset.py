@@ -155,9 +155,9 @@ class get(cmdbase.controlcmd):
     log.printmsg(header, str(self.board.boardtype))
     log.printmsg(header, str(self.board.boarddescription))
     log.printmsg(header, 'Board ID: ' + self.board.boardid)
-    for det in self.board.dets():
-      msg = msg_format.format(det, self.board.orig_coord[det][0],
-                              self.board.orig_coord[det][1])
+    for detid in self.board.dets():
+      det = self.board.get_det(detid)
+      msg = msg_format.format(detid, det.orig_coord[0], det.orig_coord[1])
       log.printmsg(header, msg)
 
   def print_printer(self):
@@ -186,24 +186,22 @@ class get(cmdbase.controlcmd):
 
     print('Printing alignment information')
 
-    for det in self.board.dets():
-      det_str = det_format.format(int(det))
-      for z in self.board.lumi_coord[det].keys():
+    for detid in self.board.dets():
+      det_str = det_format.format(int(detid))
+      det = self.board.get_det(detid)
+      for z in det.lumi_coord:
         log.printmsg(
             lumi_header + det_str,
             'x:{0:.2f}+-{1:.2f} y:{2:.2f}+-{3:.2f} | at z={4:.1f}'.format(
-                self.board.vis_coord[det][z][0],
-                self.board.vis_coord[det][z][2],
-                self.board.vis_coord[det][z][1],
-                self.board.vis_coord[det][z][3], z))
-      for z in self.board.visM[det].keys():
+                det.lumi_coord[z][0], det.lumi_coord[z][2], det.lumi_coord[z][1],
+                det.lumi_coord[z][3], z))
+      for z in det.vis_M:
         log.printmsg(matrix_header + det_str, '{0} | at z={1:.1f}'.format(
-            self.board.visM[det][z], z))
-      for z in self.board.vis_coord[det].keys():
+            det.vis_M[z], z))
+      for z in det.vis_coord:
         log.printmsg(
             vis_header + det_str, 'x:{0:.2f} y:{1:.2f} | at z={2:.1f}'.format(
-                self.board.vis_coord[det][z][0],
-                self.board.vis_coord[det][z][1], z))
+                det.vis_coord[z][0], det.vis_coord[z][1], z))
 
   def print_readout(self):
     log.printmsg(
