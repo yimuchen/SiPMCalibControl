@@ -5,7 +5,12 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 
+#include <boost/python.hpp>
+#include <boost/python/numpy.hpp>
+
+#include <atomic>
 #include <chrono>
+#include <mutex>
 #include <thread>
 
 class Visual
@@ -22,6 +27,7 @@ public:
   {
     double x;
     double y;
+    double sharpness;
     double area;
     double maxmeas;
     int    poly_x1;
@@ -34,13 +40,11 @@ public:
     int    poly_y4;
   };
 
-  DetResult find_det( const bool );
-  double     sharpness( const bool );
-
-  void save_frame( const std::string& filename );
-
-  unsigned frame_width() const;
-  unsigned frame_height() const;
+  unsigned                      frame_width() const;
+  unsigned                      frame_height() const;
+  DetResult                     GetLatestCalc();
+  boost::python::numpy::ndarray get_image();
+  PyObject*                     get_image_bytes();
 
   int blur_range;
   int lumi_cutoff;
@@ -51,26 +55,42 @@ public:
 
 private:
   cv::VideoCapture cam;
-  void getImg( cv::Mat& );
+  cv::Mat image;
+  cv::Mat display;
+  DetResult latest;
+
+  // Variables for storing the thread handling
+  std::thread loop_thread;
+  std::atomic<bool> run_loop;
+  std::mutex loop_mutex;
+
+  // Function for thread handling;
+  void start_thread();
+  void end_thread();
+  void RunMainLoop( std::atomic<bool>& );
+
+  // Helper function for
   void init_var_default();
+
+  DetResult find_det();
 
   // Private methods for easier image processing
   typedef std::vector<cv::Point> Contour_t;
   typedef std::vector<Contour_t> ContourList;
+
   std::vector<Contour_t> GetContours( cv::Mat& ) const;
-  double                 GetImageLumi( const cv::Mat&, const Contour_t& ) const;
+  Contour_t              GetConvexHull( const Contour_t& ) const;
+  Contour_t              GetPolyApprox( const Contour_t& ) const;
 
-  Contour_t GetConvexHull( const Contour_t& ) const;
-  Contour_t GetPolyApprox( const Contour_t& ) const;
-  double    GetContourSize( const Contour_t& ) const;
-  double    GetContourMaxMeasure( const Contour_t& ) const;
+  double GetImageLumi( const cv::Mat&, const Contour_t& ) const;
+  double sharpness( const cv::Mat&, const cv::Rect& ) const;
+  double GetContourSize( const Contour_t& ) const;
+  double GetContourMaxMeasure( const Contour_t& ) const;
 
-  void ShowFindDet(
-    const cv::Mat&,
-    const ContourList&,
-    const ContourList&,
-    const ContourList&,
-    const ContourList& ) const;
+  void generate_display( const ContourList&,
+                         const ContourList&,
+                         const ContourList&,
+                         const ContourList& );
 
   static bool CompareContourSize( const Contour_t&, const Contour_t& );
 };
@@ -87,20 +107,33 @@ static const auto __dummy_settings
   = cv::utils::logging::setLogLevel( cv::utils::logging::LOG_LEVEL_SILENT );
 
 
-Visual::Visual() : cam()
+Visual::Visual() :
+  cam(),
+  run_loop( false )
 {
   init_var_default();
+
+  // Py_Initialize();
+  boost::python::numpy::initialize();
+
+  start_thread();
 }
 
-Visual::Visual( const std::string& dev ) : cam()
+Visual::Visual( const std::string& dev ) :
+  cam(),
+  run_loop( false )
 {
   init_dev( dev );
   init_var_default();
+
+  start_thread();
 }
 
 void
 Visual::init_dev( const std::string& dev )
 {
+  end_thread();
+
   dev_path = dev;
   cam.release();
   cam.open( dev_path );
@@ -111,6 +144,8 @@ Visual::init_dev( const std::string& dev )
   cam.set( cv::CAP_PROP_FRAME_WIDTH,  1280 );
   cam.set( cv::CAP_PROP_FRAME_HEIGHT, 1024 );
   cam.set( cv::CAP_PROP_BUFFERSIZE,      1 );// Reducing buffer for fast capture
+
+  start_thread();
 }
 
 void
@@ -124,7 +159,10 @@ Visual::init_var_default()
   poly_range   = 0.08;
 }
 
-Visual::~Visual(){}
+Visual::~Visual()
+{
+  end_thread();
+}
 
 unsigned
 Visual::frame_width() const
@@ -138,16 +176,73 @@ Visual::frame_height() const
   return cam.get( cv::CAP_PROP_FRAME_HEIGHT );
 }
 
-Visual::DetResult
-Visual::find_det( const bool monitor )
+void
+Visual::start_thread()
 {
-  // Operational variables
-  cv::Mat img;
-  // Getting image
-  getImg( img );
+  run_loop    = true;
+  loop_thread = std::thread( [this] {
+    this->RunMainLoop( std::ref( run_loop ) );
+  } );
+}
+
+void
+Visual::end_thread()
+{
+  if( run_loop == true ){
+    run_loop = false;
+    loop_thread.join();
+  }
+}
+
+void
+Visual::RunMainLoop( std::atomic<bool>& run_loop )
+{
+  // Private function for getting a
+  auto get_time = []( void )->size_t {
+                    return std::chrono::duration_cast<std::chrono::microseconds>(
+                      std::chrono::high_resolution_clock::now()
+                      .time_since_epoch()
+                      ).count();
+                  };
+
+  while( run_loop == true ){
+    const size_t time_start = get_time();
+    size_t time_end         = get_time();
+
+    loop_mutex.lock();
+
+    do {
+      cam >> image;
+      // Scaling down the image for faster processing.
+    } while( ( image.empty() || image.cols == 0 ) && cam.isOpened() );
+
+    latest = find_det();
+    loop_mutex.unlock();
+
+    while( time_end - time_start < 1e5 ){// Updating at 10fps
+      std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+      time_end = get_time();
+    }
+  }
+}
 
 
-  const std::vector<Contour_t> contours = GetContours( img );
+Visual::DetResult
+Visual::find_det()
+{
+  static const DetResult empty_return = DetResult { -1, -1, 0, 0, 0,
+                                                    0, 0, 0, 0,
+                                                    0, 0, 0, 0 };
+
+  // Early exits if
+  if( image.empty() || image.cols == 0 ){
+    return empty_return;
+  }
+
+  // Reducing image size to spped up algorithm
+  cv::resize( image, image, cv::Size( 0, 0 ), 0.5, 0.5 );
+
+  const std::vector<Contour_t> contours = GetContours( image );
 
   std::vector<Contour_t> failed_ratio;
   std::vector<Contour_t> failed_lumi;
@@ -168,7 +263,7 @@ Visual::find_det( const bool monitor )
     }
 
     // Expecting the internals of of the photosensor to be dark.
-    const double lumi = GetImageLumi( img, contours.at( i ) );
+    const double lumi = GetImageLumi( image, contours.at( i ) );
     if( lumi > lumi_cutoff ){
       failed_lumi.push_back( contours.at( i ) );
       continue;
@@ -187,24 +282,29 @@ Visual::find_det( const bool monitor )
 
   std::sort( hulls.begin(), hulls.end(), Visual::CompareContourSize );
 
-  if( monitor ){
-    ShowFindDet( img, failed_ratio, failed_lumi, failed_rect, hulls );
-  }
+  generate_display( failed_ratio, failed_lumi, failed_rect, hulls );
+
 
   if( hulls.empty() ){
-    return DetResult{ -1, -1, 0, 0,
-                       0, 0, 0, 0,
-                       0, 0, 0, 0 };
+    return empty_return;
   } else {
     // position calculation of final contour
     const cv::Moments m = cv::moments( hulls.at( 0 ), false );
 
     // Maximum distance in contour
-    const double distmax = GetContourMaxMeasure( hulls.at( 0 ) );
-    const Contour_t poly = GetPolyApprox( hulls.at( 0 ) );
+    const double distmax        = GetContourMaxMeasure( hulls.at( 0 ) );
+    const Contour_t poly        = GetPolyApprox( hulls.at( 0 ) );
+    const cv::Rect bound        = cv::boundingRect( hulls.at( 0 ) );
+    const cv::Rect double_bound = cv::Rect( bound.x - bound.width /2
+                                          , bound.y - bound.height/2
+                                          , bound.width*2
+                                          , bound.height*2 );
+    const double sharp = sharpness( image, double_bound );
 
-    return DetResult{
-      m.m10/m.m00, m.m01/m.m00,  m.m00, distmax,
+    return DetResult {
+      m.m10/m.m00, m.m01/m.m00,
+      sharp,
+      m.m00, distmax,
       poly.at( 0 ).x,
       poly.at( 1 ).x,
       poly.at( 2 ).x,
@@ -218,34 +318,28 @@ Visual::find_det( const bool monitor )
 }
 
 void
-Visual::ShowFindDet(
-  const cv::Mat&     img,
-  const ContourList& failed_ratio,
-  const ContourList& failed_lumi,
-  const ContourList& failed_rect,
-  const ContourList& hulls  ) const
+Visual::generate_display( const ContourList& failed_ratio,
+                          const ContourList& failed_lumi,
+                          const ContourList& failed_rect,
+                          const ContourList& hulls  )
 {
   // Drawing variables
-  static const std::string winname = "FINDDET_MONITOR";
   char msg[1024];
 
-  // Window will be created, if already exists, this function does nothing
-  cv::namedWindow( winname, cv::WINDOW_AUTOSIZE );
-
   // Generating the image
-  cv::Mat display( img );
+  display = image;
 
-  auto PlotContourList = [&display]( const ContourList& list,
-                                     const cv::Scalar& color ) -> void {
+  auto PlotContourList = [this]( const ContourList& list,
+                                 const cv::Scalar& color ) -> void {
                            for( unsigned i = 0; i < list.size(); ++i ){
-                             cv::drawContours( display, list, i, color );
+                             cv::drawContours( this->display, list, i, color );
                            }
                          };
 
-  auto PlotText = [&display]( const std::string& str,
-                              const cv::Point& pos,
-                              const cv::Scalar& col ) -> void {
-                    cv::putText( display, str,
+  auto PlotText = [this]( const std::string& str,
+                          const cv::Point& pos,
+                          const cv::Scalar& col ) -> void {
+                    cv::putText( this->display, str,
                       pos, cv::FONT_HERSHEY_SIMPLEX, 0.8, col, 2 );
                   };
 
@@ -273,9 +367,6 @@ Visual::ShowFindDet(
     cv::circle( display, cv::Point( x, y ), 3, red, cv::FILLED );
     PlotText( msg, cv::Point( 50, 100 ), red );
   }
-
-  imshow( winname, display );
-  cv::waitKey( 30 );
 }
 
 std::vector<Visual::Contour_t>
@@ -320,8 +411,7 @@ Visual::CompareContourSize( const Contour_t& x, const Contour_t& y )
   const cv::Rect x_bound = cv::boundingRect( x );
   const cv::Rect y_bound = cv::boundingRect( y );
 
-  return x_bound.height * x_bound.width
-         > y_bound.height * y_bound.width;
+  return x_bound.area() > y_bound.area();
 }
 
 Visual::Contour_t
@@ -366,41 +456,98 @@ Visual::GetContourMaxMeasure( const Contour_t& x ) const
 }
 
 double
-Visual::sharpness( const bool monitor )
+Visual::sharpness( const cv::Mat& img, const cv::Rect& crop ) const
 {
   // Image containers
-  cv::Mat img, lap;
+  cv::Mat working_image, lap;
 
   // Variable containers
   cv::Scalar mu, sigma;
 
   // Getting image converting to gray scale
-  getImg( img );
-  cv::cvtColor( img, img, cv::COLOR_BGR2GRAY );
+  cv::cvtColor( img, working_image, cv::COLOR_BGR2GRAY );
+  if( crop.width == 0 || crop.height == 0 ){
+    return 0;
+  }
+
+  // Cropping to range
+  working_image = working_image( crop ).clone();
 
   // Calculating lagrangian.
-  cv::Laplacian( img, lap, CV_64F, 5 );
+  cv::Laplacian( working_image, lap, CV_64F, 5 );
   cv::meanStdDev( lap, mu, sigma );
   return sigma.val[0] * sigma.val[0];
 }
 
-void
-Visual::getImg( cv::Mat& img )
+Visual::DetResult
+Visual::GetLatestCalc()
 {
-  for( unsigned i = 0; i < 2; ++i ){
-    cam >> img;// Flushing multiple frames to image
-    std::this_thread::sleep_for(// Sleeping a full capture frame time
-      std::chrono::milliseconds( 10 )
-      );
-  }
+  loop_mutex.lock();
+  DetResult ans = latest;
+  loop_mutex.unlock();
+  return ans;
 }
 
-void
-Visual::save_frame( const std::string& filename )
+
+boost::python::numpy::ndarray
+ConvertMatToNDArray( const cv::Mat& mat )
 {
-  cv::Mat img;
-  cam >> img;
-  imwrite( filename, img );
+  boost::python::tuple shape = boost::python::make_tuple( mat.rows
+                                                        , mat.cols
+                                                        , mat.channels() );
+  boost::python::tuple stride = boost::python::make_tuple(
+    mat.channels() * mat.cols * sizeof( uchar ),
+    mat.channels() * sizeof( uchar ),
+    sizeof( uchar ) );
+  boost::python::numpy::dtype dt
+    = boost::python::numpy::dtype::get_builtin<uchar>();
+  boost::python::numpy::ndarray ndImg
+    = boost::python::numpy::from_data( mat.data,
+    dt,
+    shape,
+    stride, boost::python::object() );
+
+  return ndImg;
+}
+
+
+boost::python::numpy::ndarray
+Visual::get_image()
+{
+  static const cv::Mat blank_frame(
+    cv::Size( frame_width(), frame_height() ),
+    CV_8UC3, cv::Scalar( 0, 0, 0 ) );
+
+  loop_mutex.lock();
+  cv::Mat ans_mat = ( display.empty() || display.cols == 0 ) ? blank_frame :
+                    display;
+  loop_mutex.unlock();
+
+  return ConvertMatToNDArray( ans_mat );
+
+}
+
+PyObject*
+Visual::get_image_bytes()
+{
+  static const cv::Mat blank_frame(
+    cv::Size( frame_width(), frame_height() ),
+    CV_8UC3, cv::Scalar( 0, 0, 0 ) );
+
+  loop_mutex.lock();
+  cv::Mat ans_mat = ( display.empty() || display.cols == 0 ) ? blank_frame :
+                    display;
+  loop_mutex.unlock();
+
+  // Buffer containing the string
+  std::vector<uchar> buf;
+  cv::imencode( ".jpg", ans_mat, buf );// Running the cv image encoder
+
+  // Conversion of bytes sequence to python objects
+  // https://www.auctoris.co.uk/2017/12/21/
+  // advanced-c-python-integration-with-boost-python-part-2
+  return PyBytes_FromObject(
+    PyMemoryView_FromMemory( (char*)buf.data(), buf.size(), PyBUF_READ ) );
 }
 
 
@@ -408,13 +555,13 @@ Visual::save_frame( const std::string& filename )
 
 BOOST_PYTHON_MODULE( visual )
 {
-  boost::python::class_<Visual>( "Visual" )
-  .def( "init_dev",     &Visual::init_dev )
-  .def( "find_det",    &Visual::find_det )
-  .def( "sharpness",    &Visual::sharpness )
-  .def( "save_frame",   &Visual::save_frame )
-  .def( "frame_width",  &Visual::frame_width )
-  .def( "frame_height", &Visual::frame_height )
+  boost::python::class_<Visual, boost::noncopyable>( "Visual" )
+  .def( "init_dev",        &Visual::init_dev      )
+  .def( "frame_width",     &Visual::frame_width   )
+  .def( "frame_height",    &Visual::frame_height  )
+  .def( "get_latest",      &Visual::GetLatestCalc )
+  .def( "get_image",       &Visual::get_image     )
+  .def( "get_image_bytes", &Visual::get_image_bytes     )
   .def_readonly( "dev_path", &Visual::dev_path  )
   .def_readwrite( "threshold",    &Visual::threshold    )
   .def_readwrite( "blur_range",   &Visual::blur_range   )
@@ -424,19 +571,20 @@ BOOST_PYTHON_MODULE( visual )
   .def_readwrite( "poly_range",   &Visual::poly_range   )
   ;
 
-  // Required for coordinate caluclation
+  // Required for coordinate calculation
   boost::python::class_<Visual::DetResult>( "DetResult" )
-  .def_readwrite( "x",       &Visual::DetResult::x )
-  .def_readwrite( "y",       &Visual::DetResult::y )
-  .def_readwrite( "area",    &Visual::DetResult::area )
-  .def_readwrite( "maxmeas", &Visual::DetResult::maxmeas )
-  .def_readwrite( "poly_x1", &Visual::DetResult::poly_x1 )
-  .def_readwrite( "poly_x2", &Visual::DetResult::poly_x2 )
-  .def_readwrite( "poly_x3", &Visual::DetResult::poly_x3 )
-  .def_readwrite( "poly_x4", &Visual::DetResult::poly_x4 )
-  .def_readwrite( "poly_y1", &Visual::DetResult::poly_y1 )
-  .def_readwrite( "poly_y2", &Visual::DetResult::poly_y2 )
-  .def_readwrite( "poly_y3", &Visual::DetResult::poly_y3 )
-  .def_readwrite( "poly_y4", &Visual::DetResult::poly_y4 )
+  .def_readwrite( "x",         &Visual::DetResult::x         )
+  .def_readwrite( "y",         &Visual::DetResult::y         )
+  .def_readwrite( "sharpness", &Visual::DetResult::sharpness )
+  .def_readwrite( "area",      &Visual::DetResult::area      )
+  .def_readwrite( "maxmeas",   &Visual::DetResult::maxmeas   )
+  .def_readwrite( "poly_x1",   &Visual::DetResult::poly_x1   )
+  .def_readwrite( "poly_x2",   &Visual::DetResult::poly_x2   )
+  .def_readwrite( "poly_x3",   &Visual::DetResult::poly_x3   )
+  .def_readwrite( "poly_x4",   &Visual::DetResult::poly_x4   )
+  .def_readwrite( "poly_y1",   &Visual::DetResult::poly_y1   )
+  .def_readwrite( "poly_y2",   &Visual::DetResult::poly_y2   )
+  .def_readwrite( "poly_y3",   &Visual::DetResult::poly_y3   )
+  .def_readwrite( "poly_y4",   &Visual::DetResult::poly_y4   )
   ;
 }
