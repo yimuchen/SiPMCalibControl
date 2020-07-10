@@ -34,7 +34,9 @@ set(PICO_HEADERS "libps5000/ps5000Api.h")
 ## Finding additional libraries
 find_package(PythonLibs   3 REQUIRED)
 find_package(PythonInterp 3 REQUIRED)
-find_package(Boost          REQUIRED COMPONENTS ${BOOST_PYTHON_COMPONENTS})
+find_package(Boost          REQUIRED
+             COMPONENTS ${BOOST_PYTHON_COMPONENTS}
+             ${BOOST_PYTHON_NUMPY_COMPONENTS})
 find_package(OpenCV         REQUIRED)
 find_package(Threads        REQUIRED)
 
@@ -46,13 +48,6 @@ find_library(PICO_LIBS
   NAMES ps5000
   PATHS ${PICO_LIBRARY_PATH}  )
 
-# Only attempt to link wiring pi in a ARM machine
-if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
-  find_library( WIRINGPI_LIBS
-   NAMES wiringPi wiringPiDev
-   PATHS /usr/lib/)
-endif()
-
 ## Libraries are supposed to be python modules
 function(make_control_library libname source )
   add_library(${libname} SHARED ${source})
@@ -61,7 +56,7 @@ function(make_control_library libname source )
     ${PYTHON_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS} )
   target_link_libraries(${libname}
-    ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} )
+    ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} "boost_numpy3")
 endfunction()
 
 make_control_library( logger src/logger.cc )
@@ -73,11 +68,12 @@ target_link_libraries(pico logger ${PICO_LIBS})
 make_control_library( gcoder src/gcoder.cc )
 target_link_libraries(gcoder logger )
 
-make_control_library( visual src/visual.cc )
-target_link_libraries( visual logger ${OpenCV_LIBS} )
-
 make_control_library(gpio src/gpio.cc)
 target_link_libraries(gpio Threads::Threads)
+
+make_control_library( visual src/visual.cc)
+target_link_libraries( visual logger ${OpenCV_LIBS} Threads::Threads)
+
 
 
 ## Add testing binary main files
@@ -95,6 +91,17 @@ add_executable(logger_test.exe bin/logger_test.cc )
 target_include_directories(logger_test.exe PRIVATE src/)
 target_compile_definitions(logger_test.exe PUBLIC "STANDALONE" )
 target_link_libraries(logger_test.exe logger)
+
+add_executable(visual_test.exe bin/visual_test.cc )
+target_include_directories(visual_test.exe PRIVATE src/
+    ${PYTHON_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS}
+    "/usr/lib/python3.8/site-packages/numpy/core/include" )
+target_link_libraries(visual_test.exe
+                      visual
+                      ${Boost_LIBRARIES}
+                      ${PYTHON_LIBRARIES}
+                      Threads::Threads)
 
 ## Making the GUI stuff
 file(GLOB CSS_FILES ${PROJECT_SOURCE_DIR}/server/static/sass/*.scss)
