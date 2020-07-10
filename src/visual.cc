@@ -383,7 +383,7 @@ Visual::GetContours( cv::Mat& img ) const
 double
 Visual::GetImageLumi( const cv::Mat& img, const Contour_t& cont ) const
 {
-  // Expecting the internals of of the photosensor to be dark.
+  // Expecting the internals of the photosensor to be dark.
   const std::vector<Contour_t> v_cont = { cont };
 
   cv::Mat mask = cv::Mat::zeros( img.size(), CV_8UC1 );

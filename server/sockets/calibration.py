@@ -183,12 +183,23 @@ def GetSortedDets():
   return det_sort_list
 
 
+
 def RunLineInThread(line, progress_tag, detid):
   """
   Running a single line in a separate thread to allow for parallel monitoring
   """
+  RunLineInThread.is_running = False;
+
   def run_with_save(line):
+    "A simple wrapper function for creating a thread."
     session.run_results = session.cmd.onecmd(line)
+
+  def update_loop(progress_tag):
+    while RunLineInThread.is_running :
+      time.sleep(0.1)
+      update_cache(progress_tag)
+      update_progress()
+
 
   if progress_tag not in session.progress_check:
     session.progress_check[progress_tag] = {str(detid): 1}
@@ -200,16 +211,23 @@ def RunLineInThread(line, progress_tag, detid):
     ## Strange syntax to avoid string splitting  :/
     cmdthread = threading.Thread(target=run_with_save, args=(line, ))
     cmdthread.start()
+    RunLineInThread.is_running = True
 
-    ## Waiting for command to update
-    while cmdthread.is_alive():
-      time.sleep(0.1)  # Update every 0.1 second max
-      update_cache(progress_tag)
-      session.progress_check[progress_tag][detid] = 2
-      update_progress()
+    # Flag process as running
+    session.progress_check[progress_tag][detid] = 2
 
+    print(progress_tag)
+    update_thread = threading.Thread(target=update_loop, args=(progress_tag,))
+    update_thread.start()
+
+    ## Having the process finish
+    cmdthread.join()
+    session.progress_check[progress_tag][detid] = session.run_results
+    RunLineInThread.is_running = False
+    update_thread.join()
+
+  ## One last update to ensure that things have finished.
   set_logging_descriptor(1)  ## Setting back to STDOUT
-  session.progress_check[progress_tag][detid] = session.run_results
   update_cache(progress_tag)
   update_progress()
 
@@ -224,6 +242,7 @@ def RunLineNoMonitor(line, progress_tag, detid):
   Running single command without thread. Meant for fast commands such as visual
   calibration.
   """
+  session.progress_check[progress_tag][detid] = 2
   with open('/tmp/logging_temp', 'w') as logfile:
     set_logging_descriptor(logfile.fileno())
     session.progress_check[progress_tag][detid] = session.cmd.onecmd(line)
@@ -380,12 +399,6 @@ def SystemCalibration(socketio, msg):
 
   for detid in session.cmd.board.dets():
     line = CmdLumiAlign(detid=detid)
-    print("RUNNING LUMI SCAN")
-    print("RUNNING LUMI SCAN")
-    print("RUNNING LUMI SCAN")
-    print("RUNNING LUMI SCAN")
-    print("RUNNING LUMI SCAN")
-    print("RUNNING LUMI SCAN")
     RunLineInThread(line, 'lumialign', detid)
     ReportTileboardLayout(socketio)
 

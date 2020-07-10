@@ -32,6 +32,7 @@ class Session(object):
 
     ## Allowing for the socket to receive commands immediately on start up
     self.state = self.STATE_IDLE
+    self.run_results = 0
 
     ## Self monitoring thread
     self.start_time = datetime.datetime.now()
