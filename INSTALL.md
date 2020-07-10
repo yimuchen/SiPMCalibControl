@@ -34,6 +34,7 @@ are additional packages that need to be installed:
 pacman -Sy --noconfirm "cmake" "boost" "opencv"
 pacman -Sy --noconfirm "python-numpy" "python-scipy"
 pacman -Sy --noconfirm "python-flask-socketio" "python-paramiko"
+pacman -Sy --noconfirm "xorg-xauth" # For ssh tunneling for the CLI interface
 pacman -Sy --noconfirm "npm" "git"
 ## Additional packages required for opencv, since we are using the high level interface
 pacman -Sy --noconfirm "qt5-base" "hdf5-openmpi" "vtk" "glew"
@@ -68,9 +69,11 @@ the device. For a Raspberry Pi, add the following lines in to the
 testing, **be careful** with the permission! The `i2c` and `pwm` may be used
 other systems in the machine (ex: For the air flow fans). Do *NOT* enable these
 permissions on your personal machine unless you are sure about what the
-permissions would affect.
+permissions would affect. Note that the `dtparam` line must added after the
+kernel loading line.
 
 ```bash
+dtoverlay=pwm-2chan
 dtparam=i2c_arm=on
 ```
 
@@ -80,11 +83,11 @@ usage and add your user to it:
 
 ```bash
 groupadd -f -r gpio
-usermod -G gpio ${USER}
+usermod -a -G gpio ${USER}
 groupadd -f -r i2c
-usermod -G i2c ${USER}
+usermod -a -G i2c ${USER}
 groupadd -f -r pico
-usermod -G pico ${USER}
+usermod -a -G pico ${USER}
 ```
 
 Then create a `udev` rule to change the permission of the relevant hardware:
@@ -104,7 +107,7 @@ SUBSYSTEM=="gpio*", PROGRAM="/bin/sh -c '\
 ## For PWM
 SUBSYSTEM=="pwm*", PROGRAM="/bin/sh -c '\
         chown -R root:gpio /sys/class/pwm && chmod -R 770 /sys/class/pwm;\
-        chown -R root:gpio /sys/devices/platform/soc/*.pwm/pwm/pwmdet* && chmod -R 770 /sys/devices/platform/soc/*.pwm/pwm/pwmdet*\
+        chown -R root:gpio /sys/devices/platform/soc/*.pwm/pwm/pwmchip* && chmod -R 770 /sys/devices/platform/soc/*.pwm/pwm/pwmchip*\
 '"
 
 ## For the I2C interface
