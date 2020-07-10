@@ -1,0 +1,12 @@
+{
+  "board type": "SYS_SINGLE",
+  "board description" : "Test board with single detector",
+  "board id": "",
+  "detectors": {
+    "-100" : {
+      "mode": 1,
+      "channel" : 0,
+      "default coordinates": [163,201]
+    }
+  }
+}
