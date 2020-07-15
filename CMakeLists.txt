@@ -92,6 +92,11 @@ target_include_directories(logger_test.exe PRIVATE src/)
 target_compile_definitions(logger_test.exe PUBLIC "STANDALONE" )
 target_link_libraries(logger_test.exe logger)
 
+add_executable(gcoder_test.exe bin/gcoder_test.cc )
+target_include_directories(gcoder_test.exe PRIVATE src/)
+target_compile_definitions(gcoder_test.exe PUBLIC "STANDALONE" )
+target_link_libraries(gcoder_test.exe gcoder Threads::Threads)
+
 add_executable(visual_test.exe bin/visual_test.cc )
 target_include_directories(visual_test.exe PRIVATE src/
     ${PYTHON_INCLUDE_DIRS}
