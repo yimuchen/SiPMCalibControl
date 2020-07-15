@@ -97,6 +97,7 @@ def RunAction(socketio, msg):
 
 
 def RunReport(socketio, msg):
+  print("Recevied message:", msg)
 
   ## Cache requests, mainly defined in calibration.py
   if msg == 'tileboard-layout':
@@ -123,11 +124,12 @@ def RunReport(socketio, msg):
     ReportLumiAlignSettings(socketio)
   elif msg == 'picoscope-settings':
     ReportPicoscopeSettings(socketio)
-
   ## Defaults to printing a message an exiting.
   else:
     print(msg)
     time.sleep(5)
+
+  print( "Completed report request", msg )
 
 
 __default_image_io = io.BytesIO( cv2.imencode('.jpg',

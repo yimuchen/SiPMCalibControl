@@ -221,16 +221,11 @@ function make_single_det_summary_html() {
     const lumi_string = make_coordinate_string(detid, 'lumi');
     const vis_string = make_coordinate_string(detid, 'vis');
 
-    console.log(detid);
-
-
     var coord_html = ''
     coord_html += `<div class="input-row">
                   <span class="input-name">Det ID:</span>
                   <span class="input-units"> ${detid} </span>
                   </div>`;
-    console.log(detid);
-    console.log(coord_html);
 
     coord_html += `<div class="input-row">
                   <span class="input-name">Coordinates:</span>
@@ -308,8 +303,6 @@ function make_single_det_summary_html() {
                     </div>`;
     }
 
-    console.log(detid)
-
     summary_html += `<div id="single-det-summary-${detid}" class="hidden">
                       <div class="input-align">
                       ${coord_html} ${progress_html}
@@ -381,6 +374,7 @@ function update_readout_result(msg) {
 
   // Waiting 1 seconds before updating the images
   setTimeout(function () {
+    console.log('Getting next readout update');
     socketio.emit('get-report', 'readout');
   }, 1000);
 }
