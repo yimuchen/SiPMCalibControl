@@ -19,6 +19,7 @@ import glob
 import traceback
 import re
 import datetime
+import time
 
 
 class controlterm(cmd.Cmd):
@@ -390,6 +391,9 @@ class controlcmd():
       # Try to move the gantry. Even if it fails there will be fail safes
       # in other classes
       self.gcoder.moveto(x, y, z, verbose)
+      while self.gcoder.in_motion(x,y,z):
+        time.sleep(0.1) ## Updating position in 0.1 second increments
+        print( "Waiting for gantry motion to complete" )
     except:
       # Setting internal coordinates to the designated position anyway.
       self.gcoder.opx = x

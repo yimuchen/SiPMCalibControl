@@ -145,7 +145,7 @@ class halign(cmdbase.controlcmd):
     except Exception as err:
       self.printerr(('Lumi fit failed to converge, check output stored in file '
                      '{0} for collected values').format(args.savefile.name))
-      self.gcoder.moveto(args.x, args.y, args.scanz, False)
+      self.move_gantry(args.x, args.y, args.scanz, False)
       raise err
 
     self.printmsg('Best x:{0:.2f}+-{1:.3f}'.format(fitval[1],

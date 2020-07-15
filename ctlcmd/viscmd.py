@@ -161,7 +161,7 @@ class visualhscan(cmdbase.controlcmd):
                             [[fitx[0], fitx[1]], [fity[0], fity[1]]])
 
     ## Moving back to center
-    self.gcoder.moveto(args.x, args.y, args.scanz, False)
+    self.move_gantry(args.x, args.y, args.scanz, False)
 
   @staticmethod
   def model(xydata, a, b, c):
@@ -243,7 +243,7 @@ class visualcenterdet(cmdbase.controlcmd):
       ## Early exit if difference from center is small
       if np.linalg.norm(motionxy) < 0.1: break
 
-      self.gcoder.moveto(self.gcoder.opx + motionxy[0],
+      self.move_gantry(self.gcoder.opx + motionxy[0],
                          self.gcoder.opy + motionxy[1], self.gcoder.opz, False)
       time.sleep(0.1)  ## Waiting for the gantry to stop moving
 
@@ -332,7 +332,7 @@ class visualmaxsharp(cmdbase.controlcmd):
     zstep = args.stepsize
 
     while abs(zstep) >= 0.1:
-      self.gcoder.moveto(args.x, args.y, zval + zstep, False)
+      self.move_gantry(args.x, args.y, zval + zstep, False)
       center = self.visual.get_latest()
 
       if center.sharpness > laplace:
