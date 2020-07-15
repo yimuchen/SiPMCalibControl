@@ -222,9 +222,9 @@ GPIO::Pulse( const unsigned n, const unsigned wait ) const
 
   for( unsigned i = 0; i < n; ++i ){
     GPIOWrite( gpio_trigger, HI );
-    usleep( 1 );
+    std::this_thread::sleep_for( std::chrono::microseconds( 1 ) );
     GPIOWrite( gpio_trigger, LOW );
-    usleep( wait );
+    std::this_thread::sleep_for( std::chrono::microseconds( wait ) );
   }
 }
 
@@ -290,14 +290,15 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
   write( fd, buffer, write_length );
   close( fd );
 
-  usleep( 1e5 );// Small pause to allow for
+  // Small pause for system settings to finish rippling
+  std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
   // Setting direction.
   snprintf( path, buffer_length, "/sys/class/gpio/gpio%d/direction", pin );
 
   // Waiting for the sysfs to generated the corresponding file
   while( access( path, F_OK ) == -1 ){
-    usleep( 1e5 );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
   }
 
   fd = ( direction == READ ) ? open( path, O_WRONLY ) : open( path, O_WRONLY );
@@ -381,12 +382,12 @@ GPIO::InitPWM()
   // Waiting for the sysfs to generated the corresponding file
   while( access( "/sys/class/pwm/pwmchip0/pwm0/enable", F_OK ) == OPEN_FAILED ){
     printf( "Waiting for /sys/class/pwm/pwmchip0/pwm0/enable" );
-    usleep( 1e5 );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
   }
 
   while( access( "/sys/class/pwm/pwmchip0/pwm1/enable", F_OK ) == OPEN_FAILED ){
     printf( "Waiting for /sys/class/pwm/pwmchip0/pwm1/enable" );
-    usleep( 1e5 );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
   }
 
   // Small loop to continuously try to open the PWM interface. If the interface
@@ -400,7 +401,7 @@ GPIO::InitPWM()
     pwm_enable[1] = open( "/sys/class/pwm/pwmchip0/pwm0/enable",      O_WRONLY );
     pwm_duty[1]   = open( "/sys/class/pwm/pwmchip0/pwm0/duty_cycle",  O_WRONLY );
     pwm_period[1] = open( "/sys/class/pwm/pwmchip0/pwm0/period",      O_WRONLY );
-    usleep( 1e5 );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
   }while( pwm_enable[0] == UNOPENED || pwm_enable[0] == OPEN_FAILED );
 
   if( pwm_enable[0] == OPEN_FAILED ){
@@ -564,7 +565,7 @@ GPIO::PushADCSetting()
     throw std::runtime_error( "Error writing setting to i2C device" );
   }
 
-  usleep( 1e5 );
+  std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
   // Set for reading
   read_buffer[0] = 0;
@@ -641,7 +642,7 @@ GPIO::FlushLoop( std::atomic<bool>& i2d_flush )
     if( gpio_adc >= NORMAL_PTR ){
       for( unsigned channel = 0; channel < 4; ++channel ){
         adc_channel = channel;
-        try { // This is incase the GPIO interface is open but not addressable
+        try {// This is incase the GPIO interface is open but not addressable
           PushADCSetting();
 
           const int16_t adc   = ADCReadRaw();
@@ -653,7 +654,7 @@ GPIO::FlushLoop( std::atomic<bool>& i2d_flush )
                                 range == ADS_RANGE_p5V ?  512.0 / 32678.0 :
                                 256.0 / 32678.0;
           i2c_flush_array[channel] = adc * conv;
-          usleep( 1e5 );
+          std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
         } catch( std::exception& e ){
           i2c_flush_array[0] = i2c_flush_array[0];
           i2c_flush_array[1] = i2c_flush_array[1];
@@ -668,7 +669,7 @@ GPIO::FlushLoop( std::atomic<bool>& i2d_flush )
       i2c_flush_array[3] = i2c_flush_array[3];
     }
 
-    usleep( 50000 );// 50 milliseconds
+    std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
   }
 }
 

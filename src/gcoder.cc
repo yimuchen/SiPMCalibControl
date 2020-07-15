@@ -2,8 +2,10 @@
 
 #include <chrono>
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 
 // Stuff required for tty input and output
 #include <errno.h>
@@ -65,6 +67,8 @@ struct GCoder
     const bool verbose = false
     );
 
+  bool InMotion( float x, float y, float z );
+
   // Floating point comparison.
   static bool MatchCoord( double x, double y );
 
@@ -93,12 +97,15 @@ GCoder::~GCoder()
 void
 GCoder::InitPrinter( const std::string& dev )
 {
+  // General documenation here:
+  // https://www.xanthium.in/Serial-Port-Programming-on-Linux
+
   static const int speed = B115200;
   struct termios tty;
   char errormessage[2048];
 
   dev_path   = dev;
-  printer_IO = open( dev.c_str(), O_RDWR | O_NOCTTY | O_SYNC );
+  printer_IO = open( dev.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK | O_ASYNC );
 
   if( printer_IO < 0 ){
     sprintf( errormessage,
@@ -128,8 +135,8 @@ GCoder::InitPrinter( const std::string& dev )
   tty.c_oflag &= ~OPOST;
 
   // fetch bytes as they become available
-  tty.c_cc[VMIN]  = 1;
-  tty.c_cc[VTIME] = 1;
+  tty.c_cc[VMIN]  = 0;
+  tty.c_cc[VTIME] = 0;
 
   if( tcsetattr( printer_IO, TCSANOW, &tty ) != 0 ){
     sprintf( errormessage, "Error setting termios: %s", strerror( errno ) );
@@ -137,7 +144,7 @@ GCoder::InitPrinter( const std::string& dev )
   }
 
   printmsg( GREEN( "[PRINTER]" ), "Waking up printer...." );
-  usleep( 5e6 );
+  std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
   SendHome();
 
   return;
@@ -153,7 +160,7 @@ GCoder::RunGcode(
   using namespace std::chrono;
 
   // static variables
-  static const unsigned maxtry     = 1e2;
+  static const unsigned maxtry     = 10;
   static const unsigned buffersize = 65536;
   static const std::string msghead = GREEN( "[GCODE-SEND]" );
 
@@ -202,11 +209,8 @@ GCoder::RunGcode(
       if( ackstr.find( "ok" ) != std::string::npos ){
         awk = true;
       }
-    } else if( readlen < 0 ){
-      sprintf( msg,
-        "Error reading printer output: %s", strerror( errno ) );
-      throw std::runtime_error( msg );
     }
+    std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
   } while( !awk && duration_cast<microseconds>( t2-t1 ).count() < waitack );
 
   // Checking output
@@ -264,7 +268,7 @@ GCoder::SetSpeedLimit( float x, float y, float z )
 void
 GCoder::MoveTo( float x, float y, float z, bool verbose )
 {
-  static constexpr float min_z_safety = 20;
+  static constexpr float min_z_safety = 10;
 
   if( z < min_z_safety && opz < min_z_safety ){
     MoveToRaw( opx, opy, min_z_safety, verbose );
@@ -288,9 +292,6 @@ GCoder::MoveToRaw( float x, float y, float z, bool verbose )
   static const char move_fmt[]     = "G0 X%.1f Y%.1f Z%.1f\n";
 
   char gcode[128];
-  char msg[1024];
-  float temp;
-  int check;
 
   // Setting up target position
   opx = x == x ? x : opx;
@@ -315,57 +316,42 @@ GCoder::MoveToRaw( float x, float y, float z, bool verbose )
 
   // Running the code
   sprintf( gcode, move_fmt, opx, opy, opz );
-  RunGcode( gcode, 0, 100, verbose );
+  RunGcode( gcode, 0, 1000, verbose );
   if( verbose ){ clear_update(); }
-
-  do {
-    // Getting current position command
-    usleep( 5e4 );
-    const std::string checkmsg = RunGcode( "M114\n", 0, 100, verbose );
-
-    check = sscanf( checkmsg.c_str(),
-      "X:%f Y:%f Z:%f E:%f Count X:%f Y:%f Z:%f",
-      &opx, &opy, &opz, &temp, &x, &y, &z );
-
-    if( check == 7 ){
-      sprintf( msg,
-        "Target (%.1lf %.1lf %.1lf), Current (%.1lf, %.1lf, %.1lf)...",
-        opx, opy, opz, x, y, z );
-
-      if( verbose ){ update( msghead, msg ); }
-
-      if( MatchCoord( opx, x ) &&
-          MatchCoord( opy, y ) &&
-          MatchCoord( opz, z ) ){
-        if( verbose ){
-          strcat( msg, " Done!" );
-          update( msghead, msg );
-        }
-        break;
-      }
-
-    } else {
-      if( verbose ){
-        std::string pmsg = checkmsg;
-
-        for( unsigned i = 0; i < pmsg.length(); ++i ){
-          if( pmsg[i] == '\n' ){ pmsg[i] = '\\'; }
-        }
-
-        if( pmsg.length() > 54 ){
-          pmsg.resize( 54 );
-          pmsg += "...";
-        }
-        // flush_update();
-        // sprintf( msg, "Couldn't parse string [%s]! Trying again!\n\n",
-        //   pmsg.c_str() );
-        // printwarn( msg );
-      }
-    }
-  } while( 1 );
 
   return;
 }
+
+bool
+GCoder::InMotion( float x, float y, float z )
+{
+  // The file description interface does not like a continuous stream of file
+  // reads with a while loop, even when there are sleep requests in the loop. It
+  // will cause other interfaces (ex, network sockets to freeze). We instead need
+  // to implement the check simply by a one-off check. Monitoring the motion is
+  // then moved to python level.
+
+  float temp, cx, cy, cz;
+  const std::string checkmsg = RunGcode( "M114\n" );
+  int check                  = sscanf( checkmsg.c_str(),
+    "X:%f Y:%f Z:%f E:%f Count X:%f Y:%f Z:%f",
+    &opx, &opy, &opz, &temp, &cx, &cy, &cz );
+
+  if( check == 7 ){
+    if( MatchCoord( x, cx ) &&
+        MatchCoord( y, cy ) &&
+        MatchCoord( z, cz ) ){
+      return false;
+    } else {
+      return true;
+    }
+
+  } else {
+    return true;// Assuming gantry is in motion unless if message parsing fails
+  }
+  return true;
+}
+
 
 bool
 GCoder::MatchCoord( double x, double y )
@@ -389,13 +375,13 @@ BOOST_PYTHON_MODULE( gcoder )
 {
   boost::python::class_<GCoder>( "GCoder" )
   // .def( boost::python::init<const std::string&>() )
-  .def( "initprinter",     &GCoder::InitPrinter )
+  .def( "initprinter",     &GCoder::InitPrinter   )
   // Hiding functions from python
-  // .def( "pass_gcode",       &GCoder::pass_gcode )
-  .def( "getsettings",     &GCoder::GetSettings )
+  .def( "getsettings",     &GCoder::GetSettings   )
   .def( "set_speed_limit", &GCoder::SetSpeedLimit )
-  .def( "moveto",          &GCoder::MoveTo )
-  .def( "sendhome",        &GCoder::SendHome )
+  .def( "moveto",          &GCoder::MoveTo        )
+  .def( "in_motion",       &GCoder::InMotion      )
+  .def( "sendhome",        &GCoder::SendHome      )
   .def_readwrite( "dev_path", &GCoder::dev_path )
   .def_readwrite( "opx",      &GCoder::opx )
   .def_readwrite( "opy",      &GCoder::opy )

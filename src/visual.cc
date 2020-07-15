@@ -144,7 +144,7 @@ Visual::init_dev( const std::string& dev )
   // Additional camera settings
   cam.set( cv::CAP_PROP_FRAME_WIDTH,  1280 );
   cam.set( cv::CAP_PROP_FRAME_HEIGHT, 1024 );
-  cam.set( cv::CAP_PROP_BUFFERSIZE,      1 );// Reducing buffer for fast capture
+  cam.set( cv::CAP_PROP_BUFFERSIZE,   1 );   // Reducing buffer for fast capture
 
   start_thread();
 }
@@ -345,8 +345,8 @@ Visual::generate_display( const ContourList& failed_ratio,
 
   PlotContourList( failed_ratio, white );
   PlotContourList( failed_lumi,  green );
-  PlotContourList( failed_rect, yellow );
-  PlotContourList( hulls,         cyan );
+  PlotContourList( failed_rect,  yellow );
+  PlotContourList( hulls,        cyan );
   if( hulls.empty() ){
     PlotText( "NOT FOUND", cv::Point( 20, 20 ), red );
   } else {
@@ -542,7 +542,7 @@ BOOST_PYTHON_MODULE( visual )
   .def( "init_dev",        &Visual::init_dev        )
   .def( "frame_width",     &Visual::frame_width     )
   .def( "frame_height",    &Visual::frame_height    )
-  .def( "get_latest",      &Visual::get_result   )
+  .def( "get_latest",      &Visual::get_result      )
   .def( "get_image",       &Visual::get_image       )
   .def( "get_image_bytes", &Visual::get_image_bytes )
   .def_readonly( "dev_path", &Visual::dev_path  )
