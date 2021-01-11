@@ -18,7 +18,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/bin )
 
 ## Linux apple differences
 if(UNIX AND NOT APPLE)
-  set(BOOST_PYTHON_COMPONENTS "python38")
+  set(BOOST_PYTHON_COMPONENTS "python39")
   set(PICO_FIND_PATH "/opt/picoscope/")
 else()
   set(BOOST_PYTHON_COMPONENTS "python37")
@@ -47,6 +47,8 @@ find_path( PICO_INCLUDES
 find_library(PICO_LIBS
   NAMES ps5000
   PATHS ${PICO_LIBRARY_PATH}  )
+message(${Boost_INCLUDE_DIRS})
+message(${PYTHON_INCLUDE_DIRS})
 
 ## Libraries are supposed to be python modules
 function(make_control_library libname source )

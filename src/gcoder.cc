@@ -67,6 +67,8 @@ struct GCoder
     const bool verbose = false
     );
 
+  void DisableStepper();
+
   bool InMotion( float x, float y, float z );
 
   // Floating point comparison.
@@ -146,6 +148,9 @@ GCoder::InitPrinter( const std::string& dev )
   printmsg( GREEN( "[PRINTER]" ), "Waking up printer...." );
   std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
   SendHome();
+  std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
+  // DisableStepper();
+  // RunGcode( "M18 S1\n", 0, 1e5, true );
 
   return;
 }
@@ -233,6 +238,18 @@ GCoder::SendHome()
   opx = opy = opz = 0;
 }
 
+void GCoder::DisableStepper()
+{
+  // Disable steppers: The power supply of the gantry is rather noisy, causing
+  // issues with the readout system. Disabling the stepper closes the relevant
+  // power supplies while the gantry still remembers where it is. This needs to
+  // be called at the python level since motion minitoring is done at the python
+  // level.
+  RunGcode( "M18 X E\n", 0, 1e5, true );
+  RunGcode( "M18 Y E\n", 0, 1e5, true );
+  RunGcode( "M18 Z E\n", 0, 1e5, true );
+}
+
 
 std::wstring
 GCoder::GetSettings() const
@@ -268,7 +285,7 @@ GCoder::SetSpeedLimit( float x, float y, float z )
 void
 GCoder::MoveTo( float x, float y, float z, bool verbose )
 {
-  static constexpr float min_z_safety = 10;
+  static constexpr float min_z_safety = 3;
 
   if( z < min_z_safety && opz < min_z_safety ){
     MoveToRaw( opx, opy, min_z_safety, verbose );
@@ -377,11 +394,12 @@ BOOST_PYTHON_MODULE( gcoder )
   // .def( boost::python::init<const std::string&>() )
   .def( "initprinter",     &GCoder::InitPrinter   )
   // Hiding functions from python
-  .def( "getsettings",     &GCoder::GetSettings   )
-  .def( "set_speed_limit", &GCoder::SetSpeedLimit )
-  .def( "moveto",          &GCoder::MoveTo        )
-  .def( "in_motion",       &GCoder::InMotion      )
-  .def( "sendhome",        &GCoder::SendHome      )
+  .def( "getsettings",     &GCoder::GetSettings    )
+  .def( "set_speed_limit", &GCoder::SetSpeedLimit  )
+  .def( "moveto",          &GCoder::MoveTo         )
+  .def( "disablestepper",  &GCoder::DisableStepper )
+  .def( "in_motion",       &GCoder::InMotion       )
+  .def( "sendhome",        &GCoder::SendHome       )
   .def_readwrite( "dev_path", &GCoder::dev_path )
   .def_readwrite( "opx",      &GCoder::opx )
   .def_readwrite( "opy",      &GCoder::opy )

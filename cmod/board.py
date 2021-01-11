@@ -17,18 +17,12 @@ class Detector(object):
     if (self.orig_coord[0] > gcoder.GCoder.max_x()
         or self.orig_coord[1] > gcoder.GCoder.max_y() or self.orig_coord[0] < 0
         or self.orig_coord[1] < 0):
-      logger.printwarn(('The det position  (x:{1},y:{2}) '
-                        'is outside of the gantry boundaries (0-{3},0-{4}). '
-                        'For safety of operation, the det position will be '
-                        'adjusted. This might lead to unexpected '
-                        'behavior').format(self.orig_coord[0],
-                                           self.orig_coord[1],
-                                           gcoder.GCoder.max_x(),
-                                           gcoder.GCoder.max_y()))
-      self.orig_coord[0] = max(
-          [min([self.orig_coord[0], gcoder.GCoder.max_x()]), 0])
-      self.orig_coord[1] = max(
-          [min([self.orig_coord[1], gcoder.GCoder.max_y()]), 0])
+      logger.printwarn(('The det position  (x:{0},y:{1}) '
+                        'is outside of the gantry boundaries (0-{2},0-{3}). '
+                        'The expected detector position will be not'
+                        'adjusted, but gantry motion might not reach it').format(
+                            self.orig_coord[0], self.orig_coord[1],
+                            gcoder.GCoder.max_x(), gcoder.GCoder.max_y()))
 
     ## Initialization calibrated coordinates to be empty
     # Since all calibrations are done with respect to some z value,
@@ -95,7 +89,7 @@ class Board(object):
                             'defined in the calibration, ignoring'))
           continue
         else:
-          self.add_calib_det(self, det)
+          self.add_calib_det(det)
 
       def format_dict(original_dict):
         return {float(z): original_dict[z] for z in original_dict}
@@ -123,7 +117,7 @@ class Board(object):
 
   def add_calib_det(self, detid):
     detid = str(detid)
-    if detid not in self.dets and int(detid) < 0:
+    if detid not in self.dets() and int(detid) < 0:
       self.det_map[detid] = Detector({
           "mode": -1,
           "channel": -1,
@@ -137,7 +131,7 @@ class Board(object):
 
   def add_visM(self, det, z, data):
     det = str(det)
-    self.det_map[det].visM[self.roundz(z)] = data
+    self.det_map[det].vis_M[self.roundz(z)] = data
 
   def add_lumi_coord(self, det, z, data):
     det = str(det)

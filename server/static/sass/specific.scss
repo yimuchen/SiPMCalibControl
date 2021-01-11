@@ -1,3 +1,6 @@
+/**
+ * This file is for specific element adjustments
+ */
 div[id$="-range-value"]{
   width: 1em;
   height: 3em;
@@ -45,15 +48,22 @@ input#raw-cmd-input-text{
 }
 
 // Progress bar stuff
-#bar-container {
-  .progress-bar-container {
-    display:flex ;
-    height:1em;
-    width:600px;
-    border-width: thin;
-    border-color:#00FF00;
-    border-style: solid;
-    padding: 0px;
+.progress-bar-container {
+  display:flex ;
+  height:1em;
+  width:600px;
+  border-width: thin;
+  border-color:#00FF00;
+  border-style: solid;
+  padding: 0px;
+  .progress-complete{
+    height:100%;
+  }
+  .progress-running{
+    height: 100%;
+  }
+  .progress-error{
+    height:100%;
   }
 }
 

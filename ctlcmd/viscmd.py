@@ -146,7 +146,7 @@ class visualhscan(cmdbase.controlcmd):
 
     ## Generating calibration det id if using det coordinates
     detid = str(args.detid)
-    if not detid in self.board.visM and int(args.detid) < 0:
+    if not detid in self.board.dets() and int(args.detid) < 0:
       self.board.add_calib_det(args.detid)
 
     ## Saving rounded coordinates
@@ -223,18 +223,23 @@ class visualcenterdet(cmdbase.controlcmd):
         center = self.visual.get_latest()
         if center.x > 0:
           break
+        time.sleep(0.1)
 
       ## Early exit if det is not found.
       if (center.x < 0 or center.y < 0):
+        print( self.gcoder.opx, self.gcoder.opy )
         raise Exception(('Det lost! Check current camera position with '
                          'command visualdetshow'))
       if args.monitor:
         cv2.imshow('SIPMCALIB - visualcenterdet', image)
         cv2.waitKey(1)
 
+      # We are dividing by 4 since the working image is half of the
+      # camera resolution
+
       deltaxy = np.array([
-          self.visual.frame_width() / 2 - center.x,
-          self.visual.frame_height() / 2 - center.y
+          self.visual.frame_width() / 4 - center.x,
+          self.visual.frame_height() / 4 - center.y
       ])
 
       motionxy = np.linalg.solve(
@@ -283,7 +288,7 @@ class visualcenterdet(cmdbase.controlcmd):
       deltay = None
       currentz = self.gcoder.opz
       for calibdet in self.board.calib_dets():
-        det = self.board.get_det(calib_det)
+        det = self.board.get_det(calibdet)
         if (self.board.vis_coord_hasz(calibdet, currentz)
             and any(det.lumi_coord)):
           closestz = min(det.lumi_coord.keys(), key=lambda x: abs(x - currentz))

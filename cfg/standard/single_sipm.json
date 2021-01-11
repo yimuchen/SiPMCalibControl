@@ -1,0 +1,14 @@
+{
+  "board type": "single_sipm",
+  "board name": "Single SiPM board",
+  "board description" : "A real board for a single SiPM with a measurement",
+  "board id": "",
+  "detectors": {
+    "-100" : {
+      "mode": 0,
+      "channel" : 1,
+      "default coordinates": [50,50]
+    }
+  }
+}
+

@@ -1,3 +1,10 @@
+"""
+  parsing.py
+
+  Functions here are directly called by the socketio object via the decorated
+  methods in the __init__.py file. The parses the socketio data stream, then call
+  the required function split across the various files for the sake of clarity.
+"""
 import threading
 import datetime
 import time
@@ -5,156 +12,132 @@ import cv2
 import io
 
 from . import session
-from .calibration import *
+from .action import *
 from .report import *
-from .singleaction import *
-"""
-Functions here are directly called by the socketio object via the decorated
-methods. The functions then call the required function split across the various
-files for the sake of clarity.
-"""
+from .sync import *
 
 
-def SocketConnect(socketio):
+def socket_connect(socketio):
   """
-  Process to execute when client first connects.
+  Process to execute when client first connects. Immediately the system state is
+  updated to all clients. All other information will be handled by client
+  request.
   """
   print('Socket connected')
-  time.sleep(0.5)
-  if session.state == session.STATE_IDLE:
-    print('Session is idle')
-    ActionComplete(socketio)
-  elif session.state == session.STATE_WAIT_USER:
-    print("Waiting user with message!")
-    MessageUserAction(socketio, session.waiting_msg)
-
-  # Regardless of sever state, emit the confirm message containing the start time
-  # of the server
-  socketio.emit('confirm',
-                {'start': session.start_time.strftime('%Y/%m/%d/ %H:%M:%S')},
-                broadcast=True,
-                namespace='/sessionsocket')
-
-  ## Update session to treat all cached data as having just updated
-  PrepareReportAllCache()  ## In Report
-
-  ## Updating the list of valid session in the system
-  update_reference_list()
+  sync_system_state(socketio, session.state)
+  sync_session_type(socketio, session.session_type)
 
 
-def ActionComplete(socketio):
-  """
-  Sending complete signal to client for client to release controls.
-  """
-  if session.state == session.STATE_IDLE:
-    socketio.emit('action-complete',
-                  '',
-                  namespace='/sessionsocket',
-                  broadcast=True)
-
-
-def RunAction(socketio, msg):
+def run_action(socketio, msg):
   """
   Processing of user action input
   """
-  socketio.emit('action-received',
-                '',
-                namespace='/sessionsocket',
-                boardcast=True)
-  session.state = session.STATE_RUN_PROCESS
+  sync_system_state(socketio, session.STATE_RUN_PROCESS)
 
-  ## Standardized calibration sequences. Functions are defined in calibration.py
+  ## Standardized calibration sequences. Functions are defined in action.py
   if msg['id'] == 'raw-cmd-input':
-    RunCmdInput(msg['data'])
+    run_cmd_input(socketio, msg['data'])
   elif msg['id'] == 'run-std-calibration':
-    StandardCalibration(socketio, msg['data'])
+    run_standard_calibration(socketio, msg['data'])
   elif msg['id'] == 'run-system-calibration':
-    SystemCalibration(socketio, msg['data'])
+    run_system_calibration(socketio, msg['data'])
   elif msg['id'].endswith('calibration-signoff'):
-    CalibrationSignoff(socketio, msg['data'], msg['id'].startswith('system'))
+    run_calibration_signoff(socketio, msg['data'],
+                            msg['id'].startswith('system'))
   elif msg['id'] == 'rerun-single':
-    RerunCalibration(socketio, msg['data'])
-
-  ## Algorithm tuning parameters, Functions defined in singleaction.py
+    run_process_extend(socketio, msg['data'])
   elif msg['id'] == 'image-settings':
-    RunImageSettings(socketio, msg['data'])
+    run_image_settings(socketio, msg['data'])
   elif msg['id'] == 'zscan-settings':
-    RunZScanSettings(socketio, msg['data'])
+    run_zscan_settings(socketio, msg['data'])
   elif msg['id'] == 'lowlight-settings':
-    RunLowlightSettings(socketio, msg['data'])
+    run_lowlight_settings(socketio, msg['data'])
   elif msg['id'] == 'lumialign-settings':
-    RunLumiAlignSettings(socketio, msg['data'])
+    run_lumialign_settings(socketio, msg['data'])
   elif msg['id'] == 'picoscope-settings':
-    RunPicoscopeSettings(socketio, msg['data'])
+    run_picoscope_settings(socketio, msg['data'])
 
   ## Defaulting to printing a message and exiting.
   else:
     print(msg)
     time.sleep(5)
 
-  session.state = session.STATE_IDLE
-  ActionComplete(socketio)
+  sync_system_state(socketio, session.STATE_IDLE)
 
 
-def RunReport(socketio, msg):
-  print("Recevied message:", msg)
-
-  ## Cache requests, mainly defined in calibration.py
-  if msg == 'tileboard-layout':
-    ReportTileboardLayout(socketio)
-  elif msg == 'readout':
-    ReportReadout(socketio)
-  elif msg == 'progress':
-    ReportProgress(socketio)
-  elif msg == 'status':
-    ReportSystemStatus(socketio)
-  elif msg == 'valid-reference':
-    ReportValidReference(socketio)
-  elif msg == 'sign-off':
-    ReportSignoffType(socketio)
-
-  ## Setting request, mainly defined in singleaction.py
-  elif msg == 'image-settings':
-    ReportImageSettings(socketio)
-  elif msg == 'zscan-settings':
-    ReportZScanSettings(socketio)
-  elif msg == 'lowlight-settings':
-    ReportLowlightSettings(socketio)
-  elif msg == 'lumialign-settings':
-    ReportLumiAlignSettings(socketio)
-  elif msg == 'picoscope-settings':
-    ReportPicoscopeSettings(socketio)
-  ## Defaults to printing a message an exiting.
+def session_report(msg):
+  """
+  The handling of report of session data. Most of the data will be handled by the
+  report.py file.
+  """
+  if msg == 'tileboard_layout': return report_tileboard_layout()
+  elif msg == 'progress': return report_progress()
+  elif msg == 'status': return report_system_status()
+  elif msg == 'validreference': return report_valid_reference()
+  elif msg == 'useraction': return report_useraction()
+  elif msg == 'systemboards': return report_system_boards()
+  elif msg == 'standardboards': return report_standard_boards()
+  elif msg == 'settings': return report_settings()
   else:
+    ## Defaults to printing a message and returning an empty message.
     print(msg)
-    time.sleep(5)
-
-  print( "Completed report request", msg )
+    return {}
 
 
-__default_image_io = io.BytesIO( cv2.imencode('.jpg',
-                            cv2.imread('server/static/icon/notdone.jpg', 0 ) )[1] )
+def get_cached_data(process, detid):
+  """
+  Returning the cached data of the a the given process defined by the process.
+  since processes are defined in the calibration.py page, to help with code
+  structure uniformity. This function will just be a thin wrapper around the
+  report_cached_data method defined in the report.py file (since the function
+  formatting is similar to a typical reporting process)
+  """
+  return report_cached_data(process, detid)
 
-def GetCurrentImage():
-  while True:
-    frame = session.cmd.visual.get_image_bytes()
-    yield (b'--frame\r\n'
-           b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-    time.sleep(0.3)
+
+def make_jpeg_image_byte(image):
+  """
+  Helper function to make the a byte stream as a string representing an image
+  object.
+  """
+  return (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + image + b'\r\n')
 
 
-def GetDetectorImage(detid):
-  while True:
-    if detid in session.visual_cache and len(session.visual_cache[detid]) > 0:
-      try:
-        frame = session.visual_cache[detid]
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-      except:
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + __default_image_io.read() + b'\r\n')
-    else:
-      yield (b'--frame\r\n'
-             b'Content-Type: image/jpeg\r\n\r\n' + __default_image_io.read() + b'\r\n')
+def current_image_bytes():
+  """
+  Returning the byte string of the current image stored in the visual system's
+  buffer. The formatting code is borrowed from here: Notice that the framerate of
+  how fast the image is updated is defined here.
 
-    time.sleep(2)  # Update once every 2 second at most
+  Reference: https://medium.com/datadriveninvestor/
+  video-streaming-using-flask-and-opencv-c464bf8473d6
+  """
+  while True:  ## This function will always generate a return
+    yield make_jpeg_image_byte(session.cmd.visual.get_image_bytes())
+    time.sleep(0.1)
+
+## defining static objects to return if the image is not yet found.
+__default_image_io = io.BytesIO(
+    cv2.imencode('.jpg', cv2.imread('server/static/icon/notdone.jpg', 0))[1])
+__default_yield = make_jpeg_image_byte(__default_image_io.read())
+
+#def get_visual_bytes(detid):
+#  """
+#  Getting the detector image used for visual alignment. The calibration session
+#  should store a jpeg byte stream each time a visual alignment is performed. In
+#  case the image doesn't exists, either because the visual alignment failed or
+#  the visual alignment hasn't been performed. Return the default image of a not
+#  found status.
+#  """
+#  while True:
+#    if detid in session.visual_cache and len(session.visual_cache[detid]) > 0:
+#      try:
+#        yield make_jpeg_image_byte(session.visual_cache[detid])
+#      except:
+#        yield __default_yield
+#    else:
+#      yield __default_yield
+#    time.sleep(0.1)
+#
+#def default_image_bytes():
+#  return __default_yield

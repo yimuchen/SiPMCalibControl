@@ -44,6 +44,7 @@ public:
   unsigned                      frame_height() const;
   VisResult                     get_result();
   boost::python::numpy::ndarray get_image();
+  bool                          save_image( const std::string& );
   PyObject*                     get_image_bytes();
 
   int blur_range;
@@ -220,7 +221,9 @@ Visual::RunMainLoop( std::atomic<bool>& run_loop )
     latest = find_det();
     loop_mutex.unlock();
 
-    while( time_end - time_start < 1e5 ){// Updating at 10fps
+    while( time_end - time_start < 5e3 ){
+      // Updating at 200fps. Must be faster than the webcam refresh rate for
+      // realtime image over internet
       std::this_thread::sleep_for( st::milliseconds( 1 ) );
       time_end = get_time();
     }
@@ -462,8 +465,12 @@ Visual::sharpness( const cv::Mat& img, const cv::Rect& crop ) const
     return 0;
   }
 
-  // Cropping to range
-  working_image = working_image( crop ).clone();
+  // Cropping to range sometimes is bad... not sure why just yet
+  try {
+    working_image = working_image( crop ).clone();
+  } catch( cv::Exception& e ){
+    return 0;
+  }
 
   // Calculating lagrangian.
   cv::Laplacian( working_image, lap, CV_64F, 5 );
@@ -478,6 +485,14 @@ Visual::get_result()
   VisResult ans = latest;
   loop_mutex.unlock();
   return ans;
+}
+
+bool
+Visual::save_image( const std::string& path )
+{
+  const cv::Mat mat = get_image_cv();
+  cv::imwrite( path, mat );
+  return true;
 }
 
 
@@ -545,6 +560,7 @@ BOOST_PYTHON_MODULE( visual )
   .def( "get_latest",      &Visual::get_result      )
   .def( "get_image",       &Visual::get_image       )
   .def( "get_image_bytes", &Visual::get_image_bytes )
+  .def( "save_image",      &Visual::save_image      )
   .def_readonly( "dev_path", &Visual::dev_path  )
   .def_readwrite( "threshold",    &Visual::threshold    )
   .def_readwrite( "blur_range",   &Visual::blur_range   )

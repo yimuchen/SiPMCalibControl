@@ -75,7 +75,9 @@ if __name__ == '__main__':
     sys.exit(0)
 
   try:
+    print("Running set command")
     cmd.set.run(args)
+    print("Starting GPIO")
     cmd.gpio.init()
   except Exception as err:
     logger.printerr(str(err))

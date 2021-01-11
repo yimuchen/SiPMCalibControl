@@ -393,9 +393,11 @@ class controlcmd():
       self.gcoder.moveto(x, y, z, verbose)
       while self.gcoder.in_motion(x,y,z):
         time.sleep(0.1) ## Updating position in 0.1 second increments
-        print( "Waiting for gantry motion to complete" )
+        # print( "Waiting for gantry motion to complete" )
+      self.gcoder.disablestepper()
     except:
       # Setting internal coordinates to the designated position anyway.
+      print("Exception received, assuming no gantry is present")
       self.gcoder.opx = x
       self.gcoder.opy = y
       self.gcoder.opz = z

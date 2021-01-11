@@ -1,6 +1,15 @@
+/**
+ * Default background color is a light gray to make reading easier on the eye
+ */
+$default_background: #f8f8f8;
 
-#setting-column {
-  background-color: darkblue;
+/**
+ * The monitor and action columns will have a dark gray headers with white font
+ * for the headers. The content will have a white (light gray) background and
+ * black text. For the default text.
+ */
+#monitor-column {
+  background-color:	#303030;
   h2{
     color: white;
   }
@@ -10,24 +19,62 @@
       color: white;
     }
     .tab-content {
-      background-color: cornflowerblue;
+      background-color: $default_background;
       color: black;
     }
   }
 }
 
-#main-column {
-  background-color: orangered;
+#action-column{
+  background-color: #303030;
   h2{
-    color: white;
+    color:white;
   }
 
-  .tab {
+  .tab-content{
+    background-color: $default_background;
+    color:black;
+  }
+  .tab.user-action{
+    .tab-title{
+      color:white;
+    }
+  }
+  .tab.expert-action {
+    .tab-title {
+      color: darken($default_background, 30);
+    }
+  }
+  // Special case for the user ACTION part, making it read to make sure it stands
+  // out
+  #user-action {
+    background-color: darkred;
     .tab-title{
       color:white;
     }
     .tab-content{
-      background-color: peachpuff;
+      background-color:lightpink;
+      color:black;
+    }
+  }
+}
+
+/**
+ * The session column will have a light grey header for the background. Font
+ * should default to black when ever possible.
+ */
+#session-column {
+  background-color:lightslategray;
+  h2{
+    color: black;
+  }
+
+  .tab {
+    .tab-title{
+      color:black;
+    }
+    .tab-content{
+      background-color: $default_background;
       color:black;
     }
     //Special case for user action part
@@ -43,23 +90,27 @@
     border-style: solid;
   }
 
-  // Special case for the user ACTION part, making it read to make sure it stands
-  // out
-  #user-action {
-    background-color: darkred;
-    .tab {
-    background-color: darkred;
-    .tab-title{
-      color:yellow;
-    }
-    .tab-content{
-      background-color: red;
-      color:black;
-    }
-  }
-  }
-
 }
+
+/**
+ * addition specific element coloring
+ */
+#visual-tab{
+  .tooltip-content{
+    background-color: rgba(#303030,20);
+    .vis_failratio{ color: white;}
+    .vis_faillumi{ color: #64ff64;}
+    .vis_failploy{ color: #ffff64;}
+    .vis_failsize{ color: #64ffff;}
+    .vis_found{ color: #ff6464;}
+  }
+}
+
+
+
+/**
+ *
+ */
 
 .det-progress-legend{
   background-image: linear-gradient(to right, #C8FFC8, #00FF00);
@@ -83,32 +134,4 @@ div#tile-layout-grid {
     background-color: #64FF64;
   }
 }
-
-#action-column{
-  background-color: chartreuse;
-  h2{
-    color:darkgreen;
-  }
-  .tab.user-action{
-    .tab-title{
-      color:black;
-    }
-    .tab-content{
-      background-color: greenyellow;
-      color:black;
-    }
-  }
-  .tab.expert-action {
-    background-color:desaturate(chartreuse, 10);
-    .tab-title {
-      color: lighten(black, 20);
-    }
-    .tab-content{
-      background-color: desaturate(greenyellow, 20);
-      color: lighten(black,20);
-    }
-  }
-}
-
-
 

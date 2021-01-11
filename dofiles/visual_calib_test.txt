@@ -1,0 +1,58 @@
+lighton
+visualhscan -x 125 -y 215 -z 5 -r 1.5 -d 0.5  -m
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 100 -y 215 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 100 -y 190 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 125 -y 190 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 150 -y 190 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 150 -y 215 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 150 -y 240 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 125 -y 240 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 100 -y 240 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+
+moveto -x 50  -y 215 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 50  -y 140 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 125 -y 140 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 200 -y 140 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 200 -y 215 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 200 -y 290 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 125 -y 290 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 50  -y 290 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+
+sendhome
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+
+moveto -x 100 -y 215 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 100 -y 190 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 125 -y 190 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 150 -y 190 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 150 -y 215 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 150 -y 240 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 125 -y 240 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+moveto -x 100 -y 240 -z 5
+visualcenterdet -x 125 -y 215 -z 5 --overwrite
+
+

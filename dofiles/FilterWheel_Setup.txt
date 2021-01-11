@@ -13,3 +13,12 @@ picoset --triggerchannel 0 --triggerdirection 3 --triggerlevel -3 --triggerdelay
 #Dark room gantry setup
 picoset --presample 0 --postsample 100 --ncapture 5000
 picoset --triggerchannel 4 --triggerdirection 2 --triggerlevel 500 --triggerdelay 8
+
+
+# New setup for dark box SiPMs 
+picoset --presample 0 --postsample 50 --ncapture 5000
+picoset --triggerchannel 4 --triggerdirection 2 --triggerlevel 500 --triggerdelay 11 
+
+picoset --presample 2 --postsample 2000 --ncapture 5000 
+picoset --triggerchannel 0 --triggerdirection 3 --triggerlevel -2 --triggerdelay 0
+

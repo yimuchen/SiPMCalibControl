@@ -1,7 +1,7 @@
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, jsonify
 from flask_socketio import SocketIO
 import datetime
-import logging ## System logging that is used by the application
+import logging  ## System logging that is used by the application
 
 ## Command interface
 import ctlcmd.cmdbase as cmdbase
@@ -11,16 +11,14 @@ import ctlcmd.digicmd as digicmd
 import ctlcmd.viscmd as viscmd
 import ctlcmd.picocmd as picocmd
 import cmod.logger as logger
-import sys
-import copy
-import io
+import sys, copy, io, json, os,re
 
-
-socketio = SocketIO(debug=False, async_mode='threading',)
+socketio = SocketIO(debug=False, async_mode='threading', )
 #cors_allow_origins='*' )
 
 from .sockets import session
 from .sockets.parsing import *
+
 
 def create_server_flask(debug=False):
   """
@@ -30,40 +28,85 @@ def create_server_flask(debug=False):
   socketio.app = Flask(__name__)
   socketio.app.debug = debug
 
-  # Since this is a single paged document
   @socketio.app.route('/')
   def index():
+    """
+    This is the main page the is to be rendered to the front user. The
+    corresponding file can be found in the server/static/template directory.
+    """
     return render_template('index.html')
 
-  @socketio.app.route('/video_monitor')
-  def video_monitor():
-    return Response(
-        GetCurrentImage(), # (unfortunately) defined in the parsing.py file
-        mimetype='multipart/x-mixed-replace; boundary=frame' )
+  @socketio.app.route('/playground')
+  def playground():
+    """
+    This URL is for testing display functions only.
+    """
+    return render_template('playground.html')
 
-  @socketio.app.route('/visual_cache/<detid>')
-  def get_det_image(detid):
-    return Response(
-      GetDetectorImage(detid), # This is also in parsing.py file
-      mimetype='multipart/x-mixed-replace; boundary=frame' )
+  """
+  URLs used for local file exposure. In this framework, local file exposures are
+  performed using AJAX requests. The following functions returns the requested
+  URLS.
+  """
 
+  @socketio.app.route('/geometry/<boardtype>')
+  def geometry(boardtype):
+    """
+    The geometry json files. These files correspond directly to the json files in
+    the cfg/geometry/ directory if they exists.
+    """
+    if os.path.exists('cfg/geometry/' + boardtype + '.json'):
+      with open('cfg/geometry/' + boardtype + '.json', 'r') as f:
+        x = json.load(f)
+        return jsonify(x)
+    else:
+      return {}, 404  # Return an empty json file with a error 404
+
+  @socketio.app.route('/report/<reporttype>')
+  def status(reporttype):
+    """
+    Instead of report via a socket command, display updates are performed using
+    the call to a pseudo JSON file that contains the current status of the
+    calibration session. This "file" is generated using a python dictionary. To
+    reduced the required libraries in the various files. The jsonify routine is
+    called here. The various report function should ensure that the return is
+    json compliant.
+    """
+    return jsonify(session_report(reporttype))  #define in parsing.py
+
+  @socketio.app.route('/data/<process>/<detid>')
+  def data(process, detid):
+    """
+    Returning the data of a certain calibration process on a detector elements in
+    json format. This aims to minimized the amount of time the same piece of data
+    needs to be transported over the network.
+    """
+    return jsonify(get_cached_data(process, detid))  # Defined in parsing.py
+
+  @socketio.app.route('/visual')
+  def visual():
+    """
+    This is a pseudo URL, which responds with the current camera image stored in
+    the session memory, as a byte stream of a JPEG image file. The format of the
+    Response object is found from reference:
+    https://medium.com/datadriveninvestor/
+    video-streaming-using-flask-and-opencv-c464bf8473d6
+    """
+    return Response(current_image_bytes(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
   @socketio.on('connect', namespace='/sessionsocket')
-  def monitor_connect():
-    print('Monitor client connected')
-    SocketConnect(socketio)
-
-  @socketio.on('get-report', namespace='/sessionsocket')
-  def get_system_configuration(msg):
-    RunReport(socketio, msg)
+  def establish_connection():
+    print('Connection established')
+    socket_connect(socketio)
 
   @socketio.on('run-action-cmd', namespace='/sessionsocket')
-  def run_action(msg):
-    RunAction(socketio, msg)
+  def run_action_cmd_socket(msg):
+    run_action(socketio, msg)
 
   @socketio.on('complete-user-action', namespace='/sessionsocket')
-  def complete_user_action(msg):
-    CompleteUserAction(socketio)
+  def complete_user_action_socket(msg):
+    complete_user_action(socketio)
 
   ## Resetting the socket application stuff
   socketio.init_app(socketio.app)

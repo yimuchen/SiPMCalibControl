@@ -2,528 +2,553 @@
 <html>
 
 <head>
-
+  <title>UMD SIPM Calib - {{hostname}}</title>
   <!--css related stuff-->
   <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}">
 
   <!--External Javascript-->
+  <!--Using local copy to avoid internet downtime affect operation-->
   <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" />
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js"></script>
-
+  <script src="{{url_for('static', filename='js/external/jquery.min.js')}}"></script>
+  <script src="{{url_for('static', filename='js/external/socket.io.js')}}"></script>
   <script src="{{url_for('static', filename='js/external/plotly-1.51.1.min.js')}}"></script>
 
   <!--Custom Javascript-->
   <script src="{{url_for('static',filename='js/main.js')}}"></script>
   <script src="{{url_for('static',filename='js/action.js')}}"></script>
-  <script src="{{url_for('static',filename='js/input_sync.js')}}"></script>
-  <script src="{{url_for('static',filename='js/monitor_style.js')}}"></script>
+  <script src="{{url_for('static',filename='js/calibration.js')}}"></script>
   <script src="{{url_for('static',filename='js/monitor.js')}}"></script>
   <script src="{{url_for('static',filename='js/settings.js')}}"></script>
+  <script src="{{url_for('static',filename='js/styling.js')}}"></script>
+  <script src="{{url_for('static',filename='js/sync.js')}}"></script>
 </head>
 
 <body>
 
-  <div id="column-container">
-    <div id="main-column">
-      <h2>Monitoring</h2>
+  <button id="monitor-column-toggle">M</button>
+  <button id="action-column-toggle">A</button>
 
-      <div class="tab hidden" id="user-action">
-        <div class="tab-title">
-          <span>USER ACTION REQUIRED</span>
-          <i class="fa fa=fa-angle-left"></i>
-        </div>
-        <div class="tab-content" id="user-action-content">
-          <div id="user-action-msg">
-          </div><br />
 
-          <button id="user-action-complete">Completed</button>
+  <div id="monitor-column">
+    <h2>
+      Monitoring
+      <i class="fa fa-window-close"></i>
+    </h2>
+
+    <div class="tab" id="real-time">
+      <div class="tab-title">
+        <span>System Status</span>
+        <i class="fa fa=fa-angle-left"></i>
+      </div>
+      <div class="tab-content">
+        <div class=time-container>
+          <div id="up-time"></div>
+          <div id="up-time-since"></div>
+          <div id="session-state-text"></div>
+          <div id="session-type-text"></div>
         </div>
 
       </div>
+    </div>
 
-      <div class="tab" id="real-time">
-        <div class="tab-title">
-          <span>System Status</span>
-          <i class="fa fa=fa-angle-left"></i>
+    <div class="tab" id="temperature-tab">
+      <div class="tab-title">
+        <span>Temperatures</span>
+        <i class="fa fa=fa-angle-left"></i>
+      </div>
+      <div class="tab-content">
+        <div class="plot" id="temperature-plot"></div>
+      </div>
+    </div>
+
+    <div class="tab" id="power-tab">
+      <div class="tab-title">
+        <span>Voltages</span>
+        <i class="fa fa=fa-angle-left"></i>
+      </div>
+      <div class="tab-content">
+        <div class="plot" id="voltage-plot">
         </div>
-        <div class="tab-content">
-          <div class=time-container>
-            <div id="up-time"></div>
-            <div id="up-time-since"></div>
-          </div>
+      </div>
+    </div>
 
-          <div class="monitor-plot-container">
-            <div class="plot" id="temperature-plot">
-            </div>
-            <div class="plot" id="voltage-plot">
-            </div>
+    <div class="tab" id="visual-tab">
+      <div class="tab-title">
+        <span>Visual system</span>
+        <i class="fa fa=fa-angle-left"></i>
+      </div>
+      <div class="tab-content">
+        <div class="tooltip">
+          <img src="visual" style="width:600px;" />
+          <div class="tooltip-content">
+            <ul style="text-align: left;">
+              <li><a class="vis_failratio">Failed bounding box ratio</a></li>
+              <li><a class="vis_faillumi">Failed internal luminosity cutoff</a></li>
+              <li><a class="vis_failploy">Failed rectangular approximation</a></li>
+              <li><a class="vis_failsize">Candidate contour (not largest)</a></li>
+              <li><a class="vis_found">Found result</a></li>
+            </ul>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="tab" id="visual-monitoring">
-        <div class="tab-title">
-          <span>Visual system</span>
-          <i class="fa fa=fa-angle-left"></i>
-        </div>
-        <div class="tab-content">
-
-          <div class="column-container">
-            <div class="left-column">
-              <img src="{{ url_for('video_monitor') }}" style="width:600px;" />
-            </div>
-            <div class="right-column">
-              <ul style="text-align: left;">
-                <li><a style="color:white">Failed bounding box ratio</a></li>
-                <li><a style="color:green">Failed internal luminosity cutoff</a></li>
-                <li><a style="color:yellow">Failed rectangular approximation</a></li>
-                <li><a style="color:cyan">Candidate contour (not largest)</a></li>
-                <li><a style="color:red">Found result</a></li>
-              </ul>
-            </div>
-          </div>
-        </div>
+    <div class="tab" id="gantry-tab">
+      <div class="tab-title">
+        <span>Gantry status</span>
+        <i class="fa fa=fa-angle-left"></i>
       </div>
+      <div class="tab-content">
+        <div id="gantry-coordinates"></div>
+        <svg width="100" height="100">
+          <g id="gantry-cooridnates-svg"></g>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <!--End of monitor column-->
 
-      <div class="tab" id="session-progress-tab">
-        <div class="tab-title">
-          <span>Calibration Process</span>
-          <i class="fa fa=fa-angle-left"></i>
-        </div>
+  <div id="session-column">
+    <span class="column-title">
+      <i class="fa fa=fa-angle-left"></i>
+      <h2>Session controls</h2>
+      <i class="fa fa=fa-angle-right"></i>
+    </span>
 
-        <div class='tab-content'>
-          <div class="legend" style="width:100%">
-            <div class="progress-complete" style="width:33%;">Complete</div>
-            <div class="progress-running" style="width:34%;">Running</div>
-            <div class="progress-error" style="width:33%;">Error</div>
-          </div>
-
-          <div class="input-align" id="bar-container">
-            <div class="input-row" id="session-progress">
-              <span class="input-name">Session Progress</span>
-              <div class="input-units progress-bar-container">
-                <div class="progress-complete"></div>
-                <div class="progress-running"></div>
-                <div class="progress-error"></div>
+    <div class="tab">
+      <div class="tab-title">
+        <span>Command progress</span>
+        <i class="fa fa=fa-angle-left"></i>
+      </div>
+      <div class="tab-content">
+        <div class="column-container">
+          <div class="column">
+            <div class="input-align">
+              <div class="input-row">
+                <span class="input-name">Session type</span>
+                <div class="input-units" id="session-type-text"></div>
+              </div>
+              <div class="input-row" id="bar-container">
+                <div class="input-name"></div>
+                <div>
+                  <div class="legend" style="width:300px">
+                    <div class="progress-pending" style="width:25%;">Pending</div>
+                    <div class="progress-complete" style="width:25%;">Complete</div>
+                    <div class="progress-running" style="width:25%;">Running</div>
+                    <div class="progress-error" style="width:25%;">Error</div>
+                  </div>
+                </div>
+              </div>
+              <div class="input-row">
+                <span class="input-name">Session Progress</span>
+                <div class="input-units">
+                  <div id="session-progress" class="progress-bar-container">
+                    <div class="progress-complete"></div>
+                    <div class="progress-running"></div>
+                    <div class="progress-error"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="input-row">
+                <span class="input-name">Command progress</span>
+                <div class="input-units">
+                  <div class="progress-bar-container" id="command-progress">
+                    <div class="progress-complete" style="width:50%"></div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="input-row" id="command-progress">
-              <span class="input-name">Command progress</span>
-              <div class="input-units progress-bar-container">
-                <div class="progress-complete" style="width:50%"></div>
-              </div>
-            </div>
           </div>
-          <div id="display-message-container">
-            <p>Last Error message</p>
-            <p id="display-message"></p>
+          <div class="column">
+            <div>Command log:</div>
+            <div id="command-output-log"></div>
           </div>
         </div>
+      </div>
+    </div>
 
+    <div class="tab" id="tile-layout">
+      <div class="tab-title">
+        <span>Tileboard view</span>
+        <i class="fa fa=fa-angle-left"></i>
+      </div>
+      <div class="tab-content">
+        <div class="column-container">
+          <div class="column" id="tileboard-view">
+            <div class="det-progress-legend">
+              <div class="left-limit">0%</div>
+              <div class="middle-limit">50%</div>
+              <div class="right-limit">100%</div>
+            </div>
+            <svg class="tilegrid" width="600" height="550">
+              <g id="tile-layout-common-svg"></g>
+              <g id="tile-layout-svg"></g>
+              <g id="tile-layout-gantry-svg"></g>
+            </svg>
+          </div>
+
+          <div class="column" id="table-view">
+          </div>
+
+          <div class="column" id="detector-view">
+            <div id="single-det-summary"></div>
+            <div id="det-plot-and-figure"></div>
+          </div>
+        </div>
 
       </div>
+    </div>
 
 
-      <div class="tab" id="tile-layout">
-        <div class="tab-title">
-          <span>Tile Layout</span>
-          <i class="fa fa=fa-angle-left"></i>
+  </div>
+
+
+  <div id="action-column">
+    <h2>Calibration Actions</h2>
+
+    <div class="tab hidden" id="user-action">
+      <div class="tab-title">
+        <span>USER ACTION REQUIRED</span>
+        <i class="fa fa=fa-angle-left"></i>
+      </div>
+      <div class="tab-content" id="user-action-content">
+        <div id="user-action-msg"></div><br />
+        <button id="user-action-complete">Completed</button>
+      </div>
+    </div>
+
+    <div class="tab user-action" id="system-calib">
+      <div class="tab-title">
+        <span>System calibrations</span>
+        <i class="fa fa=fa-angle-left"></i>
+      </div>
+      <div class="tab-content">
+        <div class="input-align" id="system-calibration-boardtype-container">
         </div>
-        <div class="tab-content">
-          <div class="column-container">
-            <div class="left-column">
-              <div class="det-progress-legend">
-                <div class="left-limit">0%</div>
-                <div class="middle-limit">50%</div>
-                <div class="right-limit">100%</div>
+        <div class="button-container">
+          <button id="run-system-calibration" class="action-button">
+            Run system calibration</button>
+        </div>
+        <div id="system-calib-submit-error"></div>
+        <div id="system-calib-signoff-container" class="hidden">
+          <hr>
+          <div class="input-align">
+            <div class="input-row">
+              <span class="input-name">UMD ID</span>
+              <span class="input-units">
+                <input type="text" id="system-calib-user-id">
+                </input>
+              </span>
+            </div>
+            <div class="input-row">
+              <span class="input-name">password</span>
+              <span class="input-units">
+                <input type="password" id="system-calib-user-pwd">
+                </input>
+              </span>
+            </div>
+          </div>
+          Sign-off Notes:<button class="add-comment-line">Add line</button><br />
+          <div class="signoff-comment-lines input-align">
+          </div>
+          <br />
+          <button id="system-calib-signoff" class="action-button">Sign-off</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab user-action" id="standard-calib">
+      <div class="tab-title">
+        <span>Standard calibrations</span>
+        <i class="fa fa=fa-angle-left"></i>
+      </div>
+      <div class="tab-content">
+        <div class="input-align" id="standard-calibration-boardtype-container">
+        </div>
+        <div class="input-align" id="reference-system-calibration">
+        </div>
+        <div class="button-container">
+          <button id="run-std-calibration" class="action-button">Run Tileboard
+            calibration</button>
+        </div>
+
+        <div id="standard-calib-submit-error"></div>
+
+        <div id="standard-calib-signoff-container" class="hidden">
+          <hr>
+
+          <div class="input-align">
+            <div class="input-row">
+              <span class="input-name">UMD ID</span>
+              <span class="input-units">
+                <input type="text" id="standard-calib-user-id">
+                </input>
+              </span>
+            </div>
+            <div class="input-row">
+              <span class="input-name">password</span>
+              <span class="input-units">
+                <input type="password" id="standard-calib-user-pwd">
+                </input>
+              </span>
+            </div>
+          </div>
+
+          Sign-off Notes:<button class="add-comment-line">Add line</button><br />
+          <div class="signoff-comment-lines input-align">
+          </div>
+          <br />
+          <button id="standard-calib-signoff" class="action-button">Sign-off</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab expert-action" id="picoscope">
+      <div class="tab-title">
+        <span>Scope settings EXP ONLY</span>
+        <i class="fa fa-angle-left"></i>
+      </div>
+      <div class="tab-content hidden">
+        <table style="text-align:center;">
+          <tr>
+            <td>A</td>
+            <td>B</td>
+            <td>Ext.</td>
+          </tr>
+          <tr>
+            <td><input type="radio" name="trigger-channel" value="0" /></td>
+            <td><input type="radio" name="trigger-channel" value="1" /></td>
+            <td><input type="radio" name="trigger-channel" value="4" /></td>
+            <td class="input-align">
+              <div class="input-row">
+                <span class="input-name">Trig.</span>
+                <input type="text" id="trigger-level-text" />
+                <span class="setting-unit">ADC</span>
+                <span id="trigger-level-converted"></span>
+                <input type="range" min="-32768" max="32767" id="trigger-level-range" />
               </div>
-              <div class="tilegrid" id="tile-layout-grid"></div>
-            </div>
+            </td>
+          <tr>
+            <td>
+              <input type="range" class="vertical" orient="vertical" id="channel-a-range" min="3" max="10" /><br>
+              <div id="channel-a-range-value">20V</div>
+            </td>
+            <td>
+              <input type="range" class="vertical" orient="vertical" id="channel-b-range" min="3" max="10" /><br>
+              <div id="channel-b-range-value">20V</div>
+            </td>
+            <td></td>
+            <td class="input-align">
 
-            <div class="right-column">
-              <div id="single-det-summary"></div>
-            </div>
-          </div>
+              <div class="input-row">
+                <span class="input-name">Trig. dir.</span>
+                <span class="input-units">
+                  <input type="radio" name="trigger-direction" value="2">
+                  <input type="radio" name="trigger-direction" value="3">
+                  <input type="radio" name="trigger-direction" value="4">
+                  <br>up/down/both
+              </div>
+              <p></p>
 
-          <div id="det-plot-and-figure">
 
-          </div>
+              <div class="input-row">
+                <span class="input-name">Delay</span>
+                <input type="text" id="trigger-delay" />
+                <span class="input-units">x 10 ns</span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">Pre-samp.</span>
+                <input type="text" id="trigger-presample" />
+                <span class="input-units">-</span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">Post-samp</span>
+                <input type="text" id="trigger-postsample" />
+                <span class="input-units">-</span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">Num. blocks</span>
+                <input type="text" id="trigger-blocksize" />
+                <span class="input-units">-</span>
+              </div>
+            </td>
+          </tr>
+        </table>
+        <div class="button-container">
+          <button id="picoscope-settings-clear" class="action-button">Clear</button>
+          <button id="picoscope-settings-update" class="action-button">Update</button>
         </div>
       </div>
 
     </div>
 
-
-    <div id="action-column">
-      <h2>Action</h2>
-
-      <div class="tab user-action" id="system-calib">
-        <div class="tab-title">
-          <span>System calibrations</span>
-          <i class="fa fa=fa-angle-left"></i>
+    <div class="tab expert-action" id="imaging-settings">
+      <div class="tab-title">
+        <span>Image processing (EXP ONLY)</span>
+        <i class="fa fa-angle-left"></i>
+      </div>
+      <div class="tab-content hidden">
+        <div class="input-align">
+          <div class="input-row">
+            <span class="input-name">Threshold</span>
+            <input type="text" id="image-threshold-text" />
+            <span class="input-units"></span>
+            <input type="range" min="0" max="255" id="image-threshold-range" />
+          </div>
+          <div class="input-row">
+            <span class="input-name">Blur</span>
+            <input type="text" id="image-blur-text" />
+            <span class="input-units">Pixels</span>
+            <input type="range" min="0" max="20" id="image-blur-range" />
+          </div>
+          <div class="input-row">
+            <span class="input-name">Luminosity</span>
+            <input type="text" id="image-lumi-text" />
+            <span class="input-units">Pixels</span>
+            <input type="range" min="0" max="255" id="image-lumi-range" />
+          </div>
+          <div class="input-row">
+            <span class="input-name">Min. Size</span>
+            <input type="text" id="image-size-text" />
+            <span class="input-units">Pixels</span>
+            <input type="range" min="0" max="1000" id="image-size-range" />
+          </div>
+          <div class="input-row">
+            <span class="input-name">Max Ratio</span>
+            <input type="text" id="image-ratio-text" />
+            <span class="input-units">%</span>
+            <input type="range" min="100" max="500" id="image-ratio-range" />
+          </div>
+          <div class="input-row">
+            <span class="input-name">Poly rang.</span>
+            <input type="text" id="image-poly-text" />
+            <span class="input-units"></span>
+            <input type="range" min="0" max="100" id="image-poly-range" />
+          </div>
         </div>
-        <div class="tab-content">
-          <div class="input-align">
-            <div class="input-row">
-              <span class="input-name">Board type</span>
-              <input type="radio" name="system-calib-boardtype" value="reference_mock" />
-              <span class="input-units">Mock reference</span>
-            </div>
-            <div class="input-row">
-              <span class="input-name"></span>
-              <input type="radio" name="system-calib-boardtype" value="reference_single" />
-              <span class="input-units">Single detector reference</span>
-            </div>
-          </div>
-          <div class="button-container">
-            <button id="run-system-calibration" class="action-button">Run system calibration</button>
-          </div>
-          <div id="system-calib-exist">
 
-          </div>
-          <div id="system-calib-submit-error"></div>
-
-          <div id="system-calib-signoff-container" class="hidden">
-            <hr>
-            <div class="input-align">
-              <div class="input-row">
-                <span class="input-name">UMD ID</span>
-                <span class="input-units">
-                  <input type="text" id="sys-calib-user-id">
-                  </input>
-                </span>
-              </div>
-              <div class="input-row">
-                <span class="input-name">password</span>
-                <span class="input-units">
-                  <input type="password" id="sys-calib-user-pwd">
-                  </input>
-                </span>
-              </div>
-            </div>
-            Sign-off Notes:<button class="add-comment-line">Add line</button><br />
-            <div class="signoff-comment-lines input-align">
-            </div>
-            <br />
-            <button id="system-calib-signoff" class="action-button">Sign-off</button>
-          </div>
+        <div class="button-container">
+          <button id="image-settings-clear" class="action-button">Clear</button>
+          <button id="image-settings-update" class="action-button">Update</button>
         </div>
       </div>
-
-
-      <div class="tab user-action" id="standard-calib">
-        <div class="tab-title">
-          <span>Standard calibrations</span>
-          <i class="fa fa=fa-angle-left"></i>
-        </div>
-        <div class="tab-content">
-          <div class="input-align">
-            <div class="input-row">
-              <span class="input-name">Board ID</span>
-              <span class="input-units"></span>
-              <input type="text" id="std-calibration-boardid" class="input-units" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">Boardtype</span>
-              <span class="input-units">
-                <input type="radio" name="std-calibration-boardtype" value="Tileboard_mock" />
-              </span>
-              <span class="input-units">Mock 64 SiPM Tileboard</span>
-            </div>
-            <div class="input-row">
-              <span class="input-name"></span>
-              <span class="input-units">
-                <input type="radio" name="std-calibration-boardtype" value="Test_SiPM2" />
-              </span>
-              <span class="input-units">2 SiPM Test board</span>
-            </div>
-          </div>
-          <div class="input-align" id="reference-system-calibration">
-          </div>
-          <div class="button-container">
-            <button id="run-std-calibration" class="action-button">Run Tileboard
-              calibration</button>
-          </div>
-
-          <div id="standard-calib-submit-error"></div>
-
-          <div id="standard-calib-signoff-container" class="hidden">
-            <hr>
-
-            <div class="input-align">
-              <div class="input-row">
-                <span class="input-name">UMD ID</span>
-                <span class="input-units">
-                  <input type="text" id="standard-calib-user-id">
-                  </input>
-                </span>
-              </div>
-              <div class="input-row">
-                <span class="input-name">password</span>
-                <span class="input-units">
-                  <input type="password" id="standard-calib-user-pwd">
-                  </input>
-                </span>
-              </div>
-            </div>
-
-            Sign-off Notes:<button class="add-comment-line">Add line</button><br />
-            <div class="signoff-comment-lines input-align">
-            </div>
-            <br />
-            <button id="standard-calib-signoff" class="action-button">Sign-off</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="tab expert-action" id="picoscope">
-        <div class="tab-title">
-          <span>Scope settings (EXP ONLY)</span>
-          <i class="fa fa-angle-left"></i>
-        </div>
-        <div class="tab-content hidden">
-          <table style="text-align:center;">
-            <tr>
-              <td>A</td>
-              <td>B</td>
-              <td>Ext.</td>
-            </tr>
-            <tr>
-              <td><input type="radio" name="trigger-channel" value="0" /></td>
-              <td><input type="radio" name="trigger-channel" value="1" /></td>
-              <td><input type="radio" name="trigger-channel" value="4" /></td>
-              <td class="input-align">
-                <div class="input-row">
-                  <span class="input-name">Trig.</span>
-                  <input type="text" id="trigger-level-text" />
-                  <span class="setting-unit">ADC</span>
-                  <span id="trigger-level-converted"></span>
-                  <input type="range" min="-32768" max="32767" id="trigger-level-range" />
-                </div>
-              </td>
-            <tr>
-              <td>
-                <input type="range" class="vertical" orient="vertical" id="channel-a-range" min="3" max="10" /><br>
-                <div id="channel-a-range-value">20V</div>
-              </td>
-              <td>
-                <input type="range" class="vertical" orient="vertical" id="channel-b-range" min="3" max="10" /><br>
-                <div id="channel-b-range-value">20V</div>
-              </td>
-              <td></td>
-              <td class="input-align">
-
-                <div class="input-row">
-                  <span class="input-name">Trig. dir.</span>
-                  <span class="input-units">
-                    <input type="radio" name="trigger-direction" value="2">
-                    <input type="radio" name="trigger-direction" value="3">
-                    <input type="radio" name="trigger-direction" value="4">
-                    <br>up/down/both
-                </div>
-                <p></p>
-
-
-                <div class="input-row">
-                  <span class="input-name">Delay</span>
-                  <input type="text" id="trigger-delay" />
-                  <span class="input-units">x 10 ns</span>
-                </div>
-                <div class="input-row">
-                  <span class="input-name">Pre-samp.</span>
-                  <input type="text" id="trigger-presample" />
-                  <span class="input-units">-</span>
-                </div>
-                <div class="input-row">
-                  <span class="input-name">Post-samp</span>
-                  <input type="text" id="trigger-postsample" />
-                  <span class="input-units">-</span>
-                </div>
-                <div class="input-row">
-                  <span class="input-name">Num. blocks</span>
-                  <input type="text" id="trigger-blocksize" />
-                  <span class="input-units">-</span>
-                </div>
-              </td>
-            </tr>
-          </table>
-          <div class="button-container">
-            <button id="picoscope-settings-clear" class="action-button">Clear</button>
-            <button id="picoscope-settings-update" class="action-button">Update</button>
-          </div>
-        </div>
-
-      </div>
-
-      <div class="tab expert-action" id="imaging-settings">
-        <div class="tab-title">
-          <span>Image processing (EXP ONLY)</span>
-          <i class="fa fa-angle-left"></i>
-        </div>
-        <div class="tab-content hidden">
-          <div class="input-align">
-            <div class="input-row">
-              <span class="input-name">Threshold</span>
-              <input type="text" id="image-threshold-text" />
-              <span class="input-units"></span>
-              <input type="range" min="0" max="255" id="image-threshold-range" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">Blur</span>
-              <input type="text" id="image-blur-text" />
-              <span class="input-units">Pixels</span>
-              <input type="range" min="0" max="20" id="image-blur-range" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">Luminosity</span>
-              <input type="text" id="image-lumi-text" />
-              <span class="input-units">Pixels</span>
-              <input type="range" min="0" max="255" id="image-lumi-range" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">Min. Size</span>
-              <input type="text" id="image-size-text" />
-              <span class="input-units">Pixels</span>
-              <input type="range" min="0" max="1000" id="image-size-range" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">Max Ratio</span>
-              <input type="text" id="image-ratio-text" />
-              <span class="input-units">%</span>
-              <input type="range" min="100" max="500" id="image-ratio-range" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">Poly rang.</span>
-              <input type="text" id="image-poly-text" />
-              <span class="input-units"></span>
-              <input type="range" min="0" max="100" id="image-poly-range" />
-            </div>
-          </div>
-
-          <div class="button-container">
-            <button id="image-settings-clear" class="action-button">Clear</button>
-            <button id="image-settings-update" class="action-button">Update</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="tab expert-action" id="device-settings">
-        <div class="tab-title">
-          <span>Intensity scan Sequence (EXP ONLY)</span>
-          <i class="fa fa-angle-left"></i>
-        </div>
-        <div class="tab-content hidden">
-          <div class="input-align">
-            <div class="input-row">
-              <span class="input-name">Total Samples</span>
-              <input type="text" class="input-units" id="zscan-settings-samples" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">PWM duty cycle test points</span>
-              <input type="text" class="input-units" id="zscan-settings-pwm" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">Z List (For system calib.)</span>
-              <input type="text" class="input-units" id="zscan-settings-zval-dense" />
-              <span class="input-units">mm</span>
-            </div>
-            <div class="input-row">
-              <span class="input-name">Z List (For std. calib.)</span>
-              <input type="text" class="input-units" id="zscan-settings-zval-sparse" />
-              <span class="input-units">mm</span>
-            </div>
-          </div>
-
-          <div class="button-container">
-            <button id="zscan-settings-clear" class="action-button">Clear</button>
-            <button id="zscan-settings-update" class="action-button">Update</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="tab expert-action" id="device-settings">
-        <div class="tab-title">
-          <span>Low light Calibration Sequence (EXP ONLY)</span>
-          <i class="fa fa-angle-left"></i>
-        </div>
-        <div class="tab-content hidden">
-          <div class="input-align">
-            <div class="input-row">
-              <span class="input-name">Total Samples</span>
-              <input type="text" class="input-units" id="lowlight-settings-samples" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">PWM duty cycle</span>
-              <input type="text" class="input-units" id="lowlight-settings-pwm" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">Collection Z height</span>
-              <input type="text" class="input-units" id="lowlight-settings-zval" />
-              <span class="input-units">mm</span>
-            </div>
-          </div>
-
-          <div class="button-container">
-            <button id="lowlight-settings-clear" class="action-button">Clear</button>
-            <button id="lowlight-settings-update" class="action-button">Update</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="tab expert-action" id="device-settings">
-        <div class="tab-title">
-          <span>Lumi alignment calibration Sequence (EXP ONLY)</span>
-          <i class="fa fa-angle-left"></i>
-        </div>
-        <div class="tab-content hidden">
-          <div class="input-align">
-            <div class="input-row">
-              <span class="input-name">Total Samples</span>
-              <input type="text" class="input-units" id="lumialign-settings-samples" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">PWM duty cycle</span>
-              <input type="text" class="input-units" id="lumialign-settings-pwm" />
-            </div>
-            <div class="input-row">
-              <span class="input-name">Collection Z height</span>
-              <input type="text" class="input-units" id="lumialign-settings-zval" />
-              <span class="input-units">mm</span>
-            </div>
-            <div class="input-row">
-              <span class="input-name">Horizontal Range</span>
-              <input type="text" class="input-units" id="lumialign-settings-range" />
-              <span class="input-units">mm</span>
-            </div>
-            <div class="input-row">
-              <span class="input-name">Horizontal separation</span>
-              <input type="text" class="input-units" id="lumialign-settings-distance" />
-              <span class="input-units">mm</span>
-            </div>
-          </div>
-
-          <div class="button-container">
-            <button id="lumialign-settings-clear" class="action-button">Clear</button>
-            <button id="lumialign-settings-update" class="action-button">Update</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="tab expert-action" id="rawcmd">
-        <div class="tab-title">
-          <span>Direct Command (EXP ONLY)</span>
-          <i class="fa fa-angle-left"></i>
-        </div>
-        <div class="tab-content hidden">
-          <input type="text" id="raw-cmd-input-text" />
-          <button id="raw-cmd-input" class="action-button">Run</button>
-        </div>
-      </div>
-
-
-
     </div>
+
+    <div class="tab expert-action" id="device-settings">
+      <div class="tab-title">
+        <span>Intensity scan Sequence (EXP ONLY)</span>
+        <i class="fa fa-angle-left"></i>
+      </div>
+      <div class="tab-content hidden">
+        <div class="input-align">
+          <div class="input-row">
+            <span class="input-name">Total Samples</span>
+            <input type="text" class="input-units" id="zscan-settings-samples" />
+          </div>
+          <div class="input-row">
+            <span class="input-name">PWM duty cycle test points</span>
+            <input type="text" class="input-units" id="zscan-settings-pwm" />
+          </div>
+          <div class="input-row">
+            <span class="input-name">Z List (For system calib.)</span>
+            <input type="text" class="input-units" id="zscan-settings-zval-dense" />
+            <span class="input-units">mm</span>
+          </div>
+          <div class="input-row">
+            <span class="input-name">Z List (For std. calib.)</span>
+            <input type="text" class="input-units" id="zscan-settings-zval-sparse" />
+            <span class="input-units">mm</span>
+          </div>
+        </div>
+
+        <div class="button-container">
+          <button id="zscan-settings-clear" class="action-button">Clear</button>
+          <button id="zscan-settings-update" class="action-button">Update</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab expert-action" id="device-settings">
+      <div class="tab-title">
+        <span>Low light Calibration Sequence (EXP ONLY)</span>
+        <i class="fa fa-angle-left"></i>
+      </div>
+      <div class="tab-content hidden">
+        <div class="input-align">
+          <div class="input-row">
+            <span class="input-name">Total Samples</span>
+            <input type="text" class="input-units" id="lowlight-settings-samples" />
+          </div>
+          <div class="input-row">
+            <span class="input-name">PWM duty cycle</span>
+            <input type="text" class="input-units" id="lowlight-settings-pwm" />
+          </div>
+          <div class="input-row">
+            <span class="input-name">Collection Z height</span>
+            <input type="text" class="input-units" id="lowlight-settings-zval" />
+            <span class="input-units">mm</span>
+          </div>
+        </div>
+
+        <div class="button-container">
+          <button id="lowlight-settings-clear" class="action-button">Clear</button>
+          <button id="lowlight-settings-update" class="action-button">Update</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab expert-action" id="device-settings">
+      <div class="tab-title">
+        <span>Lumi alignment calibration Sequence (EXP ONLY)</span>
+        <i class="fa fa-angle-left"></i>
+      </div>
+      <div class="tab-content hidden">
+        <div class="input-align">
+          <div class="input-row">
+            <span class="input-name">Total Samples</span>
+            <input type="text" class="input-units" id="lumialign-settings-samples" />
+          </div>
+          <div class="input-row">
+            <span class="input-name">PWM duty cycle</span>
+            <input type="text" class="input-units" id="lumialign-settings-pwm" />
+          </div>
+          <div class="input-row">
+            <span class="input-name">Collection Z height</span>
+            <input type="text" class="input-units" id="lumialign-settings-zval" />
+            <span class="input-units">mm</span>
+          </div>
+          <div class="input-row">
+            <span class="input-name">Horizontal Range</span>
+            <input type="text" class="input-units" id="lumialign-settings-range" />
+            <span class="input-units">mm</span>
+          </div>
+          <div class="input-row">
+            <span class="input-name">Horizontal separation</span>
+            <input type="text" class="input-units" id="lumialign-settings-distance" />
+            <span class="input-units">mm</span>
+          </div>
+        </div>
+
+        <div class="button-container">
+          <button id="lumialign-settings-clear" class="action-button">Clear</button>
+          <button id="lumialign-settings-update" class="action-button">Update</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab expert-action" id="rawcmd">
+      <div class="tab-title">
+        <span>Direct Command (EXP ONLY)</span>
+        <i class="fa fa-angle-left"></i>
+      </div>
+      <div class="tab-content hidden">
+        <input type="text" id="raw-cmd-input-text" />
+        <button id="raw-cmd-input" class="action-button">Run</button>
+      </div>
+    </div>
+
+
+
   </div>
 </body>
 

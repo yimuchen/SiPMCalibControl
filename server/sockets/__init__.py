@@ -12,12 +12,24 @@ import datetime
 
 class Session(object):
   """
-  Session object that contains all of the session parameters
+  Session object that contains all of the session parameters. Since a bunch of
+  the manipulation of the data member is heavily tied with the calibration
+  processes, this fill will only contain a list the data members. The actual
+  manipulation of the data members will be written in the action.py file behind
+  the calibration part.
   """
 
   STATE_IDLE = 0
   STATE_RUN_PROCESS = 1
   STATE_WAIT_USER = 2
+
+  CMD_PENDING = 1
+  CMD_RUNNING = 2
+  CMD_COMPLETE = 0
+
+  SESSION_TYPE_NONE = 0
+  SESSION_TYPE_SYSTEM = 1
+  SESSION_TYPE_STANDARD = 2
 
   def __init__(self):
     self.cmd = cmdbase.controlterm([
@@ -32,27 +44,26 @@ class Session(object):
 
     ## Allowing for the socket to receive commands immediately on start up
     self.state = self.STATE_IDLE
+    self.session_type = self.SESSION_TYPE_NONE
     self.run_results = 0
 
     ## Self monitoring thread
     self.start_time = datetime.datetime.now()
     self.monitor_thread = None
-
     self.calib_session_time = datetime.datetime.now()
+    self.reference_session = ''
+
+    # Ordered list of detectors
+    self.order_dets = []
 
     ## Data caching
     self.zscan_cache = {}
     self.lowlight_cache = {}
     self.lumialign_cache = {}
     self.visual_cache = {}
-    self.zscan_updates = []
-    self.lowlight_updates = []
-    self.lumialign_update = []
-
 
     ## Progress keeping stuff
     self.progress_check = {}
-    self.valid_reference_list = []
 
     ## Stuff related to the generation of standard commands
     self.zscan_samples = 100
@@ -69,6 +80,8 @@ class Session(object):
     self.lumialign_range = 6
     self.lumialign_distance = 2
     self.lumialign_samples = 100
+
+    self.visual_zval = 5
 
 
 ## declaration of global object

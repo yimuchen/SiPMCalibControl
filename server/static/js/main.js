@@ -8,89 +8,93 @@
 var socketio = null;
 
 $(document).ready(function () {
+
+  // Disable all buttons by default. Buttons will be released by action-complete
+  // signal from the server.
+  $('button.action-button').each(function () {
+    $(this).prop('disabled', true);
+  });
+
+  // Drawing the common elements of the tileboard layout.
+  draw_tileboard_view_common();
+
+  // Connect to the network socket
   socketio
     = io.connect('http://' + window.location.hostname + ':9100/sessionsocket');
 
+
+  // The display will always be asynchronous, with the client is responsible for
+  // asking for the current state of the server. This allows for multiple clients
+  // to be connected to the same session for easier on-site debugging.
   socketio.on('connect', function (msg) {
     console.log('Connected to socket!');
-    socketio.emit('get-report', 'status');
-    // Progress must be initialized before tileboard layout and readout!
-    socketio.emit('get-report', 'progress');
-    socketio.emit('get-report', 'tileboard-layout');
-    socketio.emit('get-report', 'readout');
-    socketio.emit('get-report', 'valid-reference')
-    socketio.emit('get-report', 'sign-off');
+    // Updating static elements, since this is requesting objects from the server
+    // side. We are going to add this in the monitor.js file
+    update_tileboard_types();
+    update_valid_reference();
 
-    // Getting the system settings
-    socketio.emit('get-report', 'image-settings');
-    socketio.emit('get-report', 'zscan-settings');
-    socketio.emit('get-report', 'lowlight-settings');
-    socketio.emit('get-report', 'lumialign-settings');
-    socketio.emit('get-report', 'picoscope-settings');
+    // Starting the status update engine
+    status_update_flag = true;
+    clear_status_data(); // For first run clear the status data.
+    status_update_start();
+
+    // Checking if a calibration run is in progress
+    load_tileboard_and_update();
+  });
+
+  // On disconnect, either because for network errors or host session errors,
+  // Stop the continuous monitoring stuff to avoid crashing the client machine
+  socketio.on('disconnect', function () {
+    // Stopping the status update engine
+    status_update_flag = false;
+    // Stopping the monitoring engine.
+    session_state = STATE_IDLE;
   });
 
   /**
-   * List of functions regarding the the monitoring tab
-   * Functions here will be implemented in the monitor.js file
+   * Here are bunch of function that will be run when receiving a sync signal
+   * from the server session. These functions will be listed in the sync.js file.
    */
-  socketio.on('confirm', connect_update);
-  socketio.on('report-status', status_update);
-  // socketio.on('visual-settings-update', visual_settings_update);
-  socketio.on('tileboard-layout', init_tileboard_layout);
-  socketio.on('update-readout-results', update_readout_result);
-  socketio.on('display-message', display_message);
-  socketio.on('progress-update', progress_update);
-  socketio.on('clear-display', clear_display);
-  socketio.on('report-valid-reference', update_valid_reference);
-  socketio.on('report-sign-off', show_sign_off);
-  socketio.on('signoff-complete', complete_signoff);
+  socketio.on('sync-system-state', sync_system_state);
+  socketio.on('sync-session-type', sync_session_type);
+  socketio.on('sync-settings', sync_setting);
+
+  //console.log(window.location.href)
 
   /**
    * Listing socket actions to perform on specific button presses
    * And responding to action-response commands.
    * Functions here will be implemented in the action.js file
    */
-  socketio.on('useraction', display_user_action);
-  socketio.on('action-received', action_received);
-  socketio.on('action-complete', action_complete);
 
   $('#run-system-calibration').on('click', run_system_calibration);
   $('#run-std-calibration').on('click', run_std_calibration);
   $('#raw-cmd-input').on('click', raw_cmd_input);
-  $('#image-settings-update').on('click', image_setting_update);
   $('#user-action-complete').on('click', complete_user_action);
   $('#system-calib-signoff').on('click', system_calibration_signoff);
   $('#standard-calib-signoff').on('click', standard_calibration_signoff);
 
-  // Disable all buttons by default
-  // Buttons will be released by action-complete signal from the server.
-  $('button.action-button').each(function () {
-    $(this).prop('disabled', true);
-  });
 
   /**
    * Settings actions
    *
    * Button here will be used to get change the settings used for standard
-   * calibration algorithms.
+   * calibration algorithms. Clearing the settings at the start of the connection
+   * session.
    *
    * Functions defined the settings.js
    */
+  clear_settings(); // Clearing settings when document first loads
   $('#image-settings-update').on('click', image_settings_update);
-  $('#image-settings-clear').on('click', image_settings_clear);
-  socketio.on('report-image-settings', sync_image_settings);
   $('#zscan-settings-update').on('click', zscan_settings_update);
-  $('#zscan-settings-clear').one('click', zscan_settings_clear);
-  socketio.on('report-zscan-settings', sync_zscan_settings);
   $('#lowlight-settings-update').on('click', lowlight_settings_update);
-  $('#lowlight-settings-clear').one('click', lowlight_settings_clear);
-  socketio.on('report-lowlight-settings', sync_lowlight_settings);
   $('#lumialign-settings-update').on('click', lumialign_settings_update);
-  $('#lumialign-settings-clear').one('click', lumialign_settings_clear);
-  socketio.on('report-lumialign-settings', sync_lumialign_settings);
   $('#picoscope-settings-update').on('click', picoscope_settings_update);
-  $('#picoscope-settings-clear').on('click', picoscope_settings_clear);
-  socketio.on('report-picoscope-settings',sync_picoscope_settings);
+  $('#image-settings-clear').on('click', clear_settings);
+  $('#zscan-settings-clear').on('click', clear_settings);
+  $('#lumialign-settings-clear').on('click', clear_settings);
+  $('#lowlight-settings-clear').on('click', clear_settings);
+  $('#picoscope-settings-clear').on('click', clear_settings);
 
 
   /**
@@ -98,9 +102,12 @@ $(document).ready(function () {
    *
    * In a bunch of inputs, we have both slider (semi-analog) and text inputs We
    * need to allow for client side syncing of the two inputs. Details of these
-   * function inputs are placed in the file input_sync.js. This file also include
+   * function inputs are placed in the file styling.js. This file also include
    * various animation and eye candy stuff to help improve the UX.
    */
+  show_monitor_column();
+  $('#action-column-toggle').on('click', toggle_action_column);
+  $('#monitor-column-toggle').on('click', toggle_monitor_column);
   $('.input-row > input[type="range"]').on('input', sync_text_to_range);
   $('.input-row > input[type="text"]').on('input', sync_range_to_text);
   $('input[id^="channel-"][id$="-range"]').on('input', sync_pico_range);
@@ -109,6 +116,4 @@ $(document).ready(function () {
   $('.add-comment-line').on('click',
     function () { add_comment_line($(this)); });
   update_indicator(); /** Updating all the close-tag icons */
-
-
 });
