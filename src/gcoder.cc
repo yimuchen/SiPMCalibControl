@@ -67,7 +67,7 @@ struct GCoder
     const bool verbose = false
     );
 
-  void DisableStepper();
+  void DisableStepper( bool x, bool y, bool z );
 
   bool InMotion( float x, float y, float z );
 
@@ -91,6 +91,7 @@ GCoder::GCoder() :
 
 GCoder::~GCoder()
 {
+  printf( "Deallocating the gantry controls\n" );
   if( printer_IO > 0 ){
     close( printer_IO );
   }
@@ -149,8 +150,6 @@ GCoder::InitPrinter( const std::string& dev )
   std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
   SendHome();
   std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
-  // DisableStepper();
-  // RunGcode( "M18 S1\n", 0, 1e5, true );
 
   return;
 }
@@ -238,16 +237,23 @@ GCoder::SendHome()
   opx = opy = opz = 0;
 }
 
-void GCoder::DisableStepper()
+void
+GCoder::DisableStepper( bool x, bool y, bool z )
 {
   // Disable steppers: The power supply of the gantry is rather noisy, causing
   // issues with the readout system. Disabling the stepper closes the relevant
   // power supplies while the gantry still remembers where it is. This needs to
   // be called at the python level since motion minitoring is done at the python
   // level.
-  RunGcode( "M18 X E\n", 0, 1e5, true );
-  RunGcode( "M18 Y E\n", 0, 1e5, true );
-  RunGcode( "M18 Z E\n", 0, 1e5, true );
+  if( x ){
+    RunGcode( "M18 X E\n", 0, 1e5, true );
+  }
+  if( y ){
+    RunGcode( "M18 Y E\n", 0, 1e5, true );
+  }
+  if( z ){
+    RunGcode( "M18 Z E\n", 0, 1e5, true );
+  }
 }
 
 

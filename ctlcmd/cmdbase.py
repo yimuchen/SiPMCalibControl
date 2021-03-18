@@ -6,6 +6,7 @@ import cmod.visual as visual
 import cmod.readout as readout
 import cmod.sshfiler as sshfiler
 import cmod.pico as pico
+import cmod.drs as drs
 import cmod.actionlist as actionlist
 import cmod.sighandle as sig
 import numpy as np
@@ -45,6 +46,7 @@ class controlterm(cmd.Cmd):
     self.visual = visual.Visual()
     self.pico = pico.PicoUnit()
     self.gpio = gpio.GPIO()
+    self.drs = drs.DRS()
     self.readout = readout.readout(self)  # Must be after picoscope setup
     self.action = actionlist.ActionList()
     self.sighandle = sig.SigHandle()
@@ -180,7 +182,8 @@ class controlcmd():
     self.board = cmdsession.board
     self.visual = cmdsession.visual
     self.pico = cmdsession.pico
-    self.readout = cmdsession.readout  # Must be after pico setup
+    self.drs = cmdsession.drs
+    self.readout = cmdsession.readout
     self.gpio = cmdsession.gpio
     self.action = cmdsession.action
     self.sighandle = cmdsession.sighandle
@@ -391,13 +394,14 @@ class controlcmd():
       # Try to move the gantry. Even if it fails there will be fail safes
       # in other classes
       self.gcoder.moveto(x, y, z, verbose)
-      while self.gcoder.in_motion(x,y,z):
-        time.sleep(0.1) ## Updating position in 0.1 second increments
+      while self.gcoder.in_motion(x, y, z):
+        time.sleep(0.1)  ## Updating position in 0.1 second increments
         # print( "Waiting for gantry motion to complete" )
-      self.gcoder.disablestepper()
-    except:
+      self.gcoder.disablestepper(False,False,True)
+    except Exception as e:
       # Setting internal coordinates to the designated position anyway.
       print("Exception received, assuming no gantry is present")
+      print(e)
       self.gcoder.opx = x
       self.gcoder.opy = y
       self.gcoder.opz = z
@@ -431,7 +435,7 @@ class controlcmd():
     """
     self.parser.add_argument('--mode',
                              type=int,
-                             choices=[-1, 1, 2],
+                             choices=[-1, 1, 2, 3],
                              help=('Readout method to be used: 1:picoscope, '
                                    '2:ADC, -1:Predefined model'))
     self.parser.add_argument('--channel',
@@ -522,7 +526,7 @@ class controlcmd():
 
     ## Resetting mode to current mode if it doesn't already exists
     if not args.mode:
-      if hasattr(args,'detid') and str(args.detid) in self.board.dets():
+      if hasattr(args, 'detid') and str(args.detid) in self.board.dets():
         args.mode = self.board.get_det(str(args.detid)).mode
       else:
         args.mode = self.readout.mode

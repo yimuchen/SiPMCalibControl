@@ -30,37 +30,49 @@ def socket_connect(socketio):
 
 def run_action(socketio, msg):
   """
-  Processing of user action input
+  Processing of user action input. The whole action will wrapped in a try
+  statement. In case any exception is raised, the function will still return the
+  session into a user useable state, the exception message is passed back to the
+  user session for the client to determine how the message should be handled.
   """
   sync_system_state(socketio, session.STATE_RUN_PROCESS)
 
-  ## Standardized calibration sequences. Functions are defined in action.py
-  if msg['id'] == 'raw-cmd-input':
-    run_cmd_input(socketio, msg['data'])
-  elif msg['id'] == 'run-std-calibration':
-    run_standard_calibration(socketio, msg['data'])
-  elif msg['id'] == 'run-system-calibration':
-    run_system_calibration(socketio, msg['data'])
-  elif msg['id'].endswith('calibration-signoff'):
-    run_calibration_signoff(socketio, msg['data'],
-                            msg['id'].startswith('system'))
-  elif msg['id'] == 'rerun-single':
-    run_process_extend(socketio, msg['data'])
-  elif msg['id'] == 'image-settings':
-    run_image_settings(socketio, msg['data'])
-  elif msg['id'] == 'zscan-settings':
-    run_zscan_settings(socketio, msg['data'])
-  elif msg['id'] == 'lowlight-settings':
-    run_lowlight_settings(socketio, msg['data'])
-  elif msg['id'] == 'lumialign-settings':
-    run_lumialign_settings(socketio, msg['data'])
-  elif msg['id'] == 'picoscope-settings':
-    run_picoscope_settings(socketio, msg['data'])
+  try:
+    ## Standardized calibration sequences. Functions are defined in action.py
+    if msg['id'] == 'raw-cmd-input':
+      run_cmd_input(socketio, msg['data'])
+    elif msg['id'] == 'run-std-calibration':
+      run_standard_calibration(socketio, msg['data'])
+    elif msg['id'] == 'run-system-calibration':
+      run_system_calibration(socketio, msg['data'])
+    elif msg['id'].endswith('calibration-signoff'):
+      run_calibration_signoff(socketio, msg['data'],
+                              msg['id'].startswith('system'))
+    elif msg['id'] == 'rerun-single':
+      run_process_extend(socketio, msg['data'])
+    elif msg['id'] == 'image-settings':
+      run_image_settings(socketio, msg['data'])
+    elif msg['id'] == 'zscan-settings':
+      run_zscan_settings(socketio, msg['data'])
+    elif msg['id'] == 'lowlight-settings':
+      run_lowlight_settings(socketio, msg['data'])
+    elif msg['id'] == 'lumialign-settings':
+      run_lumialign_settings(socketio, msg['data'])
+    elif msg['id'] == 'picoscope-settings':
+      run_picoscope_settings(socketio, msg['data'])
+    elif msg['id'] == 'drs-settings':
+      run_drs_settings(socketio, msg['data'])
+    elif msg['id'] == 'drs-calib':
+      run_drs_calib(socketio)  ## Data less command.
+    elif msg['id'] == 'debug-drs-run':
+      run_debug_drs(socketio, msg['data'])
 
-  ## Defaulting to printing a message and exiting.
-  else:
-    print(msg)
-    time.sleep(5)
+    else:
+      print(msg)
+      time.sleep(5)
+  except Exception as e:
+    #TODO: Properly ass the error message client side to be displayed
+    print(e)
 
   sync_system_state(socketio, session.STATE_IDLE)
 
@@ -86,13 +98,21 @@ def session_report(msg):
 
 def get_cached_data(process, detid):
   """
-  Returning the cached data of the a the given process defined by the process.
-  since processes are defined in the calibration.py page, to help with code
-  structure uniformity. This function will just be a thin wrapper around the
-  report_cached_data method defined in the report.py file (since the function
-  formatting is similar to a typical reporting process)
+  Returning the cached data of the a the given process defined by the process. To
+  help with code structure uniformity. This function will just be a thin wrapper
+  around the report_cached_data method defined in the report.py file (since the
+  function formatting is similar to a typical reporting process)
   """
   return report_cached_data(process, detid)
+
+
+def get_debug_data(process):
+  """
+  Returning the cached data for a given debugging process. To help with code
+  structure uniformity, this function will just be a thin wrapper around the
+  report_debug_data method defined in report report.py file.
+  """
+  return report_debug_data(process)
 
 
 def make_jpeg_image_byte(image):
@@ -101,6 +121,14 @@ def make_jpeg_image_byte(image):
   object.
   """
   return (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + image + b'\r\n')
+
+
+"""
+Definition of static images to return if image is not available.
+"""
+__default_image_io = io.BytesIO(
+    cv2.imencode('.jpg', cv2.imread('server/static/icon/notdone.jpg', 0))[1])
+__default_yield = make_jpeg_image_byte(__default_image_io.read())
 
 
 def current_image_bytes():
@@ -113,13 +141,13 @@ def current_image_bytes():
   video-streaming-using-flask-and-opencv-c464bf8473d6
   """
   while True:  ## This function will always generate a return
-    yield make_jpeg_image_byte(session.cmd.visual.get_image_bytes())
+    try:
+      yield make_jpeg_image_byte(session.cmd.visual.get_image_bytes())
+    except:
+      yield __default_yield
+
     time.sleep(0.1)
 
-## defining static objects to return if the image is not yet found.
-__default_image_io = io.BytesIO(
-    cv2.imencode('.jpg', cv2.imread('server/static/icon/notdone.jpg', 0))[1])
-__default_yield = make_jpeg_image_byte(__default_image_io.read())
 
 #def get_visual_bytes(detid):
 #  """

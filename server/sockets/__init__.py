@@ -5,6 +5,7 @@ import ctlcmd.getset as getset
 import ctlcmd.digicmd as digicmd
 import ctlcmd.viscmd as viscmd
 import ctlcmd.picocmd as picocmd
+import ctlcmd.drscmd as drscmd
 
 ## Additional python libraries
 import datetime
@@ -33,13 +34,33 @@ class Session(object):
 
   def __init__(self):
     self.cmd = cmdbase.controlterm([
-        motioncmd.moveto, motioncmd.movespeed, motioncmd.sendhome,
-        motioncmd.zscan, motioncmd.lowlightcollect, motioncmd.halign,
-        viscmd.visualset, viscmd.visualhscan, viscmd.visualzscan,
-        viscmd.visualmaxsharp, viscmd.visualshowdet, viscmd.visualcenterdet,
-        getset.set, getset.get, getset.getcoord, getset.savecalib,
-        getset.loadcalib, getset.lighton, getset.lightoff, getset.promptaction,
-        digicmd.pulse, picocmd.picoset, picocmd.picorunblock, picocmd.picorange,
+        motioncmd.moveto,
+        motioncmd.movespeed,
+        motioncmd.sendhome,
+        motioncmd.zscan,
+        motioncmd.lowlightcollect,
+        motioncmd.halign,
+        viscmd.visualset,
+        viscmd.visualhscan,
+        viscmd.visualzscan,
+        viscmd.visualmaxsharp,
+        #viscmd.visualshowdet,
+        viscmd.visualcenterdet,
+        getset.set,
+        getset.get,
+        getset.getcoord,
+        getset.savecalib,
+        getset.loadcalib,
+        getset.lighton,
+        getset.lightoff,
+        getset.promptaction,
+        digicmd.pulse,
+        picocmd.picoset,
+        picocmd.picorunblock,
+        picocmd.picorange,
+        drscmd.drsset,
+        drscmd.drscalib,
+        drscmd.drsrun,
     ])
 
     ## Allowing for the socket to receive commands immediately on start up

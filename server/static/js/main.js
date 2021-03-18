@@ -66,13 +66,13 @@ $(document).ready(function () {
    * And responding to action-response commands.
    * Functions here will be implemented in the action.js file
    */
-
   $('#run-system-calibration').on('click', run_system_calibration);
   $('#run-std-calibration').on('click', run_std_calibration);
   $('#raw-cmd-input').on('click', raw_cmd_input);
   $('#user-action-complete').on('click', complete_user_action);
   $('#system-calib-signoff').on('click', system_calibration_signoff);
   $('#standard-calib-signoff').on('click', standard_calibration_signoff);
+  $('#debug-drs-run').on('click', debug_drs_run);
 
 
   /**
@@ -90,11 +90,14 @@ $(document).ready(function () {
   $('#lowlight-settings-update').on('click', lowlight_settings_update);
   $('#lumialign-settings-update').on('click', lumialign_settings_update);
   $('#picoscope-settings-update').on('click', picoscope_settings_update);
+  $('#drs-settings-update').on('click', drs_settings_update);
+  $('#drs-settings-calib').on('click', drs_settings_calib);
   $('#image-settings-clear').on('click', clear_settings);
   $('#zscan-settings-clear').on('click', clear_settings);
   $('#lumialign-settings-clear').on('click', clear_settings);
   $('#lowlight-settings-clear').on('click', clear_settings);
   $('#picoscope-settings-clear').on('click', clear_settings);
+  $('#drs-settings-clear').on('click', clear_settings);
 
 
   /**

@@ -38,18 +38,24 @@ class DarkCurrentDistribution(stats.rv_continuous):
 
 class readout(object):
   """
-  Object for defining readout interface
+  Interface for abstracting the readout interface under a simple function. The
+  idea is that for mass calibration, what we would want to do is to have the user
+  call readout from a certain channel of a certain readout mode to store a single
+  list of numbers, allowin for a unified interface for data collection with
+  readout methods.
   """
 
   # Constants for mode configuration
   MODE_PICO = 1
   MODE_ADC = 2
+  MODE_DRS = 3
   MODE_NONE = -1
 
   def __init__(self, parent):
     self.parent = parent
     self.pico = parent.pico  ## Reference to picoscope for simplified
     self.gpio = parent.gpio
+    self.drs = parent.drs
     self.mode = readout.MODE_NONE
     self.i2c = None
     self.adc = None

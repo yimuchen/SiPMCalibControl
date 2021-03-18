@@ -163,7 +163,10 @@ Visual::init_var_default()
 
 Visual::~Visual()
 {
+  printf("Ending the visual thread\n");
   end_thread();
+  printf("Closing visual system interfaces\n");
+  cam.release();
 }
 
 unsigned

@@ -32,3 +32,4 @@ server/templates/playground.html
 # inclusive directories
 !CMakeLists.txt
 !dofiles/*.txt
+!*.rules

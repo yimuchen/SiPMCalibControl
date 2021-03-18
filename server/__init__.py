@@ -11,7 +11,7 @@ import ctlcmd.digicmd as digicmd
 import ctlcmd.viscmd as viscmd
 import ctlcmd.picocmd as picocmd
 import cmod.logger as logger
-import sys, copy, io, json, os,re
+import sys, copy, io, json, os, re
 
 socketio = SocketIO(debug=False, async_mode='threading', )
 #cors_allow_origins='*' )
@@ -32,9 +32,20 @@ def create_server_flask(debug=False):
   def index():
     """
     This is the main page the is to be rendered to the front user. The
-    corresponding file can be found in the server/static/template directory.
+    corresponding file can be found in the server/static/template/index.html
+    path.
     """
     return render_template('index.html')
+
+  @socketio.app.route('/debug')
+  def expert():
+    """
+    This is the page containing the debugging GUI, mainly used for the fast data
+    turn around and a simple interface for saving single commands and display the
+    output in a simplified data format. This corresponding file is found in the
+    server/static/template/debug.html path.
+    """
+    return render_template('debug.html')
 
   @socketio.app.route('/playground')
   def playground():
@@ -82,6 +93,13 @@ def create_server_flask(debug=False):
     needs to be transported over the network.
     """
     return jsonify(get_cached_data(process, detid))  # Defined in parsing.py
+
+  @socketio.app.route('/debug_data/<process>')
+  def debugdata(process):
+    """
+    Returning the data of some debug session in json format.
+    """
+    return jsonify(get_debug_data(process)) # Defined in parsing.py
 
   @socketio.app.route('/visual')
   def visual():

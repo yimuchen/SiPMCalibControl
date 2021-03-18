@@ -32,33 +32,58 @@ are additional packages that need to be installed:
 
 ```bash
 pacman -Sy --noconfirm "cmake" "boost" "opencv"
-pacman -Sy --noconfirm "python-numpy" "python-scipy"
-pacman -Sy --noconfirm "python-flask-socketio" "python-paramiko"
 pacman -Sy --noconfirm "xorg-xauth" # For ssh tunneling for the CLI interface
 pacman -Sy --noconfirm "npm" "git"
+pacman -Sy --noconfirm "python-pip" ## For python packages
 ## Additional packages required for opencv, since we are using the high level interface
 pacman -Sy --noconfirm "qt5-base" "hdf5-openmpi" "vtk" "glew"
+
+pip install -r requirements.txt
 ```
 
-For installing the picoscope driver, download the PKGBUILD file for the x86
-picoscope driver.
+### Optional dependency installation
+
+Not all interfaces are required for the package compile to complete. Which is
+useful when testing on personal hardware where one might not want to install the
+exotic hardware drivers.
+
+#### Picoscope
+
+The picoscope is a testing readout solution used during the calibration system
+development. This is not going to be added to the final deployment model, but
+should still be used for testing purposes. You can find the correct version
+[here][picoscope_download]. The following are instruction for added the required
+instruction for adding the picoscope to the external directory to be installed.
 
 ```bash
-wget https://aur.archlinux.org/cgit/aur.git/snapshot/libps5000.tar.gz
-tar zxvf libps5000.tar.gz
-cd libps5000
+cd external
+wget https://labs.picotech.com/debian/pool/main/libp/libps5000/libps5000_<version>.deb
+ar x libps5000*.deb
+
+tar xvf data.tar.xz
+mv opt/picoscope ./
+
+## Clean up stray files
+rm control.tar.gz
+rm debian-binary
+rm usr/ -rf
+rm opt/ -rf
 ```
 
-Then you would need to edit the `PKGBUILD` file in this directory to get the
-`armhf` version of the drivers found [here][picoscope_download]. In this, you
-will need to edit the `pkgversion`, `source` and the `md5sums` entries in the
-`PKGBUILD` file respectively. Notice that the picoscope driver only supports ARM7
-and not ARM8, so make sure you are running this package on a compatible ARM
-device. Make and install the package using the regular command:
+#### DRS4
+
+The DRS4 is the high resolution readout used for the calibration system
+development. This is not going to be added for the final deployment model, but
+should still be compilable for testing purposes. You can find the correct version
+on the DRS [software page][drs4_download]. THe following are instructions for
+adding the DRS 4 package to the external directory:
 
 ```bash
-makepkg -s
-pacman -U *.pkg.tar.xz
+cd external
+wget https://www.psi.ch/sites/default/files/import/drs/SoftwareDownloadEN/drs-5.0.5.tar.gz
+
+tar zxvf drs-5.0.5.tar.gz
+mv drs-5.0.5.tar.gz drs
 ```
 
 ### Interface permission
@@ -88,37 +113,26 @@ groupadd -f -r i2c
 usermod -a -G i2c ${USER}
 groupadd -f -r pico
 usermod -a -G pico ${USER}
+groupadd -f -r drs
+usermod -a -G drs ${USER}
 ```
 
-Then create a `udev` rule to change the permission of the relevant hardware:
+Then create a `udev` rule to change the permission of the relevant hardware. Copy
+the provided rules file to the `/etc/udev/rules.d` directory. A reboot is
+required for the results to take effect.
 
 ```bash
-#In /etc/udev/rules.d/99-sipmcontrol.rules
-
-## For the GPIO
-SUBSYSTEM=="bcm2835-gpiomem", GROUP="gpio", MODE="0660"
-SUBSYSTEM=="gpio", GROUP="gpio", MODE="0660"
-SUBSYSTEM=="gpio*", PROGRAM="/bin/sh -c '\
-        chown -R root:gpio /sys/class/gpio           && chmod -R 770 /sys/class/gpio;\
-        chown -R root:gpio /sys/devices/virtual/gpio && chmod -R 770 /sys/devices/virtual/gpio;\
-        chown -R root:gpio sys/devices/platform/soc/*.gpio/gpiodet0/gpio && chmod -R 770 /sys/devices/platform/soc/*.gpio/gpiodet0/gpio;\
-        chown -R root:gpio /sys$devpath && chmod -R 770 /sys$devpath\
-'"
-## For PWM
-SUBSYSTEM=="pwm*", PROGRAM="/bin/sh -c '\
-        chown -R root:gpio /sys/class/pwm && chmod -R 770 /sys/class/pwm;\
-        chown -R root:gpio /sys/devices/platform/soc/*.pwm/pwm/pwmchip* && chmod -R 770 /sys/devices/platform/soc/*.pwm/pwm/pwmchip*\
-'"
-
-## For the I2C interface
-KERNEL=="i2c-[0-9]*", GROUP="i2c"
-
-## For the picoscope
-SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ce9", MODE="664",GROUP="pico"
+cp external/rules/*.rules  /etc/udev/rules/
 ```
 
-You would need to reboot for the action to take effect. Now, you can compile and
-run the program.
+If you are running the control software on your laptop, do **NOT** copy the
+`digi.rules` file to you laptop unless you know what you are doing. Adjustments
+to the hardware permission on typical machines can result in system instability
+and potential hardware damage.
+
+## Compiling the control program
+
+The package makes use of the CMake package to run the installation.
 
 ```bash
 git clone https://github.com/yimuchen/SiPMCalibControl.git
@@ -138,32 +152,6 @@ the permission settings is what is used to generate the [Dockerfile](Dockerfile)
 for testing the interface on the various machines. An entirely local installation
 would work if all the dependencies are satisfied. A non-exhaustive list of
 dependencies translations are listed below:
-
-### For Mac OS
-
-The picoscope dependency can be obtained by installing the entire picoscope
-software written for Mac. The package manager [`brew`][brew] and the python
-package manager [pip][pip] should then be able to install the various libraries
-The `CMakeFile.txt` should be able to detect the position of the library.
-
-Known issues would include:
-
-- **`cmake` cannot use boost** In case you run into issue of `cmake` not being
-  able to find boost python, prepare `cmake` using the command following command
-  instead of the usual `cmake ./` command:
-
-  ```bash
-  cmake -D Boost_NO_BOOST_CMAKE:BOOL=ON ./
-  ```
-
-- **Library not found for the picoscope** If you have installed the picoscope
-  software and the code compiles nominally, but when starting the session it
-  program complain about binary symbols or files not found, modify the library
-  path variable:
-
-  ```bash
-  export DYLD_FALLBACK_LIBRARY_PATH=${DYLD_FALLBACK_LIBRARY_PATH}:"/Applications/PicoScope 6.app/Contents/Resources/lib"
-  ```
 
 [opencv]: https://opencv.org/releases/
 [cmake]: https://cmake.org/download/

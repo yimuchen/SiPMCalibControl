@@ -1,34 +1,28 @@
-<!-- Importing the common display elements --->
+{% from 'macros/settings.html' import image_settings with context %}
 {% from 'macros/headers.html' import headers with context %}
 
-{% from 'macros/settings.html' import image_settings          with context %}
-{% from 'macros/settings.html' import picoscope_settings      with context %}
-{% from 'macros/settings.html' import drs_settings            with context %}
-{% from 'macros/settings.html' import intensity_scan_settings with context %}
-{% from 'macros/settings.html' import lumi_alignment_settings with context %}
-
-{% from 'macros/monitor.html' import status_tab      with context %}
+{% from 'macros/monitor.html' import status_tab with context %}
 {% from 'macros/monitor.html' import temperature_tab with context %}
-{% from 'macros/monitor.html' import voltage_tab     with context %}
-{% from 'macros/monitor.html' import visual_tab      with context %}
-{% from 'macros/monitor.html' import gantry_tab      with context %}
+{% from 'macros/monitor.html' import voltage_tab with context %}
+{% from 'macros/monitor.html' import visual_tab with context %}
+{% from 'macros/monitor.html' import gantry_tab with context %}
+
+{% from 'macros/settings.html' import image_settings with context %}
+{% from 'macros/settings.html' import picoscope_settings with context %}
+{% from 'macros/settings.html' import drs_settings with context %}
 
 {% from 'macros/actions.html' import user_action with context %}
-{% from 'macros/actions.html' import system_calibration with context %}
-{% from 'macros/actions.html' import standard_calibration with context %}
 {% from 'macros/actions.html' import raw_command with context %}
-
 
 <!DOCTYPE html>
 <html>
 
 <head>
-  <title>UMD SIPM Calib - {{hostname}}</title>
+  <title>UMD SIPM Calib - Debugging GUI</title>
 
-  <!--Common header stuff, see the macros/headers.html file for details-->
   {{ headers() }}
 
-  <!--Custom Specific for the main page-->
+  <!--Custom Javascript specific for this page-->
   <script src="{{url_for('static',filename='js/main.js')}}"></script>
 </head>
 
@@ -36,7 +30,6 @@
 
   <button id="monitor-column-toggle">M</button>
   <button id="action-column-toggle">A</button>
-
 
   <div id="monitor-column">
     <h2>
@@ -49,35 +42,29 @@
     {{ voltage_tab() }}
     {{ visual_tab() }}
     {{ gantry_tab() }}
-
   </div>
   <!--End of monitor column-->
-
 
   <div id="action-column">
     <h2>Calibration Actions</h2>
 
     <!--Defined in macros/actions.html-->
     {{ user_action() }}
-    {{ system_calibration() }}
-    {{ standard_calibration() }}
 
     <!--Defined in macros/settings.html-->
     {{ image_settings() }}
     {{ picoscope_settings() }}
     {{ drs_settings() }}
-    {{ intensity_scan_settings() }}
-    {{ lumi_alignment_settings() }}
 
     <!--Defined in macro/actions.html-->
     {{ raw_command() }}
   </div>
 
-  <!-- Main column in center-->
+  <!-- Unique column for each object.-->
   <div id="session-column">
     <span class="column-title">
       <i class="fa fa=fa-angle-left"></i>
-      <h2>Session monitor and controls</h2>
+      <h2>Debugging Session controls</h2>
       <i class="fa fa=fa-angle-right"></i>
     </span>
 
@@ -106,16 +93,6 @@
                 </div>
               </div>
               <div class="input-row">
-                <span class="input-name">Session Progress</span>
-                <div class="input-units">
-                  <div id="session-progress" class="progress-bar-container">
-                    <div class="progress-complete"></div>
-                    <div class="progress-running"></div>
-                    <div class="progress-error"></div>
-                  </div>
-                </div>
-              </div>
-              <div class="input-row">
                 <span class="input-name">Command progress</span>
                 <div class="input-units">
                   <div class="progress-bar-container" id="command-progress">
@@ -133,40 +110,63 @@
       </div>
     </div>
 
-    <div class="tab" id="tile-layout">
+    <!--Adding a second visual tab with large image for ease of debugging-->
+    {{ visual_tab() }}
+
+    <div class="tab">
       <div class="tab-title">
-        <span>Tileboard view</span>
+        <span>Run DRS collect</span>
         <i class="fa fa=fa-angle-left"></i>
       </div>
       <div class="tab-content">
         <div class="column-container">
-          <div class="column" id="tileboard-view">
-            <div class="det-progress-legend">
-              <div class="left-limit">0%</div>
-              <div class="middle-limit">50%</div>
-              <div class="right-limit">100%</div>
+          <div class="column">
+            <div class="input-align">
+              <div class="input-row">
+                <span class="input-name">Channel</span>
+                <input type="text" id="debug-drs-channel" value="0"/>
+                <span class="input-units"></span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">Num. events</span>
+                <input type="text" id="debug-drs-numevents" value="5000"/>
+                <span class="input-units"></span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">Int. start</span>
+                <input type="text" id="debug-drs-intstart" value="-1"/>
+                <span class="input-units"></span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">Int. stop</span>
+                <input type="text" id="debug-drs-intstop" value="-1"/>
+                <span class="input-units"></span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">Ped. start</span>
+                <input type="text" id="debug-drs-pedstart" value="-1"/>
+                <span class="input-units"></span>
+              </div>
+              <div class="input-row">
+                <span class="input-name">Ped. stop</span>
+                <input type="text" id="debug-drs-pedstop" value="-1"/>
+                <span class="input-units"></span>
+              </div>
             </div>
-            <svg class="tilegrid" width="600" height="550">
-              <g id="tile-layout-common-svg"></g>
-              <g id="tile-layout-svg"></g>
-              <g id="tile-layout-gantry-svg"></g>
-            </svg>
-          </div>
 
-          <div class="column" id="table-view">
-          </div>
 
-          <div class="column" id="detector-view">
-            <div id="single-det-summary"></div>
-            <div id="det-plot-and-figure"></div>
+            <div class="button-container">
+              <button class="action-button" id="debug-drs-run">Run</button>
+            </div>
+
+          </div>
+          <div class="column">
+            <div id="debug-drs-readout">
+            </div>
           </div>
         </div>
-
       </div>
     </div>
-
-
-  </div>
 
 
 </body>

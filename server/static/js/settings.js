@@ -60,6 +60,11 @@ function update_settings(json) {
   $('#lumialign-settings-range').val(json.lumialign.range);
   $('#lumialign-settings-distance').val(json.lumialign.distance);
 
+  // DRS settings
+  $('#drs-triggerdelay').val(json.drs['triggerdelay']);
+  $('#drs-samplerate').val(json.drs['samplerate']);
+  $('#drs-samples').val(json.drs['samples']);
+
   // Picoscope settings.
   $('#channel-a-range').val(json.picoscope['channel-a-range']);
   $('#channel-b-range').val(json.picoscope['channel-b-range']);
@@ -67,6 +72,7 @@ function update_settings(json) {
   $('#trigger-presample').val(json.picoscope['trigger-presample']);
   $('#trigger-postsample').val(json.picoscope['trigger-postsample']);
   $('#trigger-blocksize').val(json.picoscope['blocksize']);
+
 
   $('#trigger-level-text').val(
     adc_from_value(json.picoscope['trigger-value']));
@@ -179,6 +185,37 @@ function picoscope_settings_update() {
   emit_action_cmd('picoscope-settings', new_settings);
 }
 
+/**
+ * Action emitting function for submitting changes to the drs readout settings to
+ * the main session manager.
+ */
+function drs_settings_update() {
+  const new_settings = {
+    'drs-triggerdelay': $('drs-triggerdelay').val(),
+    'drs-samplerate': $('drs-samplerate').val(),
+    'drs-samples': $('drs-samples').val(),
+  }
+
+  emit_action_cmd('drs-settings', new_settings);
+}
+
+/**
+ * Action emitting function for submitting a calibration call to the DRS manager.
+ * @param {*} range
+ * @returns
+ */
+function drs_settings_calib() {
+  emit_action_cmd('drs-calib', {});
+
+  /// TODO:: Wait for action to be completed.
+  while (session_state != STATE_IDLE) {
+    setTimeout(function () { print('Waiting for action to be completed') }, 500);
+  }
+
+  // Update the settings again, since the calibration will wipe certain settings.
+  drs_settings_update();
+}
+
 /** ========================================================================== */
 /** PICOSCOPE SETTING FUNCTIONS */
 /** Below are function specific to the step of the picoscope readout system.
@@ -245,9 +282,6 @@ function sync_pico_range() {
   }
 }
 
-
-
-
 function sync_pico_trigger() {
   var adc = $('#trigger-level-text').val()
   var channel = $("input[name='trigger-channel']:checked").val();
@@ -264,4 +298,3 @@ function sync_pico_trigger() {
   $('#trigger-level-converted').html(
     '(' + level.toFixed(1) + unit + ')');
 }
-

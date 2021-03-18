@@ -39,9 +39,9 @@ def run_image_settings(socketio, data):
   session.cmd.visual.blur_range = int(data['blur'])
   session.cmd.visual.lumi_cutoff = int(data['lumi'])
   session.cmd.visual.size_cutoff = int(data['size'])
-  session.cmd.visual.ratio_cutoff = float(data['ratio'])
-  session.cmd.visual.poly_range = float(data['poly'])
-  sync_calibration_settings()
+  session.cmd.visual.ratio_cutoff = float(data['ratio']) / 100.0
+  session.cmd.visual.poly_range = float(data['poly']) / 100.0
+  sync_calibration_settings(socketio)
 
 
 def run_zscan_settings(socketio, data):
@@ -52,7 +52,7 @@ def run_zscan_settings(socketio, data):
   session.zscan_power_list = [float(x) for x in data['pwm']]
   session.zscan_zlist_dense = [float(z) for z in data['zlist_dense']]
   session.zscan_zlist_sparse = [float(z) for x in data['zlist_sparse']]
-  sync_calibration_settings()
+  sync_calibration_settings(socketio)
 
 
 def run_lowlight_settings(socketio, data):
@@ -62,7 +62,7 @@ def run_lowlight_settings(socketio, data):
   session.lowlight_samples = int(data['samples'])
   session.lowlight_pwm = float(data['pwm'])
   session.lowlight_zval = float(data['zval'])
-  sync_calibration_settings()
+  sync_calibration_settings(socketio)
 
 
 def run_lumialign_settings(socketio, data):
@@ -74,7 +74,7 @@ def run_lumialign_settings(socketio, data):
   session.lumialign_zval = float(data['zval'])
   session.lumialign_range = float(data['range'])
   session.lumialign_distance = float(data['distance'])
-  sync_calibration_settings()
+  sync_calibration_settings(socketio)
 
 
 def run_picoscope_settings(socketio, data):
@@ -94,7 +94,36 @@ def run_picoscope_settings(socketio, data):
     # Forcing a sleep to make sure commands have been properly processed.
   except Exception as err:
     pass  ## Since the picoscope might not exists
-  sync_calibration_settings()
+  sync_calibration_settings(socketio)
+
+
+def run_drs_settings(socketio, data):
+  """
+  Updating the settings related to the drs readout. Entire thing is encapsulated,
+  as the DRS system might not be available.
+  """
+  try:
+    ## The only thing that can be called is a trigger delay.
+    session.cmd.drs.settrigger(session.drs.trigger_channel(),
+                               session.drs.trigger_level(),
+                               session.drs.trigger_direction(),
+                               data['drs-triggerdelay'])
+    session.cmd.drs.set_samples(data['drs-samples'])
+    session.cmd.drs.set_rate(data['drs-samplerate'])
+  except Exception as err:
+    pass  # TODO: Proper error message for non-existant DRS system
+  sync_calibration_settings(socketio)
+
+
+def run_drs_calib(socketio):
+  """
+  Running the DRS self calibration program. Here we need to raise a user action
+  """
+  wait_user_action(
+      socketio,
+      """Running the DRS4 self calibration sequence, please make sure all physical
+    connectors to the 4 inputs channels are disconnected before continuing""")
+  session.cmd.drs.run_calibrations()
 
 
 def run_cmd_input(socketio, msg):
@@ -379,6 +408,34 @@ def run_calibration_signoff(socketio, data, store):
   sync_session_type(socketio, session.SESSION_TYPE_NONE)
 
 
+def run_debug_drs(socketio, msg):
+  """
+  Running a debugging drsrun command instance. Notice that the data collected
+  here is volatile and will never be kept outside of the debug session. Once the
+  data is passed over to the client, the results will be destroyed. If you wish
+  to keep a persistent version of the debugging results, please use the command
+  line interface. As this is not the intended use of the GUI session.
+  """
+  clear_debug_cache()
+  savefile = '/tmp/debug_drs.txt'
+
+  cmd = "drsrun --sum"
+  cmd += " --channel {}".format(msg['channel'])
+  cmd += " --numevents {}".format(msg['numevents'])
+  cmd += " --intstart {}".format(msg['intstart'])
+  cmd += " --intstop {}".format(msg['intstop'])
+  cmd += " --pedstart {}".format(msg['pedstart'])
+  cmd += " --pedstop {}".format(msg['pedstop'])
+  cmd += " --savefile {}".format(savefile)
+  cmd += " --wipefile".format(savefile)
+
+  # Running the monitor thread.
+  print("Running command", cmd)
+  exec_cmd_monitor(socketio, cmd, 'debug_drs', None)
+  # Removing the temporary file
+  #os.remove(savefile)
+
+
 def prepare_calibration_session(socketio,
                                 boardtype,
                                 boardid=None,
@@ -481,11 +538,13 @@ def exec_cmd_monitor(socketio, line, process_tag, detid):
       update_current_progress()
 
   if process_tag not in session.progress_check:
-    session.progress_check[process_tag] = {str(detid): 1}
+    if detid != None:
+      session.progress_check[process_tag] = {str(detid): 1}
 
   with open('/tmp/logging_temp', 'w') as logfile:
     set_logging_descriptor(logfile.fileno())
-    session.progress_check[process_tag][detid] = 2
+    if detid != None:
+      session.progress_check[process_tag][detid] = 2
 
     ## Strange syntax to avoid string splitting  :/
     cmd_thread = threading.Thread(target=run_with_save, args=(line, ))
@@ -498,7 +557,8 @@ def exec_cmd_monitor(socketio, line, process_tag, detid):
     ## Having the process finish
     cmd_thread.join()
     exec_cmd_monitor.is_running = False
-    session.progress_check[process_tag][detid] = session.run_results
+    if detid != None:
+      session.progress_check[process_tag][detid] = session.run_results
     update_thread.join()
 
   ## One last update to ensure that things have finished.
@@ -555,7 +615,14 @@ def update_data_cache(process_tag):
   passed to), will be determined by the input parameter. Notice that the cached
   data of the calibration monitor will not attempt to perform any corrections.
   That will only be processes by the server side with the full fits.
+
+  Since the debugging GUI uses the same interface, we will be identifying the
+  debugging session simply as process tag that has "debug" in the name. These are
+  forked to other functions to be readout (update_debug_cache)
   """
+
+  if 'debug' in process_tag:
+    update_debug_cache(process_tag)
 
   # Early exit if file is not yet open
   if not session.cmd.sshfiler.readfile: return
@@ -569,7 +636,7 @@ def update_data_cache(process_tag):
 
   def update_lowlight(detid, tokens):
     lumi = [float(token) for token in tokens[8:]]
-    if len(lumi) <= 10: return  # realy exist for all form
+    if len(lumi) <= 10: return  # rarely exist for all form
     if len(session.lowlight_cache[detid]) == 0:
       content, bins = np.histogram(lumi, 40)
       session.lowlight_cache[detid] = [content, bins]
@@ -600,6 +667,44 @@ def update_data_cache(process_tag):
         update_lumiscan(detid, tokens)
   except:  ## In the unlikely case that the file is not open. Skip everything
     pass
+
+
+def update_debug_cache(process_tag):
+  """
+  Updating the debug cache. Since debug commands do not contain persistent data
+  that needs to be taken care of, we will be generated the corresponding data
+  members on the fly. And be rather careless with the garbage collection. The
+  idea is that the data should be compressed in a lossy format that will not
+  cause memory issues in the main session.
+
+  Notice also that the update will always start at the begining of the file.
+  Since we are expecting the data
+  """
+  # Early exit if file is not available
+  if not session.cmd.sshfiler.readfile: return
+
+  try:
+    if process_tag == 'debug_drs':
+      # The debugging DRS file we are only interested in the summation part
+      session.cmd.sshfiler.readfile.seek(0)
+      sums = [
+          float(x) for x in session.cmd.sshfiler.readfile.read().split('\n')[1:]
+      ]
+      content, bins = np.histogram(sums, 40)
+      session.debug_drs_cache = [contents, bins, np.std(sums)]
+
+  except:  ## In the unlikely case that the fill is not open, skip everything.
+    pass
+
+
+def clear_debug_cache():
+  """
+  Since debug data caches are generated on the fly. We are going to clear the
+  caches simply by delattr method
+  """
+  for attr in session.__dict__.keys():
+    if attr.startswith('debug'):
+      delattr(session, attr)
 
 
 def update_current_progress():

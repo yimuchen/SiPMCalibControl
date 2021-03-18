@@ -40,11 +40,17 @@ class set(cmdbase.controlcmd):
                              type=str,
                              help=('The serial number of the pico-tech device '
                                    'for dynamic light readout'))
+    self.parser.add_argument('--drsdevice',
+                              type=str,
+                             help='Code flag to refresh DRS device')
     self.parser.add_argument(
         '--readout',
         '-r',
         type=int,
-        choices=[readout.MODE_ADC, readout.MODE_PICO, readout.MODE_NONE],
+        choices=[readout.MODE_ADC,
+                 readout.MODE_PICO,
+                 readout.MODE_DRS,
+                 readout.MODE_NONE,],
         help='Setting readout mode of the current session')
     self.parser.add_argument('--action',
                              '-a',
@@ -67,6 +73,8 @@ class set(cmdbase.controlcmd):
       self.sshfiler.setremotepath(args.remotepath)
     if args.picodevice:
       self.set_picodevice(args)
+    if args.drsdevice:
+      self.set_drs(args)
     if args.readout:
       self.readout.set_mode(args.readout)
     if args.action:
@@ -114,6 +122,13 @@ class set(cmdbase.controlcmd):
     except Exception as err:
       log.printerr(str(err))
       log.printwarn('Picoscope device is not properly set!')
+
+  def set_drs(self,args):
+    try:
+      self.drs.init()
+    except Exception as err:
+      log.printerr(str(err))
+      log.printwarn('DRS device is not properly set!')
 
 
 class get(cmdbase.controlcmd):

@@ -240,15 +240,15 @@ function status_update_coordinates() {
   );
 
   var new_html = ``
-    new_html += `<polyline points="${x+20},${510-y}
-                                   ${x+25},${525-y}
-                                   ${x+30},${510-y}"
+  new_html += `<polyline points="${x + 20},${510 - y}
+                                   ${x + 25},${525 - y}
+                                   ${x + 30},${510 - y}"
                   stroke="red"
                   fill="red"
                   stroke-width="1px"/>`
-    new_html += `<polyline points="548,${520-z}
-                                   538,${525-z}
-                                   548,${530-z}"
+  new_html += `<polyline points="548,${520 - z}
+                                   538,${525 - z}
+                                   548,${530 - z}"
                   stroke="red"
                   fill="red"
                   stroke-width="1px"/>`
@@ -367,4 +367,101 @@ function update_valid_reference() {
       setTimeout(update_valid_reference(), 500);
     }
   });
+}
+
+/**
+ * Monitoring the debug processes
+ */
+function monitor_debug(debug_process) {
+  if (debug_process == 'debug_drs') {
+    update_debug_drsplot()
+  }
+
+  // Continuously update while session is command is still running.
+  if (session_state != STATE_IDLE) {
+    setTimeout(monitor_debug, calibration_update_interval);
+  }
+}
+
+
+/**
+ *  updating the drs debugging plot via the cache data stored in the server
+ *  session.
+ */
+function update_debug_drsplot() {
+  $.ajax({
+    async: false,
+    // Forcing to be asynchronous because future routines relies on this to be
+    // completed.
+    dataType: 'json',
+    mimeType: 'application/json',
+    url: `debug_data/debug_drs`,
+    success: function (json) {
+      // Early exit if data format is incorrect or has something wrong.
+      if (!('bincontent' in json && 'binedge' in json && 'rms' in json)) {
+        return
+      }
+      make_debug_drsplot(json)
+    },
+    error: function () {
+      console.log('Failed to get debug information');
+    }
+  });
+}
+
+function make_debug_drsplot(data) {
+  const y = data.bincontent;
+  var x = [];
+  for (var i = 0; i < data.bincontent.length; ++i) {
+    x.push((data.binedge[i] + data.binedge[i + 1]) / 2.0);
+  }
+
+  const plot_data = [{
+    x: x,
+    y: y,
+    type: 'bar',
+    mode: 'markers',
+    name: toString(data.rms),
+    marker: {
+      color: 'rgb(41,55,199)',
+    }
+  }];
+
+  const layout = {
+    autosize: true,
+    xaxis: {
+      title: "Readout value  [mV-ns]",
+      autorange: true
+    },
+    yaxis: {
+      //type: 'log',
+      title: "Events",
+      autorange: true
+    },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    bargap: 0,
+    margin: {
+      l: 60,
+      r: 20,
+      b: 40,
+      t: 20,
+      pad: 5
+    }, title: false
+  }
+
+  const plotname = `debug-drs-readout`;
+
+  if ($(`#${plotname}`).length != 0) {
+    // Move to a different function to handle css formatting?
+    $(`#${plotname}`).css('height', '300px');
+    $(`#${plotname}`).css('width', '400px');
+
+    Plotly.newPlot(plotname,
+      plot_data,
+      layout,
+      layout_default_config);
+  } else {
+    console.log("Warning! DIV for plot doesn't exist");
+  }
 }

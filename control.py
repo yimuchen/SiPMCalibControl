@@ -5,6 +5,7 @@ import ctlcmd.getset as getset
 import ctlcmd.digicmd as digicmd
 import ctlcmd.viscmd as viscmd
 import ctlcmd.picocmd as picocmd
+import ctlcmd.drscmd as drscmd
 import cmod.logger as logger
 import copy
 import sys
@@ -42,6 +43,9 @@ if __name__ == '__main__':
       picocmd.picoset,
       picocmd.picorunblock,
       picocmd.picorange,
+      drscmd.drsset,
+      drscmd.drscalib,
+      drscmd.drsrun
   ])
   # Duplicating the session to allow for default override.
   prog_parser = copy.deepcopy(cmd.set.parser)
@@ -59,6 +63,7 @@ if __name__ == '__main__':
       '--camdev': '/dev/video0',
       #'-boardtype': 'cfg/static_calib.json',
       '--action': 'cfg/useractions.json',
+      '--drsdevice': "MYDRS", # CANNT actually set
       '--picodevice': 'MYSERIAL',  #Cannot actually set. Just dummy for now
       #'-remotehost' : ['hepcms.umd.edu', '']
   }

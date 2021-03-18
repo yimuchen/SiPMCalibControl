@@ -15,10 +15,14 @@ picoset --presample 0 --postsample 100 --ncapture 5000
 picoset --triggerchannel 4 --triggerdirection 2 --triggerlevel 500 --triggerdelay 8
 
 
-# New setup for dark box SiPMs 
+# New setup for dark box SiPMs
 picoset --presample 0 --postsample 50 --ncapture 5000
-picoset --triggerchannel 4 --triggerdirection 2 --triggerlevel 500 --triggerdelay 11 
+picoset --triggerchannel 4 --triggerdirection 2 --triggerlevel 500 --triggerdelay 11
 
-picoset --presample 2 --postsample 2000 --ncapture 5000 
+picoset --presample 2 --postsample 2000 --ncapture 5000
 picoset --triggerchannel 0 --triggerdirection 3 --triggerlevel -2 --triggerdelay 0
 
+# New setup for DRS related stuff
+moveto -x 150 -y 160 -z 20
+pwm -c 0 -d 0.75
+drsset --triggerdelay 500 --samples 512

@@ -187,21 +187,26 @@ GPIO::GPIO() :
   pwm_duty_value[1] = 0.5;
 }
 
-GPIO::~GPIO()// Turning off LED light when the process has ended.
+GPIO::~GPIO()
 {
+  // Turning off LED light when the process has ended.
+  printf( "Closing GPIO pins for the light\n" );
   if( gpio_light >= NORMAL_PTR ){
     LightsOff();
     close( gpio_light );
     CloseGPIO( light_pin );
   }
 
+  printf( "Closing GPIO pins for the trigger\n" );
   if( gpio_trigger >= NORMAL_PTR ){
     close( gpio_trigger );
     CloseGPIO( trigger_pin );
   }
 
+  printf( "Closing GPIo pins for the PWM\n" );
   ClosePWM();
 
+  printf( "Closing the I2C interface\n" );
   if( gpio_adc >= NORMAL_PTR ){
     CloseI2CFlush();
     close( gpio_adc );

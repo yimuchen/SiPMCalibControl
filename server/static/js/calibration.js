@@ -604,7 +604,7 @@ function update_progress_bar() {
     $('#command-progress')
       .children('.progress-complete').css('width', `${percent}%`);
   } else {
-    console.log(`No Current!`);
+    console.log(`Command command currently running!`);
     $('#command-progress')
       .children('.progress-complete').css('width', '100%');
   }
@@ -993,3 +993,4 @@ const layout_lumialign_plot = {
     pad: 5
   }, title: false
 };
+

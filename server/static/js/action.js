@@ -12,7 +12,6 @@ function emit_action_cmd(id, msg) {
   });
 }
 
-
 /**
  * Process defined to running a system calibration.
  *
@@ -149,6 +148,22 @@ function raw_cmd_input() {
   emit_action_cmd("raw-cmd-input", {
     'input': line
   });
+}
+
+/**
+ * Asking the session to execute the drs debugging sequence
+ */
+function debug_drs_run() {
+  emit_action_cmd('debug-drs-run', {
+    'channel': $('#debug-drs-channel').val(),
+    'numevents': $('#debug-drs-numevents').val(),
+    'intstart': $('#debug-drs-intstart').val(),
+    'intstop': $('#debug-drs-intstop').val(),
+    'pedstart': $('#debug-drs-pedstart').val(),
+    'pedstop': $('#debug-drs-pedstop').val(),
+  });
+
+  setTimeout(monitor_debug('debug_drs'), 500)
 }
 
 /**

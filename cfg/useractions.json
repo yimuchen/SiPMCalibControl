@@ -1,36 +1,53 @@
 {
-  "PD_PULSELOW" : {
+  "PD_PULSELOW": {
     "message": "Setting pulser board into dynamic mode, please tune the PULL DOWN VOLTAGE to [0.3V] and turn SIPM HIGH VOLTAGE [ON]",
-    "set" : ["-readout", "1"]
+    "set": [
+      "-readout",
+      "1"
+    ]
   },
-  "PD_PULSEHI" : {
+  "PD_PULSEHI": {
     "message": "Setting pulser board into dynamic mode, please tune the PULL DOWN VOLTAGE to [2.150V] and turn SIPM HIGH VOLTAGE [ON]",
-    "set" : ["-readout", "1"]
+    "set": [
+      "-readout",
+      "1"
+    ]
   },
   "PD_CONST": {
     "message": "Setting pulser board into continuous mode, please tune the PULL DOWN VOLTAGE to [4.30V] and turn SIPM HIGH VOLTAGE [OFF]",
-    "set" : ["-readout", "2"]
+    "set": [
+      "-readout",
+      "2"
+    ]
   },
   "PD_OFF": {
     "message": "Turning off the pulser board, please tune the PULL DOWN VOLTAGE to [0] and turn SIPM HIGH VOLTAGE [OFF]",
-    "set" : []
+    "set": []
   },
-
   "VIS_MODE": {
     "message": "Preparing for visual calibration, please make sure the SIPM HIGH VOLTAGE is [OFF]",
-    "set" : []
+    "set": []
   },
   "DARK_MODE": {
     "message": "Preparing for data collections, please make sure that the LIGHT SENSING POWER is [ON]",
-    "set" : []
+    "set": []
   },
-
   "ND_FILTER0": {
-    "message" : "Add ND FILTER index [0] to the gantry system. Turn SIPM HIGH VOLTAGE [OFF] during process.",
-    "set": ["-ndfilter", "0"]
+    "message": "Add ND FILTER index [0] to the gantry system. Turn SIPM HIGH VOLTAGE [OFF] during process.",
+    "set": [
+      "-ndfilter",
+      "0"
+    ]
   },
   "ND_FILTER1": {
-    "message" : "Add ND FILTER index [1] to the gantry system. Turn SIPM HIGH VOLTAGE [OFF] during process.",
-    "set": ["-ndfilter", "1"]
+    "message": "Add ND FILTER index [1] to the gantry system. Turn SIPM HIGH VOLTAGE [OFF] during process.",
+    "set": [
+      "-ndfilter",
+      "1"
+    ]
+  },
+  "DRS_CALIB": {
+    "message": "Running the DRS calibration process. Make sure all SiPM DRS input channels are disconnected before continuing.",
+    "set": []
   }
 }

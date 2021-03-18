@@ -135,6 +135,28 @@ def report_cached_data(process, detid):
     return __default
 
 
+def report_debug_data(process):
+  """
+  Returning the cached data to be displayed by the client. Should there be
+  something wrong, with the request. this function will return an empty map, with the display client responsible for handling such exceptions.
+  """
+  __default = {}
+  try:
+    if process == 'debug_drs':
+      if hasattr(session,'debug_drs_cache'):
+        return {
+            'bincontent': session.debug_drs_cache[0].tolist(),
+            'binedge': session.debug_drs_cache[1].tolist(),
+            'rms': session.debug_drs_cache[2]
+        }
+      else:
+        return __default
+    else:
+      return __default
+  except:
+    return __default
+
+
 def report_settings():
   """
   Returning the list of settings to be parsed by the display client. The reason
@@ -142,14 +164,14 @@ def report_settings():
   to clear the client-side settings. This function allows for this to be
   performed without needing to update all other connect clients.
   """
-  return {
+  settings = {
       'image': {
           'threshold': session.cmd.visual.threshold,
           'blur': session.cmd.visual.blur_range,
           'lumi': session.cmd.visual.lumi_cutoff,
           'size': session.cmd.visual.size_cutoff,
-          'ratio': session.cmd.visual.ratio_cutoff,
-          'poly': session.cmd.visual.poly_range,
+          'ratio': session.cmd.visual.ratio_cutoff * 100,
+          'poly': session.cmd.visual.poly_range * 100,
       },
       'zscan': {
           'samples': session.zscan_samples,
@@ -170,6 +192,7 @@ def report_settings():
           'distance': session.lumialign_distance,
       },
       'picoscope': {
+          # Picoscope settings are availabe regardless of picoscope availability.
           'channel-a-range': session.cmd.pico.rangeA(),
           'channel-b-range': session.cmd.pico.rangeB(),
           'trigger-channel': session.cmd.pico.triggerchannel,
@@ -179,8 +202,28 @@ def report_settings():
           'trigger-presample': session.cmd.pico.presamples,
           'trigger-postsample': session.cmd.pico.postsamples,
           'blocksize': session.cmd.pico.ncaptures
-      },
+      }
   }
+
+  # DRS settings are only available if a physical board is attached to the
+  # machine.
+  if session.cmd.drs.is_available():
+    settiongs.update({
+        'drs': {
+            'triggerdelay': session.cmd.drs.trigger_delay(),
+            'samplerate': session.cmd.drs.rate(),
+            'samples': session.cmd.drs.samples(),
+        }
+    })
+  else:
+    settings.update(
+        {'drs': {
+            'triggerdelay': 0,
+            'samplerate': 0,
+            'samples': 0,
+        }})
+
+  return settings
 
 
 def report_system_boards():

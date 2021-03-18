@@ -4,7 +4,7 @@ import cmod.logger as log
 
 class picoset(cmdbase.controlcmd):
   """
-  Setting session parameters
+  Setting picoscope operation parameters
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -137,9 +137,10 @@ class picorunblock(cmdbase.controlcmd):
   def run(self, args):
     ## First line in file contains convertion information
     if args.savefile.tell() == 0:
-      args.savefile.write("{0} {1} {2} {3} {4}\n".format(
-          self.pico.timeinterval, self.pico.ncaptures, self.pico.presamples,
-          self.pico.postsamples, self.pico.adc2mv(args.channel,1)))
+      args.savefile.write("{time} {bits} {adc}\n".format(
+          time=self.pico.timeinterval,
+          bits=2,
+          adc=self.pico.adc2mv(args.channel, 256)))
       args.savefile.flush()
 
     for i in range(args.numblocks):
@@ -151,10 +152,8 @@ class picorunblock(cmdbase.controlcmd):
 
       while not self.pico.isready():
         self.check_handle(args)
-        try:  ## For stand alone runs with external trigger
+        if self.gpio.gpio_status():
           self.gpio.pulse(int(self.pico.ncaptures / 10), 100)
-        except:
-          pass
 
       self.pico.flushbuffer()
 
@@ -174,7 +173,8 @@ class picorunblock(cmdbase.controlcmd):
 
 class picorange(cmdbase.controlcmd):
   """
-  Automatically setting the voltage range of the pico-scope based on a few waveforms of data.
+  Automatically setting the voltage range of the picoscope based on a few set
+  waveforms of data.
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
