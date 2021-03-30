@@ -238,8 +238,8 @@ class visualcenterdet(cmdbase.controlcmd):
       # camera resolution
 
       deltaxy = np.array([
-          self.visual.frame_width() / 4 - center.x,
-          self.visual.frame_height() / 4 - center.y
+          self.visual.frame_width() / 2 - center.x,
+          self.visual.frame_height() / 2 - center.y
       ])
 
       motionxy = np.linalg.solve(
@@ -322,6 +322,10 @@ class visualmaxsharp(cmdbase.controlcmd):
                              default=1,
                              help=('First step size to scan for immediate '
                                    'neighborhood z scan [mm]'))
+    self.parser.add_argument('--monitor',
+                             '-m',
+                             action='store_true',
+                             help=('Open a monitoring window'))
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
@@ -333,11 +337,12 @@ class visualmaxsharp(cmdbase.controlcmd):
 
     center = self.visual.get_latest()
     laplace = center.sharpness
-    zval = args.startz
+    zval = float(args.startz)
     zstep = args.stepsize
 
     while abs(zstep) >= 0.1:
       self.move_gantry(args.x, args.y, zval + zstep, False)
+      time.sleep(0.3)
       center = self.visual.get_latest()
 
       if center.sharpness > laplace:
@@ -345,9 +350,15 @@ class visualmaxsharp(cmdbase.controlcmd):
         zval += zstep
       else:
         zstep *= -0.8
-      self.update('z:{0:.1f}, L:{1:.2f}'.format(zval, laplace))
+      self.update('z:{0:.2f}, L:{1:.2f}'.format(zval, laplace))
+
+      if args.monitor:
+        cv2.imshow('SIPMCALIB - visualmaxsharp',
+                    np.copy(self.visual.get_image_raw()))
+        cv2.waitKey(1)
 
     self.printmsg('Final z:{0:.1f}'.format(self.gcoder.opz))
+    cv2.destroyAllWindows()
 
 
 class visualzscan(cmdbase.controlcmd):
@@ -386,10 +397,10 @@ class visualzscan(cmdbase.controlcmd):
       # Checking termination signal
       self.check_handle(args)
       self.move_gantry(args.x, args.y, z, False)
-      time.sleep(5)
+      time.sleep(0.1)
 
       center = self.visual.get_latest()
-      image = np.copy(self.visual.get_image())
+      image = np.copy(self.visual.get_image_raw())
       laplace.append(center.sharpness)
       reco_x.append(center.x)
       reco_y.append(center.y)
@@ -416,6 +427,10 @@ class visualzscan(cmdbase.controlcmd):
         cv2.imshow('SIPMCALIB - visualzscan', image)
         cv2.waitKey(1)
 
+    #Flushing and saving file
+    args.savefile.flush()
+    args.savefile.close()
+
     cv2.destroyAllWindows()
 
 
@@ -431,6 +446,10 @@ class visualshowdet(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
+    self.parser.add_argument('--raw',
+                             '-r',
+                             action='store_true',
+                             help='Show the raw image without image processing lines')
 
   def parse(self, line):
     return cmdbase.controlcmd.parse(self, line)
@@ -447,7 +466,10 @@ class visualshowdet(cmdbase.controlcmd):
         self.check_handle(args)
       except:
         break
-      cv2.imshow("SIPMCALIB - visualshowdet", np.copy(self.visual.get_image()))
+
+      image = self.visual.get_image() if not args.raw else \
+              self.visual.get_image_raw()
+      cv2.imshow("SIPMCALIB - visualshowdet", np.copy(image))
       cv2.waitKey(1)
       time.sleep(0.05)
     cv2.destroyAllWindows()

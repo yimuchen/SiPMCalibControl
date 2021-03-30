@@ -235,10 +235,11 @@ DRSContainer::WaveformSum( const unsigned channel,
   double pedvalue = 0;
 
   // Getting the pedestal value if
-  if( _pedstart != unsigned(-1) && _pedstop != unsigned(-1) ){
-    const unsigned pedstart = std::max( unsigned(0), _pedstop );
+  if( _pedstart != _pedstop ){
+    const unsigned pedstart = std::max( unsigned(0), _pedstart );
     const unsigned pedstop  = std::min( (unsigned)board->GetChannelDepth()
                                       , _pedstop );
+
 
     for( unsigned i = pedstart; i < pedstop; ++i ){
       pedvalue += waveform[i];
@@ -252,7 +253,7 @@ DRSContainer::WaveformSum( const unsigned channel,
   const unsigned intstop  = std::min( (unsigned)board->GetChannelDepth()
                                     , _intstop );
 
-  double ans = 0 ;
+  double ans             = 0;
   const double timeslice = 1.0/GetRate();
 
   for( unsigned i = intstart; i < intstop; ++i ){

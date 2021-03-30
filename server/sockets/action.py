@@ -104,13 +104,16 @@ def run_drs_settings(socketio, data):
   """
   try:
     ## The only thing that can be called is a trigger delay.
-    session.cmd.drs.settrigger(session.drs.trigger_channel(),
-                               session.drs.trigger_level(),
-                               session.drs.trigger_direction(),
-                               data['drs-triggerdelay'])
-    session.cmd.drs.set_samples(data['drs-samples'])
-    session.cmd.drs.set_rate(data['drs-samplerate'])
+    # We will be forcing the use of an external trigger
+    session.cmd.drs.set_trigger(4,
+                                session.cmd.drs.trigger_level(),
+                                session.cmd.drs.trigger_direction(),
+                                float(data['drs-triggerdelay']))
+    session.cmd.drs.set_samples(int(data['drs-samples']))
+    session.cmd.drs.set_rate(float(data['drs-samplerate']))
   except Exception as err:
+    print(err)
+    print(data)
     pass  # TODO: Proper error message for non-existant DRS system
   sync_calibration_settings(socketio)
 
@@ -119,11 +122,15 @@ def run_drs_calib(socketio):
   """
   Running the DRS self calibration program. Here we need to raise a user action
   """
+  print("Triggering wait_user_action function")
   wait_user_action(
       socketio,
-      """Running the DRS4 self calibration sequence, please make sure all physical
-    connectors to the 4 inputs channels are disconnected before continuing""")
+      """Running the DRS4 self calibration sequence, please make sure all
+    physical connectors to the 4 inputs channels are disconnected before
+    continuing""")
+  print("Running calibration command")
   session.cmd.drs.run_calibrations()
+  send_sync_signal(socketio,'sync-drs-calib-complete','')
 
 
 def run_cmd_input(socketio, msg):
@@ -430,10 +437,10 @@ def run_debug_drs(socketio, msg):
   cmd += " --wipefile".format(savefile)
 
   # Running the monitor thread.
-  print("Running command", cmd)
+  print("Running command:", cmd)
   exec_cmd_monitor(socketio, cmd, 'debug_drs', None)
   # Removing the temporary file
-  #os.remove(savefile)
+  os.remove(savefile)
 
 
 def prepare_calibration_session(socketio,
@@ -683,18 +690,25 @@ def update_debug_cache(process_tag):
   # Early exit if file is not available
   if not session.cmd.sshfiler.readfile: return
 
+  print('Updating debug cache')
+
   try:
     if process_tag == 'debug_drs':
       # The debugging DRS file we are only interested in the summation part
       session.cmd.sshfiler.readfile.seek(0)
       sums = [
           float(x) for x in session.cmd.sshfiler.readfile.read().split('\n')[1:]
+          if x != ''
       ]
-      content, bins = np.histogram(sums, 40)
-      session.debug_drs_cache = [contents, bins, np.std(sums)]
+      contents, bins = np.histogram(sums, 40)
+      std = np.std(sums) if len(sums) > 2 else 0
+      session.debug_drs_cache = [contents, bins, std]
 
-  except:  ## In the unlikely case that the fill is not open, skip everything.
-    pass
+  except Exception as err:
+    ## In the unlikely case that the fill is not open, skip everything.
+    # TODO: Properly pass the various data.
+    print("Exception has occurred during cache generation", err)
+
 
 
 def clear_debug_cache():

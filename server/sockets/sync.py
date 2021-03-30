@@ -68,6 +68,7 @@ def wait_user_action(socketio, msg):
   """
   sync_system_state(socketio, session.STATE_WAIT_USER)
   session.waiting_msg = msg
+  time.sleep(0.1) # Sleep first to system to stabilize
   while (session.state == session.STATE_WAIT_USER):
     time.sleep(0.1)  ## Updating every 0.1 seconds
 

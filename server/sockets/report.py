@@ -154,6 +154,7 @@ def report_debug_data(process):
     else:
       return __default
   except:
+    print('Exception has occurred')
     return __default
 
 
@@ -208,7 +209,7 @@ def report_settings():
   # DRS settings are only available if a physical board is attached to the
   # machine.
   if session.cmd.drs.is_available():
-    settiongs.update({
+    settings.update({
         'drs': {
             'triggerdelay': session.cmd.drs.trigger_delay(),
             'samplerate': session.cmd.drs.rate(),

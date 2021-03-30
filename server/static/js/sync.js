@@ -18,6 +18,15 @@ const SESSION_TYPE_SYSTEM = 1;
 const SESSION_TYPE_STANDARD = 2;
 
 /**
+ * Basic function to allow for async functions to sleep for a certain duration.
+ * Main reference:
+ * https://www.sitepoint.com/delay-sleep-pause-wait/
+ */
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
  * Updating the session state as seen by the client. In addition to the raw
  * variable used to store the session state, the following are also update:
  * 1. If the new state indicates the system is idle, unlock all action button,
@@ -30,7 +39,7 @@ function sync_system_state(new_state) {
   console.log(`Syncing system state`, new_state);
   session_state = new_state; // updating the raw system state.
 
-  // Action button locking if stsate is not idle
+  // Action button locking if state is not idle
   const lock = session_state != STATE_IDLE;
   $('.action-button').each(function () {
     $(this).prop('disabled', lock);

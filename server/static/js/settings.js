@@ -191,9 +191,9 @@ function picoscope_settings_update() {
  */
 function drs_settings_update() {
   const new_settings = {
-    'drs-triggerdelay': $('drs-triggerdelay').val(),
-    'drs-samplerate': $('drs-samplerate').val(),
-    'drs-samples': $('drs-samples').val(),
+    'drs-triggerdelay': $('#drs-triggerdelay').val(),
+    'drs-samplerate': $('#drs-samplerate').val(),
+    'drs-samples': $('#drs-samples').val(),
   }
 
   emit_action_cmd('drs-settings', new_settings);
@@ -201,20 +201,28 @@ function drs_settings_update() {
 
 /**
  * Action emitting function for submitting a calibration call to the DRS manager.
- * @param {*} range
- * @returns
  */
+var SEND_CALIB_SIGNAL = 0
 function drs_settings_calib() {
+  console.log('Sending the DRS calibration signal', session_state );
   emit_action_cmd('drs-calib', {});
-
-  /// TODO:: Wait for action to be completed.
-  while (session_state != STATE_IDLE) {
-    setTimeout(function () { print('Waiting for action to be completed') }, 500);
-  }
-
-  // Update the settings again, since the calibration will wipe certain settings.
-  drs_settings_update();
+  SENT_CALIB_SIGNAL = 1;
 }
+
+/**
+ * Additional function used to handle additional processes to run when the
+ * calibration is done. Since the calibration changes some of the settings. we
+ * are going to rerun the drs_settings_update command if this machine is the one
+ * that requested the calibration process to be ran.
+ */
+function drs_calib_complete() {
+  if( SENT_CALIB_SIGNAL == 1 ){
+   drs_settings_update();
+   SENT_CALIB_SIGNAL = 0;
+  }
+}
+
+
 
 /** ========================================================================== */
 /** PICOSCOPE SETTING FUNCTIONS */

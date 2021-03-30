@@ -246,13 +246,13 @@ GCoder::DisableStepper( bool x, bool y, bool z )
   // be called at the python level since motion minitoring is done at the python
   // level.
   if( x ){
-    RunGcode( "M18 X E\n", 0, 1e5, true );
+    RunGcode( "M18 X E\n", 0, 1e5, false );
   }
   if( y ){
-    RunGcode( "M18 Y E\n", 0, 1e5, true );
+    RunGcode( "M18 Y E\n", 0, 1e5, false );
   }
   if( z ){
-    RunGcode( "M18 Z E\n", 0, 1e5, true );
+    RunGcode( "M18 Z E\n", 0, 1e5, false );
   }
 }
 

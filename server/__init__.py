@@ -144,6 +144,7 @@ def create_server_flask(debug=False):
       '--camdev': '/dev/video0',
       #'-boardtype': 'cfg/static_calib.json',
       '--action': 'cfg/useractions.json',
+      '--drsdevice': "MYDRS", # CANNT actually set
       '--picodevice': 'MYSERIAL',  #Cannot actually set. Just dummy for now
       #'-remotehost' : ['hepcms.umd.edu', '']
   }

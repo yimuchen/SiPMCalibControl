@@ -1,7 +1,7 @@
 import ctlcmd.cmdbase as cmdbase
 import cmod.logger as log
 import time
-
+#import ctypes
 
 class drsset(cmdbase.controlcmd):
   """
@@ -66,7 +66,7 @@ class drsset(cmdbase.controlcmd):
                          args.triggerdirection, args.triggerdelay)
 
   def set_collection(self, args):
-    if args.postsamples != None:
+    if args.samples != None:
       self.drs.set_samples(args.samples)
     if args.samplerate != None:
       self.drs.set_rate(args.samplerate)
@@ -130,24 +130,24 @@ class drsrun(cmdbase.controlcmd):
                                    'indefinite trigger wait.'))
     self.parser.add_argument('--intstart',
                              type=int,
-                             default=-1,
+                             default=0,
                              help=('Time sample to start the summation window, '
                                    'set to -1 to start from begining'))
     self.parser.add_argument('--intstop',
                              type=int,
-                             default=-1,
+                             default=1024,
                              help=('Time sample to stop the summation window, '
                                    'set to -1 to finish at end.'))
     self.parser.add_argument('--pedstart',
                              type=int,
-                             default=-1,
+                             default=0,
                              help=('Time sample to start the pedestal average, '
-                                   'set to -1 ignore pedestal summation.'))
+                                   'set to same as pedstop to ignore pedestal summation.'))
     self.parser.add_argument('--pedstop',
                              type=int,
-                             default=-1,
+                             default=0,
                              help=('Time sample to stop the pedestal average, '
-                                   'set to -1 ignore pedestal summation.'))
+                                   'set to same as pedstart ignore pedestal summation.'))
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
@@ -187,8 +187,11 @@ class drsrun(cmdbase.controlcmd):
         line = self.drs.waveformstr(args.channel)
         args.savefile.write("{line}\n".format(line=line))
       else:
-        line = self.drs.waveformsum(args.channel, args.intstart, args.intstop,
-                                    args.pedstart, args.pedstop)
+        line = self.drs.waveformsum(args.channel,
+                                    args.intstart,
+                                    args.intstop,
+                                    args.pedstart,
+                                    args.pedstop)
         args.savefile.write("{line}\n".format(line=line))
 
     args.savefile.flush()

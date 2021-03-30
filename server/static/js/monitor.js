@@ -372,14 +372,17 @@ function update_valid_reference() {
 /**
  * Monitoring the debug processes
  */
-function monitor_debug(debug_process) {
+async function monitor_debug(debug_process) {
   if (debug_process == 'debug_drs') {
+    console.log('Running the debug plot')
     update_debug_drsplot()
   }
 
+  await sleep(500);
+
   // Continuously update while session is command is still running.
   if (session_state != STATE_IDLE) {
-    setTimeout(monitor_debug, calibration_update_interval);
+    monitor_debug(debug_process);
   }
 }
 
@@ -397,8 +400,10 @@ function update_debug_drsplot() {
     mimeType: 'application/json',
     url: `debug_data/debug_drs`,
     success: function (json) {
+      console.log('Updating the plot:', json)
       // Early exit if data format is incorrect or has something wrong.
       if (!('bincontent' in json && 'binedge' in json && 'rms' in json)) {
+        console.log('Wrong format!')
         return
       }
       make_debug_drsplot(json)
@@ -421,7 +426,7 @@ function make_debug_drsplot(data) {
     y: y,
     type: 'bar',
     mode: 'markers',
-    name: toString(data.rms),
+    name: `RMS:${data.rms.toFixed(2)}`,
     marker: {
       color: 'rgb(41,55,199)',
     }
@@ -437,6 +442,12 @@ function make_debug_drsplot(data) {
       //type: 'log',
       title: "Events",
       autorange: true
+    },
+    showlegend: true,
+    legend:{
+      x:1,
+      y:1,
+      xanchor:'right',
     },
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',

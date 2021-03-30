@@ -2,7 +2,7 @@
 
 ## Variables for versions
 JQUERY_VERSION="3.6.0"
-SOCKETIO_VERSION="3.1.3"
+SOCKETIO_VERSION="2.1.1"
 PLOTLY_VERSION="1.58.4"
 FONTAWESOME_VERSION="5.15.2"
 
@@ -11,8 +11,9 @@ wget https://code.jquery.com/jquery-${JQUERY_VERSION}.min.js \
      --output-document static/external/js/jquery-${JQUERY_VERSION}.min.js
 
 # Socket IO main host site: https://socket.io/docs/v3/client-installation/index.html
-wget https://cdnjs.cloudflare.com/ajax/libs/socket.io/${SOCKETIO_VERSION}/socket.io.min.js \
-     --output-document static/external/js/socket.io-${SOCKETIO_VERSION}.min.js
+# Right now we can only get the non-min version for the older socketio version.
+wget https://cdnjs.cloudflare.com/ajax/libs/socket.io/${SOCKETIO_VERSION}/socket.io.js \
+     --output-document static/external/js/socket.io-${SOCKETIO_VERSION}.js
 
 # Plotly host site: https://plotly.com/javascript/getting-started/
 wget https://cdn.plot.ly/plotly-${PLOTLY_VERSION}.min.js \

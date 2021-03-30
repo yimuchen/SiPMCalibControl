@@ -91,13 +91,18 @@ $(document).ready(function () {
   $('#lumialign-settings-update').on('click', lumialign_settings_update);
   $('#picoscope-settings-update').on('click', picoscope_settings_update);
   $('#drs-settings-update').on('click', drs_settings_update);
-  $('#drs-settings-calib').on('click', drs_settings_calib);
   $('#image-settings-clear').on('click', clear_settings);
   $('#zscan-settings-clear').on('click', clear_settings);
   $('#lumialign-settings-clear').on('click', clear_settings);
   $('#lowlight-settings-clear').on('click', clear_settings);
   $('#picoscope-settings-clear').on('click', clear_settings);
   $('#drs-settings-clear').on('click', clear_settings);
+
+  // THe DRS calibration setting is a special case function that needs to be
+  // handled with an additional sync signal from the server to be notified of
+  // when the calibration is complete
+  $('#drs-settings-calib').on('click', drs_settings_calib);
+  socketio.on('sync-drs-calib-complete', drs_calib_complete);
 
 
   /**

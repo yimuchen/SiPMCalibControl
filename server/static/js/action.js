@@ -153,7 +153,8 @@ function raw_cmd_input() {
 /**
  * Asking the session to execute the drs debugging sequence
  */
-function debug_drs_run() {
+async function debug_drs_run() {
+  console.log('Starting drsrun debug command')
   emit_action_cmd('debug-drs-run', {
     'channel': $('#debug-drs-channel').val(),
     'numevents': $('#debug-drs-numevents').val(),
@@ -163,7 +164,8 @@ function debug_drs_run() {
     'pedstop': $('#debug-drs-pedstop').val(),
   });
 
-  setTimeout(monitor_debug('debug_drs'), 500)
+  await sleep(500) /** defined in sync.js */
+  monitor_debug('debug_drs') /** Defined in monitor.js */
 }
 
 /**

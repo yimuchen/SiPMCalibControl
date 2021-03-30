@@ -44,6 +44,7 @@ public:
   unsigned                      frame_height() const;
   VisResult                     get_result();
   boost::python::numpy::ndarray get_image();
+  boost::python::numpy::ndarray get_image_raw();
   bool                          save_image( const std::string& );
   PyObject*                     get_image_bytes();
 
@@ -92,6 +93,7 @@ private:
                          const ContourList&,
                          const ContourList&,
                          const ContourList& );
+  cv::Mat get_image_raw_cv();
   cv::Mat get_image_cv();
 
   static bool CompareContourSize( const Contour_t&, const Contour_t& );
@@ -246,8 +248,8 @@ Visual::find_det()
     return empty_return;
   }
 
-  // Reducing image size to spped up algorithm
-  cv::resize( image, image, cv::Size( 0, 0 ), 0.5, 0.5 );
+  // Reducing image size to speed up algorithm
+  // cv::resize( image, image, cv::Size( 0, 0 ), 0.5, 0.5 );
 
   const ContourList contours = GetContours( image );
   ContourList failed_ratio;
@@ -333,7 +335,7 @@ Visual::generate_display( const ContourList& failed_ratio,
   char msg[1024];
 
   // Generating the image
-  display = image;
+  display = image.clone();
 
   auto PlotContourList = [this]( const ContourList& list,
                                  const cv::Scalar& color ) -> void {
@@ -514,6 +516,21 @@ Visual::get_image_cv()
   return ans_mat;
 }
 
+cv::Mat
+Visual::get_image_raw_cv()
+{
+  static const cv::Mat blank_frame(
+    cv::Size( frame_width(), frame_height() ),
+    CV_8UC3, cv::Scalar( 0, 0, 0 ) );
+
+  loop_mutex.lock();
+  cv::Mat ans_mat = ( image.empty() || image.cols == 0 ) ? blank_frame :
+                    image;
+  loop_mutex.unlock();
+
+  return ans_mat;
+}
+
 boost::python::numpy::ndarray
 Visual::get_image()
 {
@@ -535,6 +552,29 @@ Visual::get_image()
                              , stride
                              , bp::object() );
 }
+
+boost::python::numpy::ndarray
+Visual::get_image_raw()
+{
+  cv::Mat mat = get_image_raw_cv();
+
+  namespace bp = boost::python;
+
+  bp::tuple shape = bp::make_tuple( mat.rows
+                                  , mat.cols
+                                  , mat.channels() );
+  bp::tuple stride = bp::make_tuple(
+    mat.channels() * mat.cols * sizeof( uchar ),
+    mat.channels() * sizeof( uchar ),
+    sizeof( uchar ) );
+
+  return bp::numpy::from_data( mat.data
+                             , bp::numpy::dtype::get_builtin<uchar>()
+                             , shape
+                             , stride
+                             , bp::object() );
+}
+
 
 PyObject*
 Visual::get_image_bytes()
@@ -562,6 +602,7 @@ BOOST_PYTHON_MODULE( visual )
   .def( "frame_height",    &Visual::frame_height    )
   .def( "get_latest",      &Visual::get_result      )
   .def( "get_image",       &Visual::get_image       )
+  .def( "get_image_raw",   &Visual::get_image_raw   )
   .def( "get_image_bytes", &Visual::get_image_bytes )
   .def( "save_image",      &Visual::save_image      )
   .def_readonly( "dev_path", &Visual::dev_path  )
