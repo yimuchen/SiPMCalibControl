@@ -41,12 +41,12 @@ class controlterm(cmd.Cmd):
     cmd.Cmd.__init__(self)
 
     self.sshfiler = sshfiler.SSHFiler()
-    self.gcoder = gcoder.GCoder()
+    self.gcoder = gcoder.GCoder.instance()
     self.board = board.Board()
     self.visual = visual.Visual()
-    self.pico = pico.PicoUnit()
-    self.gpio = gpio.GPIO()
-    self.drs = drs.DRS()
+    self.pico = pico.PicoUnit.instance()
+    self.gpio = gpio.GPIO.instance()
+    self.drs = drs.DRS.instance()
     self.readout = readout.readout(self)  # Must be after picoscope setup
     self.action = actionlist.ActionList()
     self.sighandle = sig.SigHandle()

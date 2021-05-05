@@ -1,3 +1,5 @@
+#include "gpio.hpp"
+
 #include <cmath>
 #include <fcntl.h>
 #include <linux/i2c-dev.h>
@@ -8,124 +10,26 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <array>
-#include <atomic>
 #include <deque>
 #include <queue>
 #include <stdexcept>
-#include <thread>
 
-class GPIO
-{
-public:
-  GPIO();
-  ~GPIO();
+// Defining the static variables to be exposed to python
+const uint8_t GPIO::ADS_RANGE_6V   = 0x0;
+const uint8_t GPIO::ADS_RANGE_4V   = 0x1;
+const uint8_t GPIO::ADS_RANGE_2V   = 0x2;
+const uint8_t GPIO::ADS_RANGE_1V   = 0x3;
+const uint8_t GPIO::ADS_RANGE_p5V  = 0x4;
+const uint8_t GPIO::ADS_RANGE_p25V = 0x5;
 
-  void Init();
-
-  // High level functions using GPIO interface
-  void Pulse( const unsigned n, const unsigned wait ) const;
-  void LightsOn() const;
-  void LightsOff() const;
-  void SpareOn() const;
-  void SpareOff() const;
-
-  // High level function using PWM interface
-  void SetPWM( const unsigned channel,
-               const double   duty_cycle,
-               const double   frequency );
-  // Only storing the duty cycle for external reference.
-  float GetPWM( unsigned channel );
-
-  // High level functions for I2C ADC det interface
-  void  SetADCRange( const int );
-  void  SetADCRate( const int );
-  float ReadADC( const unsigned channel ) const;
-  float ReadNTCTemp( const unsigned channel ) const;
-  float ReadRTDTemp( const unsigned channel ) const;
-  void  SetReferenceVoltage( const unsigned channel, const float val );
-
-  // On the raspberry PI, these pins correspond to the BCM pin from
-  // wiringPi's `gpio readall` command
-  static constexpr unsigned trigger_pin = 21;// PHYS PIN 40
-  static constexpr unsigned light_pin   = 26; // PHYS PIN 37
-  static constexpr unsigned spare_pin   = 20; // PHYS PIN 38
-
-  static constexpr unsigned READ  = 0;
-  static constexpr unsigned WRITE = 1;
-  static constexpr unsigned LOW   = 0;
-  static constexpr unsigned HI    = 1;
-
-  // CONSTANT EXPRESSION for file pointers
-  static constexpr int UNOPENED    = -2;
-  static constexpr int OPEN_FAILED = -1;
-  static constexpr int IO_FAILED   = -1;
-  static constexpr int NORMAL_PTR  = 0;
-
-  static constexpr uint8_t ADS_RANGE_6V   = 0x0;
-  static constexpr uint8_t ADS_RANGE_4V   = 0x1;
-  static constexpr uint8_t ADS_RANGE_2V   = 0x2;
-  static constexpr uint8_t ADS_RANGE_1V   = 0x3;
-  static constexpr uint8_t ADS_RANGE_p5V  = 0x4;
-  static constexpr uint8_t ADS_RANGE_p25V = 0x5;
-
-  static constexpr uint8_t ADS_RATE_8SPS   = 0x0;
-  static constexpr uint8_t ADS_RATE_16SPS  = 0x1;
-  static constexpr uint8_t ADS_RATE_32SPS  = 0x2;
-  static constexpr uint8_t ADS_RATE_64SPS  = 0x3;
-  static constexpr uint8_t ADS_RATE_128SPS = 0x4;
-  static constexpr uint8_t ADS_RATE_250SPS = 0x5;
-  static constexpr uint8_t ADS_RATE_475SPS = 0x6;
-  static constexpr uint8_t ADS_RATE_860SPS = 0x7;
-
-  bool StatusGPIO() const;
-  bool StatusADC() const;
-  bool StatusPWM() const;
-
-private:
-  static int  InitGPIOPin( const int pin, const unsigned direction );
-  static void CloseGPIO( const int pin );
-  static int  GPIORead( const int fd );
-  static void GPIOWrite( const int fd, const unsigned val );
-
-  void InitPWM();
-  void ClosePWM();
-
-  static constexpr int ads_default_address = 0x48;
-  static int InitI2C();
-  void       PushADCSetting();
-  int16_t    ADCReadRaw();
-  void       FlushLoop( std::atomic<bool>& );
-  void       InitI2CFlush();
-  void       CloseI2CFlush();
-
-  // File pointers triggers direct GPIO
-  int gpio_trigger;
-  int gpio_light;
-  int gpio_spare;
-
-  // File pointer to ADC
-  int gpio_adc;
-
-  // File pointer to PWM stuff
-  int pwm_enable[2];
-  int pwm_duty[2];
-  int pwm_period[2];
-
-  // Storing present duty cycle settings .
-  float pwm_duty_value[2];
-
-  uint8_t adc_range;
-  uint8_t adc_rate;
-  uint8_t adc_channel;
-
-  float reference_voltage[4];
-
-  // I2C interface continuous streaming.
-  std::atomic<bool> i2c_flush;
-  std::thread i2c_flush_thread;
-  float i2c_flush_array[4];
-};
+const uint8_t GPIO::ADS_RATE_8SPS   = 0x0;
+const uint8_t GPIO::ADS_RATE_16SPS  = 0x1;
+const uint8_t GPIO::ADS_RATE_32SPS  = 0x2;
+const uint8_t GPIO::ADS_RATE_64SPS  = 0x3;
+const uint8_t GPIO::ADS_RATE_128SPS = 0x4;
+const uint8_t GPIO::ADS_RATE_250SPS = 0x5;
+const uint8_t GPIO::ADS_RATE_475SPS = 0x6;
+const uint8_t GPIO::ADS_RATE_860SPS = 0x7;
 
 void
 GPIO::Init()
@@ -601,12 +505,12 @@ GPIO::ReadNTCTemp( const unsigned channel ) const
   static const float B   = 3500;
 
   // Standard operation values for biasing circuit
-  static const float V_total = 5003.00;
-  static const float R_ref   = 10000;
+  static const float R_ref = 10000;
 
   // Dynamic convertion
-  const float v = ReadADC( channel );
-  const float R = R_ref * v / ( V_total - v );
+  const float V_total = reference_voltage[channel];
+  const float v       = ReadADC( channel );
+  const float R       = R_ref * v / ( V_total - v );
 
   // Temperature equation from Steinhart–Hart equation.
   // 1/T = 1/T0 + 1/B * ln(R/R0)
@@ -725,46 +629,22 @@ GPIO::StatusPWM() const
 }
 
 
+/// Singleton stuff
+std::unique_ptr<GPIO> GPIO::_instance = nullptr;
 
-// ******************************************************************************
-// BOOST Python stuff
-// ******************************************************************************
-#ifndef STANDALONE
-#include <boost/python.hpp>
-
-BOOST_PYTHON_MODULE( gpio )
+GPIO&
+GPIO::instance()
 {
-  auto gpio_class = boost::python::class_<GPIO, boost::noncopyable>( "GPIO" )
-                    .def( "init",        &GPIO::Init                )
-                    .def( "pulse",       &GPIO::Pulse               )
-                    .def( "light_on",    &GPIO::LightsOn            )
-                    .def( "light_off",   &GPIO::LightsOff           )
-                    .def( "pwm",         &GPIO::SetPWM              )
-                    .def( "pwm_duty",    &GPIO::GetPWM              )
-                    .def( "adc_read",    &GPIO::ReadADC             )
-                    .def( "adc_range",   &GPIO::SetADCRange         )
-                    .def( "adc_rate",    &GPIO::SetADCRate          )
-                    .def( "adc_setref",  &GPIO::SetReferenceVoltage )
-                    .def( "rtd_read",    &GPIO::ReadRTDTemp         )
-                    .def( "ntc_read",    &GPIO::ReadNTCTemp         )
-                    .def( "gpio_status", &GPIO::StatusGPIO          )
-                    .def( "adc_status",  &GPIO::StatusADC           )
-                    .def( "pwm_status",  &GPIO::StatusPWM           )
-  ;
-
-  gpio_class.attr( "ADS_RANGE_6V"    ) = GPIO::ADS_RANGE_6V;
-  gpio_class.attr( "ADS_RANGE_4V"    ) = GPIO::ADS_RANGE_4V;
-  gpio_class.attr( "ADS_RANGE_2V"    ) = GPIO::ADS_RANGE_2V;
-  gpio_class.attr( "ADS_RANGE_1V"    ) = GPIO::ADS_RANGE_1V;
-  gpio_class.attr( "ADS_RANGE_p5V"   ) = GPIO::ADS_RANGE_p5V;
-  gpio_class.attr( "ADS_RANGE_p25V"  ) = GPIO::ADS_RANGE_p25V;
-  gpio_class.attr( "ADS_RATE_8SPS"   ) = GPIO::ADS_RATE_8SPS;
-  gpio_class.attr( "ADS_RATE_16SPS"  ) = GPIO::ADS_RATE_16SPS;
-  gpio_class.attr( "ADS_RATE_32SPS"  ) = GPIO::ADS_RATE_32SPS;
-  gpio_class.attr( "ADS_RATE_64SPS"  ) = GPIO::ADS_RATE_64SPS;
-  gpio_class.attr( "ADS_RATE_128SPS" ) = GPIO::ADS_RATE_128SPS;
-  gpio_class.attr( "ADS_RATE_250SPS" ) = GPIO::ADS_RATE_250SPS;
-  gpio_class.attr( "ADS_RATE_475SPS" ) = GPIO::ADS_RATE_475SPS;
-  gpio_class.attr( "ADS_RATE_860SPS" ) = GPIO::ADS_RATE_860SPS;
+  return *_instance;
 }
-#endif
+
+int
+GPIO::make_instance()
+{
+  if( _instance == nullptr ){
+    _instance.reset( new GPIO() );
+  }
+  return 0;
+}
+
+static const int __make_instance_call = GPIO::make_instance();

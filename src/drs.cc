@@ -1,74 +1,9 @@
-#include "DRS.h"
-
+#include "drs.hpp"
 #include "logger.hpp"
 
 #include <iostream>
-#include <memory>
 #include <stdexcept>
 #include <unistd.h>
-
-class DRSContainer
-{
-public:
-  DRSContainer();
-  // DRSContainer( const DRSContainer& )  = delete;
-  // DRSContainer( const DRSContainer&& ) = delete;
-  ~DRSContainer();
-
-  void Init();
-  void StartCollect();
-  void ForceStop();
-
-  // Setting commands
-  void SetTrigger( const unsigned channel,
-                   const double   level,
-                   const unsigned direction,
-                   const double   delay );
-  void SetRate( const double frequency );
-  void SetSamples( const unsigned );
-
-
-  // Main output samples
-  std::string WaveformStr( const unsigned channel );
-  double      WaveformSum( const unsigned channel,
-                           const unsigned intstart = -1,
-                           const unsigned intstop  = -1,
-                           const unsigned pedstart = -1,
-                           const unsigned pedstop  = -1 );
-
-  // Debugging methods
-  void DumpBuffer( const unsigned channel );
-  void TimeSlice( const unsigned channel );
-
-  void RunCalib();
-
-  int      TriggerChannel();
-  int      TriggerDirection();
-  double   TriggerDelay();
-  double   TriggerLevel();
-  double   GetRate();
-  unsigned GetSamples();
-
-
-  bool IsAvailable() const;
-  bool IsReady();
-  void CheckAvailable() const;
-
-private:
-  std::unique_ptr<DRS> drs;
-  DRSBoard* board;
-
-  // Time samples
-
-  double triggerlevel;
-  unsigned triggerchannel;
-  int triggerdirection;
-  unsigned samples;
-};
-
-DRSContainer::DRSContainer() :
-  board( nullptr )
-{}
 
 void
 DRSContainer::Init()
@@ -128,10 +63,6 @@ DRSContainer::Init()
 
 }
 
-DRSContainer::~DRSContainer()
-{
-  printf( "Deallocating the DRS controller\n" );
-}
 
 void
 DRSContainer::TimeSlice( const unsigned channel )
@@ -460,38 +391,29 @@ public:
   board->CalibrateVolt( &_d );
 }
 
+// Singleton syntax. The instance is initialized a call to the make_instance
+// method.
+std::unique_ptr<DRSContainer> DRSContainer::_instance = nullptr;
+static int __make_instance_call                       = DRSContainer::make_instance();
 
-#ifndef STANDALONE
-#include <boost/python.hpp>
-#include <boost/python/def.hpp>
-
-BOOST_PYTHON_MODULE( drs )
-{
-  boost::python::class_<DRSContainer, boost::noncopyable>( "DRS" )
-  .def( "init",              &DRSContainer::Init )
-  .def( "timeslice",         &DRSContainer::TimeSlice )
-  .def( "startcollect",      &DRSContainer::StartCollect )
-  .def( "forcestop",         &DRSContainer::ForceStop )
-  // Trigger related stuff
-  .def( "set_trigger",       &DRSContainer::SetTrigger )
-  .def( "trigger_channel",   &DRSContainer::TriggerChannel )
-  .def( "trigger_direction", &DRSContainer::TriggerDirection )
-  .def( "trigger_level",     &DRSContainer::TriggerLevel )
-  .def( "trigger_delay",     &DRSContainer::TriggerDelay )
-
-  // Collection related stuff
-  .def( "set_samples",       &DRSContainer::SetSamples )
-  .def( "samples",           &DRSContainer::GetSamples )
-  .def( "set_rate",          &DRSContainer::SetRate )
-  .def( "rate",              &DRSContainer::GetRate )
-
-  .def( "is_available",      &DRSContainer::IsAvailable )
-  .def( "is_ready",          &DRSContainer::IsReady )
-  .def( "waveformstr",       &DRSContainer::WaveformStr )
-  .def( "waveformsum",       &DRSContainer::WaveformSum )
-  .def( "dumpbuffer",        &DRSContainer::DumpBuffer )
-  .def( "run_calibrations",  &DRSContainer::RunCalib   )
-  ;
+DRSContainer& DRSContainer::instance() {
+  return *_instance;
 }
 
-#endif
+int
+DRSContainer::make_instance()
+{
+  if( _instance.get() == nullptr ){
+    _instance.reset( new DRSContainer() );
+  }
+  return 0;// return required for trigger creation of instance.
+}
+
+DRSContainer::DRSContainer() :
+  board( nullptr )
+{}
+
+DRSContainer::~DRSContainer()
+{
+  printf( "Deallocating the DRS controller\n" );
+}

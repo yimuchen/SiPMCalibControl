@@ -1,113 +1,17 @@
-#include <libps5000/ps5000Api.h>
-
 #include "logger.hpp"
+#include "pico.hpp"
+#include <libps5000/ps5000Api.h>
 
 #include <chrono>
 #include <cstdio>
 #include <cstring>
-#include <memory>
 #include <stdexcept>
 #include <string>
 #include <thread>
-#include <vector>
-
-class PicoUnit
-{
-public:
-  PicoUnit();
-
-  ~PicoUnit();
-
-  // Cannot specify serial device?
-  void Init();
-
-  int  VoltageRangeMax() const;
-  int  VoltageRangeMin() const;
-  void SetVoltageRange( const int16_t channel, const int newrange );
-
-  void SetTrigger(
-    const int16_t  channel,
-    const int16_t  direction,
-    const float    level,
-    const unsigned delay,
-    const int16_t  maxwait );
-  void SetBlockNums(
-    const unsigned ncaps,
-    const unsigned postsamples,
-    const unsigned presamples );
-  void StartRapidBlock();
-  void WaitTillReady();
-  bool IsReady();
-  void FlushToBuffer();
-
-  int16_t GetBuffer(
-    const int      channel,
-    const unsigned cap,
-    const unsigned sample ) const;
-
-  // Conversion method.
-  float adc2mv( const int16_t channel, const int16_t adc ) const;
-
-  // Debugging methods
-  void DumpBuffer() const;
-  void PrintInfo() const;
-
-  std::string WaveformString( const int16_t  channel,
-                              const unsigned capture ) const;
-  int WaveformSum( const int16_t  channel,
-                   const unsigned capture ) const;
-
-  int WaveformAbsMax( const int16_t channel ) const;
-
-public:
-  int16_t device;// integer representing device in driver API
-
-  int range[2];
-  uint16_t triggerchannel;
-  uint16_t triggerdirection;
-  float triggerlevel;
-  unsigned triggerdelay;
-  uint16_t triggerwait;
-
-  unsigned timebase;// integer code to temporal spacing.
-  int timeinterval;// temporal spacing in nano seconds.
-  unsigned presamples;
-  unsigned postsamples;// number of temporal samples for data collection.
-  int maxsamples;// maximum number of time samples
-  unsigned ncaptures;// Number of block capture for perform per function call
-  int runtime;// storing runtime for Rapid block
-
-  inline int
-  rangeA() const { return range[0]; }
-  inline int
-  rangeB() const { return range[1]; }
-
-private:
-  std::vector<std::unique_ptr<int16_t[]> > bufferA;
-  std::vector<std::unique_ptr<int16_t[]> > bufferB;
-  std::unique_ptr<int16_t[]> overflowbuffer;
-
-  // Helper functions for sanity check
-  void findTimeInterval();// Running once and not changing;
-};
-
 
 static const float inputRanges[PS5000_MAX_RANGES] = {
   10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000 };
 
-PicoUnit::PicoUnit() :
-  device( 0 ),
-  triggerchannel( PS5000_EXTERNAL ),
-  triggerdirection( FALLING ),
-  triggerlevel( 500 ),
-  triggerdelay( 0 ),
-  presamples( 0 ),
-  postsamples( 0 ),
-  ncaptures( 0 )
-{
-  range[0] = 6;
-  range[1] = 7;
-}
 
 void
 PicoUnit::Init()
@@ -135,12 +39,6 @@ PicoUnit::Init()
   std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
   SetBlockNums( 5000, 100, 0 );
   findTimeInterval();
-}
-
-PicoUnit::~PicoUnit()
-{
-  printf( "Closing the PICOSCOPE interface\n" );
-  ps5000CloseUnit( device );
 }
 
 float
@@ -558,44 +456,41 @@ PicoUnit::findTimeInterval()
   }
 }
 
-/** BOOST PYTHON STUFF */
-#ifndef STANDALONE
-#include <boost/python.hpp>
+// Singleton stuff
+std::unique_ptr<PicoUnit> PicoUnit::_instance = nullptr;
 
-BOOST_PYTHON_MODULE( pico )
+PicoUnit&
+PicoUnit::instance(){ return *_instance; }
+
+int
+PicoUnit::make_instance()
 {
-  boost::python::class_<PicoUnit, boost::noncopyable>( "PicoUnit" )
-  .def( "init",             &PicoUnit::Init            )
-  .def( "settrigger",       &PicoUnit::SetTrigger      )
-  .def( "rangemin",         &PicoUnit::VoltageRangeMin )
-  .def( "rangemax",         &PicoUnit::VoltageRangeMax )
-  .def( "setrange",         &PicoUnit::SetVoltageRange )
-  .def( "setblocknums",     &PicoUnit::SetBlockNums    )
-  .def( "startrapidblocks", &PicoUnit::StartRapidBlock )
-  .def( "isready",          &PicoUnit::IsReady         )
-  .def( "waitready",        &PicoUnit::WaitTillReady   )
-  .def( "buffer",           &PicoUnit::GetBuffer       )
-  .def( "flushbuffer",      &PicoUnit::FlushToBuffer   )
-  .def( "dumpbuffer",       &PicoUnit::DumpBuffer      )
-  .def( "printinfo",        &PicoUnit::PrintInfo       )
-  .def( "adc2mv",           &PicoUnit::adc2mv          )
-  .def( "waveformstr",      &PicoUnit::WaveformString  )
-  .def( "waveformsum",      &PicoUnit::WaveformSum     )
-  .def( "waveformmax",      &PicoUnit::WaveformAbsMax  )
-  .def( "rangeA",           &PicoUnit::rangeA          )
-  .def( "rangeB",           &PicoUnit::rangeB          )
-
-  // Defining data members as readonly:
-  .def_readonly( "device",           &PicoUnit::device           )
-  .def_readonly( "presamples",       &PicoUnit::presamples       )
-  .def_readonly( "postsamples",      &PicoUnit::postsamples      )
-  .def_readonly( "ncaptures",        &PicoUnit::ncaptures        )
-  .def_readonly( "timeinterval",     &PicoUnit::timeinterval     )
-  .def_readonly( "triggerchannel",   &PicoUnit::triggerchannel   )
-  .def_readonly( "triggerdirection", &PicoUnit::triggerdirection )
-  .def_readonly( "triggerlevel",     &PicoUnit::triggerlevel     )
-  .def_readonly( "triggerdelay",     &PicoUnit::triggerdelay     )
-  .def_readonly( "triggerwait",      &PicoUnit::triggerwait      )
-  ;
+  if( _instance == nullptr ){
+    _instance.reset( new PicoUnit() );
+  }
+  return 0;
 }
-#endif
+
+
+static const int __make_instance_call = PicoUnit::make_instance();
+
+PicoUnit::PicoUnit() :
+  device( 0 ),
+  triggerchannel( PS5000_EXTERNAL ),
+  triggerdirection( FALLING ),
+  triggerlevel( 500 ),
+  triggerdelay( 0 ),
+  presamples( 0 ),
+  postsamples( 0 ),
+  ncaptures( 0 )
+{
+  range[0] = 6;
+  range[1] = 7;
+}
+
+
+PicoUnit::~PicoUnit()
+{
+  printf( "Closing the PICOSCOPE interface\n" );
+  ps5000CloseUnit( device );
+}

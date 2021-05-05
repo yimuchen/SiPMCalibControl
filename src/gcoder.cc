@@ -1,7 +1,7 @@
+#include "gcoder.hpp"
 #include "logger.hpp"
 
 #include <chrono>
-#include <cmath>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -14,93 +14,14 @@
 #include <termios.h>
 #include <unistd.h>
 
-struct GCoder
-{
-  GCoder();
-  // GCoder( const std::wstring& dev );
-  ~GCoder();
-
-  // Static data members
-  static const float _max_x;
-  static const float _max_y;
-  static const float _max_z;
-
-  static float
-  max_x(){ return _max_x; }
-  static float
-  max_y(){ return _max_y; }
-  static float
-  max_z(){ return _max_z; }
-
-  void InitPrinter( const std::string& dev );
-
-  // Raw motion command setup
-  std::string RunGcode(
-    const std::string& gcode,
-    const unsigned     attempt = 0,
-    const unsigned     waitack = 1e4,
-    const bool         verbose = false
-    ) const;
-
-  // Abstaction of actual GCode commands
-  void SendHome();
-
-  std::wstring GetSettings() const;
-
-  void SetSpeedLimit(
-    float x = std::nanf(""),
-    float y = std::nanf(""),
-    float z = std::nanf("")
-    );
-
-  void MoveTo(
-    float      x       = std::nanf(""),
-    float      y       = std::nanf(""),
-    float      z       = std::nanf(""),
-    const bool verbose = false
-    );
-
-  void MoveToRaw(
-    float      x       = std::nanf(""),
-    float      y       = std::nanf(""),
-    float      z       = std::nanf(""),
-    const bool verbose = false
-    );
-
-  void DisableStepper( bool x, bool y, bool z );
-
-  bool InMotion( float x, float y, float z );
-
-  // Floating point comparison.
-  static bool MatchCoord( double x, double y );
-
-public:
-  int         printer_IO;
-  float       opx, opy, opz; // current position of the printer
-  float       vx, vy, vz; // Speed of the gantry head.
-  std::string dev_path;
-};
-
-
-GCoder::GCoder() :
-  printer_IO( -1 ),
-  opx( -1 ),
-  opy( -1 ),
-  opz( -1 )
-{};
-
-GCoder::~GCoder()
-{
-  printf( "Deallocating the gantry controls\n" );
-  if( printer_IO > 0 ){
-    close( printer_IO );
-  }
-}
+const float GCoder::_max_x = 345;
+const float GCoder::_max_y = 450;
+const float GCoder::_max_z = 460;
 
 void
-GCoder::InitPrinter( const std::string& dev )
+GCoder::Init( const std::string& dev )
 {
-  // General documenation here:
+  // General documentation here:
   // https://www.xanthium.in/Serial-Port-Programming-on-Linux
 
   static const int speed = B115200;
@@ -148,8 +69,11 @@ GCoder::InitPrinter( const std::string& dev )
 
   printmsg( GREEN( "[PRINTER]" ), "Waking up printer...." );
   std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
-  SendHome();
+  SendHome( true, true, true );
   std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
+
+  // Setting speed to be as fast as possible
+  SetSpeedLimit( 1000, 1000, 1000 );
 
   return;
 }
@@ -230,11 +154,34 @@ GCoder::RunGcode(
 }
 
 void
-GCoder::SendHome()
+GCoder::SendHome( bool x, bool y, bool z )
 {
-  RunGcode( "G28\n", 0, 4e9, true );
+  char cmd[80] = "G28";
+
+  if( !x && !y && !z ){
+    return;
+  }
+
+  if( x ){
+    strcat( cmd, " X" );
+    opx = 0;
+  }
+
+  if( y ){
+    strcat( cmd, " Y" );
+    opy = 0;
+  }
+
+  if( z ){
+    strcat( cmd, " Z" );
+    opz = 0;
+  }
+
+  // Adding end of line character.
+  strcat( cmd, "\n" );
+
+  RunGcode( cmd, 0, 4e9, true );
   clear_update();
-  opx = opy = opz = 0;
 }
 
 void
@@ -317,9 +264,9 @@ GCoder::MoveToRaw( float x, float y, float z, bool verbose )
   char gcode[128];
 
   // Setting up target position
-  opx = x == x ? x : opx;
-  opy = y == y ? y : opy;
-  opz = z == z ? z : opz;
+  opx = ( x == x ) ? x : opx;
+  opy = ( y == y ) ? y : opy;
+  opz = ( z == z ) ? z : opz;
 
   // Rounding to closest 0.1 (precision of gantry system)
   opx = std::round( opx * 10 ) / 10;
@@ -386,35 +333,37 @@ GCoder::MatchCoord( double x, double y )
 }
 
 
-const float GCoder::_max_x = 345;
-const float GCoder::_max_y = 450;
-const float GCoder::_max_z = 460;
+// ------------------------------------------------------------------------------
+// Singleton stuff
+// ------------------------------------------------------------------------------
+std::unique_ptr<GCoder> GCoder::_instance = nullptr;
 
+GCoder&
+GCoder::instance(){ return *_instance;}
 
-#ifndef STANDALONE
-#include <boost/python.hpp>
-
-BOOST_PYTHON_MODULE( gcoder )
+int
+GCoder::make_instance()
 {
-  boost::python::class_<GCoder>( "GCoder" )
-  // .def( boost::python::init<const std::string&>() )
-  .def( "initprinter",     &GCoder::InitPrinter   )
-  // Hiding functions from python
-  .def( "getsettings",     &GCoder::GetSettings    )
-  .def( "set_speed_limit", &GCoder::SetSpeedLimit  )
-  .def( "moveto",          &GCoder::MoveTo         )
-  .def( "disablestepper",  &GCoder::DisableStepper )
-  .def( "in_motion",       &GCoder::InMotion       )
-  .def( "sendhome",        &GCoder::SendHome       )
-  .def_readwrite( "dev_path", &GCoder::dev_path )
-  .def_readwrite( "opx",      &GCoder::opx )
-  .def_readwrite( "opy",      &GCoder::opy )
-  .def_readwrite( "opz",      &GCoder::opz )
-
-  // Static methods
-  .def( "max_x", &GCoder::max_x ).staticmethod( "max_x" )
-  .def( "max_y", &GCoder::max_y ).staticmethod( "max_y" )
-  .def( "max_z", &GCoder::max_z ).staticmethod( "max_z" )
-  ;
+  //printf( "Making the gcoder instance" );
+  if( _instance == nullptr ){
+    _instance.reset( new GCoder() );
+  }
+  return 0;
 }
-#endif
+
+static const int __make_instance_call = GCoder::make_instance();
+
+GCoder::GCoder() :
+  printer_IO( -1 ),
+  opx( -1 ),
+  opy( -1 ),
+  opz( -1 )
+{};
+
+GCoder::~GCoder()
+{
+  printf( "Deallocating the gantry controls\n" );
+  if( printer_IO > 0 ){
+    close( printer_IO );
+  }
+}

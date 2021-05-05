@@ -186,38 +186,8 @@ Logger::SetOutputDescriptor( const int fd )
   if( fd == stdout->_fileno ){
     outputptr = stdout;
   } else if( fd == stderr->_fileno ){
-    outputptr = stderr ;
+    outputptr = stderr;
   } else {
     outputptr = fdopen( fd, "w" );// Open file descriptor to open mode
   }
-}
-
-
-/******************************** BOOST PYTHON STUFF ***************************/
-
-#include <boost/python.hpp>
-
-inline void
-printmsg_noheader( const std::string& x )
-{ return printmsg( x ); }
-
-inline void
-printmsg_header( const std::string& x, const std::string& y )
-{ return printmsg( x, y ); }
-
-BOOST_PYTHON_MODULE( logger )
-{
-  boost::python::def( "GREEN",                  &GREEN  );
-  boost::python::def( "RED",                    &RED    );
-  boost::python::def( "YELLOW",                 &YELLOW );
-  boost::python::def( "CYAN",                   &CYAN   );
-
-  boost::python::def( "update",                 &update               );
-  boost::python::def( "clear_update",           &clear_update         );
-  boost::python::def( "flush_update",           &flush_update         );
-  boost::python::def( "printmsg",               &printmsg_header      );
-  boost::python::def( "printmsg",               &printmsg_noheader    );
-  boost::python::def( "printwarn",              &printwarn            );
-  boost::python::def( "printerr",               &printerr             );
-  boost::python::def( "set_logging_descriptor", &setloggingdescriptor );
 }

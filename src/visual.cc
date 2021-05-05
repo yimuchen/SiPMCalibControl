@@ -1,105 +1,9 @@
-#include "logger.hpp"
+#include "visual.hpp"
 
+// Additional opencv stuff
 #include <opencv2/core/utils/logger.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/videoio.hpp>
 
-#include <boost/python.hpp>
-#include <boost/python/numpy.hpp>
-
-#include <atomic>
-#include <chrono>
-#include <mutex>
-#include <thread>
-
-class Visual
-{
-public:
-  Visual();
-  ~Visual();
-  Visual( const std::string& );
-
-  void init_dev( const std::string& );
-  std::string dev_path;
-
-  struct VisResult
-  {
-    double x;
-    double y;
-    double sharpness;
-    double area;
-    double maxmeas;
-    int    poly_x1;
-    int    poly_x2;
-    int    poly_x3;
-    int    poly_x4;
-    int    poly_y1;
-    int    poly_y2;
-    int    poly_y3;
-    int    poly_y4;
-  };
-
-  unsigned                      frame_width() const;
-  unsigned                      frame_height() const;
-  VisResult                     get_result();
-  boost::python::numpy::ndarray get_image();
-  boost::python::numpy::ndarray get_image_raw();
-  bool                          save_image( const std::string& );
-  PyObject*                     get_image_bytes();
-
-  int blur_range;
-  int lumi_cutoff;
-  int size_cutoff;
-  double threshold;
-  double ratio_cutoff;
-  double poly_range;
-
-private:
-  cv::VideoCapture cam;
-  cv::Mat image;
-  cv::Mat display;
-  VisResult latest;
-
-  // Variables for storing the thread handling
-  std::thread loop_thread;
-  std::atomic<bool> run_loop;
-  std::mutex loop_mutex;
-
-  // Function for thread handling;
-  void start_thread();
-  void end_thread();
-  void RunMainLoop( std::atomic<bool>& );
-
-  // Helper function for
-  void init_var_default();
-
-  VisResult find_det();
-
-  // Private methods for easier image processing
-  typedef std::vector<cv::Point> Contour_t;
-  typedef std::vector<Contour_t> ContourList;
-
-  std::vector<Contour_t> GetContours( cv::Mat& ) const;
-  Contour_t              GetConvexHull( const Contour_t& ) const;
-  Contour_t              GetPolyApprox( const Contour_t& ) const;
-
-  double GetImageLumi( const cv::Mat&, const Contour_t& ) const;
-  double sharpness( const cv::Mat&, const cv::Rect& ) const;
-  double GetContourSize( const Contour_t& ) const;
-  double GetContourMaxMeasure( const Contour_t& ) const;
-
-  void generate_display( const ContourList&,
-                         const ContourList&,
-                         const ContourList&,
-                         const ContourList& );
-  cv::Mat get_image_raw_cv();
-  cv::Mat get_image_cv();
-
-  static bool CompareContourSize( const Contour_t&, const Contour_t& );
-};
-
-// Helper objects for consistant display BGR
+// Helper objects for consistant display (format BGR)
 static const cv::Scalar red( 100, 100, 255 );
 static const cv::Scalar cyan( 255, 255, 100 );
 static const cv::Scalar yellow( 100, 255, 255 );
@@ -116,10 +20,8 @@ Visual::Visual() :
   run_loop( false )
 {
   init_var_default();
-
   // Py_Initialize();
-  boost::python::numpy::initialize();
-
+  // boost::python::numpy::initialize();
   start_thread();
 }
 
@@ -137,7 +39,6 @@ void
 Visual::init_dev( const std::string& dev )
 {
   end_thread();
-
   dev_path = dev;
   cam.release();
   cam.open( dev_path );
@@ -147,7 +48,8 @@ Visual::init_dev( const std::string& dev )
   // Additional camera settings
   cam.set( cv::CAP_PROP_FRAME_WIDTH,  1280 );
   cam.set( cv::CAP_PROP_FRAME_HEIGHT, 1024 );
-  cam.set( cv::CAP_PROP_BUFFERSIZE,   1 );   // Reducing buffer for fast capture
+  cam.set( cv::CAP_PROP_BUFFERSIZE,   1 );// Reducing buffer for fast capture
+  cam.set( cv::CAP_PROP_SHARPNESS,    0 );// disable postprocess sharpening.
 
   start_thread();
 }
@@ -165,9 +67,9 @@ Visual::init_var_default()
 
 Visual::~Visual()
 {
-  printf("Ending the visual thread\n");
+  printf( "Ending the visual thread\n" );
   end_thread();
-  printf("Closing visual system interfaces\n");
+  printf( "Closing visual system interfaces\n" );
   cam.release();
 }
 
@@ -183,6 +85,9 @@ Visual::frame_height() const
   return cam.get( cv::CAP_PROP_FRAME_HEIGHT );
 }
 
+/**
+ * @brief Facility for running the image processing thread
+ */
 void
 Visual::start_thread()
 {
@@ -205,12 +110,11 @@ void
 Visual::RunMainLoop( std::atomic<bool>& run_loop )
 {
   namespace st = std::chrono;
-  auto get_time
-    = []( void )->size_t {
-        return st::duration_cast<st::microseconds>(
-          st::high_resolution_clock::now().time_since_epoch()
-          ).count();
-      };
+  auto get_time = []( void )->size_t {
+                    return st::duration_cast<st::microseconds>(
+                      st::high_resolution_clock::now().time_since_epoch()
+                      ).count();
+                  };
 
   while( run_loop == true ){
     const size_t time_start = get_time();
@@ -220,14 +124,13 @@ Visual::RunMainLoop( std::atomic<bool>& run_loop )
 
     do {
       cam >> image;
-      // Scaling down the image for faster processing.
     } while( ( image.empty() || image.cols == 0 ) && cam.isOpened() );
 
-    latest = find_det();
+    latest = find_det( image );
     loop_mutex.unlock();
 
     while( time_end - time_start < 5e3 ){
-      // Updating at 200fps. Must be faster than the webcam refresh rate for
+      // Updating at 2000fps. Must be faster than the webcam refresh rate for
       // realtime image over internet
       std::this_thread::sleep_for( st::milliseconds( 1 ) );
       time_end = get_time();
@@ -237,21 +140,34 @@ Visual::RunMainLoop( std::atomic<bool>& run_loop )
 
 
 Visual::VisResult
-Visual::find_det()
+Visual::find_det( const cv::Mat& img )
 {
   static const VisResult empty_return = VisResult { -1, -1, 0, 0, 0,
                                                     0, 0, 0, 0,
                                                     0, 0, 0, 0 };
 
   // Early exits if
-  if( image.empty() || image.cols == 0 ){
+  if( img.empty() || img.cols == 0 ){
     return empty_return;
   }
 
-  // Reducing image size to speed up algorithm
-  // cv::resize( image, image, cv::Size( 0, 0 ), 0.5, 0.5 );
+  const auto contours = find_contours( img );
+  const auto& hulls   = contours.at( 0 );
 
-  const ContourList contours = GetContours( image );
+  const auto ans = hulls.empty() ? empty_return :
+                   make_result( img, hulls.at( 0 ) );
+  display = make_display( img, contours );
+  return ans;
+}
+
+/**
+ * @brief Given an base image, find the contours and group them according to the
+ * various selection criteria.
+ */
+std::vector<Visual::ContourList>
+Visual::find_contours( const cv::Mat& img ) const
+{
+  const ContourList contours = GetRawContours( img );
   ContourList failed_ratio;
   ContourList failed_lumi;
   ContourList failed_rect;
@@ -288,89 +204,96 @@ Visual::find_det()
     hulls.push_back( hull );
   }
 
+  // Sorting candidates according to contour size
   std::sort( hulls.begin(), hulls.end(), Visual::CompareContourSize );
 
-  generate_display( failed_ratio, failed_lumi, failed_rect, hulls );
-
-
-  if( hulls.empty() ){
-    return empty_return;
-  } else {
-    // position calculation of final contour
-    const cv::Moments m = cv::moments( hulls.at( 0 ), false );
-
-    // Maximum distance in contour
-    const double distmax        = GetContourMaxMeasure( hulls.at( 0 ) );
-    const Contour_t poly        = GetPolyApprox( hulls.at( 0 ) );
-    const cv::Rect bound        = cv::boundingRect( hulls.at( 0 ) );
-    const cv::Rect double_bound = cv::Rect( bound.x - bound.width /2
-                                          , bound.y - bound.height/2
-                                          , bound.width*2
-                                          , bound.height*2 );
-    const double sharp = sharpness( image, double_bound );
-
-    return VisResult {
-      m.m10/m.m00, m.m01/m.m00,
-      sharp,
-      m.m00, distmax,
-      poly.at( 0 ).x,
-      poly.at( 1 ).x,
-      poly.at( 2 ).x,
-      poly.at( 3 ).x,
-      poly.at( 0 ).y,
-      poly.at( 1 ).y,
-      poly.at( 2 ).y,
-      poly.at( 3 ).y,
-    };
-  }
+  return { hulls,
+           failed_rect,
+           failed_lumi,
+           failed_ratio };
 }
 
-void
-Visual::generate_display( const ContourList& failed_ratio,
-                          const ContourList& failed_lumi,
-                          const ContourList& failed_rect,
-                          const ContourList& hulls  )
+Visual::VisResult
+Visual::make_result( const cv::Mat& img, const Visual::Contour_t& hull ) const
+{
+  // position calculation of final contour
+  const cv::Moments m = cv::moments( hull, false );
+
+  // Maximum distance in contour
+  const double distmax        = GetContourMaxMeasure( hull );
+  const Contour_t poly        = GetPolyApprox( hull );
+  const cv::Rect bound        = cv::boundingRect( hull );
+  const cv::Rect double_bound = cv::Rect( bound.x - bound.width /2
+                                        , bound.y - bound.height/2
+                                        , bound.width*2
+                                        , bound.height*2 );
+  const auto p = sharpness( img, double_bound );
+
+  return VisResult {
+    m.m10/m.m00, m.m01/m.m00,
+    p.second,
+    p.first,
+    m.m00, distmax,
+    poly.at( 0 ).x,
+    poly.at( 1 ).x,
+    poly.at( 2 ).x,
+    poly.at( 3 ).x,
+    poly.at( 0 ).y,
+    poly.at( 1 ).y,
+    poly.at( 2 ).y,
+    poly.at( 3 ).y,
+  };
+}
+
+cv::Mat
+Visual::make_display( const cv::Mat&                          img,
+                      const std::vector<Visual::ContourList>& contlist ) const
 {
   // Drawing variables
   char msg[1024];
+  cv::Mat ret = img.clone();
 
-  // Generating the image
-  display = image.clone();
-
-  auto PlotContourList = [this]( const ContourList& list,
-                                 const cv::Scalar& color ) -> void {
+  auto PlotContourList = [this, &ret]( const Visual::ContourList& list,
+                                       const cv::Scalar& color ) -> void {
                            for( unsigned i = 0; i < list.size(); ++i ){
-                             cv::drawContours( this->display, list, i, color );
+                             cv::drawContours( ret, list, i, color );
                            }
                          };
 
-  auto PlotText = [this]( const std::string& str,
-                          const cv::Point& pos,
-                          const cv::Scalar& col ) -> void {
-                    cv::putText( this->display, str,
+  auto PlotText = [this, &ret]( const std::string& str,
+                                const cv::Point& pos,
+                                const cv::Scalar& col ) -> void {
+                    cv::putText( ret, str,
                       pos, cv::FONT_HERSHEY_SIMPLEX, 0.8, col, 2 );
                   };
 
-  PlotContourList( failed_ratio, white );
-  PlotContourList( failed_lumi,  green );
-  PlotContourList( failed_rect,  yellow );
-  PlotContourList( hulls,        cyan );
-  if( hulls.empty() ){
+
+  PlotContourList( contlist.at( 0 ), cyan   );
+  PlotContourList( contlist.at( 1 ), white );
+  PlotContourList( contlist.at( 2 ), green );
+  PlotContourList( contlist.at( 3 ), yellow );
+
+  // Plotting the final results
+  if( contlist.at( 0 ).empty() ){
     PlotText( "NOT FOUND", cv::Point( 20, 20 ), red );
   } else {
-    const cv::Moments m = cv::moments( hulls.at( 0 ), false );
-    const double x      = m.m10/m.m00;
-    const double y      = m.m01/m.m00;
+    const auto res = make_result( img, contlist.at( 0 ).at( 0 ) );
+    const double x = res.x;
+    const double y = res.y;
+    const double s2 = res.sharpness_m2;
+    const double s4 = res.sharpness_m4;
 
-    sprintf( msg, "x:%.1lf y:%.1lf", x, y ),
-    cv::drawContours( display, hulls, 0, red, 3 );
-    cv::circle( display, cv::Point( x, y ), 3, red, cv::FILLED );
+    sprintf( msg, "x:%.1lf y:%.1lf s2:%.2lf s4:%.2lf", x, y, s2, s4 ),
+    cv::drawContours( ret, contlist.at( 0 ), 0, red, 3 );
+    cv::circle( ret, cv::Point( x, y ), 3, red, cv::FILLED );
     PlotText( msg, cv::Point( 20, 20 ), red );
   }
+
+  return ret;
 }
 
 std::vector<Visual::Contour_t>
-Visual::GetContours( cv::Mat& img ) const
+Visual::GetRawContours( const cv::Mat& img ) const
 {
   cv::Mat gray_img;
   std::vector<cv::Vec4i> hierarchy;
@@ -455,32 +378,56 @@ Visual::GetContourMaxMeasure( const Contour_t& x ) const
   return ans;
 }
 
-double
+std::pair<double,double>
 Visual::sharpness( const cv::Mat& img, const cv::Rect& crop ) const
 {
   // Image containers
-  cv::Mat working_image, lap;
+  cv::Mat cimg[3], bimg, fimg, lap;
 
   // Variable containers
   cv::Scalar mu, sigma;
 
-  // Getting image converting to gray scale
-  cv::cvtColor( img, working_image, cv::COLOR_BGR2GRAY );
+  // Convert original image to gray scale
+  cv::cvtColor( img, bimg, cv::COLOR_BGR2GRAY );
+
+  // Getting green channel image image converting to gray scale cv::split( img,
+  // cimg ); cimg[1].convertTo( fimg, CV_32FC1 );
+
+  // Creating the crops
   if( crop.width == 0 || crop.height == 0 ){
-    return 0;
+    return std::pair<double,double>(0,0);
   }
 
   // Cropping to range sometimes is bad... not sure why just yet
   try {
-    working_image = working_image( crop ).clone();
+    bimg = bimg( crop ).clone();
   } catch( cv::Exception& e ){
-    return 0;
+    return std::pair<double,double>(0,0);
   }
 
-  // Calculating lagrangian.
-  cv::Laplacian( working_image, lap, CV_64F, 5 );
-  cv::meanStdDev( lap, mu, sigma );
-  return sigma.val[0] * sigma.val[0];
+  cv::blur( bimg, bimg, cv::Size( 2, 2 ) );
+
+  // Calculating lagrangian
+  cv::Laplacian( bimg, lap, CV_64F, 5 );
+
+  // Calculating the 2nd and 4th moment
+  mu = cv::mean( lap );
+  double mo2 = 0, mo4 = 0;
+
+  for( int r = 0; r < lap.rows; ++r ){
+    for( int c = 0; c < lap.cols; ++c ){
+      const double val  = lap.at<double>( r, c );
+      const double diff = val - mu.val[0];
+      mo2 += diff * diff;
+      mo4 += diff * diff * diff * diff;
+    }
+  }
+
+  //
+  mo2 /= lap.rows * lap.cols;
+  mo4 /= lap.rows * lap.cols;
+
+  return std::pair<double,double>( mo4 / (mo2*mo2), mo2 );
 }
 
 Visual::VisResult
@@ -493,16 +440,16 @@ Visual::get_result()
 }
 
 bool
-Visual::save_image( const std::string& path )
+Visual::save_image( const std::string& path, bool raw )
 {
-  const cv::Mat mat = get_image_cv();
+  const cv::Mat mat = get_image( raw );
   cv::imwrite( path, mat );
   return true;
 }
 
 
 cv::Mat
-Visual::get_image_cv()
+Visual::get_image( const bool raw )
 {
   static const cv::Mat blank_frame(
     cv::Size( frame_width(), frame_height() ),
@@ -510,71 +457,12 @@ Visual::get_image_cv()
 
   loop_mutex.lock();
   cv::Mat ans_mat = ( display.empty() || display.cols == 0 ) ? blank_frame :
+                    raw ? image :
                     display;
   loop_mutex.unlock();
 
   return ans_mat;
 }
-
-cv::Mat
-Visual::get_image_raw_cv()
-{
-  static const cv::Mat blank_frame(
-    cv::Size( frame_width(), frame_height() ),
-    CV_8UC3, cv::Scalar( 0, 0, 0 ) );
-
-  loop_mutex.lock();
-  cv::Mat ans_mat = ( image.empty() || image.cols == 0 ) ? blank_frame :
-                    image;
-  loop_mutex.unlock();
-
-  return ans_mat;
-}
-
-boost::python::numpy::ndarray
-Visual::get_image()
-{
-  cv::Mat mat = get_image_cv();
-
-  namespace bp = boost::python;
-
-  bp::tuple shape = bp::make_tuple( mat.rows
-                                  , mat.cols
-                                  , mat.channels() );
-  bp::tuple stride = bp::make_tuple(
-    mat.channels() * mat.cols * sizeof( uchar ),
-    mat.channels() * sizeof( uchar ),
-    sizeof( uchar ) );
-
-  return bp::numpy::from_data( mat.data
-                             , bp::numpy::dtype::get_builtin<uchar>()
-                             , shape
-                             , stride
-                             , bp::object() );
-}
-
-boost::python::numpy::ndarray
-Visual::get_image_raw()
-{
-  cv::Mat mat = get_image_raw_cv();
-
-  namespace bp = boost::python;
-
-  bp::tuple shape = bp::make_tuple( mat.rows
-                                  , mat.cols
-                                  , mat.channels() );
-  bp::tuple stride = bp::make_tuple(
-    mat.channels() * mat.cols * sizeof( uchar ),
-    mat.channels() * sizeof( uchar ),
-    sizeof( uchar ) );
-
-  return bp::numpy::from_data( mat.data
-                             , bp::numpy::dtype::get_builtin<uchar>()
-                             , shape
-                             , stride
-                             , bp::object() );
-}
-
 
 PyObject*
 Visual::get_image_bytes()
@@ -582,52 +470,11 @@ Visual::get_image_bytes()
   // Returning the image generated from the detection algorithm as a byte
   // sequence to be returned by a HTTP image request.
   std::vector<uchar> buf;// Storage required by opencv.
-  cv::Mat mat = get_image_cv();
-  cv::imencode( ".jpg", mat, buf );
+  cv::imencode( ".jpg", get_image( false ), buf );
 
   // Conversion of bytes sequence to python objects
   // https://www.auctoris.co.uk/2017/12/21/
   // advanced-c-python-integration-with-boost-python-part-2
   return PyBytes_FromObject(
     PyMemoryView_FromMemory( (char*)buf.data(), buf.size(), PyBUF_READ ) );
-}
-
-#include <boost/python.hpp>
-
-BOOST_PYTHON_MODULE( visual )
-{
-  boost::python::class_<Visual, boost::noncopyable>( "Visual" )
-  .def( "init_dev",        &Visual::init_dev        )
-  .def( "frame_width",     &Visual::frame_width     )
-  .def( "frame_height",    &Visual::frame_height    )
-  .def( "get_latest",      &Visual::get_result      )
-  .def( "get_image",       &Visual::get_image       )
-  .def( "get_image_raw",   &Visual::get_image_raw   )
-  .def( "get_image_bytes", &Visual::get_image_bytes )
-  .def( "save_image",      &Visual::save_image      )
-  .def_readonly( "dev_path", &Visual::dev_path  )
-  .def_readwrite( "threshold",    &Visual::threshold    )
-  .def_readwrite( "blur_range",   &Visual::blur_range   )
-  .def_readwrite( "lumi_cutoff",  &Visual::lumi_cutoff  )
-  .def_readwrite( "size_cutoff",  &Visual::size_cutoff  )
-  .def_readwrite( "ratio_cutoff", &Visual::ratio_cutoff )
-  .def_readwrite( "poly_range",   &Visual::poly_range   )
-  ;
-
-  // Required for coordinate calculation
-  boost::python::class_<Visual::VisResult>( "VisResult" )
-  .def_readwrite( "x",         &Visual::VisResult::x         )
-  .def_readwrite( "y",         &Visual::VisResult::y         )
-  .def_readwrite( "sharpness", &Visual::VisResult::sharpness )
-  .def_readwrite( "area",      &Visual::VisResult::area      )
-  .def_readwrite( "maxmeas",   &Visual::VisResult::maxmeas   )
-  .def_readwrite( "poly_x1",   &Visual::VisResult::poly_x1   )
-  .def_readwrite( "poly_x2",   &Visual::VisResult::poly_x2   )
-  .def_readwrite( "poly_x3",   &Visual::VisResult::poly_x3   )
-  .def_readwrite( "poly_x4",   &Visual::VisResult::poly_x4   )
-  .def_readwrite( "poly_y1",   &Visual::VisResult::poly_y1   )
-  .def_readwrite( "poly_y2",   &Visual::VisResult::poly_y2   )
-  .def_readwrite( "poly_y3",   &Visual::VisResult::poly_y3   )
-  .def_readwrite( "poly_y4",   &Visual::VisResult::poly_y4   )
-  ;
 }
