@@ -2,7 +2,7 @@
 
 ## Variables for versions
 JQUERY_VERSION="3.6.0"
-SOCKETIO_VERSION="2.1.1"
+SOCKETIO_VERSION="3.1.3"
 PLOTLY_VERSION="1.58.4"
 FONTAWESOME_VERSION="5.15.2"
 
@@ -21,6 +21,6 @@ wget https://cdn.plot.ly/plotly-${PLOTLY_VERSION}.min.js \
 
 # Font awesome host site: https://fontawesome.com/how-to-use/on-the-web/setup/hosting-font-awesome-yourself
 wget https://use.fontawesome.com/releases/v${FONTAWESOME_VERSION}/fontawesome-free-${FONTAWESOME_VERSION}-web.zip \
-     --output-document static/external/fontawesome-${FONTAWESOME_VERSION}.zip
+     --output-document static/external/fontawesome-${FONTAWESOME_VERSION}-web.zip
 
 unzip static/external/fontawesome-${FONTAWESOME_VERSION}-web.zip -d static/external/
