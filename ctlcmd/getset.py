@@ -100,7 +100,7 @@ class set(cmdbase.controlcmd):
     if args.printerdev == self.gcoder.dev_path:
       pass
     try:
-      self.gcoder.initprinter(args.printerdev)
+      self.gcoder.init(args.printerdev)
       printset = self.gcoder.getsettings()
       printset = printset.split('\necho:')
       for line in printset:

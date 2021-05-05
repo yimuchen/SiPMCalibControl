@@ -27,6 +27,7 @@ if __name__ == '__main__':
       viscmd.visualzscan,
       viscmd.visualmaxsharp,
       viscmd.visualshowdet,
+      viscmd.visualsaveframe,
       viscmd.visualcenterdet,
       getset.set,
       getset.get,

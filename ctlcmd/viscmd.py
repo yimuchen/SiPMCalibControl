@@ -108,7 +108,7 @@ class visualhscan(cmdbase.controlcmd):
       time.sleep(0.3)  ## Waiting two frame tiles
 
       center = self.visual.get_latest()
-      image = np.copy(self.visual.get_image())
+      image = np.copy(self.visual.get_image(False))
 
       if center.x > 0 and center.y > 0:
         gantry_x.append(xval)
@@ -303,62 +303,135 @@ class visualcenterdet(cmdbase.controlcmd):
 
 class visualmaxsharp(cmdbase.controlcmd):
   """
-  Moving the gantry so that the image sharpness is maximized
+  Moving the gantry to the position such that the image sharpness is maximized.
+  The user is required to input the z points to scan for maximum sharpness.
   """
   LOG = log.GREEN('[VISMAXSHARP]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    self.add_xydet_options()
-    self.parser.add_argument('-z',
-                             '--startz',
+    self.add_zscan_options()
+    self.parser.add_argument('--wait',
                              type=float,
-                             default=30,
-                             help=('Initial value to begin finding optimal z '
-                                   'value [mm]'))
-    self.parser.add_argument('-d',
-                             '--stepsize',
-                             type=float,
-                             default=1,
-                             help=('First step size to scan for immediate '
-                                   'neighborhood z scan [mm]'))
+                             default=0.5,
+                             help=('Time to wait between motion and image acquisiation (seconds)'))
     self.parser.add_argument('--monitor',
                              '-m',
                              action='store_true',
                              help=('Open a monitoring window'))
+    self.parser.add_argument('--fitmodel',
+                             type=str,
+                             default='cubic',
+                             choices=['quad','cubic','gauss'],
+                             help='Model to fit the sharpness profile.')
 
   def parse(self, line):
     args = cmdbase.controlcmd.parse(self, line)
     self.parse_xydet_options(args, add_visoffset=True)
+    self.parse_zscan_options(args)
     return args
 
   def run(self, args):
-    self.move_gantry(args.x, args.y, args.startz, False)
+    zval = np.array(args.zlist)
+    laplace = []
 
-    center = self.visual.get_latest()
-    laplace = center.sharpness
-    zval = float(args.startz)
-    zstep = args.stepsize
-
-    while abs(zstep) >= 0.1:
-      self.move_gantry(args.x, args.y, zval + zstep, False)
-      time.sleep(0.3)
+    for z in args.zlist:
+      self.check_handle(args)
+      self.move_gantry(args.x, args.y, z, False)
+      time.sleep(args.wait)
       center = self.visual.get_latest()
+      laplace.append(center.sharpness)
 
-      if center.sharpness > laplace:
-        laplace = center.sharpness
-        zval += zstep
-      else:
-        zstep *= -0.8
-      self.update('z:{0:.2f}, L:{1:.2f}'.format(zval, laplace))
+      # Information
+      self.update("z position: {0:.1f} | sharpness: {1:6.2f}".format(z,laplace[-1]))
 
+      # Additional information
       if args.monitor:
         cv2.imshow('SIPMCALIB - visualmaxsharp',
-                    np.copy(self.visual.get_image_raw()))
+                    np.copy(self.visual.get_image(True)))
         cv2.waitKey(1)
 
-    self.printmsg('Final z:{0:.1f}'.format(self.gcoder.opz))
+    # Truncating data set to only valid values
+    laplace = np.array(laplace)
+    mask = laplace > 0
+    laplace = laplace[mask]
+    zval    = zval[mask]
+
+    model = visualmaxsharp.quad_model() if args.fitmodel == 'quad' else \
+            visualmaxsharp.gauss_model() if args.fitmodel == 'gauss' else \
+            visualmaxsharp.cubic_model()
+
+    # First fit over full scan range
+    fit,cov = curve_fit( model, zval,
+                        laplace,
+                        p0=[zval[np.argmax(laplace)], *model.init_guess],
+                        # Initial guess
+                        bounds=([np.min(args.zlist), *model.bounds[0]],
+                                [np.max(args.zlist), *model.bounds[1]]),
+                        maxfev=int(1e4))
+    self.printmsg("Target z position: {0:.2f}mm (actual: {0:.1f}mm)".format(
+      fit[0]))
+    self.move_gantry(args.x,args.y, fit[0],False)
+
     cv2.destroyAllWindows()
+
+  """
+  Models for running the sharpness fit profile, defined as static methods. Notice
+  the various models be defined such that:
+
+  - In the implementation of the __call__ method
+    - `z` is the first argument
+    - `z_0` indicating the maximum sharpness point must be the second argument
+  - provide the following variables:
+    - `init_guess` indicating the estimated stating point of the parameters other
+      than z_0
+    - `bounds` indicating the boundaries of the parameters other than z_0 The
+      initial value and boundaries of z0 will be determined from the data.
+  """
+  class cubic_model(object):
+    def __init__(self):
+      self.init_guess = [0,-1000,0]
+      self.bounds = ([-np.inf,-np.inf,-np.inf],
+                     [ np.inf,      0, np.inf])
+
+    def __call__(self,z,z0,a,b,c):
+      return a*(z-z0)**3 + b*(z-z0)**2 + c
+
+  class quad_model(object):
+    def __init__(self):
+      self.init_guess = [-1000,0]
+      self.bounds = ([-np.inf,-np.inf],
+                     [      0, np.inf])
+
+    def __call__(self,z,z0,a,c):
+      return a*(z-z0)**2 + c
+
+  class gauss_model(object):
+    def __init__(self):
+      self.init_guess = [1000, 10,0]
+      self.bounds = ([     0,     0,-np.inf],
+                     [np.inf,np.inf, np.inf])
+
+    def __call__(self,z,z0,a,b,c):
+      return a*exp(-(z-z0)**2/(2*b**2)) + c
+
+
+class visualsaveframe(cmdbase.controlcmd):
+  """
+  Saving the current image to some path
+  """
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
+    self.parser.add_argument('--saveimg',
+                             type=str,
+                             required=True,
+                             help='Local path to store image file')
+    self.parser.add_argument('--raw',
+                             action='store_true',
+                             help='Store raw image or processes image')
+
+  def run(self, args):
+    self.visual.save_image(args.saveimg,args.raw)
 
 
 class visualzscan(cmdbase.controlcmd):
@@ -373,6 +446,10 @@ class visualzscan(cmdbase.controlcmd):
     cmdbase.controlcmd.__init__(self, cmd)
     self.add_savefile_options(visualzscan.DEFAULT_SAVEFILE)
     self.add_zscan_options()
+    self.parser.add_argument('--wait',
+                             type=float,
+                             default=0.2,
+                             help=('Time to wait between image acquisiation (seconds)'))
     self.parser.add_argument('-m',
                              '--monitor',
                              action='store_true',
@@ -397,10 +474,10 @@ class visualzscan(cmdbase.controlcmd):
       # Checking termination signal
       self.check_handle(args)
       self.move_gantry(args.x, args.y, z, False)
-      time.sleep(0.1)
+      time.sleep(args.wait)
 
       center = self.visual.get_latest()
-      image = np.copy(self.visual.get_image_raw())
+      image = np.copy(self.visual.get_image(True))
       laplace.append(center.sharpness)
       reco_x.append(center.x)
       reco_y.append(center.y)
@@ -423,6 +500,7 @@ class visualzscan(cmdbase.controlcmd):
           center.x, center.y, center.area, center.maxmeas
           ))
 
+      args.savefile.flush()
       if args.monitor:
         cv2.imshow('SIPMCALIB - visualzscan', image)
         cv2.waitKey(1)
@@ -432,11 +510,6 @@ class visualzscan(cmdbase.controlcmd):
     args.savefile.close()
 
     cv2.destroyAllWindows()
-
-
-#########################
-# Helper commands for debugging
-
 
 class visualshowdet(cmdbase.controlcmd):
   """
@@ -467,8 +540,7 @@ class visualshowdet(cmdbase.controlcmd):
       except:
         break
 
-      image = self.visual.get_image() if not args.raw else \
-              self.visual.get_image_raw()
+      image = self.visual.get_image(args.raw)
       cv2.imshow("SIPMCALIB - visualshowdet", np.copy(image))
       cv2.waitKey(1)
       time.sleep(0.05)

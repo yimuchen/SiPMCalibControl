@@ -21,7 +21,7 @@ import traceback
 import re
 import datetime
 import time
-
+import shlex
 
 class controlterm(cmd.Cmd):
   """
@@ -309,24 +309,71 @@ class controlcmd():
     log.clear_update()
     log.printerr()
 
+  def update_progress(self,
+                      progress=None,
+                      coordinates=None,
+                      temperature=None,
+                      display_data={}):
+    """
+    Function for displaying a progress update for the data. The standard sequence
+    would be (given the input variables)
+    - progress: A two long iterable construct, indicating the number of
+      iterations ran and the expected number of total iteration. A percent value
+      will also be displayed for at a glance monitoring.
+    - coordinates: If set to true, add columns for gantry coordinates
+    - temperature: If set to true, add columns for temperature sensors
+    - display_data: the key is used to display the data, and the values should be
+      a list of floats corresponding to the data to be displayed. Data will be
+      truncated to the 2nd decimal place, so scale data accordingly.
+    """
+    message_string = ''
+
+    def append_msg(x,msg):
+      if x != '':
+        return x + ' | ' + msg
+      else:
+        return msg
+
+    # Making the various progress string.
+    if progress:
+      done = progress[0]
+      total = progress[1]
+      width = len(str(total))
+      per = done / total * 100.0
+      pstr = '[{done:{width}d}/{total:{width}d}][{per:5.1f}%]'.format(
+        done=done,total=total,width=width,per=per)
+      message_string = append_msg(message_string,pstr)
+
+    if coordinates:
+      cstr = 'Gantry@({x:5.1f},{y:5.1f},{z:5.1f})'.format(
+        x= self.gcoder.opx, y=self.gcoder.opy, z=self.gcoder.opz)
+      message_string = append_msg(message_string,cstr)
+
+    if temperature:
+      tstr = 'bias:{bias:5.1f}mV pulser:{pt:.2f}C SiPM:{st:.2f}C'.format(
+        bias=self.gpio.adc_read(2),
+        pt=self.gpio.ntc_read(0),
+        st=self.gpio.rtd_read(1))
+      message_string = append_msg(message_string,tstr)
+
+    for key, vals in display_data.items():
+      list_str = [ '{0:.2f}'.format(x) for x in vals ]
+      list_str = ' '.join(list_str)
+      msg = '{key}: [{list}]'.format(key=key,list=list_str)
+      message_string= append_msg(message_string, msg)
+
+    self.update(message_string)
+
   def update_luminosity(self,
                         data1,
                         data2,
                         data_tag='Luminosity',
-                        Progress=None,
-                        Temperature=None):
-    string = ''
-    string = string + 'x:{0:5.1f}, y:{1:5.1f}, z:{2:5.1f}'.format(
-        self.gcoder.opx, self.gcoder.opy, self.gcoder.opz)
-    string = string + ' | {tag} {data1:8.5f} {data2:8.6f}'.format(
-        tag=data_tag, data1=data1, data2=data2)
-    if Progress:
-      string = string + ' | Progress [{0:3d}/{1:3d}]'.format(
-          Progress[0], Progress[1])
-    if Temperature:
-      string = string + ' | Bias:{0:5.3f} Pulse:{1:.2f}C SiPM:{2:.2f}C'.format(
-          self.gpio.adc_read(2), self.gpio.ntc_read(0), self.gpio.rtd_read(1))
-    self.update(string)
+                        progress=None,
+                        temperature=None):
+    self.update_progress(progress=progress,
+                         coordinates=True,
+                         temperature=temperature,
+                         display_data={data_tag:[data1,data2]})
 
   def make_standard_line(self, lumi_data, det_id=-100, time=0.0):
     """
@@ -355,12 +402,12 @@ class controlcmd():
 
   def parse(self, line):
     """
-    Default parsing arguments, overriding the system exits exception to that the
+    Default parsing arguments, overriding the system exits exception so that the
     session doesn't end with the user inputs a bad command. Additional parsing
     could be achieved by overloading this methods.
     """
     try:
-      arg = self.parser.parse_args(line.split())
+      arg = self.parser.parse_args(shlex.split(line))
     except SystemExit as err:
       self.printerr(str(err))
       raise Exception('Cannot parse input')
@@ -437,7 +484,7 @@ class controlcmd():
                              type=int,
                              choices=[-1, 1, 2, 3],
                              help=('Readout method to be used: 1:picoscope, '
-                                   '2:ADC, -1:Predefined model'))
+                                   '2:ADC, 3:DRS4, -1:Predefined model'))
     self.parser.add_argument('--channel',
                              type=int,
                              default=None,
@@ -445,8 +492,8 @@ class controlcmd():
     self.parser.add_argument('--samples',
                              type=int,
                              default=5000,
-                             help=('Number of samples to take the average '
-                                   '(default=%(default)d)'))
+                             help=('Number of readout samples to take the '
+                             'average for luminosity measurement (default=%(default)d)'))
 
   def add_hscan_options(self, scanz=20, hrange=5, distance=1):
     """
@@ -582,11 +629,16 @@ class controlcmd():
       if len(r) < 2 or len(r) > 3:
         raise Exception(('Range must be in the format [start end (sep)] '
                          'sep is assumed to be 1 if not specified'))
-      minz = float(min(r[:2]))
-      maxz = float(max(r[:2]))
+      startz = float(r[0])
+      stopz = float(r[1])
       sep = float(1 if len(r) == 2 else r[2])
       args.zlist.extend(
-          np.linspace(minz, maxz, int((maxz - minz) / sep), endpoint=False))
+          np.linspace(startz, stopz, int(np.rint((stopz - startz) / sep)), endpoint=False))
+
+    # Rounding to closest 0.1
+    args.zlist = np.around(args.zlist,decimals=1)
+
+    # Additional filtering
     args.zlist = [x for x in args.zlist if x < gcoder.GCoder.max_z()]
 
     ## Returning sorted results, STL or LTS depending on the first two entries

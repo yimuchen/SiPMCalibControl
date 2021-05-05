@@ -65,9 +65,31 @@ class sendhome(cmdbase.controlcmd):
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
+    self.parser.add_argument('-x',
+                             action='store_true',
+                             help='reset x coordinates to 0')
+    self.parser.add_argument('-y',
+                             action='store_true',
+                             help='reset y coordinates to 0')
+    self.parser.add_argument('-z',
+                             action='store_true',
+                             help='reset z coordinates to 0')
+    self.parser.add_argument('--all',
+                             '-a',
+                             action='store_true',
+                             help='reset all coordinates to 0')
+
+  def parse(self,line):
+    args = cmdbase.controlcmd.parse(self, line)
+    # Filling with NAN for missing settings.
+    if args.all:
+        args.x = True
+        args.y = True
+        args.z = True
+    return args
 
   def run(self, args):
-    self.gcoder.sendhome()
+    self.gcoder.sendhome(args.x, args.y, args.z)
 
 
 class halign(cmdbase.controlcmd):
@@ -326,11 +348,11 @@ class timescan(cmdbase.controlcmd):
     self.parser.add_argument('--nslice',
                              type=int,
                              default=30,
-                             help='total number of sample to take')
+                             help='total number of measurement to take')
     self.parser.add_argument('--interval',
-                             type=int,
+                             type=float,
                              default=1,
-                             help='Time interval between sampling (seconds)')
+                             help='Time interval between measurements (seconds)')
     self.parser.add_argument('--testpwm',
                              type=float,
                              nargs='*',
@@ -362,16 +384,21 @@ class timescan(cmdbase.controlcmd):
 
       lumival, uncval = self.readout.read(channel=args.channel,
                                           samples=args.samples)
+      s2 = self.visual.get_latest().s2
+      s4 = self.visual.get_latest().s4
       sample_time = time.time_ns()
       timestamp = (sample_time - start_time) / 1e9
       args.savefile.write(
-          self.make_standard_line((lumival, uncval), det_id=-100,
+          self.make_standard_line((lumival, uncval,s2,s4), det_id=-100,
                                   time=timestamp))
       args.savefile.flush()
-      self.update_luminosity(lumival,
-                             uncval,
-                             Progress=(i + 1, args.nslice),
-                             Temperature=True)
+      self.update_progress(progress=(i + 1, args.nslice),
+                           coordinates=True,
+                           temperature=True,
+                           display_data={
+                             'luminosity': [lumival,uncval],
+                             'sharpness': [s2,s4]
+                           })
       time.sleep(args.interval)
 
     self.close_savefile(args)
