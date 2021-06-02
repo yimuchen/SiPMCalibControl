@@ -7,6 +7,7 @@
 static const cv::Scalar red( 100, 100, 255 );
 static const cv::Scalar cyan( 255, 255, 100 );
 static const cv::Scalar yellow( 100, 255, 255 );
+static const cv::Scalar blue( 255, 100, 100 );
 static const cv::Scalar green( 100, 255, 100 );
 static const cv::Scalar white( 255, 255, 255 );
 
@@ -174,30 +175,30 @@ Visual::find_contours( const cv::Mat& img ) const
   ContourList hulls;
 
   // Calculating all contour properties
-  for( unsigned i = 0; i < contours.size(); i++ ){
-    const double size = GetContourSize( contours.at( i ) );
+  for( const auto& cont : contours ){
+    const double size = GetContourSize( cont );
     if( size < size_cutoff ){ continue; }// skipping small speckles
 
     // Expecting the ratio of the bounding box to be square.
-    const cv::Rect bound = cv::boundingRect( contours.at( i ) );
+    const cv::Rect bound = cv::boundingRect( cont );
     const double ratio   = (double)bound.height / (double)bound.width;
     if( ratio > ratio_cutoff || ratio < 1./ratio_cutoff ){
-      failed_ratio.push_back( contours.at( i ) );
+      failed_ratio.push_back( cont );
       continue;
     }
 
     // Expecting the internals of of the photosensor to be dark.
-    const double lumi = GetImageLumi( image, contours.at( i ) );
+    const double lumi = GetImageLumi( img, cont );
     if( lumi > lumi_cutoff ){
-      failed_lumi.push_back( contours.at( i ) );
+      failed_lumi.push_back( cont );
       continue;
     }// Photosensors are dark.
 
     // Generating convex hull
-    const Contour_t hull = GetConvexHull( contours.at( i ) );
+    const Contour_t hull = GetConvexHull( cont );
     const Contour_t poly = GetPolyApprox( hull );
     if( poly.size() != 4 ){
-      failed_rect.push_back( contours.at( i ) );
+      failed_rect.push_back( cont );
       continue;
     }
 
@@ -268,22 +269,27 @@ Visual::make_display( const cv::Mat&                          img,
                   };
 
 
-  PlotContourList( contlist.at( 0 ), cyan   );
-  PlotContourList( contlist.at( 1 ), white );
-  PlotContourList( contlist.at( 2 ), green );
-  PlotContourList( contlist.at( 3 ), yellow );
+  PlotContourList( contlist.at( 0 ), cyan  );
+  PlotContourList( contlist.at( 1 ), cyan  );
+  PlotContourList( contlist.at( 2 ), cyan  );
+  PlotContourList( contlist.at( 3 ), cyan  );
+  // PlotContourList( contlist.at( 0 ), cyan   );
+  // PlotContourList( contlist.at( 1 ), white );
+  // PlotContourList( contlist.at( 2 ), green );
+  // PlotContourList( contlist.at( 3 ), yellow );
 
   // Plotting the final results
   if( contlist.at( 0 ).empty() ){
     PlotText( "NOT FOUND", cv::Point( 20, 20 ), red );
   } else {
-    const auto res = make_result( img, contlist.at( 0 ).at( 0 ) );
-    const double x = res.x;
-    const double y = res.y;
-    const double s2 = res.sharpness_m2;
-    const double s4 = res.sharpness_m4;
+    const auto res  = make_result( img, contlist.at( 0 ).at( 0 ) );
+    const double x  = res.x;
+    const double y  = res.y;
+    //const double s2 = res.sharpness_m2;
+    //const double s4 = res.sharpness_m4;
 
-    sprintf( msg, "x:%.1lf y:%.1lf s2:%.2lf s4:%.2lf", x, y, s2, s4 ),
+    sprintf( msg, "x:%.1lf y:%.1lf", x, y ),
+    // sprintf( msg, "x:%.1lf y:%.1lf s2:%.2lf s4:%.2lf", x, y, s2, s4 ),
     cv::drawContours( ret, contlist.at( 0 ), 0, red, 3 );
     cv::circle( ret, cv::Point( x, y ), 3, red, cv::FILLED );
     PlotText( msg, cv::Point( 20, 20 ), red );
@@ -378,7 +384,7 @@ Visual::GetContourMaxMeasure( const Contour_t& x ) const
   return ans;
 }
 
-std::pair<double,double>
+std::pair<double, double>
 Visual::sharpness( const cv::Mat& img, const cv::Rect& crop ) const
 {
   // Image containers
@@ -395,14 +401,14 @@ Visual::sharpness( const cv::Mat& img, const cv::Rect& crop ) const
 
   // Creating the crops
   if( crop.width == 0 || crop.height == 0 ){
-    return std::pair<double,double>(0,0);
+    return std::pair<double, double>( 0, 0 );
   }
 
   // Cropping to range sometimes is bad... not sure why just yet
   try {
     bimg = bimg( crop ).clone();
   } catch( cv::Exception& e ){
-    return std::pair<double,double>(0,0);
+    return std::pair<double, double>( 0, 0 );
   }
 
   cv::blur( bimg, bimg, cv::Size( 2, 2 ) );
@@ -427,7 +433,7 @@ Visual::sharpness( const cv::Mat& img, const cv::Rect& crop ) const
   mo2 /= lap.rows * lap.cols;
   mo4 /= lap.rows * lap.cols;
 
-  return std::pair<double,double>( mo4 / (mo2*mo2), mo2 );
+  return std::pair<double, double>( mo4 / ( mo2*mo2 ), mo2 );
 }
 
 Visual::VisResult

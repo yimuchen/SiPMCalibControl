@@ -91,6 +91,7 @@ private:
   // Image processing function
   VisResult find_det( const cv::Mat& );
 
+public:
   ContourList GetRawContours( const cv::Mat& ) const;
   Contour_t   GetConvexHull( const Contour_t& ) const;
   Contour_t   GetPolyApprox( const Contour_t& ) const;
