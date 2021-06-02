@@ -435,7 +435,8 @@ class controlcmd():
     """
     Wrapper for gantry motion command, suppresses the exception raised for in
     case that the gantry isn't connected so that one can test with pre-defined
-    models.
+    models. Stopped the stepper motors for clearer output should be handled by
+    the readout classes.
     """
     try:
       # Try to move the gantry. Even if it fails there will be fail safes
@@ -444,7 +445,6 @@ class controlcmd():
       while self.gcoder.in_motion(x, y, z):
         time.sleep(0.1)  ## Updating position in 0.1 second increments
         # print( "Waiting for gantry motion to complete" )
-      self.gcoder.disablestepper(False,False,True)
     except Exception as e:
       # Setting internal coordinates to the designated position anyway.
       print("Exception received, assuming no gantry is present")

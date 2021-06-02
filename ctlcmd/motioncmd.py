@@ -4,6 +4,33 @@ import numpy as np
 from scipy.optimize import curve_fit
 import time
 
+class rungcode(cmdbase.controlcmd):
+  """
+  Running a raw command gcode command. Notice that the gantry may still be busy
+  after the command has been reported as completed by the gantry (ex: Motion
+  command will be completed after the internal target coordinates have been
+  updated, not when the gantry fully stops moving.) The user must be careful to
+  add appropriate wait signals to avoid damaging the hardware when using this
+  command.
+  """
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
+    self.parser.add_argument("cmd",
+                              type=str,
+                              #required=True,
+                              help="Raw gcode command to run")
+
+  def parse(self,line):
+    args = cmdbase.controlcmd.parse(self,line)
+    args.cmd = args.cmd + '\n'
+    return args
+
+  def run(self,args):
+    retstr = self.gcoder.run_gcode(args.cmd, 0, int(1e5), True)
+    retstr = retstr.split('\necho:')
+    for line in retstr:
+        log.printmsg(log.GREEN('[PRINTER]'), line)
+
 
 class moveto(cmdbase.controlcmd):
   """
@@ -28,6 +55,63 @@ class moveto(cmdbase.controlcmd):
   def run(self, args):
     self.move_gantry(args.x, args.y, args.z, True)
 
+class disablestepper(cmdbase.controlcmd):
+  """
+  Manual disabling of stepper motor. Boolean flag for stopping each of the x,y,z
+  components.
+  """
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
+    self.parser.add_argument('-x',
+                             action='store_true',
+                             help=('Disable x axis stepper motors'))
+    self.parser.add_argument('-y',
+                             action='store_true',
+                             help=('Disable y axis stepper motors'))
+    self.parser.add_argument('-z',
+                             action='store_true',
+                             help=('Disable z axis stepper motors'))
+  def run(self,args):
+    self.gcoder.disablestepper(args.x,args.y,args.z)
+
+
+class enablestepper(cmdbase.controlcmd):
+  """
+  Manual re-enabling of stepper motor. Boolean flag for stopping each of the
+  x,y,z components.
+  """
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
+    self.parser.add_argument('-x',
+                             action='store_true',
+                             help=('Activate x axis stepper motors'))
+    self.parser.add_argument('-y',
+                             action='store_true',
+                             help=('Activate y axis stepper motors'))
+    self.parser.add_argument('-z',
+                             action='store_true',
+                             help=('Activate z axis stepper motors'))
+  def run(self,args):
+    self.gcoder.enablestepper(args.x,args.y,args.z)
+
+class wait(cmdbase.controlcmd):
+  """
+  Suspending the interactive session for N seconds. Can be interupted by Ctrl+C.
+  """
+  def __init__(self,cmd):
+    cmdbase.controlcmd.__init__(self,cmd)
+    self.parser.add_argument('--time','-t',
+                             type=float,
+                             default=30,
+                             help=('TIme to suspend session (in seconds)'))
+  def run(self,args):
+    start_time = time.time_ns()
+    current_time = start_time
+    while (current_time-start_time)/1e9 < args.time:
+      self.check_handle(args)
+      time.sleep(0.1)
+      current_time = time.time_ns()
+
 
 class movespeed(cmdbase.controlcmd):
   """
@@ -51,6 +135,7 @@ class movespeed(cmdbase.controlcmd):
     if not args.x: args.x = float('nan')
     if not args.y: args.y = float('nan')
     if not args.z: args.z = float('nan')
+    print(args)
 
     return args
 
