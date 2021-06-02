@@ -2,8 +2,8 @@
 #define GCODER_HPP
 
 #include <cmath>
-#include <string>
 #include <memory>
+#include <string>
 
 struct GCoder
 {
@@ -19,15 +19,15 @@ struct GCoder
   void Init( const std::string& dev );
 
   // Raw motion command setup
-  std::string RunGcode(  const std::string& gcode,
-                         const unsigned     attempt = 0,
-                         const unsigned     waitack = 1e4,
-                         const bool         verbose = false ) const;
+  std::string RunGcode( const std::string& gcode,
+                        const unsigned     attempt = 0,
+                        const unsigned     waitack = 1e4,
+                        const bool         verbose = false ) const;
 
   // Abstaction of actual GCode commands
   void SendHome( bool x, bool y, bool z );
 
-  std::wstring GetSettings() const;
+  std::string GetSettings() const;
 
   void SetSpeedLimit( float x = std::nanf(""),
                       float y = std::nanf(""),
@@ -43,6 +43,7 @@ struct GCoder
                   float      z       = std::nanf(""),
                   const bool verbose = false );
 
+  void EnableStepper( bool x, bool y, bool z );
   void DisableStepper( bool x, bool y, bool z );
   bool InMotion( float x, float y, float z );
 
@@ -55,16 +56,15 @@ public:
   float       vx, vy, vz; // Speed of the gantry head.
   std::string dev_path;
 
-
 private:
-  static std::unique_ptr<GCoder> _instance; 
+  static std::unique_ptr<GCoder> _instance;
   GCoder();
-  GCoder(const GCoder& ) = delete; 
-  GCoder( const GCoder&& )  = delete ; 
+  GCoder( const GCoder& )  = delete;
+  GCoder( const GCoder&& ) = delete;
 
-public: 
-  static GCoder& instance(); 
-  static int make_instance();
+public:
+  static GCoder& instance();
+  static int     make_instance();
   ~GCoder();
 
 };

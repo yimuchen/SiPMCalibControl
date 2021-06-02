@@ -74,6 +74,8 @@ GCoder::Init( const std::string& dev )
 
   // Setting speed to be as fast as possible
   SetSpeedLimit( 1000, 1000, 1000 );
+  // Setting acceleration to 3x the factory default:
+  RunGcode( "M201 X1000 Y1000 Z300\n", 0, 1e5, false );
 
   return;
 }
@@ -185,6 +187,21 @@ GCoder::SendHome( bool x, bool y, bool z )
 }
 
 void
+GCoder::EnableStepper( bool x, bool y, bool z )
+{
+  // Re-enabling the steppers after they have been paused.
+  if( x ){
+    RunGcode( "M17 X\n", 0, 1e5, false );
+  }
+  if( y ){
+    RunGcode( "M17 Y\n", 0, 1e5, false );
+  }
+  if( z ){
+    RunGcode( "M17 Z\n", 0, 1e5, false );
+  }
+}
+
+void
 GCoder::DisableStepper( bool x, bool y, bool z )
 {
   // Disable steppers: The power supply of the gantry is rather noisy, causing
@@ -204,18 +221,17 @@ GCoder::DisableStepper( bool x, bool y, bool z )
 }
 
 
-std::wstring
+std::string
 GCoder::GetSettings() const
 {
-  std::string str = RunGcode( "M503\n" );
-  return std::wstring( str.begin(), str.end() );
+  return RunGcode( "M503\n" );
 }
 
 void
 GCoder::SetSpeedLimit( float x, float y, float z )
 {
-  static const float maxv       = 300./14.;// Setting the maximum speed
-  static const char gcode_fmt[] = "M203 X%.2f Y%.2f Z%.2f\n";
+  static const float maxv = 200.0;// Setting the maximum speed
+  static const float maxz = 30.0;// Maximum speed for z axis
   char gcode[1024];
 
   // NAN detection.
@@ -225,10 +241,19 @@ GCoder::SetSpeedLimit( float x, float y, float z )
 
   if( x > maxv ){ x = maxv; }
   if( y > maxv ){ y = maxv; }
-  if( z > maxv ){ z = maxv; }
+  if( z > maxv ){ z = maxz; }
 
-  sprintf( gcode, gcode_fmt, x, y, z );
-  RunGcode( gcode, false );
+  // Setting the maximum feedrate for each axis
+  static const char gcode1_fmt[] = "M203 X%.2f Y%.2f Z%.2f\n";
+  sprintf( gcode, gcode1_fmt, x, y, z );
+  RunGcode( gcode, 0, 1e5, false );
+
+  // Setting the target feedrate for future G0 commands, max settings will be
+  // respected. Notice this is in units of mm/minutes.
+  static const char gcode2_fmt[] = "G0 F%.2f\n";
+  const float vmax               = std::max( std::max(x, y), z );
+  sprintf( gcode, gcode2_fmt, vmax*60  );
+  RunGcode( gcode, 0, 1e5, false );
 
   vx = x;
   vy = y;
@@ -344,7 +369,7 @@ GCoder::instance(){ return *_instance;}
 int
 GCoder::make_instance()
 {
-  //printf( "Making the gcoder instance" );
+  // printf( "Making the gcoder instance" );
   if( _instance == nullptr ){
     _instance.reset( new GCoder() );
   }
