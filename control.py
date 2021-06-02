@@ -14,8 +14,12 @@ import re
 
 if __name__ == '__main__':
   cmd = cmdbase.controlterm([
+      motioncmd.rungcode,
       motioncmd.moveto,
       motioncmd.movespeed,
+      motioncmd.enablestepper,
+      motioncmd.disablestepper,
+      motioncmd.wait,
       motioncmd.sendhome,
       motioncmd.halign,
       motioncmd.zscan,

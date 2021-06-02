@@ -1,8 +1,8 @@
 # Low level hardware interfaces with C++ and boost python
 
-The code in this software is designed to expose low level hardware control
+The code in this software is designed to expose-low level hardware control
 interfaces to python with C++. C++ is used to allow for some time critical
-processes to run (such as with the fast pulsing required for the data collection
+processes to run (such as the fast pulse required for the data collection
 trigger), and keep the library requirements to a minimal.
 
 ## General design philosophy
@@ -15,6 +15,8 @@ exceptions** during the *initialization* phase, while should simply **do
 nothing** (other than perhaps printing an error message) if the user tries to use
 the interface regardless. This allows for the user to test the various
 functionalities of the system during interface testing.
+
+For a bunch of interfaces
 
 ## Overview of technology for various interfaces
 
@@ -47,7 +49,7 @@ Technical details can be found in the [source code](gcoder.cc).
 
 ### GPIO interface for ADC, PWM and raw trigger control
 
-Files: [gpio.cc](gpio.cc)
+Files: [gpio.cc](gpio.cc), [gpio.hpp](gpio.hpp)
 
 Controls to the GPIO interface uses raw `sysfs` interfaces to reduce external
 library dependencies, and to allow for fast switching for raw trigger controls
@@ -62,7 +64,7 @@ library dependencies, and to allow for fast switching for raw trigger controls
 
 ### Visual interface for visual processing
 
-Files: [visual.cc](visual.cc)
+Files: [visual.cc](visual.cc), [visual.hpp](visual.hpp)
 
 We are using OpenCV to process the inputs of a video stream to find a det. It
 uses a relatively simple contouring algorithm and dark square finding algorithm
