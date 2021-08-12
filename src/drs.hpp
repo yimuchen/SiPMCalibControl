@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 
 class DRSContainer
@@ -22,8 +23,12 @@ public:
   void SetRate( const double frequency );
   void SetSamples( const unsigned );
 
+  // Direct interfaces
+  void               WaitReady();
+  std::vector<float> GetWaveform( const unsigned channel );
+  std::vector<float> GetTimeArray( const unsigned channel );
 
-  // Main output samples
+  // High level interfaces
   std::string WaveformStr( const unsigned channel );
   double      WaveformSum( const unsigned channel,
                            const unsigned intstart = -1,
@@ -49,9 +54,8 @@ public:
   bool IsReady();
   void CheckAvailable() const;
 
-
-private: 
-  // Variables for handling the various handles. 
+private:
+  // Variables for handling the various handles.
   std::unique_ptr<DRS> drs;
   DRSBoard* board;
 
@@ -61,22 +65,24 @@ private:
   int triggerdirection;
   unsigned samples;
 
-// singleton related stuff. 
+// singleton related stuff.
+
 private:
   // static variables for singleton class
   static std::unique_ptr<DRSContainer> _instance;
-  // Hiding the initializer class. 
+  // Hiding the initializer class.
   DRSContainer();
   DRSContainer( const DRSContainer& )  = delete;
   DRSContainer( const DRSContainer&& ) = delete;
-public: 
+
+public:
   // Destructor is still public since there is nothing special regarding the
   // variable memory management of the class instance.
-  ~DRSContainer(); // Destructor still bpu
-  
+  ~DRSContainer();// Destructor still bpu
+
   // Methods for accessing and creating the instance class.
   static DRSContainer& instance();
-  static int          make_instance();
+  static int           make_instance();
 };
 
 

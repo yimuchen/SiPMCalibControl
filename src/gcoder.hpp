@@ -52,7 +52,8 @@ struct GCoder
 
 public:
   int         printer_IO;
-  float       opx, opy, opz; // current position of the printer
+  float       opx, opy, opz; // target position of the printer
+  float       cx, cy, cz; // current position of the printer
   float       vx, vy, vz; // Speed of the gantry head.
   std::string dev_path;
 

@@ -1,6 +1,23 @@
+/**
+ * @file visual.cc
+ * @author Yi-Mu Chen
+ * @brief Implementation of the visual interface.
+ *
+ * The visual system will works as the following. A thread will be started
+ * whenever a visual system is declared, which will constantly flush the contents
+ * of the camera interface to a buffer, process the standardized image processing
+ * routine, and store the processed image and extracted variables, and repeat
+ * until some termination code is received. This looped thread will be briefly
+ * paused when the user request the image, to ensure the integrity of the
+ * transferred data.
+ *
+ * For the management of the interface communication and thread handling, see the
+ * Visual::*Thread functions.
+ *
+ * For the visual processing functions, see the `Visual::FindDetector` and related
+ * functions.
+ */
 #include "visual.hpp"
-
-// Additional opencv stuff
 #include <opencv2/core/utils/logger.hpp>
 
 // Helper objects for consistant display (format BGR)
@@ -20,10 +37,8 @@ Visual::Visual() :
   cam(),
   run_loop( false )
 {
-  init_var_default();
-  // Py_Initialize();
-  // boost::python::numpy::initialize();
-  start_thread();
+  InitVarDefault();
+  StartLoopThread();
 }
 
 Visual::Visual( const std::string& dev ) :
@@ -31,15 +46,32 @@ Visual::Visual( const std::string& dev ) :
   run_loop( false )
 {
   init_dev( dev );
-  init_var_default();
-
-  start_thread();
+  InitVarDefault();
+  StartLoopThread();
 }
 
+/**
+ * @brief Starting the visual instance at the some device path.
+ *
+ * The device path on a unix machine will typically be something like:
+ * `/dev/video0`, input whatever camera device is used for the system. Notice
+ * that the camera device would need to be covered by the v462 Linux video device
+ * drivers to function properly on the real system.
+ *
+ * In addition: we will ensure the following settings on the camera device:
+ * - Fix the resolution as 1280x1024. This ensures that the visual processing
+ *   algorithm will perform in realtime
+ * - Reduce the buffer to 0. This ensures that the image received from the camera
+ *   will be as close to real time as possible.
+ * - Switch of any known image processing. This is so that image processing
+ *   artifacts does not skew the image processing algorithms we use.
+ *
+ * A thread will be started as soon as the devices is known to be availabe.
+ */
 void
 Visual::init_dev( const std::string& dev )
 {
-  end_thread();
+  EndLoopThread();
   dev_path = dev;
   cam.release();
   cam.open( dev_path );
@@ -52,61 +84,65 @@ Visual::init_dev( const std::string& dev )
   cam.set( cv::CAP_PROP_BUFFERSIZE,   1 );// Reducing buffer for fast capture
   cam.set( cv::CAP_PROP_SHARPNESS,    0 );// disable postprocess sharpening.
 
-  start_thread();
-}
-
-void
-Visual::init_var_default()
-{
-  threshold    = 80;
-  blur_range   = 5;
-  lumi_cutoff  = 40;
-  size_cutoff  = 50;
-  ratio_cutoff = 1.4;
-  poly_range   = 0.08;
+  StartLoopThread();
 }
 
 Visual::~Visual()
 {
   printf( "Ending the visual thread\n" );
-  end_thread();
+  EndLoopThread();
   printf( "Closing visual system interfaces\n" );
   cam.release();
+  printf( "Visual interface closed\n" );
 }
 
 unsigned
-Visual::frame_width() const
+Visual::FrameWidth() const
 {
   return cam.get( cv::CAP_PROP_FRAME_WIDTH );
 }
 
 unsigned
-Visual::frame_height() const
+Visual::FrameHeight() const
 {
   return cam.get( cv::CAP_PROP_FRAME_HEIGHT );
 }
 
+/*******************************************************************************
+ *
+ * Facilities for interacting with the Visual processing thread.
+ *
+ * There are 3 data members in the Visual class used for managing the thread.
+ *
+ * - std::thread loop_thead: the thread object for handling the loop function
+ * - std::atomic<bool> run_loop: the thread-safe flag variable to indicate
+ *   whether the loop should continue.
+ * - std::mutex loop_mutex: Mutex lock required for data manipulation of the
+ *   image containers.
+ *
+ * The main loop will basically loop over the following:
+ * - Check if run_loop is true. Exit the loop if not.
+ * - Wait to lock the mutex.
+ * - Extract image and perform image processes
+ * - unlock the mutex.
+ * - Wait a fixed pause period.
+ *
+ * Under this model, the image extraction functions has windows in which it can
+ * choose to lock the mutex while it perform data extraction. The starting and
+ * stopping of the loop is also simple.
+ *
+ ******************************************************************************/
+
 /**
- * @brief Facility for running the image processing thread
+ * @brief The method used for running the loop.
+ *
+ * The atomic object needs to be passed in as a argument to function properly.
+ *
+ * In between loop iterations, a fixed 5 millisecond paused is used to ensure
+ * that other processes has a chance to extract image and processing results when
+ * requested. Notice that this pause must be faster than the camera refresh rate
+ * to have a real-time like iamge presentation in the GUI program.
  */
-void
-Visual::start_thread()
-{
-  run_loop    = true;
-  loop_thread = std::thread( [this] {
-    this->RunMainLoop( std::ref( run_loop ) );
-  } );
-}
-
-void
-Visual::end_thread()
-{
-  if( run_loop == true ){
-    run_loop = false;
-    loop_thread.join();
-  }
-}
-
 void
 Visual::RunMainLoop( std::atomic<bool>& run_loop )
 {
@@ -127,46 +163,190 @@ Visual::RunMainLoop( std::atomic<bool>& run_loop )
       cam >> image;
     } while( ( image.empty() || image.cols == 0 ) && cam.isOpened() );
 
-    latest = find_det( image );
+    latest = FindDetector( image );
     loop_mutex.unlock();
 
     while( time_end - time_start < 5e3 ){
-      // Updating at 2000fps. Must be faster than the webcam refresh rate for
-      // realtime image over internet
       std::this_thread::sleep_for( st::milliseconds( 1 ) );
       time_end = get_time();
     }
   }
 }
 
+/**
+ * @brief Starting the loop thread.
+ */
+void
+Visual::StartLoopThread()
+{
+  run_loop    = true;
+  loop_thread = std::thread( [this] {
+    this->RunMainLoop( std::ref( run_loop ) );
+  } );
+}
 
+/**
+ * @brief Setting the loop to stop and waiting for the thread to terminate.
+ */
+void
+Visual::EndLoopThread()
+{
+  if( run_loop == true ){
+    run_loop = false;
+    loop_thread.join();
+  }
+}
+
+
+/**
+ * @brief Extraction of the visual processing results.
+ */
 Visual::VisResult
-Visual::find_det( const cv::Mat& img )
+Visual::GetVisResult()
+{
+  loop_mutex.lock();
+  VisResult ans = latest;
+  loop_mutex.unlock();
+  return ans;
+}
+
+/**
+ * @brief Extraction of the image, either the raw unprocessed image, or the
+ * descriptive image which includes the processed contours.
+ *
+ * In the rare event that the frame is empty (either because the camera was never
+ * properly initialized, or that there was an issue with the image transfer
+ * proces), a blank (all 0 value image) with the correct dimensions will be
+ * returned.
+ */
+cv::Mat
+Visual::GetImage( const bool raw )
+{
+  static const cv::Mat blank_frame(
+    cv::Size( FrameWidth(), FrameHeight() ),
+    CV_8UC3, cv::Scalar( 0, 0, 0 ) );
+
+  loop_mutex.lock();
+  cv::Mat ans_mat = ( display.empty() || display.cols == 0 ) ? blank_frame :
+                    raw ? image : display;
+  loop_mutex.unlock();
+
+  return ans_mat;
+}
+
+/**
+ * @brief saving the image to some path.
+ */
+bool
+Visual::SaveImage( const std::string& path, bool raw )
+{
+  const cv::Mat mat = GetImage( raw );
+  cv::imwrite( path, mat );
+  return true;
+}
+
+
+
+std::vector<uchar>
+Visual::GetImageBytes()
+{
+  // Returning the image generated from the detection algorithm as a byte
+  // sequence to be returned by a HTTP image request.
+  std::vector<uchar> buf;// Storage required by opencv.
+  const auto img = GetImage( false );
+  if( img.empty() ){
+    throw std::runtime_error( "Image empty" );
+  }
+  cv::imencode( ".jpg", img, buf );
+  return buf;
+}
+
+/********************************************************************************
+ *
+ * Visual processing algorithm for finding a photo detecting element
+ *
+ * The algorithm uses as much inbuilt OpenCV functions as possible to avoid being
+ * over taxing on the lowe power processing system the calibration stand is
+ * expected to run on. The algorithm is as follows:
+ *
+ * - Convert the image into a binary image by some grayscale threshold value.
+ * - Use the binary image to generate a contours of the high-contrast features in
+ *   the image.
+ * - For the found contours, the following filters is applied:
+ *   - The size (bounding box area), must be greater than some value (this
+ *     removes noise speckles).
+ *   - The ratio of the edges of the bounding box must be sufficiently similar
+ *     (the photo detecting element is expected to be square.)
+ *   - The internal area of the original image within the contour must be
+ *     sufficiently dark (as photodetecting elements are expected to be gray)
+ *   - The convex hull of the contour must be able to be approximated as a
+ *     rectangle.
+ * - The convex hull of the remaining contours will be used. The use of convex
+ *   hulls is to eliminate reflection artifacts that might appear on the detector
+ *   face.
+ * - The convex hull with the largest area will be assumed to be the detector
+ *   element of interest, then the following parameters will be determined and
+ *   stored in the VisualResults class:
+ *   - The average pixel position of the convex hull in (x,y)
+ *   - The pixel position of the convex hull after polygon approximation
+ *   - The sharpness measure of the surrounding image.
+ *
+ * Functions should beable to receive a cv::Mat object as the input, to allow for
+ * arbitrary levels of debugging and feature demonstration.
+ *
+ *******************************************************************************/
+
+/**
+ * @brief Default values of the algorithm
+ *
+ * Last determined 2021.05.31.
+ */
+void
+Visual::InitVarDefault()
+{
+  threshold    = 80;
+  blur_range   = 5;
+  lumi_cutoff  = 40;
+  size_cutoff  = 50;
+  ratio_cutoff = 1.4;
+  poly_range   = 0.08;
+}
+
+
+/**
+ * @brief Given image in cv::Mat format. Compute the visual algorithm results and
+ * stored in a processed version of the image in the internal buffer.
+ */
+Visual::VisResult
+Visual::FindDetector( const cv::Mat& img )
 {
   static const VisResult empty_return = VisResult { -1, -1, 0, 0, 0,
                                                     0, 0, 0, 0,
                                                     0, 0, 0, 0 };
 
-  // Early exits if
+  // Early exits if image is not found.
   if( img.empty() || img.cols == 0 ){
     return empty_return;
   }
 
-  const auto contours = find_contours( img );
+  const auto contours = FindContours( img );
   const auto& hulls   = contours.at( 0 );
 
   const auto ans = hulls.empty() ? empty_return :
-                   make_result( img, hulls.at( 0 ) );
-  display = make_display( img, contours );
+                   MakeResult( img, hulls.at( 0 ) );
+  display = MakeDisplay( img, contours );
   return ans;
 }
 
 /**
  * @brief Given an base image, find the contours and group them according to the
- * various selection criteria.
+ * various selection criteria. The convex hull of all contours passing the
+ * selection criteria would be sorted by size (bounding box area). All contours
+ * found other than those that fail the size constrains will be returned, as they
+ * are useful for debugging parameters.
  */
 std::vector<Visual::ContourList>
-Visual::find_contours( const cv::Mat& img ) const
+Visual::FindContours( const cv::Mat& img ) const
 {
   const ContourList contours = GetRawContours( img );
   ContourList failed_ratio;
@@ -177,9 +357,8 @@ Visual::find_contours( const cv::Mat& img ) const
   // Calculating all contour properties
   for( const auto& cont : contours ){
     const double size = GetContourSize( cont );
-    if( size < size_cutoff ){ continue; }// skipping small speckles
+    if( size < size_cutoff ){ continue; }
 
-    // Expecting the ratio of the bounding box to be square.
     const cv::Rect bound = cv::boundingRect( cont );
     const double ratio   = (double)bound.height / (double)bound.width;
     if( ratio > ratio_cutoff || ratio < 1./ratio_cutoff ){
@@ -187,14 +366,12 @@ Visual::find_contours( const cv::Mat& img ) const
       continue;
     }
 
-    // Expecting the internals of of the photosensor to be dark.
     const double lumi = GetImageLumi( img, cont );
     if( lumi > lumi_cutoff ){
       failed_lumi.push_back( cont );
       continue;
-    }// Photosensors are dark.
+    }
 
-    // Generating convex hull
     const Contour_t hull = GetConvexHull( cont );
     const Contour_t poly = GetPolyApprox( hull );
     if( poly.size() != 4 ){
@@ -205,7 +382,6 @@ Visual::find_contours( const cv::Mat& img ) const
     hulls.push_back( hull );
   }
 
-  // Sorting candidates according to contour size
   std::sort( hulls.begin(), hulls.end(), Visual::CompareContourSize );
 
   return { hulls,
@@ -214,8 +390,17 @@ Visual::find_contours( const cv::Mat& img ) const
            failed_ratio };
 }
 
+/**
+ * @brief Given the original image in cv::Mat format, and the candidate
+ * convexhull contour, compute all the information:
+ * - The average position in pixels
+ * - The sharpness measure (2nd and 4th order)
+ * - The area of the hull
+ * - The maximum distance fo two points in the contour
+ * - The 8 coordinates of the corners after polygon approximation.
+ */
 Visual::VisResult
-Visual::make_result( const cv::Mat& img, const Visual::Contour_t& hull ) const
+Visual::MakeResult( const cv::Mat& img, const Visual::Contour_t& hull ) const
 {
   // position calculation of final contour
   const cv::Moments m = cv::moments( hull, false );
@@ -246,9 +431,14 @@ Visual::make_result( const cv::Mat& img, const Visual::Contour_t& hull ) const
   };
 }
 
+/**
+ * @brief Given the original image in cv::Mat format, and the sorted list of
+ * countors found. Display the processed image, with each different fail mode
+ * displayed in a different color for debugging.
+ */
 cv::Mat
-Visual::make_display( const cv::Mat&                          img,
-                      const std::vector<Visual::ContourList>& contlist ) const
+Visual::MakeDisplay( const cv::Mat&                          img,
+                     const std::vector<Visual::ContourList>& contlist ) const
 {
   // Drawing variables
   char msg[1024];
@@ -268,28 +458,23 @@ Visual::make_display( const cv::Mat&                          img,
                       pos, cv::FONT_HERSHEY_SIMPLEX, 0.8, col, 2 );
                   };
 
-
-  PlotContourList( contlist.at( 0 ), cyan  );
-  PlotContourList( contlist.at( 1 ), cyan  );
-  PlotContourList( contlist.at( 2 ), cyan  );
-  PlotContourList( contlist.at( 3 ), cyan  );
-  // PlotContourList( contlist.at( 0 ), cyan   );
-  // PlotContourList( contlist.at( 1 ), white );
-  // PlotContourList( contlist.at( 2 ), green );
-  // PlotContourList( contlist.at( 3 ), yellow );
+  PlotContourList( contlist.at( 0 ), cyan   );
+  PlotContourList( contlist.at( 1 ), white );
+  PlotContourList( contlist.at( 2 ), green );
+  PlotContourList( contlist.at( 3 ), yellow );
 
   // Plotting the final results
   if( contlist.at( 0 ).empty() ){
     PlotText( "NOT FOUND", cv::Point( 20, 20 ), red );
   } else {
-    const auto res  = make_result( img, contlist.at( 0 ).at( 0 ) );
+    const auto res  = MakeResult( img, contlist.at( 0 ).at( 0 ) );
     const double x  = res.x;
     const double y  = res.y;
-    //const double s2 = res.sharpness_m2;
-    //const double s4 = res.sharpness_m4;
+    const double s2 = res.sharpness_m2;
+    const double s4 = res.sharpness_m4;
 
-    sprintf( msg, "x:%.1lf y:%.1lf", x, y ),
-    // sprintf( msg, "x:%.1lf y:%.1lf s2:%.2lf s4:%.2lf", x, y, s2, s4 ),
+    sprintf( msg, "x:%.1lf y:%.1lf",                   x, y ),
+    sprintf( msg, "x:%.1lf y:%.1lf s2:%.2lf s4:%.2lf", x, y, s2, s4 ),
     cv::drawContours( ret, contlist.at( 0 ), 0, red, 3 );
     cv::circle( ret, cv::Point( x, y ), 3, red, cv::FILLED );
     PlotText( msg, cv::Point( 20, 20 ), red );
@@ -298,6 +483,11 @@ Visual::make_display( const cv::Mat&                          img,
   return ret;
 }
 
+/**
+ * @brief The thresholding and contouring algorithm. An extra blur is applied to
+ * the gray-scaled image to avoid noise speckles from affecting the sharpness
+ * measure.
+ */
 std::vector<Visual::Contour_t>
 Visual::GetRawContours( const cv::Mat& img ) const
 {
@@ -317,6 +507,13 @@ Visual::GetRawContours( const cv::Mat& img ) const
   return contours;
 }
 
+/**
+ * @brief Given the the original image and a contour of interest. computed the
+ * luminosity of the internal area. Here we use the conversion to luminosity
+ * using the formula found here:
+ *
+ * https://en.wikipedia.org/wiki/Relative_luminance
+ */
 double
 Visual::GetImageLumi( const cv::Mat& img, const Contour_t& cont ) const
 {
@@ -334,6 +531,9 @@ Visual::GetImageLumi( const cv::Mat& img, const Contour_t& cont ) const
          + 0.0722*meancol[2];
 }
 
+/**
+ * @brief Comparison of contour size (bounding box area)
+ */
 bool
 Visual::CompareContourSize( const Contour_t& x, const Contour_t& y )
 {
@@ -343,6 +543,9 @@ Visual::CompareContourSize( const Contour_t& x, const Contour_t& y )
   return x_bound.area() > y_bound.area();
 }
 
+/**
+ * @brief Abstraction for computing the convex hull.
+ */
 Visual::Contour_t
 Visual::GetConvexHull( const Contour_t& x ) const
 {
@@ -351,6 +554,9 @@ Visual::GetConvexHull( const Contour_t& x ) const
   return hull;
 }
 
+/**
+ * @brief Abstraction for getting a polygon approximation.
+ */
 Visual::Contour_t
 Visual::GetPolyApprox( const Contour_t& x ) const
 {
@@ -362,6 +568,9 @@ Visual::GetPolyApprox( const Contour_t& x ) const
   return ans;
 }
 
+/**
+ * @brief Getting the maximum measure of the contour (largest of the x/y measure)
+ */
 double
 Visual::GetContourSize( const Contour_t& x ) const
 {
@@ -369,6 +578,9 @@ Visual::GetContourSize( const Contour_t& x ) const
   return std::max( bound.height, bound.width );
 }
 
+/**
+ * @brief Getting the maximum distance of two points within a contour.
+ */
 double
 Visual::GetContourMaxMeasure( const Contour_t& x ) const
 {
@@ -384,6 +596,15 @@ Visual::GetContourMaxMeasure( const Contour_t& x ) const
   return ans;
 }
 
+/**
+ * @brief Given the original image and a rectangular region of interest, compute
+ * the sharpness measure.
+ *
+ * The sharpness measure is defined by taking the gray-scaled image apply a small
+ * blur, then compute the laplace transfromed image. Then taking the standard
+ * deviation (2nd order variance) and Kurtosis measure (4th order variance) of
+ * the transformed image.
+ */
 std::pair<double, double>
 Visual::sharpness( const cv::Mat& img, const cv::Rect& crop ) const
 {
@@ -434,53 +655,4 @@ Visual::sharpness( const cv::Mat& img, const cv::Rect& crop ) const
   mo4 /= lap.rows * lap.cols;
 
   return std::pair<double, double>( mo4 / ( mo2*mo2 ), mo2 );
-}
-
-Visual::VisResult
-Visual::get_result()
-{
-  loop_mutex.lock();
-  VisResult ans = latest;
-  loop_mutex.unlock();
-  return ans;
-}
-
-bool
-Visual::save_image( const std::string& path, bool raw )
-{
-  const cv::Mat mat = get_image( raw );
-  cv::imwrite( path, mat );
-  return true;
-}
-
-
-cv::Mat
-Visual::get_image( const bool raw )
-{
-  static const cv::Mat blank_frame(
-    cv::Size( frame_width(), frame_height() ),
-    CV_8UC3, cv::Scalar( 0, 0, 0 ) );
-
-  loop_mutex.lock();
-  cv::Mat ans_mat = ( display.empty() || display.cols == 0 ) ? blank_frame :
-                    raw ? image :
-                    display;
-  loop_mutex.unlock();
-
-  return ans_mat;
-}
-
-PyObject*
-Visual::get_image_bytes()
-{
-  // Returning the image generated from the detection algorithm as a byte
-  // sequence to be returned by a HTTP image request.
-  std::vector<uchar> buf;// Storage required by opencv.
-  cv::imencode( ".jpg", get_image( false ), buf );
-
-  // Conversion of bytes sequence to python objects
-  // https://www.auctoris.co.uk/2017/12/21/
-  // advanced-c-python-integration-with-boost-python-part-2
-  return PyBytes_FromObject(
-    PyMemoryView_FromMemory( (char*)buf.data(), buf.size(), PyBUF_READ ) );
 }

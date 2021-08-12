@@ -493,4 +493,5 @@ PicoUnit::~PicoUnit()
 {
   printf( "Closing the PICOSCOPE interface\n" );
   ps5000CloseUnit( device );
+  printf( "PICOSCOPE interface closed\n" );
 }

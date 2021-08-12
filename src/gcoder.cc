@@ -1,3 +1,22 @@
+/**
+ * @file gcoder.cc
+ * @author Yi-Mu Chen
+ * @brief Implementation of the GCode transfer interface.
+ *
+ * The GCoder class is responsible for the transmission of instructions to the
+ * 3D-printer for motion control. The transmission in performed over USB using
+ * the UNIX termios interface. The full documentation could be found here: [1].
+ *
+ * The class also abstracts motion controls which may or may not involve many
+ * gcode commands into single functions with parameters which is simpler to call
+ * for end users. For the full list of available marlin-flavored gcode, see here
+ * [2]. Due to how communications is handled in the kernel not, all motions is
+ * abstractable in C++, with some needing to be handled at python level. Those
+ * will be high-lighted for in the various code segments.
+ *
+ * [1] https://www.xanthium.in/Serial-Port-Programming-on-Linux
+ * [2] https://marlinfw.org/meta/gcode/
+ */
 #include "gcoder.hpp"
 #include "logger.hpp"
 
@@ -14,10 +33,35 @@
 #include <termios.h>
 #include <unistd.h>
 
+/**
+ * Hard limit for gantry motion. Important as there is not stop signal at max
+ * values, so we place these here to avoid hardware damaged
+ */
 const float GCoder::_max_x = 345;
 const float GCoder::_max_y = 450;
 const float GCoder::_max_z = 460;
 
+/**
+ * @brief Forward declaration of static helper functions.
+ */
+static bool check_ack( const std::string& cmd, const std::string& msg );
+
+/**
+ * @brief Initializing the communications interface.
+ *
+ * This is low level instructions in the termios interface for setting up the
+ * read speed and mode for the communicating with the printer over USB. This part
+ * of the code currently considered black-magic as most of the statements are
+ * copy from here [1], so do not edit statements containing the tty container
+ * unless you are absolutely sure about what you are doing.
+ *
+ * After initialization, the printer will always perform these 3 steps:
+ * - Send the gantry back home and reset coordinates ot (0,0,0).
+ * - Set the motion speed to something much faster
+ * - Set the acceleration speed to 3 times the factory default.
+ *
+ * [1] https://www.xanthium.in/Serial-Port-Programming-on-Linux
+ */
 void
 GCoder::Init( const std::string& dev )
 {
@@ -53,7 +97,7 @@ GCoder::Init( const std::string& dev )
   tty.c_cflag &= ~CSTOPB;// only need 1 stop bit
   tty.c_cflag &= ~CRTSCTS;// no hardware flowcontrol
 
-  /* setup for non-canonical mode */
+  // setup for non-canonical mode
   tty.c_iflag &= ~( IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON );
   tty.c_lflag &= ~( ECHO | ECHONL | ICANON | ISIG | IEXTEN );
   tty.c_oflag &= ~OPOST;
@@ -80,6 +124,22 @@ GCoder::Init( const std::string& dev )
   return;
 }
 
+/**
+ * @brief Main function abstraction for sending a gcode command to the session.
+ *
+ * As a standard in this program, all gcode command string should end in a
+ * newline character. This function will parse the gcode string to the printer
+ * via the defined interface, and pass the return string of the printer as the
+ * return value. Notice that the function will check the return string for the
+ * acknowledgement string ('ok' at the start of a line) to know that the command
+ * has been executed by the printer. If this acknowledgement string is not
+ * received after a wait period, then the command is tried again up to 10 times.
+ *
+ * Notice that when the 'ack' string is reported will depend on the gcode command
+ * in question, and so later functions of abstracting gcode commands should be
+ * responsible for choosing an appropriate timeout duration to reduce multiple
+ * function calls.
+ */
 std::string
 GCoder::RunGcode(
   const std::string& gcode,
@@ -114,9 +174,9 @@ GCoder::RunGcode(
 
   if( attempt >= maxtry ){
     sprintf( msg,
-      "ACK string was not received after [%d] attempts!"
+      "ACK string for command [%s] was not received after [%d] attempts!"
       " The message could be dropped or there is something wrong with"
-      " the printer!",  maxtry );
+      " the printer!", pstring.c_str(), maxtry );
     throw std::runtime_error( msg );
   }
 
@@ -128,19 +188,19 @@ GCoder::RunGcode(
   high_resolution_clock::time_point t1 = high_resolution_clock::now();
   high_resolution_clock::time_point t2 = high_resolution_clock::now();
 
-  // Flushing output.
+  // Checking the output for the acknowledge/completion return
   do {
     readlen = read( printer_IO, buffer, sizeof( buffer ) - 1 );
-    t2      = high_resolution_clock::now();
 
     if( readlen > 0 ){
       buffer[readlen] = 1;
       ackstr          = std::string( buffer, buffer+readlen );
-      if( ackstr.find( "ok" ) != std::string::npos ){
+      if( check_ack( gcode, ackstr ) ){
         awk = true;
       }
     }
-    std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    t2 = high_resolution_clock::now();
   } while( !awk && duration_cast<microseconds>( t2-t1 ).count() < waitack );
 
   // Checking output
@@ -149,12 +209,56 @@ GCoder::RunGcode(
       strcat( msg, "... Done!" );
       update( msghead, msg );
     }
+
+    // Flushing the printer buffer after executing the command.
+    while( readlen > 0 ){
+      readlen = read( printer_IO, buffer, sizeof( buffer ) -1 );
+      std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
+    }
+
     return ackstr;
   } else {
-    return RunGcode( gcode, attempt+1, waitack );
+    return RunGcode( gcode, attempt+1, waitack, verbose );
   }
 }
 
+
+/**
+ * @brief Private function for checking the acknowledgement string for gcode
+ * execution completion.
+ *
+ * A typically return string after issuing a command will be the:
+ * "<return_string>\nok\n", this will be the message that we are looking for.
+ * But, the printer will periodically flush the printer settings via the
+ * automatic M503 calls that would have the printer accidentally assume the
+ * command has been completed when it has not.
+ *
+ * This function looks at the return message string, and filters on the more
+ * obscure commands in our use case, and only returns true if the return message
+ * is not a settings report.
+ */
+static bool
+check_ack( const std::string& cmd, const std::string& msg )
+{
+  auto has_substr = []( const std::string& str, const std::string& sub)->bool {
+                      return str.find( sub ) != std::string::npos;
+                    };
+  if( !has_substr( msg, "ok" ) ){ return false; }
+  if( has_substr( msg, "M200" ) ){
+    if( !has_substr( cmd, "M503" ) && !has_substr( cmd, "M200" ) ){
+      return false;
+    }
+  }
+  return true;
+}
+
+
+/**
+ * @brief Sending the gantry to home.
+ *
+ * The gcode command G28 can have each of the axis sent reset for the axis. This
+ * also wipes the current stored axis coordinates to 0
+ */
 void
 GCoder::SendHome( bool x, bool y, bool z )
 {
@@ -167,16 +271,19 @@ GCoder::SendHome( bool x, bool y, bool z )
   if( x ){
     strcat( cmd, " X" );
     opx = 0;
+    cx  = 0;
   }
 
   if( y ){
     strcat( cmd, " Y" );
     opy = 0;
+    cy  = 0;
   }
 
   if( z ){
     strcat( cmd, " Z" );
     opz = 0;
+    cz  = 0;
   }
 
   // Adding end of line character.
@@ -186,29 +293,18 @@ GCoder::SendHome( bool x, bool y, bool z )
   clear_update();
 }
 
-void
-GCoder::EnableStepper( bool x, bool y, bool z )
-{
-  // Re-enabling the steppers after they have been paused.
-  if( x ){
-    RunGcode( "M17 X\n", 0, 1e5, false );
-  }
-  if( y ){
-    RunGcode( "M17 Y\n", 0, 1e5, false );
-  }
-  if( z ){
-    RunGcode( "M17 Z\n", 0, 1e5, false );
-  }
-}
-
+/**
+ * @brief Disabling the stepper motors.
+ *
+ * The power supply of the gantry is rather noisy, causing issues with the
+ * readout system. Disabling the stepper closes the relevant power supplies while
+ * the gantry still remembers where it is, at the cost of less stability of the
+ * gantry position. Python will be handling for disabling the stepper motors when
+ * readout systems are invoked.
+ */
 void
 GCoder::DisableStepper( bool x, bool y, bool z )
 {
-  // Disable steppers: The power supply of the gantry is rather noisy, causing
-  // issues with the readout system. Disabling the stepper closes the relevant
-  // power supplies while the gantry still remembers where it is. This needs to
-  // be called at the python level since motion minitoring is done at the python
-  // level.
   if( x ){
     RunGcode( "M18 X E\n", 0, 1e5, false );
   }
@@ -220,18 +316,57 @@ GCoder::DisableStepper( bool x, bool y, bool z )
   }
 }
 
+/**
+ * @brief Enabling the stepper motors.
+ *
+ * This should be used after the readout has been completed.
+ */
+void
+GCoder::EnableStepper( bool x, bool y, bool z )
+{
+  if( x ){
+    RunGcode( "M17 X\n", 0, 1e5, false );
+  }
+  if( y ){
+    RunGcode( "M17 Y\n", 0, 1e5, false );
+  }
+  if( z ){
+    RunGcode( "M17 Z\n", 0, 1e5, false );
+  }
+}
 
+/**
+ * @brief Getting a list of settings a the string reported by the gantry.
+ */
 std::string
 GCoder::GetSettings() const
 {
   return RunGcode( "M503\n" );
 }
 
+/**
+ * @brief Setting the motion speed limit (in units of mm/s)
+ *
+ * There are two steps to setting the motion speeds:
+ * 1. Setting the maximum feedrate (M203)
+ * 2. Set the feed rate of all future G0 commands (G0 F), this is units of
+ *    mm/minutes!
+ *
+ * In addition we will be setting some hard maximum limits on the motion speed
+ * rate:
+ * - For x/y: 200mm/s
+ * - For z: 30mm/s
+ *
+ * While setting values to higher is programmatically possible, empirically this
+ * is found to make the motion unstable.
+ */
 void
 GCoder::SetSpeedLimit( float x, float y, float z )
 {
-  static const float maxv = 200.0;// Setting the maximum speed
-  static const float maxz = 30.0;// Maximum speed for z axis
+  static const char gcode1_fmt[] = "M203 X%.2f Y%.2f Z%.2f\n";
+  static const char gcode2_fmt[] = "G0 F%.2f\n";
+  static const float maxv        = 200.0;// Setting the maximum speed
+  static const float maxz        = 30.0;// Maximum speed for z axis
   char gcode[1024];
 
   // NAN detection.
@@ -243,15 +378,10 @@ GCoder::SetSpeedLimit( float x, float y, float z )
   if( y > maxv ){ y = maxv; }
   if( z > maxv ){ z = maxz; }
 
-  // Setting the maximum feedrate for each axis
-  static const char gcode1_fmt[] = "M203 X%.2f Y%.2f Z%.2f\n";
   sprintf( gcode, gcode1_fmt, x, y, z );
   RunGcode( gcode, 0, 1e5, false );
 
-  // Setting the target feedrate for future G0 commands, max settings will be
-  // respected. Notice this is in units of mm/minutes.
-  static const char gcode2_fmt[] = "G0 F%.2f\n";
-  const float vmax               = std::max( std::max(x, y), z );
+  const float vmax = std::max( std::max( x, y ), z );
   sprintf( gcode, gcode2_fmt, vmax*60  );
   RunGcode( gcode, 0, 1e5, false );
 
@@ -260,26 +390,19 @@ GCoder::SetSpeedLimit( float x, float y, float z )
   vz = z;
 }
 
-void
-GCoder::MoveTo( float x, float y, float z, bool verbose )
-{
-  static constexpr float min_z_safety = 3;
-
-  if( z < min_z_safety && opz < min_z_safety ){
-    MoveToRaw( opx, opy, min_z_safety, verbose );
-    MoveToRaw( x,   y,   min_z_safety, verbose  );
-    MoveToRaw( x,   y,   z,            verbose );
-  } else if( opz < min_z_safety ){
-    MoveToRaw( opx, opy, min_z_safety, verbose );
-    MoveToRaw( x,   y,   z,            verbose  );
-  } else if( z < min_z_safety ){
-    MoveToRaw( x, y, min_z_safety, verbose );
-    MoveToRaw( x, y, z,            verbose );
-  } else {
-    MoveToRaw( x, y, z, verbose );
-  }
-}
-
+/**
+ * @brief Sending the command for linear motion.
+ *
+ * This is a very simple interface for the linear motion G0 command, here we will
+ * do very minimal parsing on the coordinates:
+ *
+ * - Make sure that the (x,y,z) coordinates are within physical limitations.
+ * - Round the coordinates to the closest 0.1 mm value.
+ *
+ * Notice that the G0 command will return the ACK string immediate after
+ * receiving the command, not after the motion is completed for this reason,
+ * additional parsing is required for make sure the motion has completed.
+ */
 void
 GCoder::MoveToRaw( float x, float y, float z, bool verbose )
 {
@@ -317,37 +440,82 @@ GCoder::MoveToRaw( float x, float y, float z, bool verbose )
   return;
 }
 
+/**
+ * @brief Checking whether the gantry has completed the motion to a set of
+ * coordinates.
+ *
+ * The file description interface used for communicating with the gantry does not
+ * play well with other interfaces when used as a continuous stream. So rather
+ * than having the file interface suspend the thread while the gantry is in
+ * motion, we opt to have the gantry perfrom simple one-off checks, and have
+ * thread suspension be handled by the higher interfaces.
+ *
+ * The function will only return false (gantry has completed motion) if the
+ * following condition is fulfilled:
+ * - The coordinate checking code "M114" is correctly accepted and returned
+ * - The return string of the "M114" is in the expected format.
+ * - The target coordinates and the current coordinates match to within 0.1(mm)
+ *
+ * Anything else and the function will return True. Regardless of whether the
+ * function returns true or false, the results of the M114 command will be used
+ * to update the current gantry coordinates.
+ */
 bool
 GCoder::InMotion( float x, float y, float z )
 {
-  // The file description interface does not like a continuous stream of file
-  // reads with a while loop, even when there are sleep requests in the loop. It
-  // will cause other interfaces (ex, network sockets to freeze). We instead need
-  // to implement the check simply by a one-off check. Monitoring the motion is
-  // then moved to python level.
-
-  float temp, cx, cy, cz;
-  const std::string checkmsg = RunGcode( "M114\n" );
-  int check                  = sscanf( checkmsg.c_str(),
-    "X:%f Y:%f Z:%f E:%f Count X:%f Y:%f Z:%f",
-    &opx, &opy, &opz, &temp, &cx, &cy, &cz );
-
-  if( check == 7 ){
-    if( MatchCoord( x, cx ) &&
-        MatchCoord( y, cy ) &&
-        MatchCoord( z, cz ) ){
-      return false;
-    } else {
-      return true;
-    }
-
-  } else {
-    return true;// Assuming gantry is in motion unless if message parsing fails
+  float temp;// feed position of extruder.
+  int check;
+  try {
+    const std::string checkmsg = RunGcode( "M114\n" );
+    check = sscanf( checkmsg.c_str(),
+      "X:%f Y:%f Z:%f E:%f Count X:%f Y:%f Z:%f",
+      &opx, &opy, &opz, &temp, &cx, &cy, &cz );
+  } catch( std::exception& e ){
+    return true;
   }
-  return true;
+
+  if( check != 7 ){return true;}
+
+  if( MatchCoord( x, cx ) &&
+      MatchCoord( y, cy ) &&
+      MatchCoord( z, cz ) ){
+    return false;
+  } else {
+    return true;
+  }
 }
 
+/**
+ * @brief Simple abstraction of the motion command to ensure motion safety.
+ *
+ * This motion command keeps the z coordinates above 3mm for as much as the
+ * motion duration as possible. This help ensures that elements in the gantry
+ * head does not impact the platten or the circuit board.
+ */
+void
+GCoder::MoveTo( float x, float y, float z, bool verbose )
+{
+  static constexpr float min_z_safety = 3;
 
+  if( z < min_z_safety && opz < min_z_safety ){
+    MoveToRaw( opx, opy, min_z_safety, verbose );
+    MoveToRaw( x,   y,   min_z_safety, verbose  );
+    MoveToRaw( x,   y,   z,            verbose );
+  } else if( opz < min_z_safety ){
+    MoveToRaw( opx, opy, min_z_safety, verbose );
+    MoveToRaw( x,   y,   z,            verbose  );
+  } else if( z < min_z_safety ){
+    MoveToRaw( x, y, min_z_safety, verbose );
+    MoveToRaw( x, y, z,            verbose );
+  } else {
+    MoveToRaw( x, y, z, verbose );
+  }
+}
+
+/**
+ * @brief Simple function to check if two numbers match the same coordinate
+ * system within 0.1(mm), the finest resolution of the gantry.
+ */
 bool
 GCoder::MatchCoord( double x, double y )
 {
@@ -357,10 +525,19 @@ GCoder::MatchCoord( double x, double y )
   return x == y;
 }
 
-
-// ------------------------------------------------------------------------------
-// Singleton stuff
-// ------------------------------------------------------------------------------
+/********************************************************************************
+ *
+ * SINGLETON SYNTAX
+ *
+ * The class is declared as a singleton: there will only ever be 1 instance of
+ * the class in a single process. This ensures that the same gantry interface is
+ * used throughout the code, with not change of accidental copies.
+ *
+ * Constructions are made private, and the instance method used to access the
+ * unique gcoder instance will be the only constructor-like interface exposed to
+ * python.
+ *
+ *******************************************************************************/
 std::unique_ptr<GCoder> GCoder::_instance = nullptr;
 
 GCoder&
@@ -376,7 +553,7 @@ GCoder::make_instance()
   return 0;
 }
 
-static const int __make_instance_call = GCoder::make_instance();
+static const int __make_gcoder_instance_call = GCoder::make_instance();
 
 GCoder::GCoder() :
   printer_IO( -1 ),
@@ -391,4 +568,5 @@ GCoder::~GCoder()
   if( printer_IO > 0 ){
     close( printer_IO );
   }
+  printf( "Gantry system closed\n" );
 }

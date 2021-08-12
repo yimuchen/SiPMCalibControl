@@ -5,7 +5,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 
-#include <pybind11/numpy.h>
+// #include <pybind11/numpy.h>
 
 #include <atomic>
 #include <memory>
@@ -47,13 +47,13 @@ public:
     int    poly_y4;
   };
 
-  unsigned  frame_width() const;
-  unsigned  frame_height() const;
-  VisResult get_result();
-  cv::Mat   get_image( const bool );
-  bool      save_image( const std::string&,
-                        const bool raw );
-  PyObject* get_image_bytes();
+  unsigned  FrameWidth() const;
+  unsigned  FrameHeight() const;
+  VisResult GetVisResult();
+  cv::Mat   GetImage( const bool );
+  bool      SaveImage( const std::string&,
+                       const bool raw );
+  std::vector<uchar> GetImageBytes();
 
   int blur_range;
   int lumi_cutoff;
@@ -64,10 +64,10 @@ public:
 
   // Making the image processing function public to allow for debugging images to
   // be passed through
-  std::vector<ContourList> find_contours( const cv::Mat& ) const;
-  VisResult                make_result( const cv::Mat&, const Contour_t& ) const;
-  cv::Mat                  make_display( const cv::Mat&,
-                                         const std::vector<ContourList>& ) const;
+  std::vector<ContourList> FindContours( const cv::Mat& ) const;
+  VisResult                MakeResult( const cv::Mat&, const Contour_t& ) const;
+  cv::Mat                  MakeDisplay( const cv::Mat&,
+                                        const std::vector<ContourList>& ) const;
 
 private:
   cv::VideoCapture cam;
@@ -81,25 +81,25 @@ private:
   std::mutex loop_mutex;
 
   // Function for thread handling;
-  void start_thread();
-  void end_thread();
+  void StartLoopThread();
+  void EndLoopThread();
   void RunMainLoop( std::atomic<bool>& );
 
   // Helper function for
-  void init_var_default();
+  void InitVarDefault();
 
   // Image processing function
-  VisResult find_det( const cv::Mat& );
+  VisResult FindDetector( const cv::Mat& );
 
 public:
   ContourList GetRawContours( const cv::Mat& ) const;
   Contour_t   GetConvexHull( const Contour_t& ) const;
   Contour_t   GetPolyApprox( const Contour_t& ) const;
 
-  double GetImageLumi( const cv::Mat&, const Contour_t& ) const;
-  std::pair<double,double> sharpness( const cv::Mat&, const cv::Rect& ) const;
-  double GetContourSize( const Contour_t& ) const;
-  double GetContourMaxMeasure( const Contour_t& ) const;
+  double                    GetImageLumi( const cv::Mat&, const Contour_t& ) const;
+  std::pair<double, double> sharpness( const cv::Mat&, const cv::Rect& ) const;
+  double                    GetContourSize( const Contour_t& ) const;
+  double                    GetContourMaxMeasure( const Contour_t& ) const;
 
 
   static bool CompareContourSize( const Contour_t&, const Contour_t& );
