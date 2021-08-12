@@ -8,7 +8,7 @@ include:
   - C++ compiler compatible with C++14 standard
   - [OpenCV 4][opencv]
   - [CMake 3][cmake]
-  - [boost::python][boostpython]
+  - [pybind11][pybind11]
   - python 3
     - [numpy][numpy] and [scipy][scipy]: For in-time data processing
     - [flask socketio][flasksocket]: For server hosting
@@ -155,7 +155,7 @@ dependencies translations are listed below:
 
 [opencv]: https://opencv.org/releases/
 [cmake]: https://cmake.org/download/
-[boostpython]: https://www.boost.org/users/download/
+[pybind11]: https://pybind11.readthedocs.io/en/stable/
 [numpy]: https://numpy.org/
 [flasksocket]:https://flask-socketio.readthedocs.io/en/latest/
 [scipy]: https://www.scipy.org/scipylib/index.html
