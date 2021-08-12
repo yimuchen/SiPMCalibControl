@@ -1,3 +1,22 @@
+/**
+ * @file pico.cc
+ * @author Yi-Mu Chen
+ * @brief Interface for picotech-PICOSCOPE used for SiPM data collection.
+ *
+ * Here we are specializing the PICOSCOPE to the specific model used at UMD
+ * (PS5234), and the operations needed for collecting SiPM/pulse-like data. The
+ * main reference program used making this interface class can be found in the
+ * official picotech Github repository [1].
+ *
+ * A big chuck of the PICO scope interface revolves round hte collection of
+ * "rapidblocks", sets waveforms collected over multiple triggers, which speeds
+ * up the available data aquisition rate of the picoscope. Most of the storage
+ * classes in the PicoUnit class is creating machine side memory space to receive
+ * the larger data blocks from the picscope unit.
+ *
+ * [1] https://github.com/picotech/picosdk-c-examples
+ */
+
 #include "logger.hpp"
 #include "pico.hpp"
 #include <libps5000/ps5000Api.h>
@@ -38,12 +57,8 @@ PicoUnit::Init()
   // 0 delay, indefinite trigger wait time.
   std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
   SetBlockNums( 5000, 100, 0 );
-  findTimeInterval();
+  FindTimeInterval();
 }
-
-float
-PicoUnit::adc2mv( int16_t channel, int16_t adc ) const
-{ return adc * inputRanges[range[channel]] / PS5000_MAX_VALUE; }
 
 int
 PicoUnit::VoltageRangeMin() const
@@ -115,6 +130,13 @@ PicoUnit::SetTrigger(
   triggerwait      = maxwait;
 }
 
+/**
+ * @brief Setting the number of captures for perform in a single lumi-block run,
+ * as well as the number of samples to collected before and after the trigger
+ * instance.
+ *
+ * Also resizes the arrays used for receive the block results.
+ */
 void
 PicoUnit::SetBlockNums(
   unsigned ncaps, unsigned post, unsigned pre )
@@ -134,7 +156,7 @@ PicoUnit::SetBlockNums(
     throw std::runtime_error( errormessage );
   }
 
-  if(  post + pre > (unsigned)maxsamples ){
+  if( post + pre > (unsigned)maxsamples ){
     sprintf( errormessage,
       "requested samples [%u+%u]greater than maximum allowed samples[%d],"
       "truncating to maximum",
@@ -181,6 +203,13 @@ PicoUnit::SetBlockNums(
   postsamples = post;
 }
 
+/**
+ * @brief Starting rapidblock collection.
+ *
+ * The function will exit as soon as the rapidblock is setup. The users can check
+ * whether rapid block collection has completed (ready to have picoscope memory
+ * be flushed to device) using the IsReady method.
+ */
 void
 PicoUnit::StartRapidBlock()
 {
@@ -199,19 +228,13 @@ PicoUnit::StartRapidBlock()
       "Error setting up run block (Error code:%d", status );
     throw std::runtime_error( errormessage );
   }
-
 }
 
-void
-PicoUnit::WaitTillReady()
-{
-  while( !IsReady() ){
-    std::this_thread::sleep_for( std::chrono::microseconds( 5 ) );
-  }
-
-  return;
-}
-
+/**
+ * @brief Check if rapidblock collection has completed. If yes, flush the data in
+ * the picoscope internal memory to device and return true. Simple return false
+ * otherwise.
+ */
 bool
 PicoUnit::IsReady()
 {
@@ -223,6 +246,9 @@ PicoUnit::IsReady()
   return ready;
 }
 
+/**
+ * @brief Flushing the data in the picoscope internal memory to main device.
+ */
 void
 PicoUnit::FlushToBuffer()
 {
@@ -252,10 +278,50 @@ PicoUnit::FlushToBuffer()
     0, ncaptures-1,// flush range
     overflowbuffer.get()// overflow buffer
     );
-
 }
 
-// Debugging methods
+/**
+ * @brief Suspending the main thread indefinitely until the rapid block
+ * collection is complete. Notice that this flush the data to buffer when the
+ * function exits.
+ */
+void
+PicoUnit::WaitTillReady()
+{
+  while( !IsReady() ){
+    std::this_thread::sleep_for( std::chrono::microseconds( 5 ) );
+  }
+
+  return;
+}
+
+/**
+ * @brief Getting the raw readout results as a 16bit signed integer.
+ */
+int16_t
+PicoUnit::GetBuffer(
+  const int      channel,
+  const unsigned cap,
+  const unsigned sample ) const
+{
+  return channel == 0 ? bufferA[cap][sample] : bufferB[cap][sample];
+}
+
+/**
+ * @brief Converting the ADC value to millivolts according to the current range
+ * settings of a certain channel. Notice that the ADC value should be passed into
+ * this function as obtained from the GetBuffer method, even if the last 8 bits
+ * of the GetBuffer method is effectively redundent.
+ */
+float
+PicoUnit::adc2mv( int16_t channel, int16_t adc ) const
+{ return adc * inputRanges[range[channel]] / PS5000_MAX_VALUE; }
+
+
+/**
+ * @brief Printing the first 6 captures waveforms in a table on the screen. Very
+ * verbose method for debugging purposes.
+ */
 void
 PicoUnit::DumpBuffer() const
 {
@@ -294,15 +360,14 @@ PicoUnit::DumpBuffer() const
   printmsg( "" );
 }
 
-int16_t
-PicoUnit::GetBuffer(
-  const int      channel,
-  const unsigned cap,
-  const unsigned sample ) const
-{
-  return channel == 0 ? bufferA[cap][sample] : bufferB[cap][sample];
-}
-
+/**
+ * @brief Returning the specified capture within a the rapidblock buffer of the
+ * specified channel as a hex string.
+ *
+ * Notice that while the buffer stores the sampling results in 16 bits, the last
+ * 8 bit will always be 0. So we will only be storing the effective 8 bits in a 2
+ * digit hex format.
+ */
 std::string
 PicoUnit::WaveformString(
   const int16_t  channel,
@@ -323,7 +388,10 @@ PicoUnit::WaveformString(
   return ans;
 }
 
-int
+/**
+ * @brief Summing the waveform over the entire sample range.
+ */
+float
 PicoUnit::WaveformSum(
   const int16_t  channel,
   const unsigned capture
@@ -339,6 +407,9 @@ PicoUnit::WaveformSum(
   return ans * adc2mv( channel, 256 );
 }
 
+/**
+ * @brief Getting the maximum value of the value.
+ */
 int
 PicoUnit::WaveformAbsMax( const int16_t channel ) const
 {
@@ -356,7 +427,10 @@ PicoUnit::WaveformAbsMax( const int16_t channel ) const
   return ans;
 }
 
-
+/**
+ * @brief Dumping the current picoscope configuration on the screen for
+ * inspection.
+ */
 void
 PicoUnit::PrintInfo() const
 {
@@ -440,8 +514,11 @@ PicoUnit::PrintInfo() const
   printmsg( picoinfo, line );
 }
 
+/**
+ * @brief Making sure the time setting is correct.
+ */
 void
-PicoUnit::findTimeInterval()
+PicoUnit::FindTimeInterval()
 {
   unsigned nsamples = 1000;// This in one u-sec!
   timebase = 0;
@@ -456,7 +533,11 @@ PicoUnit::findTimeInterval()
   }
 }
 
-// Singleton stuff
+/********************************************************************************
+ *
+ * SINGLETON SYNTAX
+ *
+ *******************************************************************************/
 std::unique_ptr<PicoUnit> PicoUnit::_instance = nullptr;
 
 PicoUnit&
@@ -470,7 +551,6 @@ PicoUnit::make_instance()
   }
   return 0;
 }
-
 
 static const int __make_instance_call = PicoUnit::make_instance();
 
@@ -487,7 +567,6 @@ PicoUnit::PicoUnit() :
   range[0] = 6;
   range[1] = 7;
 }
-
 
 PicoUnit::~PicoUnit()
 {

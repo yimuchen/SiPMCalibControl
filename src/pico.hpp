@@ -43,8 +43,8 @@ public:
 
   std::string WaveformString( const int16_t  channel,
                               const unsigned capture ) const;
-  int WaveformSum( const int16_t  channel,
-                   const unsigned capture ) const;
+  float WaveformSum( const int16_t  channel,
+                     const unsigned capture ) const;
 
   int WaveformAbsMax( const int16_t channel ) const;
 
@@ -77,7 +77,7 @@ private:
   std::unique_ptr<int16_t[]> overflowbuffer;
 
   // Helper functions for sanity check
-  void findTimeInterval();// Running once and not changing;
+  void FindTimeInterval();// Running once and not changing;
 
 // Singleton stuff
 
@@ -90,7 +90,7 @@ private:
 public:
   ~PicoUnit();
   static PicoUnit& instance();
-  static int make_instance();
+  static int       make_instance();
 
 };
 
