@@ -22,7 +22,6 @@ find_package(pybind11 CONFIG REQUIRED)
 find_package(OpenCV          REQUIRED)
 find_package(Threads         REQUIRED)
 
-
 ## The DRS4 library, this assumes that the stuff have been added to the
 if( EXISTS "external/drs" )
   message("External package DRS found! Making the DRS readout interface")
@@ -76,12 +75,13 @@ function(make_control_library libname source )
   add_library(c_${libname} SHARED ${source})
   get_filename_component(basename ${source} NAME)
   pybind11_add_module(${libname} SHARED cmod/py_${basename})
-  #set_target_properties( ${libname} PROPERTIES PREFIX "" )
   target_include_directories(${libname} PRIVATE "src/" )
   target_link_libraries(${libname} PRIVATE c_${libname})
 endfunction()
 
 make_control_library( logger src/logger.cc )
+target_link_libraries(c_logger PRIVATE readline )
+# target_link_libraries(logger PUBLIC readline)
 
 # Making the various interface classes
 if( DRS_DEFINES )
@@ -105,13 +105,13 @@ make_control_library(gpio src/gpio.cc)
 target_link_libraries(gpio PRIVATE Threads::Threads)
 
 make_control_library( visual src/visual.cc)
-target_link_libraries( c_visual PRIVATE  c_logger 
-                                         ${OpenCV_LIBS} 
-                                         Threads::Threads 
+target_link_libraries( c_visual PRIVATE  c_logger
+                                         ${OpenCV_LIBS}
+                                         Threads::Threads
                                          pybind11::pybind11
                                          pybind11::python_link_helper)
 #message( "TESTING" ${PYTHON#_INCLUDE_DIRS} )
-target_include_directories(c_visual PRIVATE ${OpenCV_INCLUDE_DIRS} 
+target_include_directories(c_visual PRIVATE ${OpenCV_INCLUDE_DIRS}
                                             ${PYTHON_INCLUDE_DIRS} )
 target_include_directories(visual PRIVATE ${OpenCV_INCLUDE_DIRS} )
 
@@ -145,10 +145,10 @@ target_include_directories(visual PRIVATE ${OpenCV_INCLUDE_DIRS} )
 # target_link_libraries(logger_test.exe logger)
 
 add_executable(visual_test.exe bin/visual_test.cc )
-target_include_directories(visual_test.exe PRIVATE src/ 
-                                                   ${OpenCV_INCLUDE_DIRS} 
+target_include_directories(visual_test.exe PRIVATE src/
+                                                   ${OpenCV_INCLUDE_DIRS}
                                                    ${PYTHON_INCLUDE_DIRS})
-target_link_libraries(visual_test.exe PRIVATE c_visual 
+target_link_libraries(visual_test.exe PRIVATE c_visual
                                               Threads::Threads
                                               ${OpenCV_LIBS}
                                               ${PYTHON_LIBRARIES})

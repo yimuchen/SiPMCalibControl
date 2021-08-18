@@ -1,3 +1,10 @@
+"""
+  board.py
+
+  Python classes used to handling detector layout and board configurations, and
+  positional calibration results. More details will be provided in the per class
+  documentations.
+"""
 import cmod.logger as logger
 import cmod.gcoder as gcoder
 import json
@@ -5,31 +12,35 @@ import json
 
 class Detector(object):
   """
-  A detector is defined as an object with a specific readout mode, a
-  corresponding channel, and at least one set of coordinates. The handling of the
-  detector ID will be handled by the paraent Board class
+  A detector element is defined as an object with a specific readout mode, a
+  corresponding channel, and at least one set of (default) coordinates. The
+  handling of the detector. No name will be given for the detector element here,
+  that will be handled by the parent "Board" class.
+
+  The calibrated coordinates (either the visually calibrated coordinates and the
+  accompanying transformation matrix, or the luminosity aligned coordinates will
+  be stored as a dictionary, with the z operation value used for obtaining the
+  calibration used as the key.)
   """
   def __init__(self, jsonmap):
     self.mode = int(jsonmap['mode'])
     self.channel = int(jsonmap['channel'])
     self.orig_coord = jsonmap['default coordinates']
-
-    if (self.orig_coord[0] > gcoder.GCoder.max_x()
-        or self.orig_coord[1] > gcoder.GCoder.max_y() or self.orig_coord[0] < 0
-        or self.orig_coord[1] < 0):
-      logger.printwarn(('The det position  (x:{0},y:{1}) '
-                        'is outside of the gantry boundaries (0-{2},0-{3}). '
-                        'The expected detector position will be not'
-                        'adjusted, but gantry motion might not reach it').format(
-                            self.orig_coord[0], self.orig_coord[1],
-                            gcoder.GCoder.max_x(), gcoder.GCoder.max_y()))
-
-    ## Initialization calibrated coordinates to be empty
-    # Since all calibrations are done with respect to some z value,
-    # All calibration results will be some map to a certain
     self.vis_coord = {}
     self.vis_M = {}
     self.lumi_coord = {}
+
+    # Additional parsing.
+    if (self.orig_coord[0] > gcoder.GCoder.max_x() or  #
+        self.orig_coord[1] > gcoder.GCoder.max_y() or  #
+        self.orig_coord[0] < 0 or self.orig_coord[1] < 0):
+      logger.printwarn(f"""
+      The specified detector position (x:{self.orig_coord[0]},
+      y:{self.orig_coord[1]}) is outside of the gantry boundaries
+      (0-{gcoder.GCoder.max_x()},0-{gcoder.GCoder.max_y()}). The expected
+      detector position will be not adjusted, but gantry motion might not reach
+      it. Which mean any results may be wrong.
+      """)
 
   def __str__(self):
     return str(self.__dict__())
@@ -147,7 +158,7 @@ class Board(object):
 
   def get_lumi_coord(self, det, z):
     det = str(det)
-    return self.det_map[det].vis_coord[self.roundz(z)]
+    return self.det_map[det].lumi_coord[self.roundz(z)]
 
   def vis_coord_hasz(self, det, z):
     det = str(det)

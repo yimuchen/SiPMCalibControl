@@ -44,7 +44,13 @@ function display_message(msg) {
 var status_update_flag = false;
 const status_update_interval = 500;
 
-function status_update_start() {
+function iterate_status_update() {
+  if (status_update_flag) {
+    setTimeout(single_status_update, status_update_interval);
+  }
+}
+
+function single_status_update() {
   $.ajax({
     dataType: 'json',
     mimeType: 'application/json',
@@ -64,18 +70,16 @@ function status_update_start() {
       status_update_time();
       status_update_monitor_data();
       status_update_coordinates();
+
+      // Calling the next iteration.
+      iterate_status_update();
     },
     error: function () {
       console.log('status update failed');
-      if (status_update_flag == true) {
-        setTimeout(status_update_start, status_update_interval);
-      }
+      iterate_status_update();
     }
   });
 
-  if (status_update_flag) {
-    setTimeout(status_update_start, status_update_interval);
-  }
 }
 
 /**
@@ -89,7 +93,7 @@ function status_update_time() {
   const state_str = session_state == STATE_IDLE ? `IDLE` :
     session_state == STATE_RUN_PROCESS ? `RUNNING` :
       session_state == STATE_WAIT_USER ? `WAITING UESR ACTION` :
-        ``
+        ``;
   $(`#up-time`).html(`Uptime: ${time_hour}:${time_min}:${time_sec}`);
   $('#up-time-since').html(
     `Session is: ${state_str} </br>
@@ -135,15 +139,23 @@ function status_update_monitor_data() {
     name: 'Secondary'
   }];
 
-  Plotly.newPlot('temperature-plot',
-    temperature_data,
-    temperature_plot_layout(),
-    layout_default_config);
+  if ($(`#temperature-plot`).length != 0) {
+    Plotly.newPlot('temperature-plot',
+      temperature_data,
+      temperature_plot_layout(),
+      layout_default_config);
+  } else {
+    console.log('temperature-plot DIV does not exist!');
+  }
 
-  Plotly.newPlot('voltage-plot',
-    voltage_data,
-    voltage_plot_layout(),
-    layout_default_config);
+  if ($('#voltag-plot').length != 0) {
+    Plotly.newPlot('voltage-plot',
+      voltage_data,
+      voltage_plot_layout(),
+      layout_default_config);
+  } else {
+    console.log('voltage-plot DIV does nto exist!')
+  }
 }
 
 /**
@@ -444,10 +456,10 @@ function make_debug_drsplot(data) {
       autorange: true
     },
     showlegend: true,
-    legend:{
-      x:1,
-      y:1,
-      xanchor:'right',
+    legend: {
+      x: 1,
+      y: 1,
+      xanchor: 'right',
     },
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',

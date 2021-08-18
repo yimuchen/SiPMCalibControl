@@ -8,7 +8,7 @@ PYBIND11_MODULE( drs, m )
   .def( "instance",          &DRSContainer::instance
       , pybind11::return_value_policy::reference )
   .def( "init",              &DRSContainer::Init )
-  .def( "timeslice",         &DRSContainer::TimeSlice )
+  .def( "timeslice",         &DRSContainer::GetTimeArray )
   .def( "startcollect",      &DRSContainer::StartCollect )
   .def( "forcestop",         &DRSContainer::ForceStop )
   // Trigger related stuff

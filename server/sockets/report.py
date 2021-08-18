@@ -43,7 +43,7 @@ def report_system_status():
       'volt2':
       session.cmd.gpio.adc_read(3),
       'coord':
-      [session.cmd.gcoder.opx, session.cmd.gcoder.opy, session.cmd.gcoder.opz],
+      [session.cmd.gcoder.cx, session.cmd.gcoder.cy, session.cmd.gcoder.cz],
   }
 
 

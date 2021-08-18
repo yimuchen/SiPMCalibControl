@@ -12,7 +12,6 @@ class SigHandle:
     self.reset()
     ## SIG_INT is Ctl+C
 
-
   def receive_term(self, signum, frame):
     self.terminate = True
 

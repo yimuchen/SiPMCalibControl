@@ -3,12 +3,14 @@
 {# All relevant files should be downloadable by the ./get_external.sh script in the main server directory.#}
 
 {# External font/style sheets #}
-<link href="{{url_for('static', filename='external/fontawesome-free-5.15.2-web/css/all.min.css')}}" rel="stylesheet" />
+<link href="{{url_for('static', filename='external/fontawesome-free/css/all.min.css')}}" rel="stylesheet" />
+<link href="{{url_for('static', filename='external/xterm/css/xterm.css')}}" rel='stylesheet'/>
 
 {# External javascript libraries #}
-<script src="{{url_for('static', filename='external/js/jquery-3.6.0.min.js')}}"></script>
-<script src="{{url_for('static', filename='external/js/socket.io-3.1.3.js')}}"></script>
-<script src="{{url_for('static', filename='external/js/plotly-1.58.4.min.js')}}"></script>
+<script src="{{url_for('static', filename='external/jquery/dist/jquery.min.js')}}"></script>
+<script src="{{url_for('static', filename='external/socket.io-client/dist/socket.io.min.js')}}"></script>
+<script src="{{url_for('static', filename='external/plotly.js/dist/plotly.min.js')}}"></script>
+<script src="{{url_for('static', filename='external/xterm/lib/xterm.js')}}"></script>
 
 {#Our own CSS stylesheet #}
 <link rel="stylesheet" href="{{url_for('static',filename='style.css')}}">
@@ -20,6 +22,6 @@
 <script src="{{url_for('static',filename='js/settings.js')}}"></script>
 <script src="{{url_for('static',filename='js/styling.js')}}"></script>
 <script src="{{url_for('static',filename='js/sync.js')}}"></script>
-
+<script src="{{url_for('static',filename='js/terminal.js')}}"></script>
 
 {% endmacro %}

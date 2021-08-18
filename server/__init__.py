@@ -1,7 +1,8 @@
-from flask import Flask, render_template, Response, jsonify
+from flask import Flask, render_template, Response, jsonify, request
 from flask_socketio import SocketIO
 import datetime
 import logging  ## System logging that is used by the application
+import threading
 
 ## Command interface
 import ctlcmd.cmdbase as cmdbase
@@ -14,7 +15,6 @@ import cmod.logger as logger
 import sys, copy, io, json, os, re
 
 socketio = SocketIO(debug=False, async_mode='threading', )
-#cors_allow_origins='*' )
 
 from .sockets import session
 from .sockets.parsing import *
@@ -36,6 +36,13 @@ def create_server_flask(debug=False):
     path.
     """
     return render_template('index.html')
+
+  @socketio.app.route('/testing')
+  def testing():
+    """
+    Testing page
+    """
+    return render_template('testing.html')
 
   @socketio.app.route('/debug')
   def expert():
@@ -99,7 +106,7 @@ def create_server_flask(debug=False):
     """
     Returning the data of some debug session in json format.
     """
-    return jsonify(get_debug_data(process)) # Defined in parsing.py
+    return jsonify(get_debug_data(process))  # Defined in parsing.py
 
   @socketio.app.route('/visual')
   def visual():
@@ -118,6 +125,10 @@ def create_server_flask(debug=False):
     print('Connection established')
     socket_connect(socketio)
 
+  @socketio.on('xterminput', namespace='/sessionsocket')
+  def xterm_input(msg):
+    terminal_input(socketio, msg)
+
   @socketio.on('run-action-cmd', namespace='/sessionsocket')
   def run_action_cmd_socket(msg):
     run_action(socketio, msg)
@@ -125,6 +136,10 @@ def create_server_flask(debug=False):
   @socketio.on('complete-user-action', namespace='/sessionsocket')
   def complete_user_action_socket(msg):
     complete_user_action(socketio)
+
+  @socketio.on('interrupt', namespace='/sessionsocket')
+  def interrupt():
+    send_interrupt(socketio)
 
   ## Resetting the socket application stuff
   socketio.init_app(socketio.app)
@@ -141,10 +156,10 @@ def create_server_flask(debug=False):
   ## Using map to store Default values:
   default_overide = {
       '--printerdev': '/dev/ttyUSB0',
-      '--camdev': '/dev/video0',
+      #'--camdev': '/dev/video0',
       #'-boardtype': 'cfg/static_calib.json',
       '--action': 'cfg/useractions.json',
-      '--drsdevice': "MYDRS", # CANNT actually set
+      '--drsdevice': "MYDRS",  # CANNOT actually set
       '--picodevice': 'MYSERIAL',  #Cannot actually set. Just dummy for now
       #'-remotehost' : ['hepcms.umd.edu', '']
   }
@@ -159,14 +174,14 @@ def create_server_flask(debug=False):
   if args.help:
     prog_parser.print_help()
     sys.exit(0)
-
   try:
     session.cmd.set.run(args)
     session.cmd.gpio.init()
   except Exception as err:
     logger.printerr(str(err))
-    logger.printwarn(
-        'There was error in the setup process, program will '
-        'continue but will most likely misbehave! Use at your own risk!')
+    logger.printwarn("""
+        There was error in the setup process, program will continue but will
+        most likely misbehave! Use at your own risk!
+        """)
 
   return socketio.app

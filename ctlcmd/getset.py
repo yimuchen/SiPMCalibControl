@@ -1,35 +1,70 @@
+"""
+  getset.py
+
+  Commands that are used for looking up, displaying and modifying session
+  parameters. This includes loading and saving the master coordinate calibration
+  results, setting the readout devices, and commands used to stall the program.
+  Notice that "setting the readout devices" will only handle the opening and
+  closing of device interfaces, not the actual readout device internal settings.
+  That should be handled in their designate command files.
+"""
+
 import ctlcmd.cmdbase as cmdbase
 import cmod.logger as log
-from cmod.readout import readout
-import argparse
-import re
+from cmod.readout import Readout
+import argparse, re, os, sys, time
+
+
+class exit(cmdbase.controlcmd):
+  """
+  Command for exiting the main session
+  """
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
+
+  def run(self, args):
+    if self.prompt_yn("""
+                      Exiting this will terminate the session and all calibration
+                      variables (results are still on disk), are you sure you
+                      want to exit?""",
+                      default='no'):
+      return cmdbase.controlcmd.TERMINATE_SESSION
 
 
 class set(cmdbase.controlcmd):
   """
-  Setting session parameters
+  Setting calibration devices. This will only modify opening and closing the
+  interface, not the actual operation of the various interfaces.
+
+  - For visual system settings, see command: visualset
+  - For settings for the picoscope, see command: picoset
+  - For settings for the DRS4, see command: drsset
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
+
+  def add_args(self):
     self.parser.add_argument('--boardtype',
                              '-b',
                              type=argparse.FileType(mode='r'),
-                             help=('Setting board type via a configuration json '
-                                   'file that lists DET_ID with x-y '
-                                   'coordinates.'))
+                             help="""
+                              Setting board type via a configuration json file
+                             that lists DET_ID with x-y coordinates.""")
     self.parser.add_argument('--boardid',
                              '-i',
                              type=str,
-                             help=('Override the existing board id with user '
-                                   'string'))
+                             help="""
+                             Override the existing board id with user string""")
     self.parser.add_argument('--printerdev',
                              type=str,
-                             help=('Device path for the 3d printer. Should be '
-                                   'something like `/dev/tty<SOMETHING>`.'))
+                             help="""
+                             Device path for the 3d printer. Should be something
+                             like `/dev/tty<SOMETHING>`.""")
     self.parser.add_argument('--camdev',
                              type=str,
-                             help=('Device path for the primary camera, should '
-                                   'be something like `/dev/video<index>.`'))
+                             help="""
+                             Device path for the primary camera, should be
+                             something like `/dev/video<index>.`""")
     self.parser.add_argument('--remotehost',
                              type=str,
                              help='Connecting to remote host for file transfer')
@@ -38,27 +73,33 @@ class set(cmdbase.controlcmd):
                              help='Remote directory to save files to')
     self.parser.add_argument('--picodevice',
                              type=str,
-                             help=('The serial number of the pico-tech device '
-                                   'for dynamic light readout'))
+                             help="""
+                             The serial number of the pico-tech device for
+                             dynamic light readout""")
     self.parser.add_argument('--drsdevice',
-                              type=str,
+                             type=str,
                              help='Code flag to refresh DRS device')
-    self.parser.add_argument(
-        '--readout',
-        '-r',
-        type=int,
-        choices=[readout.MODE_ADC,
-                 readout.MODE_PICO,
-                 readout.MODE_DRS,
-                 readout.MODE_NONE,],
-        help='Setting readout mode of the current session')
+    self.parser.add_argument('--readout',
+                             '-r',
+                             type=int,
+                             choices=[
+                                 Readout.MODE_ADC, Readout.MODE_PICO,
+                                 Readout.MODE_DRS, Readout.MODE_NONE,
+                             ],
+                             help='Setting readout mode of the current session')
     self.parser.add_argument('--action',
                              '-a',
                              type=argparse.FileType(mode='r'),
-                             help=('Add files to a list of short hands for '
-                                   'setting user prompts'))
+                             help="""
+                             Add files to a list of short hands for setting user
+                             prompts""")
 
   def run(self, args):
+    """
+    For the sake of clarity, device settings is split into each of their
+    functions. Notice that all function should have expection guards so the
+    subsequent settings can still be set if a single settings is bad.
+    """
     if args.boardtype:
       self.set_board(args)
     if args.boardid:
@@ -123,7 +164,7 @@ class set(cmdbase.controlcmd):
       log.printerr(str(err))
       log.printwarn('Picoscope device is not properly set!')
 
-  def set_drs(self,args):
+  def set_drs(self, args):
     try:
       self.drs.init()
     except Exception as err:
@@ -133,16 +174,19 @@ class set(cmdbase.controlcmd):
 
 class get(cmdbase.controlcmd):
   """
-  Printing out the session parameters, and equipment settings.
+  Printing out the session parameters, and equipment settings. This is bundle
+  here for simple debugging.
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
+
+  def add_args(self):
     self.parser.add_argument('--boardtype', action='store_true')
     self.parser.add_argument('--printerdev', action='store_true')
     self.parser.add_argument('--camdev', action='store_true')
-    self.parser.add_argument('--origdet', action='store_true')
     self.parser.add_argument('--align', action='store_true')
     self.parser.add_argument('--pico', action='store_true')
+    self.parser.add_argument('--drs', action='store_true')
     self.parser.add_argument('--readout', action='store_true')
     self.parser.add_argument('--action', action='store_true')
 
@@ -159,6 +203,8 @@ class get(cmdbase.controlcmd):
       self.print_alignment()
     if args.pico or args.all:
       self.pico.printinfo()
+    if args.drs or args.all:
+      self.print_drs()
     if args.readout or args.all:
       self.print_readout()
     if args.action or args.all:
@@ -181,6 +227,10 @@ class get(cmdbase.controlcmd):
     log.printmsg(
         header, 'current coordinates: x{0:.1f} y{1:.1f} z{2:0.1f}'.format(
             self.gcoder.opx, self.gcoder.opy, self.gcoder.opz))
+    printset = self.gcoder.getsettings()
+    printset = printset.split('\necho:')
+    for line in printset:
+      log.printmsg(log.GREEN('[PRINTER]'), line)
 
   def print_camera(self):
     header = log.GREEN('[CAMERA]')
@@ -199,8 +249,6 @@ class get(cmdbase.controlcmd):
     vis_header = log.GREEN('[VIS__ALIGN]')
     det_format = log.YELLOW(' DET{0:3d}')
 
-    print('Printing alignment information')
-
     for detid in self.board.dets():
       det_str = det_format.format(int(detid))
       det = self.board.get_det(detid)
@@ -217,6 +265,9 @@ class get(cmdbase.controlcmd):
         log.printmsg(
             vis_header + det_str, 'x:{0:.2f} y:{1:.2f} | at z={2:.1f}'.format(
                 det.vis_coord[z][0], det.vis_coord[z][1], z))
+
+  def print_drs(self):
+    log.printmsg(self.drs.is_available())
 
   def print_readout(self):
     log.printmsg(
@@ -236,20 +287,6 @@ class get(cmdbase.controlcmd):
       log.printmsg(header, smsg)
 
 
-class getcoord(cmdbase.controlcmd):
-  """
-  Printing current gantry coordinates
-  """
-  LOG = log.GREEN('[GANTRY-COORD]')
-
-  def __init__(self, cmd):
-    cmdbase.controlcmd.__init__(self, cmd)
-
-  def run(self, args):
-    self.printmsg('x:{0:.1f} y:{1:.1f} z:{2:.1f}'.format(
-        self.gcoder.opx, self.gcoder.opy, self.gcoder.opz))
-
-
 class savecalib(cmdbase.controlcmd):
   """
   Saving current calibration information into a json file
@@ -258,14 +295,15 @@ class savecalib(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
+
+  def add_args(self):
     self.parser.add_argument('-f',
                              '--file',
                              type=argparse.FileType('w'),
                              required=True,
                              help='File to save the calibration events to')
 
-  def parse(self, line):
-    args = cmdbase.controlcmd.parse(self, line)
+  def parse(self, args):
     if not args.file:
       raise Exception('File name must be specified')
     return args
@@ -282,14 +320,15 @@ class loadcalib(cmdbase.controlcmd):
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
+
+  def add_args(self):
     self.parser.add_argument(
         '-f',
         '--file',
         type=argparse.FileType('r'),
         help='File to load the calibration information from')
 
-  def parse(self, line):
-    args = cmdbase.controlcmd.parse(self, line)
+  def parse(self, args):
     if not args.file:
       raise Exception('Filename must be specified')
     return args
@@ -298,46 +337,23 @@ class loadcalib(cmdbase.controlcmd):
     self.board.load_calib_file(args.file.name)
 
 
-class lighton(cmdbase.controlcmd):
-  """
-  Turning the LED lights on.
-  """
-  def __init__(self, cmd):
-    cmdbase.controlcmd.__init__(self, cmd)
-
-  def run(self, args):
-    self.gpio.light_on()
-
-
-class lightoff(cmdbase.controlcmd):
-  """
-  Turning the LED lights on.
-  """
-  def __init__(self, cmd):
-    cmdbase.controlcmd.__init__(self, cmd)
-
-  def run(self, line):
-    self.gpio.light_off()
-
-
 class promptaction(cmdbase.controlcmd):
   """
-  Displaying message that requires manual intervention.
+  Displaying message that requires manual intervention. This is handy for
+  inserting pause points in a runfile that requires user intervension.
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    self.parser.add_argument(
-        'string',
-        nargs=1,
-        type=str,
-        help=('String of message to show (program is paused until Enter key '
-              'is pressed). This can either be a short hand that is defined '
-              'using the loadaction command (use the listaction command to '
-              'get a list) or a raw string message that is to be shown on the '
-              'screen'))
 
-  def parse(self, line):
-    return cmdbase.controlcmd.parse(self, line)
+  def add_args(self):
+    self.parser.add_argument('string',
+                             nargs=1,
+                             type=str,
+                             help="""
+        String of message to show (program is paused until Enter key is pressed).
+        This can either be a short hand that is defined using the loadaction
+        command (use the listaction command to get a list) or a raw string
+        message that is to be shown on the screen""")
 
   def run(self, args):
     def color_change(x):
@@ -366,9 +382,99 @@ class promptaction(cmdbase.controlcmd):
     input_text = ''
     while input_text != args.string[0]:
       self.check_handle(args)
-      input_text = input(
-          log.GREEN('    TYPE [%s] to continue...') % args.string[0])
+      self.printmsg(log.GREEN(f'    TYPE [{args.string[0]}] to continue...'))
+      input_text = self.cmd.stdin.readline().strip()
 
     if is_defined:
       cmd = 'set ' + ' '.join(self.action.getset(args.string[0]))
       self.cmd.onecmd(cmd.strip())
+
+
+class wait(cmdbase.controlcmd):
+  """
+  Suspending the interactive session for N seconds. Can be terminated early using
+  Ctl+C.
+  """
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
+
+  def add_args(self):
+    self.parser.add_argument('--time',
+                             '-t',
+                             type=float,
+                             default=30,
+                             help='TIme to suspend session (seconds)')
+
+  def run(self, args):
+    start_time = time.time_ns()
+    current_time = start_time
+    while (current_time - start_time) / 1e9 < args.time:
+      self.check_handle(args)
+      time.sleep(0.1)
+      current_time = time.time_ns()
+
+
+class runfile(cmdbase.controlcmd):
+  """
+  Running a file with a list of commands.
+
+  Notice that while runfiles can be called recursively, you cannot call runfiles
+  that have already been called, as this will cause infinite recursion. If any
+  command files, the whole runfile call will be terminated to prevent user error
+  from damaging the gantry.
+  """
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
+
+  def add_args(self):
+    self.parser.add_argument('file',
+                             nargs=1,
+                             type=str,
+                             help="""
+                             Runfile to use. Relative paths will be evaluated
+                             from the current working directory.""")
+
+  def parse(self, args):
+    """Making sure the target is a readable file."""
+    args.file = args.file[0]
+    if not os.path.isfile(args.file):
+      raise RuntimeError('Specified path is not a file!')
+    return args
+
+  def run(self, args):
+    """
+    The command will infer a runfile stack in the controlterm instance to keep
+    track of which files has already been invoked by the runfile command. The
+    last file in the stack will be opened and executed per-line.
+    """
+    if not hasattr(self.cmd, 'runfile_stack'):
+      self.cmd.runfile_stack = []
+
+    if args.file in self.cmd.runfile_stack:
+      self.error_exit_run(f"""
+        File [{args.file}] has already been called! This indicates there is some
+        error in user logic. Exiting the top level runfile command.
+      """)
+    else:
+      self.cmd.runfile_stack.append(args.file)
+
+    with open(args.file) as f:
+      for cmdline in f.readlines():
+        self.check_handle(args)
+        status = self.cmd.onecmd(cmdline.strip())
+        if status != cmdbase.controlcmd.EXIT_SUCCESS:
+          self.error_exit_run(f"""
+            Command [{cmdline.strip()}] in file [{args.file}] has failed.
+            Exiting top level runfile command.
+          """)
+    self.cmd.runfile_stack.pop(-1)
+
+  def error_exit_run(self, msg):
+    """
+    Save exit on error to ensure that the runfile stack is properly cleared out.
+    """
+    self.cmd.runfile_stack = []
+    raise RuntimeError(msg)
+
+  def complete(self, text, line, start_index, end_index):
+    return cmdbase.controlcmd.globcomp(text)

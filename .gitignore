@@ -26,6 +26,7 @@ build/**
 **/*.exe
 *.pdf
 data/**
+node_modules
 
 server/templates/playground.html
 

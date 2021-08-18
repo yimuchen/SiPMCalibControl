@@ -14,43 +14,44 @@ import re
 
 if __name__ == '__main__':
   cmd = cmdbase.controlterm([
-      motioncmd.rungcode,
-      motioncmd.moveto,
-      motioncmd.movespeed,
-      motioncmd.enablestepper,
-      motioncmd.disablestepper,
-      motioncmd.wait,
-      motioncmd.sendhome,
-      motioncmd.halign,
-      motioncmd.zscan,
-      motioncmd.lowlightcollect,
-      motioncmd.timescan,
-      motioncmd.showreadout,
-      viscmd.visualset,
-      viscmd.visualhscan,
-      viscmd.visualzscan,
-      viscmd.visualmaxsharp,
-      viscmd.visualshowdet,
-      viscmd.visualsaveframe,
-      viscmd.visualcenterdet,
-      getset.set,
-      getset.get,
-      getset.getcoord,
-      getset.savecalib,
-      getset.loadcalib,
-      getset.lighton,
-      getset.lightoff,
-      getset.promptaction,
-      digicmd.pulse,
-      digicmd.pwm,
-      digicmd.setadcref,
-      digicmd.showadc,
-      picocmd.picoset,
-      picocmd.picorunblock,
-      picocmd.picorange,
-      drscmd.drsset,
-      drscmd.drscalib,
-      drscmd.drsrun
+      motioncmd.rungcode,  #
+      motioncmd.moveto,  #
+      motioncmd.movespeed,  #
+      motioncmd.enablestepper,  #
+      motioncmd.disablestepper,  #
+      motioncmd.sendhome,  #
+      motioncmd.halign,  #
+      motioncmd.zscan,  #
+      motioncmd.lowlightcollect,  #
+      motioncmd.timescan,  #
+      motioncmd.getcoord,  #
+      viscmd.visualset,  #
+      viscmd.visualhscan,  #
+      viscmd.visualzscan,  #
+      viscmd.visualmaxsharp,  #
+      viscmd.visualshowdet,  #
+      viscmd.visualsaveframe,  #
+      viscmd.visualcenterdet,  #
+      getset.exit,  #
+      getset.set,  #
+      getset.get,  #
+      getset.wait,  #
+      getset.savecalib,  #
+      getset.loadcalib,  #
+      getset.promptaction,  #
+      getset.runfile,  #
+      digicmd.pulse,  #
+      digicmd.pwm,  #
+      digicmd.setadcref,  #
+      digicmd.showadc,  #
+      digicmd.lighton,  #
+      digicmd.lightoff,  #
+      picocmd.picoset,  #
+      picocmd.picorunblock,  #
+      picocmd.picorange,  #
+      drscmd.drsset,  #
+      drscmd.drscalib,  #
+      drscmd.drsrun  #
   ])
   # Duplicating the session to allow for default override.
   prog_parser = copy.deepcopy(cmd.set.parser)
@@ -68,7 +69,7 @@ if __name__ == '__main__':
       '--camdev': '/dev/video0',
       #'-boardtype': 'cfg/static_calib.json',
       '--action': 'cfg/useractions.json',
-      '--drsdevice': "MYDRS", # CANNT actually set
+      '--drsdevice': "MYDRS",  # CANNT actually set
       '--picodevice': 'MYSERIAL',  #Cannot actually set. Just dummy for now
       #'-remotehost' : ['hepcms.umd.edu', '']
   }
@@ -96,3 +97,4 @@ if __name__ == '__main__':
         'continue but will most likely misbehave! Use at your own risk!')
 
   cmd.cmdloop()
+  print('Exiting out of loop')

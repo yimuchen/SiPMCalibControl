@@ -5,44 +5,14 @@ from scipy import stats
 from scipy import special
 
 
-## Random number distribution for generating fake data
-class APDistribution(stats.rv_continuous):
+class Readout(object):
   """
-  After pulsing distribution function (Unsmeared!)
-  Smearing can be done by Adding a guassian random number later
-  """
-  def __init__(self, i, k, beta):
-    stats.rv_continuous.__init__(self, a=0, b=5 * beta)
-    self.i = i
-    self.k = k
-    self.beta = beta
-
-  def _cdf(self, x):
-    return special.gammainc(self.i, x / self.beta)
-
-
-class DarkCurrentDistribution(stats.rv_continuous):
-  """
-  Dark current distribution (Unsmeared!)
-  Smearing can be done by adding a Gaussian random number later
-  """
-  def __init__(self, gain, epsilon):
-    stats.rv_continuous.__init__(self, a=epsilon, b=gain - epsilon)
-
-  def _cdf(self, x):
-    eps = self.a
-    gain = self.a + self.b
-    return (np.log(x / (gain - x)) + np.log((gain - eps) / eps)) / (2 * np.log(
-        (gain - eps) / eps))
-
-
-class readout(object):
-  """
-  Interface for abstracting the readout interface under a simple function. The
-  idea is that for mass calibration, what we would want to do is to have the user
-  call readout from a certain channel of a certain readout mode to store a single
-  list of numbers, allowin for a unified interface for data collection with
-  readout methods.
+  Interface for abstracting the readout interface under a simple method calls.
+  The idea is that for mass calibration, where pedestal subtraction and such
+  should already be optimized, what we would want to do is to have the user call
+  readout from a certain channel of a certain readout mode to store a single list
+  of numbers, allowing for a unified interface for data collection with readout
+  methods.
   """
 
   # Constants for mode configuration
@@ -53,87 +23,85 @@ class readout(object):
 
   def __init__(self, parent):
     self.parent = parent
-    self.pico = parent.pico  ## Reference to picoscope for simplified
+    # Reference to the readout interfaces to be called.
+    self.pico = parent.pico
     self.gpio = parent.gpio
     self.drs = parent.drs
-    self.mode = readout.MODE_NONE
+    # For turning of gantry while reading
+    self.gcoder = parent.gcoder
+    self.mode = Readout.MODE_NONE
     self.i2c = None
     self.adc = None
 
-  def set_mode(self, mode):
-    if mode == readout.MODE_PICO and self.pico.device:
-      self.mode = mode
-    elif mode == readout.MODE_ADC and self.gpio.adc_status():
-      self.mode = readout.MODE_ADC
-    else:
-      self.mode = readout.MODE_NONE
+    # Model readouts
+    self.sipm = SiPMModel()
+    self.diode = DiodeModel()
 
-  def read(self, channel=0, samples=1000, average=True):
+  def set_mode(self, mode):
+    if mode == Readout.MODE_PICO and self.pico.device:
+      self.mode = mode
+    elif mode == Readout.MODE_ADC and self.gpio.adc_status():
+      self.mode = Readout.MODE_ADC
+    elif mode == Readout.MODE_DRS and self.drs.is_available():
+      self.mode = Readout.MODE_DRS
+    else:
+      self.mode = Readout.MODE_NONE
+
+  def read(self, channel=0, samples=1000, average=True, **kwargs):
     """
-    Getting the readout of the current configuration with <sample> samples of
-    the a specific channel.
-    If average is set to true, this function will return the averaged value and
-    the RMS of all samples. Otherwise this function will return the full list of
-    numbers obtained in the readout.
-    For picoscope readouts, this functions integrates over the entire available
-    window, so make sure that you have set the correct picoscope settings.
+    Getting the readout of the current configuration with <sample> samples of the
+    a specific channel. If average is set to true, this function will return the
+    averaged value and the RMS of all samples; otherwise this function will
+    return the full list of numbers obtained in the readout.
+
+    For the picoscope and the DRS4 interfaces, additional numbers options are
+    available in the keyword argument to modify the integration window and the
+    pedestal subtraction window.
     """
 
     readout_list = []
+    try: # Stopping the stepper motors for cleaner readout
+      self.gcoder.disablestepper(False, False, True)
+    except:# In case the gcode interface is not available, do nothing
+      pass
 
-    if self.mode == readout.MODE_PICO:
+    if self.mode == Readout.MODE_PICO:
       readout_list = self.read_pico(channel, samples)
-    elif self.mode == readout.MODE_ADC:
+    elif self.mode == Readout.MODE_ADC:
       readout_list = self.read_adc(channel, samples)
+    elif self.mode == Readout.MODE_DRS:
+      readout_list = self.read_drs(channel, samples)
     else:
       readout_list = self.read_model(channel, samples)
+
+    try: # Re-enable the stepper motors
+      self.gcoder.enablestepper(True, True, True)
+    except: # In the case that the gcode interface isn't availabe, do nothing.
+      pass
 
     if average:
       return np.mean(readout_list), np.std(readout_list)
     else:
       return readout_list
 
-  def read_adc(self, channel=0, samples=100):
+  def read_adc(self, channel=0, samples=100, **kwargs):
     """
-    Getting the averaged readout from the ADC det
+    Getting the averaged readout from the ADC. Here we provide a random sleep
+    between adc_read call to avoid any aliasing with either the readout rate or
+    the slow varying fluctuations in our DC systems.
     """
     val = []
-    for i in range(samples):
+    for _ in range(samples):
       val.append(self.gpio.adc_read(channel))
       ## Sleeping for random time in ADC to avoid 60Hz aliasing
       time.sleep(1 / 200 * np.random.random())
     return val
 
-  def read_adc_raw(self, channel):
+  def read_pico(self, channel=0, samples=10000, **kwargs):
     """
-    Reading a single ADC value from ADC det
-    """
-    return self.gpio.adc_read(channel)
-
-  def read_model(self, channel, samples):
-    x = self.parent.gcoder.opx
-    y = self.parent.gcoder.opy
-    z = self.parent.gcoder.opz
-
-    det_x = self.parent.board.det_map[str(channel)].orig_coord[0]
-    det_y = self.parent.board.det_map[str(channel)].orig_coord[1]
-
-    r0 = ((x - det_x)**2 + (y - det_y)**2)**0.5
-    pwm_val = self.parent.gpio.pwm_duty(0)
-
-    if channel >= 0 or channel % 2 == 0:
-      ## This is a typical readout, expcet a SiPM output,
-      N_mean = readout.GetNumPixels(r0=r0, z=z, pwm=pwm_val)
-      pe_list = readout.GetGPList(N_mean, samples)
-      return readout.GetSmearedGP(pe_list)
-    else:
-      ## This is a linear photo diode readout
-      readout_mean = readout.GetPhotoDiodeValue(r0=r0, z=z, pwm=pwm_val)
-      return np.random.normal(readout_mean, readout.GAIN / 2, samples)
-
-  def read_pico(self, channel=0, samples=10000):
-    """
-    Averaged readout of the picoscope
+    Averaged readout of the picoscope. Here we always set the blocksize to be
+    1000 captures. This function will continuously fire the trigger system until
+    a single rapidblock has been completed.
     """
 
     val = []
@@ -149,86 +117,178 @@ class readout(object):
       val.extend(self.pico.waveformsum(channel, x) for x in range(1000))
     return val
 
-  # Constants for fake model
-  ZMIN = 10
-  NPIX = 1000  ## Maximum number of pixels
-  GAIN = 120
-  LAMBDA = 0.03
-  AP_PROB = 0.08
-  SIGMA0 = 0.04
-  SIGMA1 = 0.01
-  BETA = 60
-  EPSILON = 0.005
-  DCFRAC = 0.04
-  ## Defining global dark current distribution for faster computation
-  DC_DISTRIBUTION = DarkCurrentDistribution(GAIN, EPSILON)
+  def read_drs(self, channel=0, samples=1000, **kwargs):
+    """
+    Average the readout results from the DRS4. Here we will contiously fire the
+    trigger until collections have been completed.
+    """
+    val = []
+    for i in range(samples):
+      self.drs.startcollect()
+      while not self.drs.is_ready():
+        try:  # For standalone runs with external trigger
+          self.gpio.pulse(10, 100)
+        except:
+          pass
+      # Decent settings for drs delay 550 and 2.0 GHz sample rate.
+      # Try to change programatically.
+      val.append(self.drs.waveformsum(channel, 30, 100, 0, 0))
 
-  def GetNumPixels(r0, z, pwm):
-    N0 = readout.NPIX * 3 * readout.ZMIN**2 * readout.PWMMultiper(pwm)
+    return val
+
+  def read_model(self, channel, samples):
+    """
+    Reading from a model. The location is extracted
+    """
+    x = self.parent.gcoder.opx
+    y = self.parent.gcoder.opy
+    z = self.parent.gcoder.opz
+
+    det_x = self.parent.board.det_map[str(channel)].orig_coord[0]
+    det_y = self.parent.board.det_map[str(channel)].orig_coord[1]
+
+    r0 = ((x - det_x)**2 + (y - det_y)**2)**0.5
+    pwm = self.parent.gpio.pwm_duty(0)
+
+    if channel >= 0 or channel % 2 == 0:
+      ## This is a typical readout, expect a SiPM output,
+      return self.sipm.read_model(r0, z, pwm, samples)
+    else:
+      ## This is a linear photo diode readout
+      return self.diode.read_model(r0, z0, pwm, samples)
+
+
+class SiPMModel(object):
+  """
+  Simple class for handling a model readout using a pre-defined model. The only
+  method that will be directly exposed to the be readout should be the readout
+  """
+  def __init__(self, **kwargs):
+    """
+    """
+    self.npix = kwargs.get('npix', 1000)
+    self.gain = kwargs.get('gain', 120)
+    self.lamb = kwargs.get('lamb', 0.03)
+    self.ap_prob = kwargs.get('ap_prob', 0.08)
+    self.sig0 = kwargs.get('sig0', 0.04)
+    self.sig1 = kwargs.get('sig1', 0.01)
+    self.beta = kwargs.get('beta', 60)
+    self.eps = kwargs.get('eps', 0.005)
+    self.dcfrac = kwargs.get('dcfrac', 0.04)
+
+  def read_model(self, r0, z, pwm, samples):
+    """
+    Returning a list of readout values as if the SiPM and the lightsource has a
+    r0,z separation, and the pwm is set to some duty cycle.
+    """
+    nfired = self._calc_npixels_fired(r0, z, pwm)
+    nfired = self._make_gp_list(nfired, samples)
+    return self._smear_values(nfired)
+
+  def _calc_npixels_fired(self, r0, z, pwm):
+    N0 = 30000 * self.npix * __pwm_multiplier(pwm)
     Nraw = N0 * z / (r0**2 + z**2)**1.5
-    return readout.NPIX * (1 - np.exp(-Nraw / readout.NPIX))
+    return self.npix * (1 - np.exp(-Nraw / self.npix))
 
-  def GetGPList(N_mean, samples):
+  def _make_gp_list(self, mean, samples):
     """
-    Generating a list of discharges using the Generalized poisson function.
+    Generating a list of numbers of pixels discharged based on the total mean
+    discharges using the generalized poisson function.
     """
-    N_sqrt = np.sqrt(N_mean)
-    k_min = max([min([0, N_mean - 3 * N_sqrt]), 0])
-    k_max = N_mean + 3 * N_sqrt + 10
-    k_list = np.arange(k_min, k_max)
-    GP_list = [
-        readout.calc_general_poisson(k, N_mean, readout.LAMBDA) for k in k_list
-    ]
-    GP_list = GP_list / np.sum(GP_list)  ## Additional normalization
-    GPoisson = stats.rv_discrete('GeneralizedPoisson', values=(k_list, GP_list))
-    # Defining the Generalized Poisson distribution
+    width = np.sqrt(mean)
+    k_min = max([min([0, mean - 3 * width]), 0])
+    k_max = mean + 3 * width + 10
+    k_arr = np.arange(k_min, k_max)
+    gp_prob = __general_poisson(k_arr, mean, self.lamb)
+    gp_prob = gp_prob / np.sum(gp_prob)  ## Additional normalization
+    dist = stats.rv_discrete('GeneralizedPoisson', values=(k_list, gp_prob))
+    return dist.rvs(size=samples)
 
-    return GPoisson.rvs(size=samples)
-
-  def GetSmearedGP(GPList):
+  def _smear_values(self, gp_list):
     """
-    Smearing discharge peaks using Gaussian, after pulsing and dark current
+    Given a list of prompt discharge pixel counts. Calculate the estimated
+    readout value by scaling the discharge count by the gain, and adding random
+    smearing according to discharge.
     """
-    ans = []
-    for k in GPList:
-      x = readout.GAIN * k
-      if k != 0:
-        APCount = stats.binom.rvs(k, readout.AP_PROB)
-        smear = np.sqrt(readout.SIGMA0**2 + k * readout.SIGMA1**2)
+    nevents = len(gp_list)
+    readout = gp_list * self.gain  # Scaling up by gain.
+    smear = np.sqrt(self.sig0**2 + k * self.sig1**2)  # Smearing the main peak
+    smear = np.random.normal(loc=0, scale=smear)
 
-        if APCount == 0:
-          x = x + np.random.normal(0, smear)
-        else:
-          ap = APDistribution(APCount, k, readout.BETA)
-          x = x + ap.rvs() + np.random.normal(0, smear)
-      else:
-        dc = np.random.random()
-        if dc < readout.DCFRAC:
-          smear = np.sqrt(readout.SIGMA0**2 + readout.SIGMA1**2)
-          x = x + readout.DC_DISTRIBUTION.rvs() + np.random.normal(0, smear)
-        else:
-          x = x + np.random.normal(0, readout.SIGMA0)
+    ## Getting the number of after pulses
+    apcount = np.random.binomial(gp_list, self.ap_prob)
+    apval = np.random.exponential(self.beta, size=(nevents, np.max(apcount)))
+    _, index = np.indices((nevents, np.max(apcount)))
+    apval = np.where(apcount > index, 0, npval)
+    apval = np.sum(npval, axis=-1)  # Reducing of the last index
 
-      ans.append(x)
-    return ans
+    # Adding the dark current distributions.
+    dcval = self.dc_dist.rvs(shape=nevets)
+    smear = np.sqrt(self.sig0**2 + self.sig1**2)  # Smearing the main peak
+    dcval = dcval + np.random.normal(loc=0, scale=smear, size=nevents)
+    dc = np.random.random(shape=nevents)
+    dcval = np.where(dc > self.dcfrac, 0, dcval)
 
-  def GetPhotoDiodeValue(r0, z, pwm):
+    # Summing everything
+    return readout + apval + dcval
+
+
+class DiodeModel(object):
+  def __init__(self, **kwargs):
+    """
+    This is a tset
+    """
+    pass
+
+  def read_model(r0, z, pwm, samples):
     ## Setting this to have the same readout value at the low light end for
     ## Easier comparison.
-    N0 = readout.NPIX * 3 * readout.ZMIN * 2 * readout.PWMMultiper(pwm)
-    return readout.GAIN * N0 * z / (r0**2 + z**2)**1.5
+    N0 = 30000 * 1000 * 120 * __pwm_multiplier(pwm)
+    mean = N0 * z / (r0**2 + z**2)**1.5
+    return np.random.normal(loc=mean, scale=60 / 2, size=samples)
 
-  def PWMMultiper(duty):
-    return 0.5 * (1 + duty**2)
 
-  def calc_general_poisson(x, mean, Lambda):
-    y = mean + x * Lambda
-    ans = 0
-    for index in range(1, int(x) + 1):
-      ans = ans + np.log(y) - np.log(index)
-    ans = ans + np.log(mean) - np.log(y)
-    return np.exp(-y + ans)
+### Helper function and classes
+def __pwm_multiplier(pwm):
+  """
+  A very simplified models of how the PWM duty cycle should affect the total
+  number of photons. Here we are using a very simple quadratic model, so that
+  there will be a non-linear variation when changing duty cycles, just for
+  testing the system offline.
+  """
+  return 0.5 * (1 + duty**2)
 
+
+def __general_poisson(x, mean, lamb):
+  """
+  Calculating the general poisson probability of x events, given the expected
+  poisson mean x and the correlating factor lamb. The x can either be an array of integer or an array of integer of values.
+  """
+  if not isinstance(x, np.ndarray):
+    return __general_poisson(np.array(x, dtype=np.int64), mean, lamb)
+  y = mean + x * lamb
+  ans = np.log(y) * (x - 1) - special.gammaln(x + 1) + np.log(mean)
+  return np.exp(-y + ans)
+
+
+class DarkCurrentDistribution(stats.rv_continuous):
+  """
+  Dark current distribution (Unsmeared!)
+  Smearing can be done by adding a Gaussian random number later
+  """
+  def __init__(self, gain, epsilon):
+    stats.rv_continuous.__init__(self, a=epsilon, b=gain - epsilon)
+
+  def _cdf(self, x):
+    eps = self.a
+    gain = self.a + self.b
+    num = np.log(x / (gain - x)) + np.log((gain - eps) / eps)
+    den = 2 * np.log((gain - eps) / eps)
+    return num / den
+
+
+## Simple cell for helping with unit testing
 if __name__ == "__main__":
-  for r0 in [0,10,20,30]:
-    print(readout.GetNumPixels(r0=r0,z=10,pwm=1.0))
+  print(__general_poisson([1, 2, 3], 2, 0.01))
+  #for r0 in [0, 10, 20, 30]:
+  #  print(Readout.GetNumPixels(r0=r0, z=10, pwm=1.0))

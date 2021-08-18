@@ -1,6 +1,9 @@
-
 """
-Commands for raw control and raw display of GPIO/ADC/PWM functions
+
+  digicmd.py
+
+  Commands for raw control and display of GPIO/ADC/PWM related interfaces
+  functions
 
 """
 import ctlcmd.cmdbase as cmdbase
@@ -10,26 +13,30 @@ import time
 
 class pulse(cmdbase.controlcmd):
   """
-  Running the pulser over some set value
+  Running the trigger for a certain about of pulses with alternative wait
+  options.
   """
 
   LOG = log.GREEN('[PULSE]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
+
+  def add_args(self):
     self.parser.add_argument('-n',
                              type=int,
                              default=100000,
-                             help='number of times to pulse the signal')
+                             help='number of times to fire the trigger')
     self.parser.add_argument('--wait',
                              type=int,
                              default=500,
                              help='Time (in microseconds) between triggers')
 
   def run(self, args):
-    for i in range(args.n):
+    # Splitting into 1000 chunks
+    for i in range(args.n // 100):
       self.check_handle(args)
-      self.gpio.pulse(1, args.wait)
+      self.gpio.pulse(100, args.wait)
 
 
 class pwm(cmdbase.controlcmd):
@@ -38,6 +45,8 @@ class pwm(cmdbase.controlcmd):
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
+
+  def add_args(self):
     self.parser.add_argument('--channel',
                              '-c',
                              type=int,
@@ -55,40 +64,37 @@ class pwm(cmdbase.controlcmd):
                              default=1000000,
                              help='Base frequency of the PWM')
 
-  def parse(self, line):
-    args = cmdbase.controlcmd.parse(self, line)
-    if args.channel == None:
-      raise Exception('Channel required')
-    if args.duty == None:
-      raise Exception('Duty cycle required')
-    return args
-
   def run(self, args):
     self.gpio.pwm(args.channel, args.duty, args.frequency)
+
 
 class setadcref(cmdbase.controlcmd):
   """
   Setting the reference voltage of the ADC readout for temperature conversion
   """
-  def __init__(self,cmd):
-    cmdbase.controlcmd.__init__(self,cmd)
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
+
+  def add_args(self):
     self.parser.add_argument('--channel',
                              '-c',
                              type=int,
-                             choices=[0,1,2,3],
+                             choices=[0, 1, 2, 3],
                              nargs='+',
-                             help=('Channel to set reference voltage '
-                                   '(can set multiple to same value )'))
+                             help="""Channel to set reference voltage (can set
+                             multiple to same value in a single command call)""")
     self.parser.add_argument('--val',
                              '-v',
                              type=float,
                              default=5000,
-                             help=('Reference voltage to temperature conversion '
-                                  '(units: mV)'))
+                             help="""
+                             Reference voltage to specified channels (units: mV)
+                             """)
 
-  def run(self,args):
+  def run(self, args):
     for channel in args.channel:
-      self.gpio.adc_setref(channel,args.val)
+      self.gpio.adc_setref(channel, args.val)
+
 
 class showadc(cmdbase.controlcmd):
   """
@@ -99,6 +105,8 @@ class showadc(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
+
+  def add_args(self):
     self.parser.add_argument('--time',
                              '-t',
                              default=10,
@@ -125,3 +133,25 @@ class showadc(cmdbase.controlcmd):
                   self.gpio.adc_read(3) / 1000)))
       time.sleep(args.interval)
       end_time = time.time()
+
+
+class lighton(cmdbase.controlcmd):
+  """
+  Turning the LED lights on.
+  """
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
+
+  def run(self, args):
+    self.gpio.light_on()
+
+
+class lightoff(cmdbase.controlcmd):
+  """
+  Turning the LED lights on.
+  """
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
+
+  def run(self, line):
+    self.gpio.light_off()

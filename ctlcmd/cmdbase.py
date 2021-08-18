@@ -1,3 +1,20 @@
+"""
+  cmdbase.py
+
+  The core class for creating the command-line interface for the gantry control
+  system. The base of the class is controlterm class derived from the python
+  cmd.Cmd class. Rather than defining all commands under the various `do_<cmd>`
+  methods within the Cmd class, we opt to split out the the commands into the
+  various classes defined from our custom controlcmd and have python dynamically
+  create commands based on the class name, which allows for very verbose commands
+  while keeping the files more readable. The master Cmd class also spawns in the
+  interface instances, and exposes this to all command such that commands can use
+  which ever interface needed.
+
+  Additional "meta command" classes will be provided to unify certain interface
+  actions (like gantry motion), and provide common command line options and
+  parsing methods.
+"""
 import cmod.gcoder as gcoder
 import cmod.board as board
 import cmod.logger as log
@@ -10,24 +27,28 @@ import cmod.drs as drs
 import cmod.actionlist as actionlist
 import cmod.sighandle as sig
 import numpy as np
-import cv2
 import cmd
 import sys
 import os
 import argparse
-import readline
 import glob
-import traceback
 import re
 import datetime
 import time
+import traceback
 import shlex
+import select
+
 
 class controlterm(cmd.Cmd):
   """
-  Control term is the class for parsing commands and passing the arguments
-  to C functions for gantry and readout control.
-  It also handles the command as classes to allow for easier interfacing
+  The master Command-line parsing class. Which holds:
+
+  - All instances of the interface classes.
+  - All instances of the controlcmd classes that will be used to map functions
+
+  Additional helper method will also be provided to help with common routines of
+  across commands.
   """
 
   intro = """
@@ -36,9 +57,16 @@ class controlterm(cmd.Cmd):
     Type help <cmd> for the individual help messages of each commands
     """
   prompt = 'SiPMCalib> '
+  last_status = None
 
-  def __init__(self, cmdlist):
-    cmd.Cmd.__init__(self)
+  def __init__(self, cmdlist, **base_kwargs):
+    """
+    Constructing the command line instance from a list of classes that is
+    requested. The `do_<cmd>`, `help_<cmd>`, and `complete_<cmd>` methods will be
+    spawned in after the the command classes have been created, and the method
+    will be mapped to the cmd.<do> methods of the spawned class.
+    """
+    cmd.Cmd.__init__(self, **base_kwargs)
 
     self.sshfiler = sshfiler.SSHFiler()
     self.gcoder = gcoder.GCoder.instance()
@@ -47,14 +75,11 @@ class controlterm(cmd.Cmd):
     self.pico = pico.PicoUnit.instance()
     self.gpio = gpio.GPIO.instance()
     self.drs = drs.DRS.instance()
-    self.readout = readout.readout(self)  # Must be after picoscope setup
     self.action = actionlist.ActionList()
     self.sighandle = sig.SigHandle()
-
-    ## Defaulting signal handle to be the system default
     self.sighandle.release()
+    self.readout = readout.Readout(self)  # Must be after all other interfaces
 
-    ## Creating command instances and attaching to associated functions
     for com in cmdlist:
       comname = com.__name__.lower()
       dofunc = 'do_' + comname
@@ -68,98 +93,87 @@ class controlterm(cmd.Cmd):
 
     # Removing hyphen and slash as completer delimiter, as it messes with
     # command auto completion
+    import readline
     readline.set_completer_delims(' \t\n`~!@#$%^&*()=+[{]}\\|;:\'",<>?')
 
+    ## Additional members for command status logging
+    self.last_cmd = ''  # string for containing the command that was last called
+    self.last_cmd_status = None  # Execution status of the command
+    self.last_cmd_start = None  # Start time of the last command
+    self.last_cmd_stop = None  # End time of the last command
+
+  def precmd(self, line):
+    """
+    Additional logging to be performed before the command has been run
+    """
+    self.last_cmd = line
+    self.last_cmd_status = None
+    self.last_cmd_start = datetime.datetime.now()
+    self.last_cmd_stop = self.last_cmd_start
+    # Duplicate to indicate command has not yet finished running.
+    return line
+
   def postcmd(self, stop, line):
-    log.printmsg("")  # Printing extra empty line for aesthetics
+    """
+    Printing extra empty line after command completion for clarity, also removing
+    all return values to stop the command from exiting with the default return
+    value
+    """
+    log.printmsg("")
+    self.last_cmd_status = stop
+    self.last_cmd_stop = datetime.datetime.now()
+    if stop == controlcmd.TERMINATE_SESSION:
+      return True
 
   def get_names(self):
     """
     Overriding the the original get_names command to allow for the dynamic
-    introduced commands to be listed.
+    introduced commands to be listed in the master help method.
     """
     return dir(self)
 
-  def do_exit(self, line):
-    sys.exit(0)
-
-  def help_exit(self):
-    "Exit program current session"
-
-  # running commands listed in the a file requires the onecmd() method. So it
-  # cannot be declared using an external class.
-  def do_runfile(self, line):
-    """
-    usage: runfile <file>
-
-    Executing commands listed in a file. This should be used for standard
-    calibration procedures only.
-    """
-    if len(line.split()) != 1:
-      log.printerr('Please only specify one file!')
-      return
-
-    if not os.path.isfile(line):
-      log.printerr('Specified file could not be opened!')
-      return
-
-    with open(line) as f:
-      for cmdline in f.readlines():
-        status = self.onecmd(cmdline.strip())
-        if status != controlcmd.EXIT_SUCCESS:
-          log.printerr(('Command [{0}] in file [{1}] has failed. Exiting '
-                        '[runfile] command').format(cmdline.strip(), f.name))
-          break
-    return
-
-  def complete_runfile(self, text, line, start_index, end_index):
-    return controlcmd.globcomp(text)
+  def emptyline(self):
+    """Don't do anything for empty lines"""
+    pass
 
   @staticmethod
-  def prompt_yn(question, default='no'):
+  def simplify_string(text):
     """
-    Ask a yes/no question via input() and return their answer.
-
-    'question' is a string that is presented to the user.
-    'default' is the presumed answer if the user just hits <Enter>.
-              It must be 'yes' (the default), 'no' or None (meaning
-              an answer is required of the user).
-
-    The 'answer' return value is True for 'yes' or False for 'no'.
+    Simplifying multiline text in python to a single line text in python, which
+    also removes the additional whitespaces at the beginning of lines
     """
-    valid = {'yes': True, 'ye': True, 'y': True, 'no': False, 'n': False}
-    if default is None:
-      prompt_str = ' [y/n] '
-    elif default.lower() == 'yes':
-      prompt_str = ' [Y/n] '
-    elif default.lower() == 'no':
-      prompt_str = ' [y/N] '
-    else:
-      raise ValueError('invalid default answer: {0}'.format(default))
-
-    while True:
-      print(question + prompt_str)
-      choice = input().lower()
-      if default is not None and choice == '':
-        return valid[default]
-      elif choice in valid:
-        return valid[choice]
-      else:
-        log.printerr(
-            'Please respond with \'yes\' or \'no\' (or \'y\' or \'n\').\n')
+    return ' '.join(text.split())
 
 
-class controlcmd():
+class controlcmd(object):
   """
   The control command is the base interface for defining a command in the
-  terminal class, the instance do, callhelp and complete functions corresponds
-  to the functions do_<cmd>, help_<cmd> and complete_<cmd> functions in the
-  vallina python cmd class. Here we will be using the argparse class by default
-  to call for the help and complete functions
+  terminal class, the instance do, callhelp and complete functions corresponds to
+  the functions do_<cmd>, help_<cmd> and complete_<cmd> functions in the vallina
+  python cmd class. Here we will be using the argparse class by default to call
+  for the help and complete functions.
+
+  In addition, the class will also contain a `LOG` instance which is used to
+  prettify the output of the printerr methods. This should be overridden in all
+  subsequent classes.
+
+  One big part of this class the the consistent construction of argument elements
+  and the parsing of elements. This is how the creation and parsing of the
+  arguments are performed:
+  - Arguments will be added in the inverse order listed in the __mro__ method via
+    the `add_args` method that meta-command classes and command classes should
+    overload.
+  - Arguments will be also be parsed in the order inversely listed in the __mro__
+    method via the `parse` argument. Because of this, the input args object in
+    the `parse` argument in inherited classes should simply assume that the
+    `parse` of parent classes' has already been assumed, and should not attempt
+    to call the parent class's parse method.
   """
   PARSE_ERROR = -1
   EXECUTE_ERROR = -2
   EXIT_SUCCESS = 0
+  TERMINATE_SESSION = 1
+  TERMINATE_CMD = 2
 
   LOG = "DUMMY"
 
@@ -169,12 +183,12 @@ class controlcmd():
     program name and the class doc string as the description string. This
     greatly reduces the verbosity of writing custom commands.
     Each command will have accession to the cmd session, and by extension,
-    every control object the could potentially be used
+    every interface object the could potentially be used.
     """
     self.parser = argparse.ArgumentParser(prog=self.__class__.__name__.lower(),
                                           description=self.__class__.__doc__,
                                           add_help=False)
-    self.cmd = cmdsession
+    self.cmd = cmdsession  # Reference to the master object.
 
     ## Reference to control objects for all commands
     self.sshfiler = cmdsession.sshfiler
@@ -188,68 +202,112 @@ class controlcmd():
     self.action = cmdsession.action
     self.sighandle = cmdsession.sighandle
 
+    self.__run_mro_method('add_args')
+
+  def __run_mro_method(self, method, args=None):
+    """
+    Running over the the list of parent classes in inverted __mro__ order,
+    extracting which everclass has an explicitly defined method, and running the
+    method with the provided arguments.
+    """
+    for t in reversed(type(self).__mro__):
+      if not hasattr(t, method): continue
+      if method not in t.__dict__: continue  # Needs to be explicitly defined
+      if args == None:
+        getattr(t, method)(self)
+      else:
+        args = getattr(t, method)(self, args)
+    return args
+
+  def add_args(self):
+    """
+    Method to be overridden for adding additional argument to the containing
+    `parser` object.
+    """
+    pass
+
+  def parse_line(self, line):
+    """
+    Parsing the arguments from the input line using the argparse. argument
+    parsing method. As this is a very standard method for parsing objects, this
+    part should not be over written. Additional parsing the the resulting
+    arguments (complicated parsing of default values... etc) should be handled by
+    the `parse` method.
+    """
+    try:
+      args = self.parser.parse_args(shlex.split(line))
+      return self.__run_mro_method('parse', args)
+    except SystemExit as err:
+      self.printerr(str(err))
+      raise Exception('Cannot parse input')
+
+  def parse(self, args):
+    """
+    Method that should be overwritten for additional argument parsing.
+    """
+    return args
+
+  def run(self, args):
+    """
+    Functions that require command specific definitions, should be overwritten in
+    the descendent classes
+    """
+    pass
+
+  def post_run(self):
+    """
+    Routines to run after the run argument. is called.
+    """
+    log.clear_update()
+
   def do(self, line):
     """
-    Execution of the commands automatically handles the parsing in the parse
-    method. Additional parsing is allowed by overloading the parse method in the
-    children classes. The actual execution of the function is handled in the run
-    method. The global signal handler is also triggered at the start of the
-    command, so that signals like CTL+C will have additional handling in
-    iterative commands so that data collection isn't completely lost.
+    Execution of the commands is now split up into following steps:
+
+    - Parsing the command line using the standard argparse library
+    - Results of the parsing will passed the run method (to be overloaded)
+    - An additional return value will be evaluate execution status.
+
+    Additional parsing is allowed by overloading the parse method in the children
+    classes. The actual execution of the function is handled in the run method.
+    The global signal handler is also triggered at the start of the command, so
+    that signals like CTL+C will have additional handling in iterative commands
+    so that data collection isn't completely lost.
     """
-    def print_tracestack():
-      exc_msg = traceback.format_exc()
-      exc_msg = exc_msg.splitlines()
-      exc_msg = exc_msg[1:-1]  ## Remove traceback and error line.
-      for idx in range(0, len(exc_msg), 2):
-        file = re.findall(r'\"[A-Za-z0-9\/\.]+\"', exc_msg[idx])
-        if len(file):  # For non-conventional error messages
-          file = file[0].strip().replace('"', '')
-        else:
-          continue
-
-        line = re.findall(r'line\s[0-9]+', exc_msg[idx])
-        if len(line):  # For non-conventional error messages
-          line = [int(s) for s in line[0].split() if s.isdigit()][0]
-        else:
-          continue
-
-        content = exc_msg[idx + 1].strip()
-
-        stackline = ''
-        stackline += log.RED('{0:4d} | '.format(line))
-        stackline += log.YELLOW('{0} | '.format(file))
-        stackline += content
-        log.printmsg(stackline)
-
     try:
-      args = self.parse(line)
+      args = self.parse_line(line)
     except Exception as err:
-      print_tracestack()
-      self.printerr(str(err))
+      self.print_tracestack(err)
       return controlcmd.PARSE_ERROR
 
     return_value = controlcmd.EXIT_SUCCESS
 
     self.sighandle.reset()
     try:
-      self.run(args)
-      self.sighandle.release()
+      x = self.run(args)
+      if x == controlcmd.TERMINATE_SESSION:
+        return_value = x
+    except InterruptedError as err:
+      self.print_tracestack(err)
+      return_value = controlcmd.TERMINATE_CMD
     except Exception as err:
-      print_tracestack()
-      self.printerr(str(err))
+      self.print_tracestack(err)
+      return_value = controlcmd.EXECUTE_ERROR
+    self.sighandle.release()
+
+    try:
+      self.__run_mro_method('post_run')
+    except Exception as err:
+      self.print_tracestack(err)
       return_value = controlcmd.EXECUTE_ERROR
 
-    log.clear_update()
-    self.sighandle.release()
-    cv2.destroyAllWindows()
     return return_value
 
   def callhelp(self):
     """
     Printing the help message via the ArgumentParse in built functions.
     """
-    self.parser.print_help()
+    self.parser.print_help(self.cmd.stdout)
 
   def complete(self, text, line, start_index, end_index):
     """
@@ -281,33 +339,64 @@ class controlcmd():
     else:
       return optwithtext()
 
-  ## Overloading for less verbose message printing
+  """
+
+    MESSAGING HELPER FUNCTIONS
+
+  """
+
   def update(self, text):
-    """
-    Printing an update message using the static variable "LOG".
-    """
-    log.update(self.LOG, text)
+    """Printing an update message using the static 'LOG' variable."""
+    log.update(self.LOG, controlterm.simplify_string(text))
 
   def printmsg(self, text):
-    """
-    Printing a message new-line using the static variable "LOG".
-    """
+    """Printing a newline message using the static LOG' variable."""
     log.clear_update()
-    log.printmsg(self.LOG, text)
+    log.printmsg(self.LOG, controlterm.simplify_string(text))
 
   def printerr(self, text):
-    """
-    Printing a error message with a standard red "ERROR" header.
-    """
+    """Printing a error message with a standard red "ERROR" header."""
     log.clear_update()
-    log.printerr(text)
+    log.printerr(controlterm.simplify_string(text))
 
   def printwarn(self, text):
-    """
-    Printing a warning message with a standard yellow "WARNING" header.
-    """
+    """Printing a warning message with a standard yellow "WARNING" header."""
     log.clear_update()
-    log.printerr()
+    log.printwarn(controlterm.simplify_string(text))
+
+  def print_tracestack(self, err):
+    """
+    Helper function for a prettier trackstack printout. The file and error lines
+    are highlighted in read and yellow, and compressed down to a single line to
+    make the traceback more compact while still being readable and useful for
+    debugging.
+    """
+    exc_msg = traceback.format_exc()
+    exc_msg = exc_msg.splitlines()
+    exc_msg = exc_msg[1:-1]  ## Remove traceback and error line.
+    for idx in range(0, len(exc_msg), 2):
+      file = re.findall(r'\"[A-Za-z0-9\/\.]+\"', exc_msg[idx])
+      if len(file):  # For non-conventional error messages
+        file = file[0].strip().replace('"', '')
+      else:
+        continue
+
+      line = re.findall(r'line\s[0-9]+', exc_msg[idx])
+      if len(line):  # For non-conventional error messages
+        line = [int(s) for s in line[0].split() if s.isdigit()][0]
+      else:
+        continue
+
+      content = exc_msg[idx + 1].strip()
+
+      stackline = ''
+      stackline += log.RED('{0:4d} | '.format(line))
+      stackline += log.YELLOW('{0} | '.format(file))
+      stackline += content
+      log.printmsg(stackline)
+
+    # Printing the original error message
+    self.printerr(str(err))
 
   def update_progress(self,
                       progress=None,
@@ -328,7 +417,7 @@ class controlcmd():
     """
     message_string = ''
 
-    def append_msg(x,msg):
+    def append_msg(x, msg):
       if x != '':
         return x + ' | ' + msg
       else:
@@ -341,430 +430,157 @@ class controlcmd():
       width = len(str(total))
       per = done / total * 100.0
       pstr = '[{done:{width}d}/{total:{width}d}][{per:5.1f}%]'.format(
-        done=done,total=total,width=width,per=per)
-      message_string = append_msg(message_string,pstr)
+          done=done, total=total, width=width, per=per)
+      message_string = append_msg(message_string, pstr)
 
     if coordinates:
-      cstr = 'Gantry@({x:5.1f},{y:5.1f},{z:5.1f})'.format(
-        x= self.gcoder.opx, y=self.gcoder.opy, z=self.gcoder.opz)
-      message_string = append_msg(message_string,cstr)
+      cstr = 'Gantry@({x:5.1f},{y:5.1f},{z:5.1f})'.format(x=self.gcoder.opx,
+                                                          y=self.gcoder.opy,
+                                                          z=self.gcoder.opz)
+      message_string = append_msg(message_string, cstr)
 
     if temperature:
       tstr = 'bias:{bias:5.1f}mV pulser:{pt:.2f}C SiPM:{st:.2f}C'.format(
-        bias=self.gpio.adc_read(2),
-        pt=self.gpio.ntc_read(0),
-        st=self.gpio.rtd_read(1))
-      message_string = append_msg(message_string,tstr)
+          bias=self.gpio.adc_read(2),
+          pt=self.gpio.ntc_read(0),
+          st=self.gpio.rtd_read(1))
+      message_string = append_msg(message_string, tstr)
 
     for key, vals in display_data.items():
-      list_str = [ '{0:.2f}'.format(x) for x in vals ]
+      list_str = ['{0:.2f}'.format(x) for x in vals]
       list_str = ' '.join(list_str)
-      msg = '{key}: [{list}]'.format(key=key,list=list_str)
-      message_string= append_msg(message_string, msg)
+      msg = '{key}: [{list}]'.format(key=key, list=list_str)
+      message_string = append_msg(message_string, msg)
 
     self.update(message_string)
-
-  def update_luminosity(self,
-                        data1,
-                        data2,
-                        data_tag='Luminosity',
-                        progress=None,
-                        temperature=None):
-    self.update_progress(progress=progress,
-                         coordinates=True,
-                         temperature=temperature,
-                         display_data={data_tag:[data1,data2]})
-
-  def make_standard_line(self, lumi_data, det_id=-100, time=0.0):
-    """
-    This will be the standard format of readout:
-    > Timestamp detID gantry_x g_y g_z led_bias led_temp sipm_temp readouts
-    The readout data can be an arbitrarily long iterable object.
-    """
-    string = ''
-    string = string + '{time:.2f} {detid} '.format(time=time, detid=det_id)
-    string = string + '{x:.1f} {y:.1f} {z:.1f}'.format(
-        x=self.gcoder.opx, y=self.gcoder.opy, z=self.gcoder.opz)
-    string = string + ' {bias:.2f} {led:.3f} {sipm:.3f}'.format(
-        bias=self.gpio.adc_read(2),
-        led=self.gpio.ntc_read(0),
-        sipm=self.gpio.rtd_read(1))
-    string = string + ' ' + ' '.join(['{:.2f}'.format(x) for x in lumi_data])
-    string = string + '\n'  ## Must be a line!
-    return string
-
-  def run(self, args):
-    """
-    Functions that require command specific definitions, should be overwritten in
-    the descendent classes
-    """
-    pass
-
-  def parse(self, line):
-    """
-    Default parsing arguments, overriding the system exits exception so that the
-    session doesn't end with the user inputs a bad command. Additional parsing
-    could be achieved by overloading this methods.
-    """
-    try:
-      arg = self.parser.parse_args(shlex.split(line))
-    except SystemExit as err:
-      self.printerr(str(err))
-      raise Exception('Cannot parse input')
-    return arg
 
   def check_handle(self, args):
     """
     Checking the status of the signal handle, closing files and raising an
     exception if a termination signal was ever set by the user.
     """
-    check_msg = 'TERMINATION SIGNAL RECEIVED, '
-    flush_msg = 'FLUSHING FILE CONTENTS THEN '
-    exit_msg = 'EXITING COMMAND'
-    msg = check_msg + exit_msg if hasattr(args, 'savefile') \
-      else check_msg + flush_msg + exit_msg
-
     if self.sighandle.terminate:
-      self.printmsg(msg)
-      if hasattr(args, 'savefile'):
-        args.savefile.flush()
-        args.savefile.close()
-      raise Exception('TERMINATION SIGNAL')
+      self.printmsg('TERMINATION SIGNAL RECIEVED, EXITING COMMAND')
+      raise InterruptedError('TERMINATION SIGNAL')
 
   def move_gantry(self, x, y, z, verbose):
     """
     Wrapper for gantry motion command, suppresses the exception raised for in
     case that the gantry isn't connected so that one can test with pre-defined
-    models. Stopped the stepper motors for clearer output should be handled by
-    the readout classes.
+    models. Notice that the stepper motor disable will not be handled here, as
+    it should only be disabled for readout.
     """
     try:
       # Try to move the gantry. Even if it fails there will be fail safes
       # in other classes
       self.gcoder.moveto(x, y, z, verbose)
       while self.gcoder.in_motion(x, y, z):
-        time.sleep(0.1)  ## Updating position in 0.1 second increments
-        # print( "Waiting for gantry motion to complete" )
+        time.sleep(0.01)  ## Updating position in 0.01 second increments
     except Exception as e:
       # Setting internal coordinates to the designated position anyway.
-      print("Exception received, assuming no gantry is present")
-      print(e)
+      self.printwarn("Exception received, assuming no gantry is present")
+      self.printwarn(str(e))
       self.gcoder.opx = x
       self.gcoder.opy = y
       self.gcoder.opz = z
+      self.gcoder.cx = x
+      self.gcoder.cy = y
+      self.gcoder.cz = z
       pass
 
-  def add_xydet_options(self):
+  def prompt_yn(self, question, default='no'):
     """
-    Adding XY motion commands
-    """
-    self.parser.add_argument('-x',
-                             type=float,
-                             help=('Specifying the x coordinate explicitly [mm].'
-                                   ' If none is given the current gantry '
-                                   'position will be used instead'))
-    self.parser.add_argument('-y',
-                             type=float,
-                             help=('Specifying the y coordinate explicitly [mm].'
-                                   ' If none is given the current gantry '
-                                   'position will be used.'))
-    self.parser.add_argument('-c',
-                             '--detid',
-                             type=int,
-                             help=('Specify x-y coordinates via det id, input '
-                                   'negative value to indicate that the det is '
-                                   'a calibration one (so you can still specify '
-                                   'coordinates with it)'))
+    Ask a yes/no question and prompt a question to the user and return their
+    answer.
 
-  def add_readout_option(self):
-    """
-    Adding readout options
-    """
-    self.parser.add_argument('--mode',
-                             type=int,
-                             choices=[-1, 1, 2, 3],
-                             help=('Readout method to be used: 1:picoscope, '
-                                   '2:ADC, 3:DRS4, -1:Predefined model'))
-    self.parser.add_argument('--channel',
-                             type=int,
-                             default=None,
-                             help='Input channel to use')
-    self.parser.add_argument('--samples',
-                             type=int,
-                             default=5000,
-                             help=('Number of readout samples to take the '
-                             'average for luminosity measurement (default=%(default)d)'))
+    'question' is a string that is presented to the user. 'default' is the
+    presumed answer if the user just hits <Enter>. It must be 'yes' (the
+    default), 'no' or None (meaning an answer is required of the user).
 
-  def add_hscan_options(self, scanz=20, hrange=5, distance=1):
+    The 'answer' return value is True for 'yes' or False for 'no'.
     """
-    Common arguments for performing x-y scan
-    """
-    self.add_xydet_options()
-    self.add_readout_option()
-    self.parser.add_argument('-z',
-                             '--scanz',
-                             type=float,
-                             default=scanz,
-                             help=('Height to perform horizontal scan [mm] '
-                                   '(default: %(default)f[mm]).'))
-    self.parser.add_argument('-r',
-                             '--range',
-                             type=float,
-                             default=hrange,
-                             help=('Range to perform x-y scanning from central '
-                                   'position [mm] '
-                                   '(default=%(default)f)'))
-    self.parser.add_argument('-d',
-                             '--distance',
-                             type=float,
-                             default=distance,
-                             help=('Horizontal sampling distance [mm]'
-                                   ' (default=%(default)f)'))
+    valid = {'yes': True, 'ye': True, 'y': True, 'no': False, 'n': False}
+    try:
+      if default is None:
+        prompt_str = ' [y/n] '
+      elif valid[default.lower()]:
+        prompt_str = ' [Y/n] '
+      else:
+        prompt_str = ' [y/N] '
+    except KeyError:
+      raise ValueError('invalid default answer: {0}'.format(default))
 
-  def add_savefile_options(self, default_filename):
-    """
-    Common arguments for file saving
-    """
+    # Special case of wrapped input
+    if (self.cmd.use_rawinput == False or  #
+        self.cmd.stdin != sys.stdin or self.cmd.stdout != sys.stdout):
+      log.printmsg('wrapped I/O detected, assuming default answer:', default)
+      return valid[default]
+
+    while True:
+      log.printmsg(controlterm.simplify_string(question + prompt_str))
+      if self.cmd.use_rawinput:
+        choice = input()
+      else:
+        choice = self.cmd.stdin.readline().strip().lower()
+      if default is not None and choice == '':
+        return valid[default]
+      elif choice in valid:
+        return valid[choice]
+      else:
+        log.printerr(
+            'Please respond with \'yes\' or \'no\' (or \'y\' or \'n\').\n')
+
+  # Helper function for globbing
+  @staticmethod
+  def globcomp(text):
+    globlist = glob.glob(text + "*")
+    globlist = [file + '/' if os.path.isdir(file) else file for file in globlist]
+    return globlist
+
+
+class savefilecmd(controlcmd):
+  """
+  Command with the need to save a file. A standard method is provided adding the
+  savefile options to the argparse instance, as well as additional parsing and
+  handling of the method. All function that wish to have their default save
+  location overridden should simple change the DEFAULT_SAVEFILE static variable.
+  """
+  DEFAULT_SAVEFILE = 'SAVEFILE_<TIMESTAMP>'
+
+  def __init__(self, cmd):
+    controlcmd.__init__(self, cmd)
+
+  def add_args(self):
     self.parser.add_argument('-f',
                              '--savefile',
                              type=str,
-                             default=default_filename,
-                             help=('Writing results to file. The filename can be'
-                                   ' specified using <ARG> to indicate '
-                                   'placeholders to be used by argument values. '
-                                   'The placeholder <TIMESTAMP> can be used for '
-                                   'a string representing the current time.'
-                                   'The placeholder <BOARDID> can be used for '
-                                   'the (unique) board id string.'
-                                   'The placeholde <BOARDTYPE> can be used for '
-                                   'the board type string (like T3, '
-                                   'TBMOCK...etc).\n'
-                                   'default=%(default)s'))
+                             default=self.DEFAULT_SAVEFILE,
+                             help="""
+                             Writing results to file. The filename can be
+                             specified using <ARG> to indicate placeholders to be
+                             used by argument values. Additional place holders
+                             that can be added include:
+                             - <TIMESTAMP> can be used for a string representing
+                               the current time.
+                             - <BOARDID> can be used for board id string
+                             - <BOARDTYPE> can be used for the board type string
+                                (like T3, TBMOCK...etc).\n
+                                default=%(default)s""")
     self.parser.add_argument('--wipefile',
                              action='store_true',
                              help='Wipe existing content in output file')
 
-  def add_zscan_options(self, zlist=range(10, 51, 1)):
+  def parse(self, args):
     """
-    Common arguments for scaning values along the z axis
+    Additional parsing for the filename argument. Here we will be replacing the
+    args.savefile argument with file descriptor that can be directly used by the
+    children classes for string writing. Additional parsing is performed on the
+    filename in accordance with what ever is placed in the angle braces.
     """
-    self.add_xydet_options()
-    self.add_readout_option()
-    self.parser.add_argument('-z',
-                             '--zlist',
-                             type=str,
-                             nargs='+',
-                             default=zlist,
-                             help=('List of z coordinate to perform scanning. '
-                                   'One can add a list of number by the notation'
-                                   ' "[start_z end_z sepration]"'))
-
-  def parse_readout_options(self, args):
-    """
-    Parsing the readout option
-    """
-
-    ## Defaulting to the det id if it exists
-    if not args.channel:
-      if hasattr(args, 'detid') and str(args.detid) in self.board.dets():
-        args.channel = self.board.get_det(str(args.detid)).channel
-      else:
-        args.channel = 0
-
-    ## Resetting mode to current mode if it doesn't already exists
-    if not args.mode:
-      if hasattr(args, 'detid') and str(args.detid) in self.board.dets():
-        args.mode = self.board.get_det(str(args.detid)).mode
-      else:
-        args.mode = self.readout.mode
-
-    ## Double checking the readout channel is sensible
-    if args.mode == self.readout.MODE_PICO:
-      if int(args.channel) < 0 or int(args.channel) > 1:
-        raise Exception('Channel for PICOSCOPE can only be 0 or 1')
-      self.readout.set_mode(args.mode)
-    elif args.mode == self.readout.MODE_ADC:
-      if int(args.channel) < 0 or int(args.channel) > 3:
-        raise Exception('Channel for ADC can only be 0--3')
-      self.readout.set_mode(args.mode)
-    else:
-      self.readout.set_mode(args.mode)
-
-  def make_hscan_mesh(self, args):
-    """
-    Common argument for generating x-y scanning coordinate mesh
-    """
-    max_x = gcoder.GCoder.max_x()
-    max_y = gcoder.GCoder.max_y()
-
-    if (args.x - args.range < 0 or args.x + args.range > max_x
-        or args.y - args.range < 0 or args.y + args.range > max_y):
-      log.printwarn(('The arguments placed will put the gantry past its limits, '
-                     'the command will used modified input parameters'))
-
-    xmin = max([args.x - args.range, 0])
-    xmax = min([args.x + args.range, max_x])
-    ymin = max([args.y - args.range, 0])
-    ymax = min([args.y + args.range, max_y])
-    sep = max([args.distance, 0.1])
-    numx = int((xmax - xmin) / sep + 1)
-    numy = int((ymax - ymin) / sep + 1)
-    xmesh, ymesh = np.meshgrid(np.linspace(xmin, xmax, numx),
-                               np.linspace(ymin, ymax, numy))
-    return [
-        xmesh.reshape(1, np.prod(xmesh.shape))[0],
-        ymesh.reshape(1, np.prod(ymesh.shape))[0]
-    ]
-
-  def parse_zscan_options(self, args):
-    """
-    Parsing the z scanning options
-    """
-    args.zlist = " ".join(args.zlist)
-    braces = re.findall(r'\[(.*?)\]', args.zlist)
-    args.zlist = re.sub(r'\[.*?\]', '', args.zlist)
-    args.zlist = [float(z) for z in args.zlist.split()]
-    for rstring in braces:
-      r = [float(rarg) for rarg in rstring.split()]
-      if len(r) < 2 or len(r) > 3:
-        raise Exception(('Range must be in the format [start end (sep)] '
-                         'sep is assumed to be 1 if not specified'))
-      startz = float(r[0])
-      stopz = float(r[1])
-      sep = float(1 if len(r) == 2 else r[2])
-      args.zlist.extend(
-          np.linspace(startz, stopz, int(np.rint((stopz - startz) / sep)), endpoint=False))
-
-    # Rounding to closest 0.1
-    args.zlist = np.around(args.zlist,decimals=1)
-
-    # Additional filtering
-    args.zlist = [x for x in args.zlist if x < gcoder.GCoder.max_z()]
-
-    ## Returning sorted results, STL or LTS depending on the first two entries
-    if len(args.zlist) > 1:
-      if args.zlist[0] > args.zlist[1]:
-        args.zlist.sort(reverse=True)  ## Returning sorted result
-      else:
-        args.zlist.sort()  ## Returning sorted result
-
-  def parse_xydet_options(self, args, add_visoffset=False, raw_coord=False):
-    """
-    Parsing the x-y-det position arguments
-    """
-    ## Setting up alias for board
-    board = self.board
-
-    # If not directly specifying the det id, assuming some calibration det
-    # with specified coordinate system. Exit immediately.
-    if args.detid == None:
-      args.detid = -100
-      if not args.x: args.x = self.gcoder.opx
-      if not args.y: args.y = self.gcoder.opy
-      return
-
-    ## Attempt to get a board specified det position.
-    if not str(args.detid) in board.dets():
-      raise Exception('Det id was not specified in board type')
-
-    ## Raising exception when attempting to overide det position with raw
-    ## x-y values
-    if args.x or args.y:
-      raise Exception('You can either specify det-id or x y, not both')
-
-    # Converting to string (Keys must be strings in json files)
-    detid = str(args.detid)
-
-    # Early exit if raw coordinates requested
-    if raw_coord:
-      args.x, args.y = board.get_det(detid).orig_coord
-      return
-
-    # Determining current z value ( from argument first, otherwise guessing
-    # from present gantry position )
-    current_z = args.z if hasattr(args, 'z') else \
-                 min(args.zlist) if hasattr(args, 'zlist') else \
-                 self.gcoder.opz
-
-    det = self.board.get_det(detid)
-
-    if add_visoffset:
-      if any(det.vis_coord):
-        closest_z = self.find_closest_z(det.vis_coord, current_z)
-        args.x = det.vis_coord[closest_z][0]
-        args.y = det.vis_coord[closest_z][1]
-      elif any(det.lumi_coord):
-        closest_z = self.find_closest_z(det.lumi_coord, current_z)
-        x_offset, y_offset = self.find_xyoffset(current_z)
-        args.x = det.lumi_coord[closest_z][0] + x_offset
-        args.y = det.lumi_coord[closest_z][2] + y_offset
-      else:
-        x_offset, y_offset = self.find_xyoffset(current_z)
-        args.x = det.orig_coord[0] + x_offset
-        args.y = det.orig_coord[1] + y_offset
-    else:
-      if any(det.lumi_coord):
-        closest_z = self.find_closest_z(det.lumi_coord, current_z)
-        args.x = det.lumi_coord[closest_z][0]
-        args.y = det.lumi_coord[closest_z][2]
-      elif any(det.vis_coord):
-        x_offset, y_offset = self.find_xyoffset(current_z)
-        closest_z = self.find_closest_z(det.vis_coord, current_z)
-        args.x = det.vis_coord[closest_z][0] - x_offset
-        args.y = det.vis_coord[closest_z][1] - y_offset
-      else:
-        args.x, args.y = det.orig_coord
-
-  @staticmethod
-  def find_closest_z(my_map, current_z):
-    return min(my_map.keys(), key=lambda x: abs(float(x) - float(current_z)))
-
-  def find_xyoffset(self, currentz):
-    """
-    Finding x-y offset between the luminosity and visual alignment based the
-    existing calibration
-    """
-
-    # If no calibration det exists, just return a default value (from gantry
-    # head design.)
-    DEFAULT_XOFFSET = -40
-    DEFAULT_YOFFSET = 0
-    if not any(self.board.calib_dets()):
-      return DEFAULT_XOFFSET, DEFAULT_YOFFSET
-
-    # Calculations will be based on the "first" calibration det available
-    # That has both lumi and visual alignment offsets
-    for detid in self.board.calib_dets():
-      lumi_x = None
-      lumi_y = None
-      vis_x = None
-      vis_y = None
-      det = self.board.get_det(detid)
-
-      # Trying to get the luminosity alignment with closest z value
-      if any(det.lumi_coord):
-        closestz = self.find_closest_z(det.lumi_coord, currentz)
-        lumi_x = det.lumi_coord[closestz][0]
-        lumi_y = det.lumi_coord[closestz][2]
-
-      # Trying to get the visual alignment with closest z value
-      if any(det.vis_coord):
-        closestz = self.find_closest_z(det.vis_coord, currentz)
-        vis_x = det.vis_coord[closestz][0]
-        vis_y = det.vis_coord[closestz][1]
-
-      if lumi_x and lumi_y and vis_x and vis_y:
-        return vis_x - lumi_x, vis_y - lumi_y
-
-    # If no calibration det has both calibration values
-    # Just return the original calibration value.
-    return DEFAULT_XOFFSET, DEFAULT_YOFFSET
-
-  def parse_savefile(self, args):
     filename = args.savefile
 
     # Adding time stamp filenames
-    timestring = datetime.datetime.now().strftime('%Y%m%d_%H00')
+    timestring = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
     filename = re.sub('<TIMESTAMP>', timestring, filename, flags=re.IGNORECASE)
 
     # Adding boardid to the settings
@@ -795,22 +611,387 @@ class controlcmd():
                           filename,
                           flags=re.IGNORECASE)
 
-    # Opening the file using the remote file handle
-    args.savefile = self.sshfiler.remotefile(filename, args.wipefile)
+    # Opening the file using the remote file handle as an internal method to help
+    # reduce verbosity.
+    self.savefile = self.sshfiler.remotefile(filename, args.wipefile)
+    return args
 
-  def close_savefile(self, args):
+  def post_run(self):
     """
     Close a save file with a standard message for the verbosity of run files.
     """
-    if not hasattr(args, 'savefile'):
-      return
-    self.printmsg("Saving results to file [{0}]".format(args.savefile.name))
-    args.savefile.flush()
-    args.savefile.close()
+    self.printmsg(f"Saving results to file [{self.savefile.name}]")
+    self.savefile.flush()
+    self.savefile.close()
 
-  # Helper function for globbing
+  def write_standard_line(self, data, det_id=-100, time=0.0):
+    """
+    This will be the standard format of saving data in space separated columns:
+    - Timestamp
+    - detID
+    - gantry x, y, z
+    - Voltage readouts: LED bias, LED temp (C) sipm temp (C) readouts
+    - The readout data: an arbitrarily long iterable container of floats.
+    """
+    tokens = []
+    tokens.append(f'{time:.2f}')
+    tokens.append(f'{det_id}')
+    tokens.extend([
+        f'{self.gcoder.opx:.1f}',  #
+        f'{self.gcoder.opy:.1f}',  #
+        f'{self.gcoder.opz:.1f}'
+    ])
+    tokens.extend([
+        f'{self.gpio.adc_read(2):.2f}',  #
+        f'{self.gpio.ntc_read(0):.3f}',  #
+        f'{self.gpio.rtd_read(1):.3f}'  #
+    ])
+    tokens.extend([f'{x:.2f}' for x in data])
+    self.savefile.write(' '.join(tokens) + '\n')
+    self.savefile.flush()
+
+
+class singlexycmd(controlcmd):
+  """
+  Commands that require the motion around a single x-y position. This class will
+  also provide the static variable to act as the flag for whether the target
+  position should add the visual offset position or not (say for visual alignment
+  and lumi-alignment, we want to keep the command similar for align at detector
+  1, while working at different physical coordinates.) The default offset for
+  when there no valid calibration data is available is provided should be based
+  on the gantry head design.
+  """
+  VISUAL_OFFSET = False
+  DEFAULT_XOFFSET = -35
+  DEFAULT_YOFFSET = 0
+
+  def __init__(self, cmd):
+    controlcmd.__init__(self, cmd)
+
+  def add_args(self):
+    self.parser.add_argument('-x',
+                             type=float,
+                             help="""
+                             Specifying the x coordinate explicitly [mm]. If none
+                             is given the current gantry position will be used
+                             instead""")
+    self.parser.add_argument('-y',
+                             type=float,
+                             help="""
+                             Specifying the y coordinate explicitly [mm]. If none
+                             is given the current gantry' position will be
+                             used.""")
+    self.parser.add_argument('-c',
+                             '--detid',
+                             type=str,
+                             help="""
+                             Specify x-y coordinates via det id, input negative
+                             value to indicate that the det is a calibration one
+                             (so you can still specify coordinates with it)""")
+
+  def parse(self, args):
+    """
+    Additional Parsing the x-y position arguments. If the detector is not
+    specified, then we are using the directly using the provided x/y coordinates
+    or the override with the current position.
+
+    If the detector is specified: We check if the detector exists in the current
+    detector list. If not an exception is raised. If yes then we attempt to look
+    up the x/y coordinates according to the target z position. The target z
+    position is defined as follow:
+    - If the args has a single z argument, then that is used.
+    - If the args has a list of z arguments, then the minimal is used.
+    - If neither is present, then the current z position is used.
+
+    If the visual offset flag is True, then the look up sequence will be:
+    - Direct visual calibrated coordinates.
+    - Lumi cooridnates with visual offset added
+    - Original coorindates with visual offset added
+    If the visul offset flag is set to false, then the look up sequence will be:
+    - Lumi-calibrated coordinates.
+    - Visual calibrated cooridnates with visual offset subtracted.
+    - The original cooridnates.
+
+    """
+    if args.detid == None:  # Early exits if the detector ID is not used
+      args.detid = -100
+      if not args.x: args.x = self.gcoder.opx
+      if not args.y: args.y = self.gcoder.opy
+      return args
+
+    if args.x or args.y:
+      raise Exception('You can either specify det-id or x y, not both')
+
+    if not args.detid in self.board.dets():
+      raise Exception('Det id was not specified in board type')
+
+    current_z = args.z if hasattr(args, 'z') and args.z else \
+                 min(args.zlist) if hasattr(args, 'zlist') else \
+                 self.gcoder.opz
+
+    det = self.board.get_det(args.detid)
+
+    if self.VISUAL_OFFSET:
+      if any(det.vis_coord):
+        closest_z = self.find_closest_z(det.vis_coord, current_z)
+        args.x = det.vis_coord[closest_z][0]
+        args.y = det.vis_coord[closest_z][1]
+      elif any(det.lumi_coord):
+        closest_z = self.find_closest_z(det.lumi_coord, current_z)
+        x_offset, y_offset = self.find_xyoffset(current_z)
+        args.x = det.lumi_coord[closest_z][0] + x_offset
+        args.y = det.lumi_coord[closest_z][2] + y_offset
+      else:
+        x_offset, y_offset = self.find_xyoffset(current_z)
+        args.x = det.orig_coord[0] + x_offset
+        args.y = det.orig_coord[1] + y_offset
+    else:
+      if any(det.lumi_coord):
+        closest_z = self.find_closest_z(det.lumi_coord, current_z)
+        args.x = det.lumi_coord[closest_z][0]
+        args.y = det.lumi_coord[closest_z][2]
+      elif any(det.vis_coord):
+        x_offset, y_offset = self.find_xyoffset(current_z)
+        closest_z = self.find_closest_z(det.vis_coord, current_z)
+        args.x = det.vis_coord[closest_z][0] - x_offset
+        args.y = det.vis_coord[closest_z][1] - y_offset
+      else:
+        args.x, args.y = det.orig_coord
+
+    return args
+
+  def find_xyoffset(self, currentz):
+    """
+    Finding x-y offset between the luminosity and visual alignment based the
+    existing calibration. This function will loop over all calibration detectors,
+    and finding if there are any detector that has both a lumi-calibrated
+    coordinates, and visual-calibrated coordinates, and create the offset based
+    on the two measurement. If none are found, a default value will be used.
+    """
+    if not any(self.board.calib_dets()):
+      return self.DEFAULT_XOFFSET, self.DEFAULT_YOFFSET
+
+    for detid in self.board.calib_dets():
+      lumi_x = None
+      lumi_y = None
+      vis_x = None
+      vis_y = None
+      det = self.board.get_det(detid)
+
+      if any(det.lumi_coord):
+        closestz = self.find_closest_z(det.lumi_coord, currentz)
+        lumi_x = det.lumi_coord[closestz][0]
+        lumi_y = det.lumi_coord[closestz][2]
+
+      if any(det.vis_coord):
+        closestz = self.find_closest_z(det.vis_coord, currentz)
+        vis_x = det.vis_coord[closestz][0]
+        vis_y = det.vis_coord[closestz][1]
+
+      if lumi_x and lumi_y and vis_x and vis_y:
+        return vis_x - lumi_x, vis_y - lumi_y
+
+    return self.DEFAULT_XOFFSET, self.DEFAULT_YOFFSET
+
   @staticmethod
-  def globcomp(text):
-    globlist = glob.glob(text + "*")
-    globlist = [file + '/' if os.path.isdir(file) else file for file in globlist]
-    return globlist
+  def find_closest_z(my_map, current_z):
+    return min(my_map.keys(), key=lambda x: abs(float(x) - float(current_z)))
+
+
+class hscancmd(singlexycmd):
+  """
+  Commands that expand the operations around a (x,y) point to a small grid for
+  alignment purposes. This classes uses the static variables to designate the
+  grid range and mesh finess.
+  """
+  HSCAN_ZVALUE = 20
+  HSCAN_RANGE = 5
+  HSCAN_SEPARATION = 1
+
+  def __init__(self, cmd):
+    controlcmd.__init__(self, cmd)
+
+  def add_args(self):
+    self.parser.add_argument('-z',
+                             '--scanz',
+                             type=float,
+                             default=self.HSCAN_ZVALUE,
+                             help="""
+                             Height to perform horizontal scan [mm] (default:
+                             %(default)f[mm]).""")
+    self.parser.add_argument('-r',
+                             '--range',
+                             type=float,
+                             default=self.HSCAN_RANGE,
+                             help="""
+                             Range to perform x-y scanning from central position
+                             [mm] (default=%(default)f)""")
+    self.parser.add_argument('-d',
+                             '--distance',
+                             type=float,
+                             default=self.HSCAN_SEPARATION,
+                             help="""
+                             Horizontal sampling distance [mm]
+                             (default=%(default)f)""")
+
+  def parse(self, args):
+    """
+    After parsing the arguments, the args.x and arg.y arguments will be expanded
+    out into the list of x,y coordinates to be looped overs. In case the
+    operation requests that the grid cooridnates be larger than the physical
+    range, the range will be reduced to avoid gantry damage.
+    """
+    max_x = gcoder.GCoder.max_x()
+    max_y = gcoder.GCoder.max_y()
+
+    if (args.x - args.range < 0 or args.x + args.range > max_x
+        or args.y - args.range < 0 or args.y + args.range > max_y):
+      log.printwarn("""
+        The arguments placed will put the gantry past its limits, the command
+        will used modified input parameters""")
+
+    xmin = max([args.x - args.range, 0])
+    xmax = min([args.x + args.range, max_x])
+    ymin = max([args.y - args.range, 0])
+    ymax = min([args.y + args.range, max_y])
+    sep = max([args.distance, 0.1])
+    numx = int((xmax - xmin) / sep + 1)
+    numy = int((ymax - ymin) / sep + 1)
+    xmesh, ymesh = np.meshgrid(np.linspace(xmin, xmax, numx),
+                               np.linspace(ymin, ymax, numy))
+
+    args.x = xmesh.reshape(1, np.prod(xmesh.shape))[0]
+    args.y = ymesh.reshape(1, np.prod(ymesh.shape))[0]
+    return args
+
+
+class zscancmd(controlcmd):
+  """
+  Commands that will scan over a range of z positions. As string parsing is used
+  for abbreviate lists, the default zscan values should be provided using syntax
+  corrected string rather a list of numbers.
+  """
+  ZSCAN_ZLIST = "[10 51 1]"
+
+  def __init__(self, cmd):
+    control_cmd.__init__(self, cmd)
+
+  def add_args(self):
+    self.parser.add_argument('-z',
+                             '--zlist',
+                             type=str,
+                             nargs='+',
+                             default=self.ZSCAN_ZLIST,
+                             help="""
+                             List of z coordinate to perform scanning. One can
+                             add a list of number by the notation "[start_z end_z
+                             sepration]" """)
+
+  def parse(self, args):
+    """
+    Regular expression is used to find the sets of numbers in square braces, the
+    numbers in the square braces is then used to expand out into a list of
+    floating points similar to the range command.
+    """
+    args.zlist = " ".join(args.zlist)
+    braces = re.findall(r'\[(.*?)\]', args.zlist)
+    args.zlist = re.sub(r'\[.*?\]', '', args.zlist)
+    args.zlist = [float(z) for z in args.zlist.split()]
+    for rstring in braces:
+      r = [float(rarg) for rarg in rstring.split()]
+      if len(r) < 2 or len(r) > 3:
+        raise Exception("""
+              Range must be in the format [start end (sep)]. sep is assumed to be
+              1 if not specified""")
+      startz = float(r[0])
+      stopz = float(r[1])
+      sep = float(1 if len(r) == 2 else r[2])
+      args.zlist.extend(
+          np.linspace(startz,
+                      stopz,
+                      int(np.rint((stopz - startz) / sep)),
+                      endpoint=False))
+
+    # Rounding to closest 0.1
+    args.zlist = np.around(args.zlist, decimals=1)
+
+    # Additional filtering
+    args.zlist = [x for x in args.zlist if x < gcoder.GCoder.max_z()]
+
+    ## Returning sorted results, STL or LTS depending on the first two entries
+    if len(args.zlist) > 1:
+      if args.zlist[0] > args.zlist[1]:
+        args.zlist.sort(reverse=True)  ## Returning sorted result
+      else:
+        args.zlist.sort()  ## Returning sorted result
+
+    return args
+
+
+class readoutcmd(controlcmd):
+  """
+  Commands that should have single readout models.
+  """
+  def __init__(self, cmd):
+    controlcmd.__init__(self, cmd)
+
+  def add_args(self):
+    self.parser.add_argument('--mode',
+                             type=int,
+                             choices=[-1, 1, 2, 3],
+                             help="""
+                             Readout method to be used: 1:picoscope, 2:ADC,
+                             3:DRS4, -1:Predefined model""")
+    self.parser.add_argument('--channel',
+                             type=int,
+                             default=None,
+                             help='Input channel to use')
+    self.parser.add_argument('--samples',
+                             type=int,
+                             default=5000,
+                             help="""
+                             Number of readout samples to take the average for
+                             luminosity measurement (default=%(default)d)""")
+
+  def parse(self, args):
+    """
+    Parsing the readout option. Basing the "default" arguments on additional
+    inputs that may exist in the command input:
+    - If the channel is not specified, then the channel will be assumed to be the
+      channel associated with the detector ID (if applicable). Otherwise the
+      channel defaults to 0.
+    - If the readout mode is not specified, then the mode will be pulled from the
+      board information if applicable. Otherwise, the last-used mode will be
+      used.
+    - Here we will also be double checking that the channel makes sense for the
+      read-out mode. An exception will be raised if the readout mode is not
+      sensible.
+    """
+
+    ## Defaulting to the det id if it isn't specified exists
+    if not args.channel:
+      if hasattr(args, 'detid') and str(args.detid) in self.board.dets():
+        args.channel = self.board.get_det(str(args.detid)).channel
+      else:
+        args.channel = 0
+
+    ## Resetting mode to current mode if it doesn't already exists
+    if not args.mode:
+      if hasattr(args, 'detid') and str(args.detid) in self.board.dets():
+        args.mode = self.board.get_det(str(args.detid)).mode
+      else:
+        args.mode = self.readout.mode
+
+    ## Double checking the readout channel is sensible
+    if args.mode == self.readout.MODE_PICO:
+      if int(args.channel) < 0 or int(args.channel) > 1:
+        raise Exception('Channel for PICOSCOPE can only be 0 or 1')
+    elif args.mode == self.readout.MODE_ADC:
+      if int(args.channel) < 0 or int(args.channel) > 3:
+        raise Exception('Channel for ADC can only be 0--3')
+    elif args.mode == self.readout.MODE_DRS:
+      if int(args.channel) < 0 or int(args.channel) > 3:
+        raise Exception('Channel for DRS4 can only be 0--4')
+
+    self.readout.set_mode(args.mode)
+    return args

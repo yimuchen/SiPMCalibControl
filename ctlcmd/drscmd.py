@@ -3,6 +3,7 @@ import cmod.logger as log
 import time
 #import ctypes
 
+
 class drsset(cmdbase.controlcmd):
   """
   Setting DRS4 readout operation parameters
@@ -10,42 +11,45 @@ class drsset(cmdbase.controlcmd):
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
-    # Trigger settings
+  def add_args(self):
     self.parser.add_argument('--triggerchannel',
                              type=int,
-                             help=('Index representing which channel to trigger '
-                                   'on. See the outputs of "get --drs" for the'
-                                   ' available numbers'))
+                             help="""
+                             Index representing which channel to trigger on. See
+                             the outputs of "get --drs" for the available
+                             numbers""")
     self.parser.add_argument('--triggerdirection',
                              type=int,
-                             help=('Index representing the direction of the '
-                                   'trigger. See the outputs of "get --drs" '
-                                   'for the available numbers'))
+                             help="""
+                             Index representing the direction of the trigger. See
+                             the outputs of "get --drs" for the available
+                             numbers""")
     self.parser.add_argument('--triggerlevel',
                              type=float,
-                             help=('Trigger level in mV. Note that the value '
-                                   'will be rounded to the closest '
-                                   'corresponding ADC value.'))
+                             help="""
+                             Trigger level in mV. Note that the value will be
+                             rounded to the closest corresponding ADC value.""")
     self.parser.add_argument('--triggerdelay',
                              type=int,
-                             help=('Delay between trigger and data acquisition, '
-                                   'units in nanoseconds'))
+                             help="""
+                             Delay between trigger and data acquisition, units in
+                             nanoseconds""")
 
     # Data collection settings
     self.parser.add_argument('--samplerate',
                              type=float,
-                             help=('Sample rate, in units of GHz. Note that this'
-                                   'value will be rounded to the closest clock '
-                                   'rate available. use get --drs to get the '
-                                   'true sample rate'))
+                             help="""
+                             Sample rate, in units of GHz. Note that thi value
+                             will be rounded to the closest clock rate available.
+                             use get --drs to get the true sample rate""")
     self.parser.add_argument('--samples',
                              type=int,
                              default=1024,
-                             help=('Number of samples to collect after trigger '
-                                   'cell'))
+                             help="""
+                             Number of samples to collect after trigger cell""")
 
   def set_trigger(self, args):
-    ## Getting default values is settings do not exists
+    ## Getting default values if settings do not exists
     if not args.triggerchannel:
       args.triggerchannel = self.drs.trigger_channel()
     if not args.triggerlevel:
@@ -85,6 +89,8 @@ class drscalib(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
+
+  def add_args(self):
     self.parser.add_argument('--skipconfirm',
                              action='store_true',
                              help='Skipping the confirmation dialog')
@@ -95,7 +101,7 @@ class drscalib(cmdbase.controlcmd):
     self.drs.run_calibrations()
 
 
-class drsrun(cmdbase.controlcmd):
+class drsrun(cmdbase.savefilecmd):
   """
   Running the DRS stand alone waveform extraction for debugging and detailed
   output analysis.
@@ -105,66 +111,68 @@ class drsrun(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    self.add_savefile_options(drsrun.DEFAULT_SAVEFILE)
+
+  def add_args(self):
     self.parser.add_argument('--numevents',
                              type=int,
                              default=1000,
                              help='Number of events to store')
     self.parser.add_argument('--dumpbuffer',
                              action='store_true',
-                             help=('Prints the last stored waveform on the '
-                                   'screen in human readable format'))
+                             help="""
+                             Prints the last stored waveform on the screen in
+                             human readable format""")
     self.parser.add_argument('--channel',
                              type=int,
                              default=0,
                              help='Channel to collect input from')
     self.parser.add_argument('--sum',
                              action='store_true',
-                             help=('Store the sum of the waveform values '
-                                   'instead of waveforms itself'))
+                             help="""
+                             Store the sum of the waveform values instead of
+                             waveforms itself""")
     self.parser.add_argument('--waittrigger',
                              type=int,
                              default=0,
-                             help=('Maximum wait time for a single trigger '
-                                   'fire, units in (ms). Set to 0 for '
-                                   'indefinite trigger wait.'))
+                             help="""
+                             Maximum wait time for a single trigger fire, units
+                             in (ms). Set to 0 for indefinite trigger wait.""")
     self.parser.add_argument('--intstart',
                              type=int,
                              default=0,
-                             help=('Time sample to start the summation window, '
-                                   'set to -1 to start from begining'))
+                             help="""
+                             Time sample to start the summation window, set to -1
+                             to start from begining""")
     self.parser.add_argument('--intstop',
                              type=int,
                              default=1024,
-                             help=('Time sample to stop the summation window, '
-                                   'set to -1 to finish at end.'))
+                             help="""
+                             Time sample to stop the summation window, set to -1
+                             to finish at end.""")
     self.parser.add_argument('--pedstart',
                              type=int,
                              default=0,
-                             help=('Time sample to start the pedestal average, '
-                                   'set to same as pedstop to ignore pedestal summation.'))
+                             help="""
+                             Time sample to start the pedestal average, set to
+                             same as pedstop to ignore pedestal summation.""")
     self.parser.add_argument('--pedstop',
                              type=int,
                              default=0,
-                             help=('Time sample to stop the pedestal average, '
-                                   'set to same as pedstart ignore pedestal summation.'))
-
-  def parse(self, line):
-    args = cmdbase.controlcmd.parse(self, line)
-    self.parse_savefile(args)
-    return args
+                             help="""
+                             Time sample to stop the pedestal average, set to
+                             same as pedstart ignore pedestal summation.""")
 
   def run(self, args):
     ## First line in file contains convertion information
-    if args.savefile.tell() == 0:
-      args.savefile.write("{time} {bits} {adcval}\n".format(
+    if self.savefile.tell() == 0:
+      self.savefile.write("{time} {bits} {adcval}\n".format(
           time=1.0 / self.drs.rate(), bits=4, adcval=0.1))
-      args.savefile.flush()
+      self.savefile.flush()
 
     for i in range(args.numevents):
       if i % 100 == 0:
         self.update('Collecting event...[{0:5d}/{1:d}]'.format(
-            i,
+            i + 1,
             args.numevents,
         ))
       self.drs.startcollect()
@@ -185,17 +193,11 @@ class drsrun(cmdbase.controlcmd):
 
       if not args.sum:
         line = self.drs.waveformstr(args.channel)
-        args.savefile.write("{line}\n".format(line=line))
+        self.savefile.write("{line}\n".format(line=line))
       else:
-        line = self.drs.waveformsum(args.channel,
-                                    args.intstart,
-                                    args.intstop,
-                                    args.pedstart,
-                                    args.pedstop)
-        args.savefile.write("{line}\n".format(line=line))
-
-    args.savefile.flush()
-    args.savefile.close()
+        line = self.drs.waveformsum(args.channel, args.intstart, args.intstop,
+                                    args.pedstart, args.pedstop)
+        self.savefile.write("{line}\n".format(line=line))
 
     if args.dumpbuffer:
       self.drs.dumpbuffer(args.channel)

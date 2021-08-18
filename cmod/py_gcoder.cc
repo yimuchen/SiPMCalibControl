@@ -22,9 +22,9 @@ PYBIND11_MODULE( gcoder, m )
   .def_readwrite( "opx",      &GCoder::opx )
   .def_readwrite( "opy",      &GCoder::opy )
   .def_readwrite( "opz",      &GCoder::opz )
-  .def_readonly( "cx",      &GCoder::cx )
-  .def_readonly( "cy",      &GCoder::cy )
-  .def_readonly( "cz",      &GCoder::cz )
+  .def_readwrite( "cx",      &GCoder::cx )
+  .def_readwrite( "cy",      &GCoder::cy )
+  .def_readwrite( "cz",      &GCoder::cz )
 
   // Static methods
   .def_static( "max_x", &GCoder::max_x )

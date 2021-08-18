@@ -51,7 +51,7 @@ def run_zscan_settings(socketio, data):
   session.zscan_samples = int(data['samples'])
   session.zscan_power_list = [float(x) for x in data['pwm']]
   session.zscan_zlist_dense = [float(z) for z in data['zlist_dense']]
-  session.zscan_zlist_sparse = [float(z) for x in data['zlist_sparse']]
+  session.zscan_zlist_sparse = [float(z) for z in data['zlist_sparse']]
   sync_calibration_settings(socketio)
 
 
@@ -99,14 +99,13 @@ def run_picoscope_settings(socketio, data):
 
 def run_drs_settings(socketio, data):
   """
-  Updating the settings related to the drs readout. Entire thing is encapsulated,
-  as the DRS system might not be available.
+  Updating the settings related to the drs readout. Entire thing is
+  encapsulated, as the DRS system might not be available.
   """
   try:
     ## The only thing that can be called is a trigger delay.
     # We will be forcing the use of an external trigger
-    session.cmd.drs.set_trigger(4,
-                                session.cmd.drs.trigger_level(),
+    session.cmd.drs.set_trigger(4, session.cmd.drs.trigger_level(),
                                 session.cmd.drs.trigger_direction(),
                                 float(data['drs-triggerdelay']))
     session.cmd.drs.set_samples(int(data['drs-samples']))
@@ -130,14 +129,21 @@ def run_drs_calib(socketio):
     continuing""")
   print("Running calibration command")
   session.cmd.drs.run_calibrations()
-  send_sync_signal(socketio,'sync-drs-calib-complete','')
+  send_sync_signal(socketio, 'sync-drs-calib-complete', '')
 
 
 def run_cmd_input(socketio, msg):
   """
   Running a single command provided by the client input.
   """
-  exec_command_with_log(socketio, msg['input'])
+  run_single_cmd(socketio, msg['input'])
+
+
+def session_interrupt(socketio):
+  """
+  Terminating the current session.
+  """
+  session.cmd.sighandle.terminate = True
 
 
 def run_standard_calibration(socketio, msg):
@@ -464,7 +470,7 @@ def prepare_calibration_session(socketio,
   cmd = 'set --boardtype cfg/{dir}/{type}.json'.format(
       dir='standard' if boardid else 'system', type=boardtype)
   cmd += '  --boardid {id}'.format(id=boardid) if boardid else ''
-  status = exec_command_with_log(socketio, cmd)
+  status = session.run_single_cmd(cmd)
   if (status != 0): return status
 
   # Initializing the data cache.
@@ -502,7 +508,7 @@ def prepare_calibration_session(socketio,
     session.reference_session = reference
     cmd = 'loadcalib -f calib/{reference}/summary.json'.format(
         reference=reference)
-    exec_command_with_log(socketio, cmd)
+    session.run_single_cmd(cmd)
   else:
     session.reference_session = ''
 
@@ -536,7 +542,7 @@ def exec_cmd_monitor(socketio, line, process_tag, detid):
 
   def run_with_save(line):
     "A tine wrapper function for creating a thread."
-    session.run_results = exec_command_with_log(socketio, line)
+    session.run_results = session.run_single_cmd(line)
 
   def update_loop(process_tag):
     while exec_cmd_monitor.is_running:
@@ -580,24 +586,9 @@ def exec_cmd_simple(socketio, cmd, process_tag, detid):
   calibration. Here the data will not be included.
   """
   session.progress_check[process_tag][detid] = 2
-  with open('/tmp/logging_temp', 'w') as logfile:
-    set_logging_descriptor(logfile.fileno())
-    session.progress_check[process_tag][detid] = exec_command_with_log(
-        socketio, cmd)
-    update_current_progress()
-  set_logging_descriptor(1)  # MOVING BACK TO STDOUT
+  session.progress_check[process_tag][detid] = run_single_cmd(socketio, cmd)
   update_current_progress()
   # print('Finished: ', cmd)
-
-
-def exec_command_with_log(socketio, cmd):
-  """
-  Running a single command, returning the results of the command execution
-  status, as well as the calling the send message function so that the commands
-  executed can be logged client side.
-  """
-  send_command_message(socketio, cmd)
-  return session.cmd.onecmd(cmd)
 
 
 def clear_cache():
@@ -697,7 +688,8 @@ def update_debug_cache(process_tag):
       # The debugging DRS file we are only interested in the summation part
       session.cmd.sshfiler.readfile.seek(0)
       sums = [
-          float(x) for x in session.cmd.sshfiler.readfile.read().split('\n')[1:]
+          float(x)
+          for x in session.cmd.sshfiler.readfile.read().split('\n')[1:]
           if x != ''
       ]
       contents, bins = np.histogram(sums, 40)
@@ -708,7 +700,6 @@ def update_debug_cache(process_tag):
     ## In the unlikely case that the fill is not open, skip everything.
     # TODO: Properly pass the various data.
     print("Exception has occurred during cache generation", err)
-
 
 
 def clear_debug_cache():

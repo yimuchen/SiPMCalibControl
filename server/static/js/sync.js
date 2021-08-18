@@ -59,9 +59,7 @@ function sync_system_state(new_state) {
       },
       error: function () {
         console.log('Failed to get user action message');
-        if (status_update_flag == true) {
-          setTimeout(status_update_start, status_update_interval);
-        }
+        iterate_status_update();
       }
     });
   } else {

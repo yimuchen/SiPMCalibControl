@@ -8,56 +8,71 @@ class picoset(cmdbase.controlcmd):
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
+
+  def add_args(self):
     self.parser.add_argument('--range',
                              type=int,
-                             help=('Voltage range by index, use command '
-                                   '"get --pico" for the list of available '
-                                   'numbers, both channel will be set to the '
-                                   'same sample'))
+                             help="""
+                             Voltage range by index, use command "get --pico" for
+                             the list of available numbers, both channel will be
+                             set to the same range index""")
 
     ## Trigger related settings
     self.parser.add_argument('--triggerchannel',
                              type=int,
-                             help=('Index representing which channel to trigger '
-                                   'on. See the outputs of "get --pico" for the'
-                                   ' available numbers'))
+                             help="""
+                             Index representing which channel to trigger on. See
+                             the outputs of "get --pico" for the available
+                             numbers""")
     self.parser.add_argument('--triggerdirection',
                              type=int,
-                             help=('Index representing the direction of the '
-                                   'trigger. See the outputs of "get --pico" '
-                                   'for the available numbers'))
+                             help="""
+                             Index representing the direction of the trigger. See
+                             the outputs of "get --pico" for the available
+                             numbers""")
     self.parser.add_argument('--triggerlevel',
                              type=float,
-                             help=('Trigger level in mV. Note that the value '
-                                   'will be rounded to the closest '
-                                   'corresponding ADC value.'))
+                             help="""
+                             Trigger level in mV. Note that the value will be
+                             rounded to the closest corresponding ADC value.""")
     self.parser.add_argument('--triggerdelay',
                              type=int,
-                             help=('Delay between trigger and data acquisition, '
-                                   'units in 10 time intervals (see the outputs '
-                                   'of "get --pico" to get time intervals in '
-                                   'nanoseconds)'))
+                             help="""
+                             Delay between trigger and data acquisition, units in
+                             10 time intervals (see the outputs of "get --pico"
+                             to get time intervals in nanoseconds)""")
     self.parser.add_argument('--waittrigger',
                              type=int,
-                             help=('Maximum wait time for a single trigger '
-                                   'fire, units in (ms). Set to 0 for '
-                                   'indefinite trigger wait.'))
+                             help="""
+                             Maximum wait time for a single trigger fire, units
+                             in (ms). Set to 0 for indefinite trigger wait.""")
 
     ## Data collection settings
     self.parser.add_argument('--presamples',
                              type=int,
-                             help=('Number of samples to collect before data '
-                                   'collection trigger (takes into account '
-                                   'delay)'))
+                             help="""
+                             Number of samples to collect before data collection
+                             trigger (takes into account delay)""")
     self.parser.add_argument('--postsamples',
                              type=int,
-                             help=('Number of samples to collect after data '
-                                   'collection trigger (takes into account '
-                                   'delay)'))
+                             help="""
+                             Number of samples to collect after data collection
+                             trigger (takes into account delay)""")
     self.parser.add_argument('--ncaptures',
                              type=int,
-                             help=('Number of triggered capture to perform in '
-                                   'a single block'))
+                             help="""
+                             Number of triggered capture to perform in a single
+                             block""")
+
+  def run(self, args):
+    self.set_range(args)
+    self.set_trigger(args)
+    self.set_blocks(args)
+
+  def set_range(self, args):
+    if args.range:
+      self.pico.setrange(0, args.range)
+      self.pico.setrange(1, args.range)
 
   def set_trigger(self, args):
     if args.triggerchannel == None:
@@ -70,14 +85,8 @@ class picoset(cmdbase.controlcmd):
       args.triggerdelay = self.pico.triggerdelay
     if args.waittrigger == None:
       args.waittrigger = self.pico.triggerwait
-    if (args.triggerchannel != self.pico.triggerchannel
-        or args.triggerdirection != self.pico.triggerdirection
-        or args.triggerlevel != self.pico.triggerlevel
-        or args.triggerdelay != self.pico.triggerdelay
-        or args.waittrigger != self.pico.triggerwait):
-      self.pico.settrigger(args.triggerchannel, args.triggerdirection,
-                           args.triggerlevel, args.triggerdelay,
-                           args.waittrigger)
+    self.pico.settrigger(args.triggerchannel, args.triggerdirection,
+                         args.triggerlevel, args.triggerdelay, args.waittrigger)
 
   def set_blocks(self, args):
     if args.presamples == None:
@@ -91,17 +100,8 @@ class picoset(cmdbase.controlcmd):
         or args.ncaptures != self.pico.ncaptures):
       self.pico.setblocknums(args.ncaptures, args.postsamples, args.presamples)
 
-  def run(self, args):
-    ## Voltage range stuff
-    if args.range:
-      self.pico.setrange(0, args.range)
-      self.pico.setrange(1, args.range)
 
-    self.set_trigger(args)
-    self.set_blocks(args)
-
-
-class picorunblock(cmdbase.controlcmd):
+class picorunblock(cmdbase.savefilecmd):
   """
   Initiating a single run block instance. This assumes that the program will
   finish without user intervension (no program fired triggering)
@@ -112,7 +112,8 @@ class picorunblock(cmdbase.controlcmd):
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
-    self.add_savefile_options(picorunblock.DEFAULT_SAVEFILE)
+
+  def add_args(self):
     self.parser.add_argument('--numblocks',
                              type=int,
                              default=1,
@@ -126,22 +127,18 @@ class picorunblock(cmdbase.controlcmd):
                              help='Channel to collect input from')
     self.parser.add_argument('--sum',
                              action='store_true',
-                             help=('Store the sum of the waveform values '
-                                   'instead of waveforms itself'))
-
-  def parse(self, line):
-    args = cmdbase.controlcmd.parse(self, line)
-    self.parse_savefile(args)
-    return args
+                             help="""
+                             Store the sum of the waveform values instead of
+                             waveforms itself""")
 
   def run(self, args):
     ## First line in file contains convertion information
-    if args.savefile.tell() == 0:
-      args.savefile.write("{time} {bits} {adc}\n".format(
+    if self.savefile.tell() == 0:
+      self.savefile.write("{time} {bits} {adc}\n".format(
           time=self.pico.timeinterval,
           bits=2,
           adc=self.pico.adc2mv(args.channel, 256)))
-      args.savefile.flush()
+      self.savefile.flush()
 
     for i in range(args.numblocks):
       self.update('Collecting block...[{0:5d}/{1:d}]'.format(
@@ -161,11 +158,7 @@ class picorunblock(cmdbase.controlcmd):
           self.pico.waveformstr(args.channel, cap)
           for cap in range(self.pico.ncaptures)
       ]
-      args.savefile.write("\n".join(lines))
-
-    # Closing
-    args.savefile.flush()
-    args.savefile.close()
+      self.savefile.write("\n".join(lines))
 
     if args.dumpbuffer:
       self.pico.dumpbuffer()
@@ -178,6 +171,8 @@ class picorange(cmdbase.controlcmd):
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
+
+  def add_args(self):
     self.parser.add_argument('--captures',
                              type=int,
                              default=500,
@@ -188,9 +183,9 @@ class picorange(cmdbase.controlcmd):
                              help='Input channel to base the calculation')
     self.parser.add_argument('--rangeidx',
                              type=int,
-                             help=('Specifying the range index for the specific '
-                                   'channel. Leave empty if you want for '
-                                   'automatic determination.'))
+                             help="""
+                             Specifying the range index for the specific channel.
+                             Leave empty if you want automatic determination.""")
 
   def run(self, args):
     # Setting the new number of block to run

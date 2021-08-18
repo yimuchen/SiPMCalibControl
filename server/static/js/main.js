@@ -22,21 +22,29 @@ $(document).ready(function () {
   socketio
     = io.connect('http://' + window.location.hostname + ':9100/sessionsocket');
 
+  // In case the terminal element is found on the page, start the xterm instance.
+  // Additional parsing will be done in the terminal.js file.
+  current_line = ''
+  if ($('#terminal').length > 0) {
+    start_terminal();
+    socketio.on('xtermoutput', parse_key_response);
+  }
+
 
   // The display will always be asynchronous, with the client is responsible for
-  // asking for the current state of the server. This allows for multiple clients
-  // to be connected to the same session for easier on-site debugging.
+  // asking for the current state of the server. This allows for multiple
+  // clients to be connected to the same session for easier on-site debugging.
   socketio.on('connect', function (msg) {
     console.log('Connected to socket!');
-    // Updating static elements, since this is requesting objects from the server
-    // side. We are going to add this in the monitor.js file
+    // Updating static elements, since this is requesting objects from the
+    // server side. We are going to add this in the monitor.js file
     update_tileboard_types();
     update_valid_reference();
 
     // Starting the status update engine
     status_update_flag = true;
     clear_status_data(); // For first run clear the status data.
-    status_update_start();
+    iterate_status_update();
 
     // Checking if a calibration run is in progress
     load_tileboard_and_update();
@@ -59,8 +67,6 @@ $(document).ready(function () {
   socketio.on('sync-session-type', sync_session_type);
   socketio.on('sync-settings', sync_setting);
 
-  //console.log(window.location.href)
-
   /**
    * Listing socket actions to perform on specific button presses
    * And responding to action-response commands.
@@ -73,7 +79,6 @@ $(document).ready(function () {
   $('#system-calib-signoff').on('click', system_calibration_signoff);
   $('#standard-calib-signoff').on('click', standard_calibration_signoff);
   $('#debug-drs-run').on('click', debug_drs_run);
-
 
   /**
    * Settings actions

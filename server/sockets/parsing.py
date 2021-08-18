@@ -21,11 +21,26 @@ def socket_connect(socketio):
   """
   Process to execute when client first connects. Immediately the system state is
   updated to all clients. All other information will be handled by client
-  request.
+  request. This will also start the socket session for passing through the
+  terminal session via the xterm socketio interface. The terminal_passthrough method is defined in the sync method
   """
   print('Socket connected')
   sync_system_state(socketio, session.state)
   sync_session_type(socketio, session.session_type)
+
+  # Before starting the first instance, we will be resetting the session file
+  # descriptor used to monitor the session back to 0 so that the full history
+  # will be flushed to the terminal session
+  session.session_output_monitor.seek(0)
+  print('Starting the terminal background task')
+  socketio.start_background_task(terminal_passthrough_output, *[socketio])
+
+
+def terminal_input(socketio, msg):
+  """
+  Receiving the user input for the client side terminal session.
+  """
+  terminal_passthrough_input(socketio, msg)
 
 
 def run_action(socketio, msg):
@@ -71,10 +86,18 @@ def run_action(socketio, msg):
       print(msg)
       time.sleep(5)
   except Exception as e:
-    #TODO: Properly ass the error message client side to be displayed
+    send_error_message(socketio, str(e))
+    #TODO: Properly ask the error message client side to be displayed
     print(e)
 
   sync_system_state(socketio, session.STATE_IDLE)
+
+
+def send_interrupt(socketio):
+  """
+  Sending effectively the interupt signal to the underlying command line object.
+  """
+  session_interrupt(socketio)  # action.py
 
 
 def session_report(msg):
@@ -134,8 +157,8 @@ __default_yield = make_jpeg_image_byte(__default_image_io.read())
 def current_image_bytes():
   """
   Returning the byte string of the current image stored in the visual system's
-  buffer. The formatting code is borrowed from here: Notice that the framerate of
-  how fast the image is updated is defined here.
+  buffer. The formatting code is borrowed from here: Notice that the framerate
+  of how fast the image is updated is defined here.
 
   Reference: https://medium.com/datadriveninvestor/
   video-streaming-using-flask-and-opencv-c464bf8473d6
@@ -143,7 +166,7 @@ def current_image_bytes():
   while True:  ## This function will always generate a return
     try:
       yield make_jpeg_image_byte(session.cmd.visual.get_image_bytes())
-    except:
+    except Exception as e:
       yield __default_yield
 
     time.sleep(0.1)
