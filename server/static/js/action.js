@@ -31,7 +31,6 @@ function run_system_calibration() {
     });
 
     hide_action_column();
-    setTimeout(load_tileboard_and_update, 1000);
   }
 }
 
@@ -58,9 +57,6 @@ function run_std_calibration() {
     });
 
     hide_action_column();
-    // Using a timeout to make sure the action has been received by the main
-    // session. This is not a very elagent solution, but this works?
-    setTimeout(load_tileboard_and_update, 1000);
   }
 };
 
@@ -72,7 +68,7 @@ function run_std_calibration() {
  * system to send the sync signal indicating sign-off completion before wiping
  * the display data.
  */
-function calibration_signoff(session_type) {
+async function calibration_signoff(session_type) {
   var comment_map = {};
 
   $(`#${session_type}-calib-signoff-container`)
@@ -94,8 +90,8 @@ function calibration_signoff(session_type) {
     'pwd': $(`#${session_type}-calib-user-pwd`).val()
   });
 
-  // Updating the valid calibrations list after signoff.
-  setTimeout(update_valid_reference, 1000);
+  await sleep(1000)
+  update_valid_reference();
 }
 
 function system_calibration_signoff() { calibration_signoff('system'); }
@@ -109,7 +105,6 @@ function standard_calibration_signoff() { calibration_signoff('standard'); }
  * then the old plot is first cleared from the existing HTML element.
  */
 function rerun_single(action_tag, detid, extend) {
-
   emit_action_cmd('rerun-single', {
     'action': action_tag,
     'detid': detid,
@@ -135,37 +130,18 @@ function rerun_single(action_tag, detid, extend) {
       }
     }
   }
-  // starting the additional progress monitoring to update plots as command is
-  // running.
-  setTimeout(monitor_progress, 500);
-}
 
-/**
- * Asking that the session execute a raw cmd session command.
- */
-function raw_cmd_input() {
-  var line = $('#raw-cmd-input-text').val();
-  emit_action_cmd("raw-cmd-input", {
-    'input': line
-  });
+  request_plot_by_detid(detit, action_tag)
 }
 
 /**
  * Asking the session to execute the drs debugging sequence
  */
-async function debug_drs_run() {
-  console.log('Starting drsrun debug command')
-  emit_action_cmd('debug-drs-run', {
-    'channel': $('#debug-drs-channel').val(),
-    'numevents': $('#debug-drs-numevents').val(),
-    'intstart': $('#debug-drs-intstart').val(),
-    'intstop': $('#debug-drs-intstop').val(),
-    'pedstart': $('#debug-drs-pedstart').val(),
-    'pedstop': $('#debug-drs-pedstop').val(),
-  });
-
-  await sleep(500) /** defined in sync.js */
-  monitor_debug('debug_drs') /** Defined in monitor.js */
+async function debug_request_plot() {
+  file = $('#debug-plot-file').val()
+  type = $('input[name="debug-plot-type"]:checked').val();
+  console.log(file, type)
+  request_plot_by_file(file, type, 'debug-plot-div')
 }
 
 /**

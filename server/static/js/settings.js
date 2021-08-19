@@ -9,15 +9,16 @@
  * Clear client side settings. Request a new set of setting from server side and
  * update accordingly.
  */
-function clear_settings() {
+async function clear_settings() {
   $.ajax({
     dataType: 'json',
     mimeType: 'application/json',
     url: `report/settings`,
     success: update_settings,
-    error: function () {
+    error: async function () {
       console.log('Failed to sync with system settings');
-      setTimeout(clear_settings, 500); // Trying indefinitely.
+      await sleep(500);
+      clear_settings(); // Trying indefinitely.
     }
   });
 }

@@ -96,3 +96,27 @@ the various GUI pages. #}
   </div>
 </div>
 {% endmacro %}
+
+
+<!------------------------------------------------------------------------------>
+{# Common display elements #}
+<!------------------------------------------------------------------------------>
+{% macro command_progress() %}
+<span class="input-name">Command progress</span>
+<div class="input-units">
+  <div class="progress-bar-container" id="command-progress">
+    <div class="progress-complete" style="width:50%"></div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro session_progress() %}
+<span class="input-name">Session Progress</span>
+<div class="input-units">
+  <div id="session-progress" class="progress-bar-container">
+    <div class="progress-complete"></div>
+    <div class="progress-running"></div>
+    <div class="progress-error"></div>
+  </div>
+</div>
+{% endmacro %}

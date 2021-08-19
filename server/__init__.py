@@ -92,6 +92,14 @@ def create_server_flask(debug=False):
     """
     return jsonify(session_report(reporttype))  #define in parsing.py
 
+  @socketio.app.route('/databyfile/<process>/<filename>')
+  def datafile(process, filename):
+    """
+    Returning the data stored at the requested path, and reduced the data
+    accorrding to the requested process format.
+    """
+    return jsonify(get_file_data(process, filename))  # Defined in parsing.py
+
   @socketio.app.route('/data/<process>/<detid>')
   def data(process, detid):
     """
@@ -99,14 +107,7 @@ def create_server_flask(debug=False):
     json format. This aims to minimized the amount of time the same piece of data
     needs to be transported over the network.
     """
-    return jsonify(get_cached_data(process, detid))  # Defined in parsing.py
-
-  @socketio.app.route('/debug_data/<process>')
-  def debugdata(process):
-    """
-    Returning the data of some debug session in json format.
-    """
-    return jsonify(get_debug_data(process))  # Defined in parsing.py
+    return jsonify(get_detid_data(process, detid))  # Defined in parsing.py
 
   @socketio.app.route('/visual')
   def visual():

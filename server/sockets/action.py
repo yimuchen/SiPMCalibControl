@@ -132,18 +132,42 @@ def run_drs_calib(socketio):
   send_sync_signal(socketio, 'sync-drs-calib-complete', '')
 
 
-def run_cmd_input(socketio, msg):
-  """
-  Running a single command provided by the client input.
-  """
-  run_single_cmd(socketio, msg['input'])
-
-
 def session_interrupt(socketio):
   """
-  Terminating the current session.
+  Interupting the current command. Notice that this should terminate the
+  calibration sequence.
   """
   session.cmd.sighandle.terminate = True
+
+
+def run_calib_cmd(socketio, cmd, action, detid):
+  """
+  Running a calibration command. Asside from running the run_single_cmd command
+  for updating the command status. There is also the calibration progress bar that needs updating. This is a very thin wrapper around that.
+  """
+
+  ## Updating the process tag initially which allow for trigger more stuff
+  def set_status(action, detid, status):
+    if action not in session.progress_check:
+      session.progress_check[action] = {str(detid): status}
+    else:
+      session.progress_check[action][str(detid)] = status
+    sync_calib_progress(socketio)
+
+  set_status(action, detid, session.CMD_PENDING)
+  set_status(action, detid, session.CMD_RUNNING)
+  run_single_cmd(socketio, cmd)
+  # Paring the run results:
+  if session.run_results == session.cmd.get.EXIT_SUCCESS:
+    set_status(action, detid, session.CMD_COMPLETE)
+  elif session.run_results == session.cmd.get.TERMINATE_CMD:
+    # If the interupt signal was detected by the command, then set the command
+    # status to error and raise an excpetion to halt all future calibration
+    # commands.
+    set_status(action, detid, session.CMD_ERROR)
+    raise RuntimeError('INTERRUPT SIGNAL RAISED')
+  else:
+    set_status(action, detid, session.CMD_ERROR)
 
 
 def run_standard_calibration(socketio, msg):
@@ -163,6 +187,7 @@ def run_standard_calibration(socketio, msg):
   """
   ## Syning the session type
   sync_session_type(socketio, session.SESSION_TYPE_STANDARD)
+  sync_tileboard_type(socketio)
   ## Resetting the cache
   status = prepare_calibration_session(socketio, msg['boardtype'],
                                        msg['boardid'], msg['reference'])
@@ -181,9 +206,7 @@ def run_standard_calibration(socketio, msg):
   set_light('on')
   for detid in session.order_dets:
     line = make_cmd_visualalign(detid)
-    exec_cmd_simple(socketio, line, 'visalign', detid)
-    session.visual_cache[detid] = session.cmd.visual.save_image(
-        'server/static/temporary/visual_{detid}.jpg'.format(detid=detid))
+    run_calib_cmd(socketio, line, 'visalign', detid)
   set_light('off')
 
   wait_user_action(socketio, __std_calibration_lightoff_msg)
@@ -194,15 +217,11 @@ def run_standard_calibration(socketio, msg):
     zscan_line = make_cmd_zscan(detid=detid, dense=False, rev=~even_line)
     lowlight_line = make_cmd_lowlight(detid)
     if even_line:
-      exec_cmd_monitor(socketio, zscan_line, 'zscan', detid)
-      exec_cmd_monitor(socketio, lowlight_line, 'lowlight', detid)
+      run_calib_cmd(socketio, zscan_line, 'zscan', detid)
+      run_calib_cmd(socketio, lowlight_line, 'lowlight', detid)
     else:
-      exec_cmd_monitor(socketio, lowlight_line, 'lowlight', detid)
-      exec_cmd_monitor(socketio, zscan_line, 'zscan', detid)
-
-  # At the end of the calibration command, send a signal that tells the client to
-  # display the sign off window
-  # sync_start_signoff(socketio, 'standard')
+      run_calib_cmd(socketio, lowlight_line, 'lowlight', detid)
+      run_calib_cmd(socketio, zscan_line, 'zscan', detid)
 
 
 ## Long message strings are disruptive to code reading are placed here.
@@ -234,6 +253,7 @@ def run_system_calibration(socketio, msg):
   elements, we will not be optimizing the motion path.
   """
   sync_session_type(socketio, session.SESSION_TYPE_SYSTEM)
+  sync_tileboard_type(socketio)
   status = prepare_calibration_session(socketio, msg['boardtype'])
   if status: return
 
@@ -253,12 +273,12 @@ def run_system_calibration(socketio, msg):
   # Running the visual align stuff.
   set_light('on')
   cmd = make_cmd_visualscan(session.order_dets[0])
-  exec_cmd_monitor(socketio, cmd, 'vhscan', session.order_dets[0])
+  run_calib_cmd(socketio, cmd, 'vhscan', session.order_dets[0])
   for detid in session.cmd.board.dets():
     cmd = make_cmd_visualalign(detid)
-    exec_cmd_simple(socketio, cmd, 'visalign', detid)
-    session.visual_cache[detid] = session.cmd.visual.save_image(
-        'server/static/temporary/visual_{detid}.jpg'.format(detid=detid))
+    run_calib_cmd(socketio, cmd, 'visalign', detid)
+    cmd = make_cmd_vissave(detid)
+    run_single_cmd(socketio, cmd)
   set_light('off')
 
   wait_user_action(socketio, __sys_calibration_lightoff_message)
@@ -266,17 +286,17 @@ def run_system_calibration(socketio, msg):
   ## Running the luminosity alignment
   for detid in session.order_dets:
     cmd = make_cmd_lumialign(detid=detid)
-    exec_cmd_monitor(socketio, cmd, 'lumialign', detid)
+    run_calib_cmd(socketio, cmd, 'lumialign', detid)
 
   # Generating a luminosity profile from the photo diode on the reference board
   # Otherwise generate a low light profile for a relative efficiency reference.
   for detid in session.order_dets:
     if (int(detid) % 2 == 1):
       cmd = make_cmd_zscan(detid=detid, dense=True, rev=False)
-      exec_cmd_monitor(socketio, cmd, 'zscan', detid)
+      run_calib_cmd(socketio, cmd, 'zscan', detid)
     else:
       cmd = make_cmd_lowlight(detid=detid)
-      exec_cmd_monitor(socketio, cmd, 'lowlight', detid)
+      run_calib_cmd(socketio, cmd, 'lowlight', detid)
 
   # At the end of the calibration command, send a signal that tells the client to
   # display the sign off window
@@ -312,33 +332,15 @@ def run_process_extend(socketio, msg):
         make_cmd_zscan(detid,dense=True,rev=False) if action =='zscan' else \
         make_cmd_visualalign(detid) if action == 'visalign' else \
         ''
-  monitor = False if action == 'visalign' else \
-            True
-  if cmd == '': return  # Early exit if not correponding command is generated
+  if cmd == '': return  # Early exit if not corresponding command is generated
 
   cmd = cmd.replace('--wipefile', '') if extend else cmd
-  if not extend:  ## Manually wiping the data cache in the session
-    if action == 'lumialign':
-      session.lumialign_cache[detid] = []
-    elif action == 'lowlight':
-      session.lowlight_cache[detid] = []
-    elif action == 'zscan':
-      session.zscan_cache[detid] = []
-
-  ## Updating the process tag initially which allow for trigger more stuff
-  if action not in session.progress_check:
-    session.progress_check[action] = {str(detid): 1}
-  else:
-    session.progress_check[action][str(detid)] = 1
-
-  # Running the program. Monitor is requested
-  if monitor: exec_cmd_monitor(socketio, cmd, action, detid)
-  else: exec_cmd_simple(socketio, cmd, action, detid)
+  run_calib_cmd(socketio, cmd, action, detid)
 
   # Updating the visual cache if the action performed is such
   if action == 'visalign':
-    session.visual_cache[detid] = session.cmd.visual.save_image(
-        'server/static/temporary/visual_{detid}.jpg'.format(detid=detid))
+    cmd = make_cmd_vissave(detid)
+    run_single_cmd(socketio, cmd)
 
 
 def run_calibration_signoff(socketio, data, store):
@@ -355,7 +357,7 @@ def run_calibration_signoff(socketio, data, store):
   store the reference calibration session.
   """
   ## Saving the calibration results and comments
-  exec_command_with_log(
+  run_single_cmd(
       socketio,
       'savecalib -f={filename}'.format(filename=calibration_filename('summary')))
 
@@ -419,34 +421,7 @@ def run_calibration_signoff(socketio, data, store):
 
   clear_cache()
   sync_session_type(socketio, session.SESSION_TYPE_NONE)
-
-
-def run_debug_drs(socketio, msg):
-  """
-  Running a debugging drsrun command instance. Notice that the data collected
-  here is volatile and will never be kept outside of the debug session. Once the
-  data is passed over to the client, the results will be destroyed. If you wish
-  to keep a persistent version of the debugging results, please use the command
-  line interface. As this is not the intended use of the GUI session.
-  """
-  clear_debug_cache()
-  savefile = '/tmp/debug_drs.txt'
-
-  cmd = "drsrun --sum"
-  cmd += " --channel {}".format(msg['channel'])
-  cmd += " --numevents {}".format(msg['numevents'])
-  cmd += " --intstart {}".format(msg['intstart'])
-  cmd += " --intstop {}".format(msg['intstop'])
-  cmd += " --pedstart {}".format(msg['pedstart'])
-  cmd += " --pedstop {}".format(msg['pedstop'])
-  cmd += " --savefile {}".format(savefile)
-  cmd += " --wipefile".format(savefile)
-
-  # Running the monitor thread.
-  print("Running command:", cmd)
-  exec_cmd_monitor(socketio, cmd, 'debug_drs', None)
-  # Removing the temporary file
-  os.remove(savefile)
+  sync_tileboard_type(socketio, clear=True)
 
 
 def prepare_calibration_session(socketio,
@@ -474,10 +449,6 @@ def prepare_calibration_session(socketio,
   if (status != 0): return status
 
   # Initializing the data cache.
-  session.zscan_cache = {detid: [] for detid in session.cmd.board.dets()}
-  session.lumialign_cache = {detid: [] for detid in session.cmd.board.dets()}
-  session.lowlight_cache = {detid: [] for detid in session.cmd.board.dets()}
-  session.visual_cache = {detid: False for detid in session.cmd.board.dets()}
   session.calib_session_time = datetime.datetime.now()
 
   # Construction of the ordered list.
@@ -508,7 +479,7 @@ def prepare_calibration_session(socketio,
     session.reference_session = reference
     cmd = 'loadcalib -f calib/{reference}/summary.json'.format(
         reference=reference)
-    session.run_single_cmd(cmd)
+    run_single_cmd(socketio, cmd)
   else:
     session.reference_session = ''
 
@@ -530,213 +501,10 @@ def prepare_progress_check(progress_detid):
     }
 
 
-def exec_cmd_monitor(socketio, line, process_tag, detid):
-  """
-  Running a calibration command in a separate thread to allow for parallel
-  monitoring. While the command is running the rough percentage of the
-  calibration command is monitored by piping the cmd output to the temporary
-  file, the overall session progress is also automatically update.
-  """
-  # static variable to check if command finished.
-  exec_cmd_monitor.is_running = False
-
-  def run_with_save(line):
-    "A tine wrapper function for creating a thread."
-    session.run_results = session.run_single_cmd(line)
-
-  def update_loop(process_tag):
-    while exec_cmd_monitor.is_running:
-      time.sleep(0.1)
-      update_data_cache(process_tag)
-      update_current_progress()
-
-  if process_tag not in session.progress_check:
-    if detid != None:
-      session.progress_check[process_tag] = {str(detid): 1}
-
-  with open('/tmp/logging_temp', 'w') as logfile:
-    set_logging_descriptor(logfile.fileno())
-    if detid != None:
-      session.progress_check[process_tag][detid] = 2
-
-    ## Strange syntax to avoid string splitting  :/
-    cmd_thread = threading.Thread(target=run_with_save, args=(line, ))
-    cmd_thread.start()
-    exec_cmd_monitor.is_running = True
-
-    update_thread = threading.Thread(target=update_loop, args=(process_tag, ))
-    update_thread.start()
-
-    ## Having the process finish
-    cmd_thread.join()
-    exec_cmd_monitor.is_running = False
-    if detid != None:
-      session.progress_check[process_tag][detid] = session.run_results
-    update_thread.join()
-
-  ## One last update to ensure that things have finished.
-  set_logging_descriptor(1)  ## Setting back to STDOUT
-  update_data_cache(process_tag)
-  update_current_progress()
-
-
-def exec_cmd_simple(socketio, cmd, process_tag, detid):
-  """
-  Running single command without thread. Meant for fast commands such as visual
-  calibration. Here the data will not be included.
-  """
-  session.progress_check[process_tag][detid] = 2
-  session.progress_check[process_tag][detid] = run_single_cmd(socketio, cmd)
-  update_current_progress()
-  # print('Finished: ', cmd)
-
-
 def clear_cache():
-  session.zscan_cache = {}
-  session.lumialign_cache = {}
-  session.lowlight_cache = {}
-  session.visual_cache = {}
   session.progress_check = {}
   session.calib_session_time = None
   session.cmd.board.clear()
-
-
-def update_data_cache(process_tag):
-  """
-  Updating a cached version of the data if by reading from the file that is
-  currently being written to by the underlying cmd instance. This function
-  assumes the standard data format of:
-  ```
-  timestamp detID x y z led_bias led_temp sipm_temp readout1 readout2...
-  ```
-  How the data should be interpreted (a.k.a. which cache the data should be
-  passed to), will be determined by the input parameter. Notice that the cached
-  data of the calibration monitor will not attempt to perform any corrections.
-  That will only be processes by the server side with the full fits.
-
-  Since the debugging GUI uses the same interface, we will be identifying the
-  debugging session simply as process tag that has "debug" in the name. These are
-  forked to other functions to be readout (update_debug_cache)
-  """
-
-  if 'debug' in process_tag:
-    update_debug_cache(process_tag)
-
-  # Early exit if file is not yet open
-  if not session.cmd.sshfiler.readfile: return
-
-  def update_zscan(detid, tokens):
-    z = float(tokens[4])
-    bias = float(tokens[5])
-    lumi = [float(token) for token in tokens[8:]]
-    if len(lumi) == 2:  # Must satisfy standard format
-      session.zscan_cache[detid].append([z, lumi[0], bias])
-
-  def update_lowlight(detid, tokens):
-    lumi = [float(token) for token in tokens[8:]]
-    if len(lumi) <= 10: return  # rarely exist for all form
-    if len(session.lowlight_cache[detid]) == 0:
-      content, bins = np.histogram(lumi, 40)
-      session.lowlight_cache[detid] = [content, bins]
-    else:  ## Appending a histogram!
-      session.lowlight_cache[detid][0] += np.histogram(
-          lumi, bins=session.lowlight_cache[detid][1])[0]
-
-  def update_lumiscan(detid, tokens):
-    x = float(tokens[2])
-    y = float(tokens[3])
-    lumi = [float(token) for token in tokens[8:]]
-    if len(lumi) == 2:
-      session.lumialign_cache[detid].append([x, y, lumi[0]])
-
-  try:
-    lines = session.cmd.sshfiler.readfile.read().split('\n')
-    for line in lines:
-      tokens = line.split()
-      if len(tokens) < 9: continue  # skipping malformed lines
-      detid = str(tokens[1])
-      if not detid in session.cmd.board.dets(): continue  # ignore missing detid
-      # Running the main update
-      if process_tag == 'zscan':
-        update_zscan(detid, tokens)
-      elif process_tag == 'lowlight':
-        update_lowlight(detid, tokens)
-      elif process_tag == 'lumialign':
-        update_lumiscan(detid, tokens)
-  except:  ## In the unlikely case that the file is not open. Skip everything
-    pass
-
-
-def update_debug_cache(process_tag):
-  """
-  Updating the debug cache. Since debug commands do not contain persistent data
-  that needs to be taken care of, we will be generated the corresponding data
-  members on the fly. And be rather careless with the garbage collection. The
-  idea is that the data should be compressed in a lossy format that will not
-  cause memory issues in the main session.
-
-  Notice also that the update will always start at the begining of the file.
-  Since we are expecting the data
-  """
-  # Early exit if file is not available
-  if not session.cmd.sshfiler.readfile: return
-
-  print('Updating debug cache')
-
-  try:
-    if process_tag == 'debug_drs':
-      # The debugging DRS file we are only interested in the summation part
-      session.cmd.sshfiler.readfile.seek(0)
-      sums = [
-          float(x)
-          for x in session.cmd.sshfiler.readfile.read().split('\n')[1:]
-          if x != ''
-      ]
-      contents, bins = np.histogram(sums, 40)
-      std = np.std(sums) if len(sums) > 2 else 0
-      session.debug_drs_cache = [contents, bins, std]
-
-  except Exception as err:
-    ## In the unlikely case that the fill is not open, skip everything.
-    # TODO: Properly pass the various data.
-    print("Exception has occurred during cache generation", err)
-
-
-def clear_debug_cache():
-  """
-  Since debug data caches are generated on the fly. We are going to clear the
-  caches simply by delattr method
-  """
-  for attr in session.__dict__.keys():
-    if attr.startswith('debug'):
-      delattr(session, attr)
-
-
-def update_current_progress():
-  """
-  Updating the progress of the calibration process that is currently running.
-  This function works by monitoring the cmd logging output (which has been piped
-  to '/tmp/logging_temp', And reading the last two numbers, which usually
-  indicates the steps performed and the expected total steps.)
-  """
-  read_log = open('/tmp/logging_temp', 'r')
-  lines = re.split('[\\r\\n]', read_log.read())
-  last_line = next((x for x in reversed(lines) if 'Progress' in x), '')
-  read_log.close()
-
-  if not 'Progress' in last_line:
-    session.progress_check['current'] = [0, 1]
-    ## Initializating as a zero two point function
-  else:
-    pattern = re.compile(r'.*Progress\s*\[\s*(\d+)\/\s*(\d+)\].*')
-    match = pattern.match(last_line)
-    if match and len(match.groups()) == 2:
-      session.progress_check['current'] = [int(match[1]), int(match[2])]
-    else:
-      pass  ## Don't try to wipe or update
-  ## Forcing 100% Completion on command exit
-  if 'current' in session.progress_check and session.state == session.STATE_IDLE:
-    session.progress_check['current'][0] = session.progress_check['current'][1]
 
 
 def set_light(state):

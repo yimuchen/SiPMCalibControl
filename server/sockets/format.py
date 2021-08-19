@@ -144,3 +144,15 @@ def make_cmd_visualscan(detid):
               -f=/dev/null
   """.format(detid=detid, zval=session.visual_zval)
   return reduce_cmd_whitespace(ans)
+
+
+def make_cmd_vissave(detid):
+  """
+  Making the command required to save the visual alignment results to a standard
+  postion.
+  """
+  ans = """
+  visualsaveframe --saveimg {file}
+  """.format(
+      file=calibration_filename('visualalign', detid).replace('.txt', '.jpg'))
+  return reduce_cmd_whitespace(ans)

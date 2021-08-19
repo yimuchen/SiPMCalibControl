@@ -7,18 +7,27 @@ for data display. The GUI is designed mainly for standard calibration sequences,
 so do not expect fine controls over the various calibration processes like with
 the command line interface.
 
-Since the “GUI” has two logically disconnected components, signal handling at the
-server and the client needs special care to ensure that the server doesn't
-re-initiate a calibration sequence when the system is busy, and not to update the
-GUI display elements when the calculation is semi-completed. As a rule of thumb
-in the design philosophy:
+Since the “GUI” has two logically disconnected components, ther server side that
+is used to handle the underlying hardware, and the client side that is used to
+display results and controls to the end users. Here we define 3 types of
+communications:
 
-- The client should have all “action requests” locked until the server release
-  the controls. The client should also have the action requests locked as soon as
-  a new action request is initiated to avoid double sending.
-- The server will not send display data to the client unless the client
-  explicitly requests for it. The client should be the side responsible for
-  requesting a data update when display has finished updating.
+- The client sending data to the server side as “action requests”: these are
+  small data packages that is used to trigger hardware action. In such cases, all
+  future action request will be discarded until the the all requested hardware
+  actions have been completed. The creation of such signals can be found in the
+  "js/action.js" file, while the corresponding processing of these signals will
+  be handled in the "action.py" file.
+- The server will send data to the client via a "sync" type data, these are data
+  needs the client to see identical values with the data to avoid operation
+  errors, or is frequently updated server side. The emission of these
+  communications on the server side can be found in the "sync.py" and the
+  handling of such signals should be found in the "js/sync.js" file.
+- The server will send data to the client via "report" requests. This is data
+  that is either expensive to compute server side or is not critical to the
+  operation of the calibration, so is only presented to the client on request.
+  For the client side, this should be done via ajax URL request, and response of
+  thess requests will be handled in the "report.py" file.
 
 The socketio server for handling various signals and communicating user commands
 with the underlying command line application is documented in the

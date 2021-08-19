@@ -12,12 +12,20 @@ const term = new Terminal({
   scrollback: true,
 });
 
+var terminal_lock = true;
+
+
 /**
  * Linking the terminal object to the display element by id
  * Setting up the key-stoke parsing.
  */
 function start_terminal() {
-  term.open(document.getElementById("terminal"));
+  // Setting up the terminal to the standard container
+  term.open(document.getElementById("terminal-content"));
+  // locking the terminal on start-up
+  term.terminal_lock = true;
+
+
   // Sending a signal to refresh the prompt is prompt is available.
   parse_keystroke(String.fromCharCode(1)); // Sending ctl+a
   term.onData((key) => {
@@ -35,6 +43,11 @@ function start_terminal() {
  *  parsing down the line.
  */
 function parse_keystroke(key) {
+  // Early exit if terminal is locked
+  if (terminal_lock) {
+    return;
+  }
+
   str = ''
   for (i = 0; i < key.length; ++i) {
     str += ' ' + key.charCodeAt(i).toString()
@@ -60,3 +73,20 @@ function parse_key_response(data) {
   console.log("new output received from server:", data.output);
   term.write(data.output);
 };
+
+/**
+ * Terminal locking toggle
+ */
+function check_terminal_lock() {
+  if (terminal_lock) { // unlocking the terminal
+    terminal_lock = false;
+    $('#terminal_status').html('TERMINAL IS UNLOCKED');
+    $('#terminal_lock').html('LOCK');
+    // Getting the prompt in case it wasn't generated.
+    parse_keystroke(String.fromCharCode(1));
+  } else {
+    terminal_lock = true; // locking the terminal
+    $('#terminal_status').html('TERMINAL IS LOCKED');
+    $('#terminal_lock').html('UNLOCK');
+  }
+}

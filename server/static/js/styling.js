@@ -220,5 +220,4 @@ function hide_monitor_column() {
   $(`#monitor-column`).css('left', `-${monitor_column_width}px`);
   $('#session-column').css('margin-left', `0px`);
   $(`#session-column`).css('width', `${window.innerWidth}px`);
-
 }

@@ -21,29 +21,7 @@ from .report import *
 
 import time
 import select
-
-
-## Some basic method for handling running commands and such
-def run_single_cmd(socketio, cmd):
-  """
-  Running a single command. First we make sure the that the system is not already
-  running a command (wait indefinitely for the previous command to finish). After
-  which we run the underlying CMD methods until the method has been properly
-  processed. The return value of the command will return so that additional
-  parsing can be performed.
-  """
-  while session.state == session.STATE_EXEC_CMD:
-    time.sleep(1)  # Waiting indefinitely for the current command to finish
-
-  prev_state = session.state
-  sync_system_state(socketio, session.STATE_EXEC_CMD)
-  send_display_message(f'running command "{cmd}"')
-  cmd = session.cmd.precmd(cmd)
-  sig = session.cmd.onecmd(cmd)
-  sig = session.cmd.postcmd(sig, cmd)
-  session.cmd.stdout.flush()  # Flushing the output.
-  sync_system_state(socketio, prev_state)
-  return sig
+import threading
 
 
 def send_sync_signal(socketio, sync_id, msg):
@@ -53,6 +31,113 @@ def send_sync_signal(socketio, sync_id, msg):
   reducing the verbosity of function calls.
   """
   socketio.emit(sync_id, msg, namespace='/sessionsocket', boardcast=True)
+
+
+## Some basic method for handling running commands and such
+def run_single_cmd(socketio, cmd):
+  """
+  Running a single command. First we make sure the that the system is not already
+  running a command (wait indefinitely for the previous command to finish). After
+  which we run the underlying CMD methods until the method has been properly
+  processed. The return value of the command will be returned so that additional
+  parsing can be performed.
+  """
+  while session.state == session.STATE_EXEC_CMD:
+    time.sleep(1)  # Waiting indefinitely for the current command to finish
+
+  # static variable to check if command finished.
+  run_single_cmd.is_running = True
+
+  def run_with_save(line):
+    "A thin wrapper function for running the line."
+    session.run_results = session.run_single_cmd(line)
+    cmd = session.cmd.precmd(cmd)
+    sig = session.cmd.onecmd(cmd)
+    sig = session.cmd.postcmd(sig, cmd)
+    session.cmd.stdout.flush()  # Flushing the output.
+    session.run_results = sig
+
+  def update_loop():
+    while run_single_cmd.is_running:
+      time.sleep(0.05)
+      sync_cmd_progress(socketio)
+
+  ## Strange syntax to avoid string splitting  :/
+  prev_state = session.state
+  sync_system_state(socketio, session.STATE_EXEC_CMD)
+  send_display_message(socketio, f'running command "{cmd}"')
+  cmd_thread = threading.Thread(target=run_with_save, args=(cmd, ))
+  cmd_thread.start()
+
+  # Starting the monitor thread to update the current command progress
+  update_thread = threading.Thread(target=update_loop)
+  update_thread.start()
+
+  ## Having the process finish
+  cmd_thread.join()
+  run_single_cmd.is_running = False
+  update_thread.join()
+
+  ## One last update to ensure that things have finished.
+  sync_cmd_progress(socketio,
+                    done=True,
+                    error=session.run_results != session.cmd.get.EXIT_SUCCESS)
+  sync_system_state(socketio, prev_state)
+  return session.run_results
+
+
+def sync_cmd_progress(socketio, done=False, error=False):
+  """
+  Returning a 2-tuple of numbers indicating the progress of the current command.
+  to be displayed client side. In case done is set to True, then the command will
+  always be return (1,1) or (-1,-1) used to indicate that the command has
+  completed (or has erred), otherwise it will look at the current session output
+  monitor file and find the string typically used to indicate the command
+  progress.
+
+  The code used for opening the output file and loop backward until the first new
+  line character can be found here: https://stackoverflow.com/questions/46258499/
+  how-to-read-the-last-line-of-a-file-in-python
+  """
+  pattern = re.compile(r'.*Progress\s*\[\s*(\d+)\/\s*(\d+)\].*')
+
+  def emit(x):
+    send_sync_signal(socketio, 'sync-cmd-progress', x)
+
+  if done:  # Early exists for if the command has be compelted
+    if error:
+      emit([-1, -1])
+      return
+    else:
+      emit([1, 1])
+      return
+
+  line = ''
+  with open(session.session_output_monitor.name, 'rb') as f:
+    f.seek(-2, os.SEEK_END)
+    char = f.read(1)
+    while char != b'\n' and char != b'\r' and f.tell() != 0:
+      f.seek(-2, os.SEEK_CUR)
+      char = f.read(1)
+
+    line = f.readline().decode()  # Getting the last line in the output.
+
+  if not 'Progress' in line:
+    emit([0, 1])
+  else:
+    match = pattern.match(line)
+    if match and len(match.groups()) == 2:
+      emit([int(match[1]), int(match[2])])
+    else:  # Bad matching, don't send new update signal.
+      pass  ## Don't try to wipe or update
+
+
+def sync_calib_progress(socketio):
+  """
+  Passing the signal to the client that the current calibration status has been
+  updated.
+  """
+  send_sync_signal(socketio, 'sync-calib-progress', session.progress_check)
 
 
 def sync_system_state(socketio, new_state):
@@ -81,6 +166,19 @@ def sync_calibration_settings(socketio):
   we are borrowing the report_settings function to reduce code verbosity.
   """
   send_sync_signal(socketio, 'sync-settings', report_settings())
+
+
+def sync_tileboard_type(socketio, clear=False):
+  """
+  Sending the sync signal to indicate which tileboard is currently being stored
+  in the calibration session. The client is responsible for generating the
+  required HTML elements and additional queries regarding the display results.
+  """
+  if clear:
+    send_sync_signal(socketio, 'sync-tileboard-type', '')
+  else:
+    send_sync_signal(socketio, 'sync-tileboard-type',
+                     session.cmd.board.boardtype)
 
 
 def wait_user_action(socketio, msg):

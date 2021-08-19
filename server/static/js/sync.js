@@ -7,15 +7,21 @@
 
 // One main sync target is the current session state.
 var session_state = 1; // assumes that something is running by default
+
 // identical mapping for session states.
 const STATE_IDLE = 0;
 const STATE_RUN_PROCESS = 1;
-const STATE_WAIT_USER = 2;
+const STATE_EXEC_CMD = 2;
+const STATE_WAIT_USER = 3;
 
+// additional mapping for session types.
 var session_type = 0;
 const SESSION_TYPE_NONE = 0;
 const SESSION_TYPE_SYSTEM = 1;
 const SESSION_TYPE_STANDARD = 2;
+
+// progress
+var session_board_type = ''
 
 /**
  * Basic function to allow for async functions to sleep for a certain duration.
@@ -74,7 +80,7 @@ function sync_session_type(new_type) {
   console.log(`Syncing system type`, new_type);
   session_type = new_type;
 
-  function clear_comment_fields(id_string){
+  function clear_comment_fields(id_string) {
     $(id_string).children('.signoff-comment-lines').html(``);
   }
 
@@ -84,11 +90,11 @@ function sync_session_type(new_type) {
     $('#standard-calib-signoff-container').addClass("hidden");
     clear_comment_fields('#system-calib-signoff-container');
     clear_comment_fields('#standard-calib-signoff-container');
-  } else if( session_type == SESSION_TYPE_STANDARD ){
+  } else if (session_type == SESSION_TYPE_STANDARD) {
     $('#standard-calib-signoff-container').removeClass("hidden");
     clear_comment_fields('#system-calib-signoff-container');
     clear_comment_fields('#standard-calib-signoff-container');
-  } else if (session_type == SESSION_TYPE_SYSTEM ){
+  } else if (session_type == SESSION_TYPE_SYSTEM) {
     $('#system-calib-signoff-container').removeClass("hidden");
     clear_comment_fields('#system-calib-signoff-container');
     clear_comment_fields('#standard-calib-signoff-container');
@@ -102,4 +108,58 @@ function sync_session_type(new_type) {
  */
 function sync_setting(new_settings) {
   update_settings(new_settings);
+}
+
+/**
+ * Updating the overall progress bar.
+ *
+ * There are two bars in the calculation part. One is for the overall progress.
+ * One is for the current running command progress.
+ */
+function sync_cmd_progress(msg) {
+  let complete = msg[0]
+  let total = msg[1]
+  const percent = 100.0 * complete / total;
+  $('#command-progress')
+    .children('.progress-complete').css('width', `${percent}%`);
+}
+
+/**
+ * Here we only setup the various used for keeping track of the tileboard view.
+ * In case the tileboard type is non-trivial, we setup call the additional
+ * functions setup in the tileboard_view.js file to generate the additional
+ * display elements.
+ */
+function sync_tileboard_type(msg) {
+  session_board_type = msg;
+
+  // In the case board type is non-trivial setup the document to properly display
+  // the a tileboard view elements. These functions are defined in the
+  // tileboard_view.js file.
+  if (session_board_type != '') {
+    make_tileboard_detector_html();
+  } else {
+    clear_tileboard_detector_html();
+  }
+}
+
+/**
+ * As updating the progress is a little more involved with the display elements,
+ * required function have been split into the view_tileboard method for better
+ * readability. As updating the the progress bars are potentially very taxing on
+ * the client side while being rapidly updated on the server side, here we write
+ * a very small safe guard.
+ */
+var updating_progress = false;
+
+function sync_calib_progress(progress) {
+  if (updating_progress) {
+    console.log('CALIB PROGRESS', progress);
+  } else {
+    updating_progress = true;
+    progress_update_bar(progress);
+    progress_update_table(progress);
+    progress_update_det_summary(progress);
+    updating_progress = false;
+  }
 }

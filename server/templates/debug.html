@@ -12,7 +12,7 @@
 {% from 'macros/settings.html' import drs_settings with context %}
 
 {% from 'macros/actions.html' import user_action with context %}
-{% from 'macros/actions.html' import raw_command with context %}
+{% from 'macros/actions.html' import terminal_control_tab with context %}
 
 <!DOCTYPE html>
 <html>
@@ -52,9 +52,6 @@
     {{ image_settings() }}
     {{ picoscope_settings() }}
     {{ drs_settings() }}
-
-    <!--Defined in macro/actions.html-->
-    {{ raw_command() }}
   </div>
 
   <!-- Unique column for each object.-->
@@ -112,7 +109,7 @@
 
     <div class="tab">
       <div class="tab-title">
-        <span>Run DRS collect</span>
+        <span>Debug plotting</span>
         <i class="fa fa=fa-angle-left"></i>
       </div>
       <div class="tab-content">
@@ -120,50 +117,61 @@
           <div class="column">
             <div class="input-align">
               <div class="input-row">
-                <span class="input-name">Channel</span>
-                <input type="text" id="debug-drs-channel" value="0"/>
-                <span class="input-units"></span>
+                <span class="input-name">data file</span>
+                <span></span>
+                <!--For alignment-->
+                <span class="input-units">
+                  <input type="text" style="width:25em;" id="debug-plot-file" value="" />
+                </span>
               </div>
               <div class="input-row">
-                <span class="input-name">Num. events</span>
-                <input type="text" id="debug-drs-numevents" value="5000"/>
-                <span class="input-units"></span>
+                <span class="input-name">Plot type</span>
+                <input type="radio" id="xyz" name="debug-plot-type" value="xyz" />
+                <span class="input-units">
+                  <label for="xyz">x-y-z Heat map</label>
+                </span>
               </div>
               <div class="input-row">
-                <span class="input-name">Int. start</span>
-                <input type="text" id="debug-drs-intstart" value="1"/>
-                <span class="input-units"></span>
+                <span class="input-name"></span>
+                <input type="radio" id="hist" name="debug-plot-type" value="hist" />
+                <span class="input-units">
+                  <label for="hist">Histogram</label>
+                </span>
               </div>
               <div class="input-row">
-                <span class="input-name">Int. stop</span>
-                <input type="text" id="debug-drs-intstop" value="1024"/>
-                <span class="input-units"></span>
+                <span class="input-name"></span>
+                <input type="radio" id="zscan" name="debug-plot-type" value="zscan" />
+                <span class="input-units">
+                  <label for="zscan">z-scan</label>
+                </span>
               </div>
               <div class="input-row">
-                <span class="input-name">Ped. start</span>
-                <input type="text" id="debug-drs-pedstart" value="1"/>
-                <span class="input-units"></span>
-              </div>
-              <div class="input-row">
-                <span class="input-name">Ped. stop</span>
-                <input type="text" id="debug-drs-pedstop" value="1"/>
-                <span class="input-units"></span>
+                <span class="input-name"></span>
+                <input type="radio" id="tscan" name="debug-plot-type" value="tscan" />
+                <span class="input-units">
+                  <label for="tscan">time scan</label>
+                </span>
               </div>
             </div>
 
 
             <div class="button-container">
-              <button class="action-button" id="debug-drs-run">Run</button>
+              <button id="debug-request-plot">
+                Request plot
+              </button>
             </div>
 
           </div>
           <div class="column">
-            <div id="debug-drs-readout">
+            <div id="debug-plot-div">
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!--Placing the terminal control tab at the very end-->
+    {{ terminal_control_tab() }}
 
 
 </body>

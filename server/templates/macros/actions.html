@@ -116,17 +116,45 @@ calibration session. #}
 {% endmacro %}
 
 <!------------------------------------------------------------------------------>
-{# Raw command input tab: Tab used for single command without output #}
+{# Pseudo terminal interface for operating with the underlying cmd instance more
+directly. This macro will only contain the terminal part. As the debugging page
+will ways have the terminal visual, while the main page and monitoring page will
+likely only have the terminal in a tab#}
 <!------------------------------------------------------------------------------>
-{% macro raw_command() %}
-<div class="tab expert-action" id="rawcmd">
+{% macro terminal_control_tab() %}
+<div class="tab" id="terminal-tab">
   <div class="tab-title">
-    <span>Direct Command (EXP ONLY)</span>
-    <i class="fa fa-angle-left"></i>
+    <span>Terminal control</span>
+    <i class="fa fa=fa-angle-left"></i>
   </div>
-  <div class="tab-content hidden">
-    <input type="text" id="raw-cmd-input-text" />
-    <button id="raw-cmd-input" class="action-button">Run</button>
+  <div class="tab-content">
+    <span id="terminal_status">TERMINAL IS LOCKED</span>
+    <button id="terminal_lock">UNLOCK</button><br>
+    <button onclick="socketio.emit('interrupt')">INTERRUPT</button>
+    <p>Note: not all terminal inputs are supported and likely never will until
+      <a href="https://docs.python.org/3/library/cmd.html">python.cmd</a> will
+      allow for modification with the
+      <a href="https://tiswww.case.edu/php/chet/readline/rltop.html">GNU
+        readline</a>
+      interface IO stream.
+    </p>
+    <p>Supported inputs:
+    <ul>
+      <li>All printable characters (as you would expected)</li>
+      <li>backspace</li>
+      <li>Left/Right arrow navigation</li>
+      <li>Clt+u: clear current line</li>
+    </ul>
+    </p>
+    <p> Notable missing components (non-exhaustive):
+    <ul>
+      <li>tab-completion</li>
+      <li>up/down arrow for history navigation</li>
+      <li>Input for interactive commands</li>
+      <li>clt+c for command interrupt (there is a button for that)</li>
+    </ul>
+    </p>
+    <div id="terminal-content"></div>
   </div>
 </div>
 {% endmacro %}

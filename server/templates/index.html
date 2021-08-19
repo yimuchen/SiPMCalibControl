@@ -13,10 +13,13 @@
 {% from 'macros/monitor.html' import visual_tab      with context %}
 {% from 'macros/monitor.html' import gantry_tab      with context %}
 
+{% from 'macros/monitor.html' import command_progress with context %}
+{% from 'macros/monitor.html' import session_progress with context %}
+
 {% from 'macros/actions.html' import user_action with context %}
 {% from 'macros/actions.html' import system_calibration with context %}
 {% from 'macros/actions.html' import standard_calibration with context %}
-{% from 'macros/actions.html' import raw_command with context %}
+{% from 'macros/actions.html' import terminal_control_tab with context %}
 
 
 <!DOCTYPE html>
@@ -67,7 +70,6 @@
     {{ lumi_alignment_settings() }}
 
     <!--Defined in macro/actions.html-->
-    {{ raw_command() }}
   </div>
 
   <!-- Main column in center-->
@@ -102,24 +104,8 @@
                   </div>
                 </div>
               </div>
-              <div class="input-row">
-                <span class="input-name">Session Progress</span>
-                <div class="input-units">
-                  <div id="session-progress" class="progress-bar-container">
-                    <div class="progress-complete"></div>
-                    <div class="progress-running"></div>
-                    <div class="progress-error"></div>
-                  </div>
-                </div>
-              </div>
-              <div class="input-row">
-                <span class="input-name">Command progress</span>
-                <div class="input-units">
-                  <div class="progress-bar-container" id="command-progress">
-                    <div class="progress-complete" style="width:50%"></div>
-                  </div>
-                </div>
-              </div>
+              <div class="input-row">{{ session_progress() }}</div>
+              <div class="input-row">{{ command_progress() }}</div>
             </div>
           </div>
           <div class="column">
@@ -162,6 +148,7 @@
       </div>
     </div>
 
+    {{terminal_control_tab()}}
 
   </div>
 

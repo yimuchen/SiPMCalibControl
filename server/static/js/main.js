@@ -22,13 +22,6 @@ $(document).ready(function () {
   socketio
     = io.connect('http://' + window.location.hostname + ':9100/sessionsocket');
 
-  // In case the terminal element is found on the page, start the xterm instance.
-  // Additional parsing will be done in the terminal.js file.
-  current_line = ''
-  if ($('#terminal').length > 0) {
-    start_terminal();
-    socketio.on('xtermoutput', parse_key_response);
-  }
 
 
   // The display will always be asynchronous, with the client is responsible for
@@ -44,10 +37,7 @@ $(document).ready(function () {
     // Starting the status update engine
     status_update_flag = true;
     clear_status_data(); // For first run clear the status data.
-    iterate_status_update();
-
-    // Checking if a calibration run is in progress
-    load_tileboard_and_update();
+    run_status_update();
   });
 
   // On disconnect, either because for network errors or host session errors,
@@ -65,6 +55,9 @@ $(document).ready(function () {
    */
   socketio.on('sync-system-state', sync_system_state);
   socketio.on('sync-session-type', sync_session_type);
+  socketio.on('sync-cmd-progress', sync_cmd_progress);
+  socketio.on('sync-calib-progress', sync_calib_progress);
+  socketio.on('sync-tileboard-type',sync_tileboard_type);
   socketio.on('sync-settings', sync_setting);
 
   /**
@@ -74,11 +67,10 @@ $(document).ready(function () {
    */
   $('#run-system-calibration').on('click', run_system_calibration);
   $('#run-std-calibration').on('click', run_std_calibration);
-  $('#raw-cmd-input').on('click', raw_cmd_input);
   $('#user-action-complete').on('click', complete_user_action);
   $('#system-calib-signoff').on('click', system_calibration_signoff);
   $('#standard-calib-signoff').on('click', standard_calibration_signoff);
-  $('#debug-drs-run').on('click', debug_drs_run);
+  $('#debug-request-plot').on('click', debug_request_plot);
 
   /**
    * Settings actions
@@ -109,7 +101,6 @@ $(document).ready(function () {
   $('#drs-settings-calib').on('click', drs_settings_calib);
   socketio.on('sync-drs-calib-complete', drs_calib_complete);
 
-
   /**
    * Input display syncing
    *
@@ -129,4 +120,17 @@ $(document).ready(function () {
   $('.add-comment-line').on('click',
     function () { add_comment_line($(this)); });
   update_indicator(); /** Updating all the close-tag icons */
+
+  /**
+   * Handling of the terminal interface should it exists.
+   *
+   * The function for parsing the elements are defined in the terminal.js file.
+   * The elements that are used to parse are defined in the
+   * templates/macro/actions.html file in the terminal_control_tab macro.html
+   */
+  if ($('#terminal-content').length > 0) {
+    start_terminal();
+    socketio.on('xtermoutput', parse_key_response);
+    $('#terminal_lock').on('click', check_terminal_lock);
+  }
 });

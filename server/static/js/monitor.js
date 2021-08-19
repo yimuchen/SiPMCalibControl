@@ -44,19 +44,13 @@ function display_message(msg) {
 var status_update_flag = false;
 const status_update_interval = 500;
 
-function iterate_status_update() {
-  if (status_update_flag) {
-    setTimeout(single_status_update, status_update_interval);
-  }
-}
-
-function single_status_update() {
+async function run_status_update() {
+  if (!status_update_flag) { return; } // Early exit
   $.ajax({
     dataType: 'json',
     mimeType: 'application/json',
     url: `report/status`,
-    async: false,
-    success: function (json) {
+    success: async function (json) {
       // Storing the object results
       session_status.start = json.start;
       session_status.time.push(json.time);
@@ -71,15 +65,15 @@ function single_status_update() {
       status_update_monitor_data();
       status_update_coordinates();
 
-      // Calling the next iteration.
-      iterate_status_update();
+      await sleep(status_update_interval);
+      run_status_update();
     },
-    error: function () {
+    error: async function () {
       console.log('status update failed');
-      iterate_status_update();
+      await sleep(status_update_interval)
+      run_status_update();
     }
   });
-
 }
 
 /**
@@ -91,9 +85,10 @@ function status_update_time() {
   const time_min = parseInt((time / 60) % 60).toString().padStart(2, 0);
   const time_sec = parseInt(time % 60).toString().padStart(2, 0);
   const state_str = session_state == STATE_IDLE ? `IDLE` :
-    session_state == STATE_RUN_PROCESS ? `RUNNING` :
-      session_state == STATE_WAIT_USER ? `WAITING UESR ACTION` :
-        ``;
+    session_state == STATE_EXEC_CMD ? `EXECUTING COMMAND` :
+      session_state == STATE_RUN_PROCESS ? `PROCESSING` :
+        session_state == STATE_WAIT_USER ? `WAITING UESR ACTION` :
+          ``;
   $(`#up-time`).html(`Uptime: ${time_hour}:${time_min}:${time_sec}`);
   $('#up-time-since').html(
     `Session is: ${state_str} </br>
@@ -148,7 +143,7 @@ function status_update_monitor_data() {
     console.log('temperature-plot DIV does not exist!');
   }
 
-  if ($('#voltag-plot').length != 0) {
+  if ($('#voltage-plot').length != 0) {
     Plotly.newPlot('voltage-plot',
       voltage_data,
       voltage_plot_layout(),
@@ -329,7 +324,6 @@ function update_tileboard_list(list_type) {
     },
     error: function () {
       console.log(`Failed to update tile board types`)
-      setTimeout(update_tileboard_list(list_type), 500);
     }
   });
 }
@@ -376,7 +370,6 @@ function update_valid_reference() {
     },
     error: function () {
       console.log(`Failed to update reference sessions`)
-      setTimeout(update_valid_reference(), 500);
     }
   });
 }

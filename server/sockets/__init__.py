@@ -40,6 +40,7 @@ class Session(object):
   CMD_PENDING = 1
   CMD_RUNNING = 2
   CMD_COMPLETE = 0
+  CMD_ERROR = 3
 
   SESSION_TYPE_NONE = 0
   SESSION_TYPE_SYSTEM = 1
@@ -64,15 +65,15 @@ class Session(object):
         viscmd.visualhscan,  #
         viscmd.visualzscan,  #
         viscmd.visualmaxsharp,  #
-        #viscmd.visualshowdet,
+        #viscmd.visualshowdet, # Do not attempt to create windows
         viscmd.visualcenterdet,  #
-        # getset.exit,  #
+        # getset.exit,  # Don't exit like this
         getset.set,  #
         getset.get,  #
         getset.wait,  #
         getset.savecalib,  #
         getset.loadcalib,  #
-        # getset.promptaction,  #
+        # getset.promptaction,  # No command with user input possible
         getset.runfile,  #
         digicmd.pulse,  #
         digicmd.pwm,  #
@@ -100,17 +101,13 @@ class Session(object):
     self.monitor_thread = None
     self.calib_session_time = datetime.datetime.now()
     self.reference_session = ''
+    self.waiting_msg = ''
 
     # Ordered list of detectors
     self.order_dets = []
 
-    ## Data caching
-    self.zscan_cache = {}
-    self.lowlight_cache = {}
-    self.lumialign_cache = {}
-    self.visual_cache = {}
-
     ## Progress keeping stuff
+    self.cmd_progress = (0, 0)
     self.progress_check = {}
 
     ## Stuff related to the generation of standard commands

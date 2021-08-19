@@ -22,11 +22,15 @@ def socket_connect(socketio):
   Process to execute when client first connects. Immediately the system state is
   updated to all clients. All other information will be handled by client
   request. This will also start the socket session for passing through the
-  terminal session via the xterm socketio interface. The terminal_passthrough method is defined in the sync method
+  terminal session via the xterm.js socketio interface. The terminal_passthrough
+  methods is defined in the sync method
   """
   print('Socket connected')
   sync_system_state(socketio, session.state)
   sync_session_type(socketio, session.session_type)
+  sync_cmd_progress(socketio)
+  sync_calib_progress(socketio)
+  sync_tileboard_type(socketio)
 
   # Before starting the first instance, we will be resetting the session file
   # descriptor used to monitor the session back to 0 so that the full history
@@ -38,7 +42,7 @@ def socket_connect(socketio):
 
 def terminal_input(socketio, msg):
   """
-  Receiving the user input for the client side terminal session.
+  Receiving the user input for the client side terminal session. This is defined in the sync.py file.
   """
   terminal_passthrough_input(socketio, msg)
 
@@ -50,13 +54,15 @@ def run_action(socketio, msg):
   session into a user useable state, the exception message is passed back to the
   user session for the client to determine how the message should be handled.
   """
+  if session.state != session.STATE_IDLE:
+    send_error_message(socketio, 'CANNOT RUN ACTION, REQUEST ALREADY IN PLACE')
+    return
+
   sync_system_state(socketio, session.STATE_RUN_PROCESS)
 
   try:
     ## Standardized calibration sequences. Functions are defined in action.py
-    if msg['id'] == 'raw-cmd-input':
-      run_cmd_input(socketio, msg['data'])
-    elif msg['id'] == 'run-std-calibration':
+    if msg['id'] == 'run-std-calibration':
       run_standard_calibration(socketio, msg['data'])
     elif msg['id'] == 'run-system-calibration':
       run_system_calibration(socketio, msg['data'])
@@ -79,16 +85,12 @@ def run_action(socketio, msg):
       run_drs_settings(socketio, msg['data'])
     elif msg['id'] == 'drs-calib':
       run_drs_calib(socketio)  ## Data less command.
-    elif msg['id'] == 'debug-drs-run':
-      run_debug_drs(socketio, msg['data'])
-
     else:
+      send_error_message(socketio, f'Unsupported action item {msg["id"]}')
       print(msg)
       time.sleep(5)
   except Exception as e:
     send_error_message(socketio, str(e))
-    #TODO: Properly ask the error message client side to be displayed
-    print(e)
 
   sync_system_state(socketio, session.STATE_IDLE)
 
@@ -106,7 +108,6 @@ def session_report(msg):
   report.py file.
   """
   if msg == 'tileboard_layout': return report_tileboard_layout()
-  elif msg == 'progress': return report_progress()
   elif msg == 'status': return report_system_status()
   elif msg == 'validreference': return report_valid_reference()
   elif msg == 'useraction': return report_useraction()
@@ -119,23 +120,24 @@ def session_report(msg):
     return {}
 
 
-def get_cached_data(process, detid):
+def get_file_data(process, filename):
   """
   Returning the cached data of the a the given process defined by the process. To
   help with code structure uniformity. This function will just be a thin wrapper
   around the report_cached_data method defined in the report.py file (since the
   function formatting is similar to a typical reporting process)
   """
-  return report_cached_data(process, detid)
+  return report_file_data(process, filename.replace('@', '/'))
 
 
-def get_debug_data(process):
+def get_detid_data(process, detid):
   """
-  Returning the cached data for a given debugging process. To help with code
-  structure uniformity, this function will just be a thin wrapper around the
-  report_debug_data method defined in report report.py file.
+  Returning the cached data of the a the given process defined by the process. To
+  help with code structure uniformity. This function will just be a thin wrapper
+  around the report_cached_data method defined in the report.py file (since the
+  function formatting is similar to a typical reporting process)
   """
-  return report_debug_data(process)
+  return report_detid_data(process, detid)
 
 
 def make_jpeg_image_byte(image):
