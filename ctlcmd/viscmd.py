@@ -161,7 +161,7 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
         reco_x.append(center.x)
         reco_y.append(center.y)
 
-      self.update_progress(progress=(idx, len(arg.x)),
+      self.update_progress(progress=(idx, len(args.x)),
                            temperature=True,
                            coodinates=True,
                            display_data={
@@ -245,10 +245,11 @@ class visualcenterdet(cmdbase.singlexycmd, visualmeta):
     if self.board.visM_hasz(args.detid, args.scanz):
       args.calibdet = args.detit
     else:
-      args.calibdet = next([
-          x for x in self.board.calib_dets()
-          if self.board.visM_has(x, args.scanz)
-      ], None)
+      args.calibdet = next(
+          iter([
+              x for x in self.board.calib_dets()
+              if self.board.visM_hasz(x, args.scanz)
+          ]), None)
 
     if args.calibdet == None:
       self.printerr(f"""

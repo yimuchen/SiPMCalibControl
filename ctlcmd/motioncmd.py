@@ -238,7 +238,7 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
                                           samples=args.samples,
                                           average=True)
       self.update_progress(progress=(idx + 1, total),
-                           cooridnates=True,
+                           coordinates=True,
                            temperature=True,
                            display_data={'Lumi': (lumival, uncval)})
       self.write_standard_line((lumival, uncval), det_id=args.detid)

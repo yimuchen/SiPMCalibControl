@@ -101,6 +101,7 @@ class controlterm(cmd.Cmd):
     self.last_cmd_status = None  # Execution status of the command
     self.last_cmd_start = None  # Start time of the last command
     self.last_cmd_stop = None  # End time of the last command
+    self.opfile = ''
 
   def precmd(self, line):
     """
@@ -478,8 +479,6 @@ class controlcmd(object):
         time.sleep(0.01)  ## Updating position in 0.01 second increments
     except Exception as e:
       # Setting internal coordinates to the designated position anyway.
-      self.printwarn("Exception received, assuming no gantry is present")
-      self.printwarn(str(e))
       self.gcoder.opx = x
       self.gcoder.opy = y
       self.gcoder.opz = z
@@ -616,6 +615,16 @@ class savefilecmd(controlcmd):
     self.savefile = self.sshfiler.remotefile(filename, args.wipefile)
     return args
 
+  def opensavefile(self, filename, wipefile):
+    """
+    Function for opening the save file. Here we also add a flag in the parent cmd
+    session, so all subsystems can see which file is currently being written to.
+    """
+    mode = 'w' if wipefile else 'a'
+    f = open(filename, mode)
+    self.cmd.opfile = filename
+    return f
+
   def post_run(self):
     """
     Close a save file with a standard message for the verbosity of run files.
@@ -623,6 +632,7 @@ class savefilecmd(controlcmd):
     self.printmsg(f"Saving results to file [{self.savefile.name}]")
     self.savefile.flush()
     self.savefile.close()
+    self.cmd.opfile = ''
 
   def write_standard_line(self, data, det_id=-100, time=0.0):
     """
