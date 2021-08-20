@@ -28,6 +28,7 @@ build/**
 data/**
 node_modules
 server/templates/playground.html
+package-lock.json 
 
 # inclusive directories
 !CMakeLists.txt
