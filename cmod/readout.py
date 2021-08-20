@@ -60,9 +60,9 @@ class Readout(object):
     """
 
     readout_list = []
-    try: # Stopping the stepper motors for cleaner readout
+    try:  # Stopping the stepper motors for cleaner readout
       self.gcoder.disablestepper(False, False, True)
-    except:# In case the gcode interface is not available, do nothing
+    except:  # In case the gcode interface is not available, do nothing
       pass
 
     if self.mode == Readout.MODE_PICO:
@@ -74,9 +74,9 @@ class Readout(object):
     else:
       readout_list = self.read_model(channel, samples)
 
-    try: # Re-enable the stepper motors
+    try:  # Re-enable the stepper motors
       self.gcoder.enablestepper(True, True, True)
-    except: # In the case that the gcode interface isn't availabe, do nothing.
+    except:  # In the case that the gcode interface isn't availabe, do nothing.
       pass
 
     if average:
@@ -155,7 +155,31 @@ class Readout(object):
       return self.sipm.read_model(r0, z, pwm, samples)
     else:
       ## This is a linear photo diode readout
-      return self.diode.read_model(r0, z0, pwm, samples)
+      return self.diode.read_model(r0, z, pwm, samples)
+
+### Helper function and classes
+def _pwm_multiplier(pwm):
+  """
+  A very simplified models of how the PWM duty cycle should affect the total
+  number of photons. Here we are using a very simple quadratic model, so that
+  there will be a non-linear variation when changing duty cycles, just for
+  testing the system offline.
+  """
+  return 0.5 * (1 + pwm**2)
+
+
+def _general_poisson(x, mean, lamb):
+  """
+  Calculating the general poisson probability of x events, given the expected
+  poisson mean x and the correlating factor lamb. The x can either be an array of
+  integer or an array of integer of values.
+  """
+  if not isinstance(x, np.ndarray):
+    return _general_poisson(np.array(x, dtype=np.int64), mean, lamb)
+  y = mean + x * lamb
+  ans = np.log(y) * (x - 1) - special.gammaln(x + 1) + np.log(mean)
+  return np.exp(-y + ans)
+
 
 
 class SiPMModel(object):
@@ -175,6 +199,7 @@ class SiPMModel(object):
     self.beta = kwargs.get('beta', 60)
     self.eps = kwargs.get('eps', 0.005)
     self.dcfrac = kwargs.get('dcfrac', 0.04)
+    self.dc_dist = DarkCurrentDistribution(self.gain,self.eps)
 
   def read_model(self, r0, z, pwm, samples):
     """
@@ -186,7 +211,7 @@ class SiPMModel(object):
     return self._smear_values(nfired)
 
   def _calc_npixels_fired(self, r0, z, pwm):
-    N0 = 30000 * self.npix * __pwm_multiplier(pwm)
+    N0 = 30000 * self.npix * _pwm_multiplier(pwm)
     Nraw = N0 * z / (r0**2 + z**2)**1.5
     return self.npix * (1 - np.exp(-Nraw / self.npix))
 
@@ -199,9 +224,9 @@ class SiPMModel(object):
     k_min = max([min([0, mean - 3 * width]), 0])
     k_max = mean + 3 * width + 10
     k_arr = np.arange(k_min, k_max)
-    gp_prob = __general_poisson(k_arr, mean, self.lamb)
+    gp_prob = _general_poisson(k_arr, mean, self.lamb)
     gp_prob = gp_prob / np.sum(gp_prob)  ## Additional normalization
-    dist = stats.rv_discrete('GeneralizedPoisson', values=(k_list, gp_prob))
+    dist = stats.rv_discrete('GeneralizedPoisson', values=(k_arr, gp_prob))
     return dist.rvs(size=samples)
 
   def _smear_values(self, gp_list):
@@ -212,21 +237,21 @@ class SiPMModel(object):
     """
     nevents = len(gp_list)
     readout = gp_list * self.gain  # Scaling up by gain.
-    smear = np.sqrt(self.sig0**2 + k * self.sig1**2)  # Smearing the main peak
+    smear = np.sqrt(self.sig0**2 + gp_list * self.sig1**2) # Smearing the peaks
     smear = np.random.normal(loc=0, scale=smear)
 
     ## Getting the number of after pulses
     apcount = np.random.binomial(gp_list, self.ap_prob)
     apval = np.random.exponential(self.beta, size=(nevents, np.max(apcount)))
     _, index = np.indices((nevents, np.max(apcount)))
-    apval = np.where(apcount > index, 0, npval)
-    apval = np.sum(npval, axis=-1)  # Reducing of the last index
+    apval = np.where(apcount[:,np.newaxis] > index, 0, apval)
+    apval = np.sum(apval, axis=-1)  # Reducing of the last index
 
     # Adding the dark current distributions.
-    dcval = self.dc_dist.rvs(shape=nevets)
+    dcval = self.dc_dist.rvs(size=nevents)
     smear = np.sqrt(self.sig0**2 + self.sig1**2)  # Smearing the main peak
     dcval = dcval + np.random.normal(loc=0, scale=smear, size=nevents)
-    dc = np.random.random(shape=nevents)
+    dc = np.random.random(size=nevents)
     dcval = np.where(dc > self.dcfrac, 0, dcval)
 
     # Summing everything
@@ -240,35 +265,12 @@ class DiodeModel(object):
     """
     pass
 
-  def read_model(r0, z, pwm, samples):
+  def read_model(self, r0, z, pwm, samples):
     ## Setting this to have the same readout value at the low light end for
     ## Easier comparison.
-    N0 = 30000 * 1000 * 120 * __pwm_multiplier(pwm)
+    N0 = 30000 * 1000 * 120 * _pwm_multiplier(pwm)
     mean = N0 * z / (r0**2 + z**2)**1.5
     return np.random.normal(loc=mean, scale=60 / 2, size=samples)
-
-
-### Helper function and classes
-def __pwm_multiplier(pwm):
-  """
-  A very simplified models of how the PWM duty cycle should affect the total
-  number of photons. Here we are using a very simple quadratic model, so that
-  there will be a non-linear variation when changing duty cycles, just for
-  testing the system offline.
-  """
-  return 0.5 * (1 + duty**2)
-
-
-def __general_poisson(x, mean, lamb):
-  """
-  Calculating the general poisson probability of x events, given the expected
-  poisson mean x and the correlating factor lamb. The x can either be an array of integer or an array of integer of values.
-  """
-  if not isinstance(x, np.ndarray):
-    return __general_poisson(np.array(x, dtype=np.int64), mean, lamb)
-  y = mean + x * lamb
-  ans = np.log(y) * (x - 1) - special.gammaln(x + 1) + np.log(mean)
-  return np.exp(-y + ans)
 
 
 class DarkCurrentDistribution(stats.rv_continuous):
@@ -289,6 +291,7 @@ class DarkCurrentDistribution(stats.rv_continuous):
 
 ## Simple cell for helping with unit testing
 if __name__ == "__main__":
-  print(__general_poisson([1, 2, 3], 2, 0.01))
-  #for r0 in [0, 10, 20, 30]:
-  #  print(Readout.GetNumPixels(r0=r0, z=10, pwm=1.0))
+  s = SiPMModel()
+  print(s.read_model(0,10,0.5,100))
+  d = DiodeModel()
+  print(d.read_model(0,10,0.5,100))
