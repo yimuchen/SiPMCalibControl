@@ -1,15 +1,18 @@
-import cmod.visual as vis
 import time
-import cv2
+import cv2 as cv
+import numpy as np
+import matplotlib.pyplot as plt
 
-myvis = vis.Visual()
-myvis.init_dev("/dev/video0")
-time.sleep(1)
-for i in range(100000):
-  latest = myvis.get_latest()
-  image = myvis.get_image()
-  cv2.imshow('image',image )
-  cv2.waitKey(1)
-  time.sleep(0.01)
+import visual as vis
 
-cv2.destroyAllWindows()
+vis.current_image_bytes()
+
+
+#image = cv.imread("InFocus.jpg")
+#image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+#lap = cv.Laplacian(image, cv.CV_64F, ksize=5 )
+#hist, edges = np.histogram(np.ndarray.flatten(lap),bins=40)
+#plt.hist(np.ndarray.flatten(lap),bins=edges)
+#plt.yscale('log')
+#plt.savefig("infocus_lap.pdf")
+#print(lap)

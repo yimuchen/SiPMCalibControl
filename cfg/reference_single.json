@@ -4,9 +4,9 @@
   "board id": "",
   "detectors": {
     "-100" : {
-      "mode": 1,
+      "mode": 3,
       "channel" : 0,
-      "default coordinates": [50,50]
+      "default coordinates": [60,115]
     }
   }
 }
