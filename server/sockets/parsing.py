@@ -47,6 +47,20 @@ def terminal_input(socketio, msg):
   terminal_passthrough_input(socketio, msg)
 
 
+def resend_sync(socketio, msg):
+  """
+  Request for resending a sync signal
+  """
+  if msg == 'state':
+    sync_system_state(socketio, session.state)
+  elif msg == 'tileboard':
+    sync_tileboard_type(socketio)
+  elif msg == 'progress':
+    sync_calib_progress(socketio)
+  else:
+    print('Unrecognized request')
+
+
 def run_action(socketio, msg):
   """
   Processing of user action input. The whole action will wrapped in a try

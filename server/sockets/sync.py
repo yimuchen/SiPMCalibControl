@@ -22,6 +22,7 @@ from .report import *
 import time
 import select
 import threading
+import ctlcmd.cmdbase as cmdbase
 
 
 def send_sync_signal(socketio, sync_id, msg):
@@ -48,14 +49,13 @@ def run_single_cmd(socketio, cmd):
   # static variable to check if command finished.
   run_single_cmd.is_running = True
 
-  def run_with_save(line):
+  def run_with_save(cmd):
     "A thin wrapper function for running the line."
-    session.run_results = session.run_single_cmd(line)
     cmd = session.cmd.precmd(cmd)
     sig = session.cmd.onecmd(cmd)
     sig = session.cmd.postcmd(sig, cmd)
     session.cmd.stdout.flush()  # Flushing the output.
-    session.run_results = sig
+    session.run_results = session.cmd.last_cmd_status
 
   def update_loop():
     while run_single_cmd.is_running:
@@ -81,7 +81,7 @@ def run_single_cmd(socketio, cmd):
   ## One last update to ensure that things have finished.
   sync_cmd_progress(socketio,
                     done=True,
-                    error=session.run_results != session.cmd.get.EXIT_SUCCESS)
+                    error=session.run_results != cmdbase.controlcmd.EXIT_SUCCESS)
   sync_system_state(socketio, prev_state)
   return session.run_results
 
@@ -99,7 +99,7 @@ def sync_cmd_progress(socketio, done=False, error=False):
   line character can be found here: https://stackoverflow.com/questions/46258499/
   how-to-read-the-last-line-of-a-file-in-python
   """
-  pattern = re.compile(r'.*Progress\s*\[\s*(\d+)\/\s*(\d+)\].*')
+  pattern = re.compile(r'.*\[\s*(\d+)\/\s*(\d+)\]\[.....%\].*')
 
   def emit(x):
     send_sync_signal(socketio, 'sync-cmd-progress', x)
@@ -112,6 +112,10 @@ def sync_cmd_progress(socketio, done=False, error=False):
       emit([1, 1])
       return
 
+  if session.state != session.STATE_EXEC_CMD:
+    emit([1,1])
+    return
+
   line = ''
   with open(session.session_output_monitor.name, 'rb') as f:
     f.seek(-2, os.SEEK_END)
@@ -122,14 +126,11 @@ def sync_cmd_progress(socketio, done=False, error=False):
 
     line = f.readline().decode()  # Getting the last line in the output.
 
-  if not 'Progress' in line:
-    emit([0, 1])
-  else:
-    match = pattern.match(line)
-    if match and len(match.groups()) == 2:
-      emit([int(match[1]), int(match[2])])
-    else:  # Bad matching, don't send new update signal.
-      pass  ## Don't try to wipe or update
+  match = pattern.match(line)
+  if match and len(match.groups()) == 2:
+    emit([int(match[1]), int(match[2])])
+  else:  # Bad matching, don't send new update signal.
+    pass  ## Don't try to wipe or update
 
 
 def sync_calib_progress(socketio):
@@ -137,6 +138,7 @@ def sync_calib_progress(socketio):
   Passing the signal to the client that the current calibration status has been
   updated.
   """
+  print(session.progress_check)
   send_sync_signal(socketio, 'sync-calib-progress', session.progress_check)
 
 

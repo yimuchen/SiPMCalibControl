@@ -10,21 +10,21 @@
  * Notice that the styling will be handled by the progress_view function as there
  * are a lot of
  */
-var board_layout = {} // Global object for board layout
+var board_layout = {}; // Global object for board layout
 
 // constant flags for the return status of a code
-const CMD_PENDING = 1
-const CMD_RUNNING = 2
-const CMD_COMPLETE = 0
-const CMD_ERROR = -1
+const CMD_PENDING = 1;
+const CMD_RUNNING = 2;
+const CMD_COMPLETE = 0;
+const CMD_ERROR = 3;
 
 const calibration_update_interval = 1000; // Update interval in milliseconds
 
 // Processes flag that can be
-const plot_processes = ['zscan', 'lowlight', 'lumialign'];
-const can_rerun_process = ['zscan', 'lowlight'];
-const can_extend_process = ['zscan', 'lowlight'];
-const all_processes = ['vhscan', 'visalign', 'zscan', 'lowlight', 'lumialign'];
+const plot_processes = ["zscan", "lowlight", "lumialign"];
+const can_rerun_process = ["zscan", "lowlight"];
+const can_extend_process = ["zscan", "lowlight"];
+const all_processes = ["vhscan", "visalign", "zscan", "lowlight", "lumialign"];
 
 /**
  * This is largely split into 2 parts:
@@ -35,10 +35,10 @@ const all_processes = ['vhscan', 'visalign', 'zscan', 'lowlight', 'lumialign'];
  * Because new elements can be added on by request, we are leaving this function
  * as a list of other function.
  */
-function make_tileboard_dectector_html() {
+function make_tileboard_detector_html() {
   $.ajax({
-    dataType: 'json',
-    mimeType: 'application/json',
+    dataType: "json",
+    mimeType: "application/json",
     url: `report/tileboard_layout`,
     success: function (json) {
       board_layout = json;
@@ -46,9 +46,13 @@ function make_tileboard_dectector_html() {
       make_detector_summary_html();
     },
     error: function () {
-      console.log('Failed to get board layout');
-    }
+      console.log("Failed to get board layout");
+    },
   });
+}
+
+function clear_tileboard_detector_html() {
+  $(`#tile-layout-svg`).html(``);
 }
 
 /**
@@ -67,15 +71,12 @@ function make_tileboard_dectector_html() {
  */
 function make_tileboard_html() {
   $.ajax({
-    async: false,
-    // Forcing to be asynchronous because future routines relies on this to be
-    // completed.
-    dataType: 'json',
-    mimeType: 'application/json',
+    dataType: "json",
+    mimeType: "application/json",
     url: `geometry/${board_layout.boardtype}`,
     success: make_tileboard_segment_html,
-    error: make_tileboard_default_html
-  })
+    error: make_tileboard_default_html,
+  });
 }
 
 // couple of constant variables to help with the conversion of the data scaling
@@ -92,11 +93,11 @@ function make_tileboard_default_html() {
   const scale = canvas_target / x_max;
 
   let shape_html = ``;
-  let text_html = ``
+  let text_html = ``;
   if (Object.keys(board_layout.detectors).length > 0) {
     for (var detid in board_layout.detectors) {
-      const x_raw = board_layout.detectors[detid]['orig'][0];
-      const y_raw = board_layout.detectors[detid]['orig'][1];
+      const x_raw = board_layout.detectors[detid]["orig"][0];
+      const y_raw = board_layout.detectors[detid]["orig"][1];
 
       const x = x_raw * scale + corner_offset;
       const y = x_max - y_raw * scale + corner_offset;
@@ -105,22 +106,21 @@ function make_tileboard_default_html() {
                     x="${x - 20}" y="${y - 20}" width="40" height="40"
                     id="tile-layout-${detid}"
                     onclick="show_det_summary(${detid})"
-                    />` ;
+                    />`;
       text_html += `<text x="${x}" y="${y}"
                    text-anchor="middle"
                    onclick="show_det_summary(${detid})"
-                  >${detid}</text>`
+                  >${detid}</text>`;
     }
   } else {
     text_html = `<text x="275" y="275"
                        text-anchor="middle">
                    NO TILEBOARD LOADED
-                 </text>`
+                 </text>`;
   }
 
   $(`#tile-layout-svg`).html(`${shape_html} ${text_html}`);
 }
-
 
 /**
  * Generating the SVG path string required for a regular tile board segment.
@@ -139,8 +139,8 @@ function make_tileboard_default_html() {
  * responsible for ensuring the offsets are handles properly.
  */
 function make_regular_segment(r1, r2, t1, t2, ox, oy) {
-  t2 = -(t1 + t2) * Math.PI / 180;
-  t1 = -t1 * Math.PI / 180;
+  t2 = (-(t1 + t2) * Math.PI) / 180;
+  t1 = (-t1 * Math.PI) / 180;
   let x1 = ox + r1 * Math.cos(t1);
   let y1 = oy + r1 * Math.sin(t1);
   let x2 = ox + r1 * Math.cos(t2);
@@ -167,7 +167,7 @@ function make_tileboard_segment_html(tileboard_json) {
 
   let min = 100000;
   let max = 0;
-  for (const detid in tileboard_json.dets) {
+  for (const detid of tileboard_json.dets) {
     min = Math.min(tileboard_json.dets[detid][1], min);
     max = Math.max(tileboard_json.dets[detid][2], max);
   }
@@ -179,39 +179,43 @@ function make_tileboard_segment_html(tileboard_json) {
   // object is centered on the canvas
   const scale = 1.0;
   const offset_x = max * Math.sin(4 * angle * deg) * scale + corner_offset;
-  const offset_y = min * Math.cos(4 * angle * deg) * scale + canvas_target
-    + corner_offset;
+  const offset_y =
+    min * Math.cos(4 * angle * deg) * scale + canvas_target + corner_offset;
 
   // Main loop for plotting all the objects.
-  for (detid in tileboard_json.dets) {
+  for (const detid of tileboard_json.dets) {
     // Getting the various parameters
     const det = tileboard_json.dets[detid];
-    const column = det[0]
-    const inner = det[1]
-    const outer = det[2]
+    const column = det[0];
+    const inner = det[1];
+    const outer = det[2];
     const det_roffset = det.length >= 4 ? det[3] : 0;
     const det_aoffset = det.length >= 5 ? det[4] : 0;
 
     // Getting hte plot variables.
     const t1 = 90 + (8 - column - 5) * angle;
     const path_str = make_regular_segment(
-      outer * scale, inner * scale, // The radii information,
-      t1, angle,
-      offset_x, offset_y);
+      outer * scale,
+      inner * scale, // The radii information,
+      t1,
+      angle,
+      offset_x,
+      offset_y
+    );
     new_html += `<path
                   id="tile-layout-${detid}"
                   d="${path_str}"
                   onclick="show_det_summary(${detid})"
-                  class=""/>\n`
+                  class=""/>\n`;
 
     // Adding text labeling to help with clarity
-    const r_det = (inner + outer) / 2 + det_roffset
+    const r_det = (inner + outer) / 2 + det_roffset;
     const a_det = -(t1 + angle / 2 + det_aoffset);
 
     const x = r_det * scale * Math.cos(a_det * deg) + offset_x;
     const y = r_det * scale * Math.sin(a_det * deg) + offset_y;
 
-    new_html += `<text x="${x}" y="${y}" text-anchor="middle">${detid}</text>`
+    new_html += `<text x="${x}" y="${y}" text-anchor="middle">${detid}</text>`;
   }
 
   $(`#tile-layout-svg`).html(new_html);
@@ -230,13 +234,13 @@ function make_tileboard_segment_html(tileboard_json) {
 function make_detector_summary_html() {
   let coordinate_html = ``;
   let plot_html = ``;
-  for (var detid in board_layout.detectors) {
+  for (const detid in board_layout.detectors) {
     coordinate_html += make_detector_coordinate_html(detid);
     plot_html += make_detector_plot_html(detid);
   }
 
-  $('#single-det-summary').html(coordinate_html);
-  $('#det-plot-and-figure').html(plot_html);
+  $("#single-det-summary").html(coordinate_html);
+  $("#det-plot-and-figure").html(plot_html);
 }
 
 /**
@@ -279,13 +283,13 @@ function make_detector_coordinate_html(detid) {
                    </div>`;
 
   let prog_html = ``;
-  for (const tag in all_processes) {
+  for (const tag of all_processes) {
     prog_html += `<div class="input-row">
                     <span class="input-name" id="process-${tag}"></span >
                     <span class="input-units">${process_full_name(tag)}</span>
                     ${check_rerun_button(detid, tag)}
                     ${check_extend_button(detid, tag)}
-                  </div>`
+                  </div>`;
   }
 
   return `<div id="single-det-summary-${detid}" class="hidden">
@@ -293,7 +297,6 @@ function make_detector_coordinate_html(detid) {
               ${coord} ${prog_html}
             </div>
           </div>`;
-
 }
 
 /**
@@ -308,9 +311,8 @@ function check_rerun_button(detid, tag) {
                       onclick="rerun_single('${tag}','${detid}', false)"
                       disabled>
               Rerun</button>
-            </span>`
-  }
-  else {
+            </span>`;
+  } else {
     return ``;
   }
 }
@@ -327,7 +329,7 @@ function check_extend_button(detid, tag) {
                       onclick="rerun_single('${tag}','${detid}', true)"
                       disabled>
               Extend </button>
-            </span>`
+            </span>`;
   } else {
     return ``;
   }
@@ -338,12 +340,18 @@ function check_extend_button(detid, tag) {
  */
 function process_full_name(tag) {
   switch (tag) {
-    case 'vhscan': return 'Visual Matrix';
-    case 'visalign': return 'Visual alignment';
-    case 'zscan': return 'Intensity scan';
-    case 'lowlight': return 'Low light profile';
-    case 'lumialign': return 'Luminosity alignment';
-    default: return 'Custom';
+    case "vhscan":
+      return "Visual Matrix";
+    case "visalign":
+      return "Visual alignment";
+    case "zscan":
+      return "Intensity scan";
+    case "lowlight":
+      return "Low light profile";
+    case "lumialign":
+      return "Luminosity alignment";
+    default:
+      return "Custom";
   }
 }
 
@@ -351,7 +359,7 @@ function detector_plot_id(detid, tag) {
   return `single-det-summary-plot-${detid}-${tag}`;
 }
 
-function detector_visalign_img_id(det) {
+function detector_visalign_img_id(detid) {
   return `single-det-summary-plot-${detid}-visalign-img`;
 }
 
@@ -359,8 +367,8 @@ function detector_visalign_img_id(det) {
  * Making the dummy detector HTML plot DOM objects
  */
 function make_detector_plot_html(detid) {
-  let plot_html = ``
-  for (const tag in plot_processes) {
+  let plot_html = ``;
+  for (const tag of plot_processes) {
     plot_html += `<div class="plot"
                        id="${detector_plot_id(detid, tag)}">
                   </div>`;
@@ -374,7 +382,7 @@ function make_detector_plot_html(detid) {
                      src="static/icon/notdone.jpg"/>
               </div>
             </div>
-          </div>`
+          </div>`;
 }
 
 /**
@@ -389,7 +397,7 @@ function update_tileboard_coordinates() {
 
   function make_coordinate_string(detid, tag) {
     if (board_layout.detectors[detid][tag][0] < 0) {
-      return 'NOT DONE';
+      return "NOT DONE";
     } else {
       const x = board_layout.detectors[detid][tag][0].toFixed(1);
       const y = board_layout.detectors[detid][tag][1].toFixed(1);
@@ -397,56 +405,54 @@ function update_tileboard_coordinates() {
     }
   }
 
-  for (var detid in board_layout.detectors) {
+  for (const detid of board_layout.detectors) {
     var cont = $(`#single-det-summary-${detid}`);
-    cont.find('#coord-orig').html(make_coordinate_string(detid, 'orig'));
-    cont.find('#coord-lumi').html(make_coordinate_string(detid, 'lumi'));
-    cont.find('#coord-vis').html(make_coordinate_string(detid, 'vis'));
+    cont.find("#coord-orig").html(make_coordinate_string(detid, "orig"));
+    cont.find("#coord-lumi").html(make_coordinate_string(detid, "lumi"));
+    cont.find("#coord-vis").html(make_coordinate_string(detid, "vis"));
   }
 }
 
-
-
 function show_det_summary(detid) {
   // Showing the text based detector part.
-  $('#single-det-summary').children().each(function () {
-    $(this).addClass('hidden');
-  });
+  $("#single-det-summary")
+    .children()
+    .each(function () {
+      $(this).addClass("hidden");
+    });
 
-  $('#det-plot-and-figure').children().each(function () {
-    $(this).addClass('hidden');
-  })
+  $("#det-plot-and-figure")
+    .children()
+    .each(function () {
+      $(this).addClass("hidden");
+    });
 
-  $('#single-det-summary')
+  $("#single-det-summary")
     .children(`#single-det-summary-${detid}`)
-    .removeClass('hidden');
+    .removeClass("hidden");
 
-  $('#det-plot-and-figure')
+  $("#det-plot-and-figure")
     .children(`#det-plot-container-${detid}`)
-    .removeClass('hidden');
+    .removeClass("hidden");
 
   // Requesting the plots
-  for (tag in plot_processes) {
+  for (const tag of plot_processes) {
     divid = detector_plot_id(detid, tag);
     // translation
-    type = tag == 'lowlight' ? 'hist' :
-      tag == 'visalign' ? 'xyz' :
-        tag == 'zscan' ? 'zscan' :
-          '';
-    request_plot_by_detid(detid, type, divid);
+    request_plot_by_detid(detid, tag, divid);
   }
   // check if visual alignment images have been taken
   $.ajax({
     url: `visualalign/${detid}`,
-    type: 'get',
-    dataType: 'html',
-    async: false,
+    type: "get",
+    dataType: "html",
     success: function (data) {
       console.log("Status: " + status + "\nData: " + data);
       /* creating image */
       $(`#${detector_visalign_img_id(detid)}`).attr(
-        'src', 'data:image/gif;base64,' + data);
+        "src",
+        "data:image/gif;base64," + data
+      );
     },
   });
 }
-

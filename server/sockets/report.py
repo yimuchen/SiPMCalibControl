@@ -30,6 +30,7 @@ def report_system_status():
   over and is typically used for system normality diagnostics. Notice that these
   variables are typically not fully logged in the final data storage.
   """
+  print('status', (datetime.datetime.now()-session.start_time).total_seconds())
   return {
       'start': session.start_time.strftime('%Y/%m/%d/ %H:%M:%S'),
       'time': int(
@@ -131,15 +132,15 @@ def report_file_data(process, filename):
   """
   __default = {}
 
-  ans = {'filename': filename, 'type': process, 'update': False, 'data': None, }
+  ans = {
+      'filename': filename,
+      'type': process,
+      'update': filename in session.cmd.opfile,
+      'data': None,
+  }
 
   try:
     with open(filename, 'r') as f:
-      p = next(iter([x for x in psutil.process_iter() if x.pid == os.getpid()]))
-      u = [x.path for x in p.open_files() if f.name in x.path]
-      # In case there are currently more than 1 file object opening the file.
-      if len(u) > 1:
-        ans['update'] = True
       if process == 'xyz':
         ans['data'] = parse_file_xyz(f)
       elif process == 'hist':
@@ -151,8 +152,14 @@ def report_file_data(process, filename):
       return ans
   except Exception as err:
     print("Error parsing data:", type(err), err)
-    ## Returning the empty JSON in case any parsing went wrong
-    return __default
+    if ans['update']:
+      print('Updating in progress')
+      # If data is currently being written to, return the empty data
+      return ans
+    else:
+      print(filename,session.cmd.opfile)
+      ## Returning the empty JSON in case any parsing went wrong
+      return __default
 
 
 """

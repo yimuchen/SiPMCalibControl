@@ -65,6 +65,7 @@ class Session(object):
         viscmd.visualhscan,  #
         viscmd.visualzscan,  #
         viscmd.visualmaxsharp,  #
+        viscmd.visualsaveframe, #
         #viscmd.visualshowdet, # Do not attempt to create windows
         viscmd.visualcenterdet,  #
         # getset.exit,  # Don't exit like this

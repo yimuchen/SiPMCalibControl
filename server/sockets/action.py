@@ -20,6 +20,7 @@ import subprocess
 import paramiko
 import traceback
 import numpy as np
+import ctlcmd.cmdbase as cmdbase
 
 ## Importing the global objects as well as the various server helper function.
 from . import session
@@ -158,12 +159,9 @@ def run_calib_cmd(socketio, cmd, action, detid):
   set_status(action, detid, session.CMD_RUNNING)
   run_single_cmd(socketio, cmd)
   # Paring the run results:
-  if session.run_results == session.cmd.get.EXIT_SUCCESS:
+  if session.run_results == cmdbase.controlcmd.EXIT_SUCCESS:
     set_status(action, detid, session.CMD_COMPLETE)
-  elif session.run_results == session.cmd.get.TERMINATE_CMD:
-    # If the interupt signal was detected by the command, then set the command
-    # status to error and raise an excpetion to halt all future calibration
-    # commands.
+  elif session.run_results == cmdbase.controlcmd.TERMINATE_CMD:
     set_status(action, detid, session.CMD_ERROR)
     raise RuntimeError('INTERRUPT SIGNAL RAISED')
   else:
@@ -191,7 +189,9 @@ def run_standard_calibration(socketio, msg):
   ## Resetting the cache
   status = prepare_calibration_session(socketio, msg['boardtype'],
                                        msg['boardid'], msg['reference'])
-  if status: return  ## Early exit on setup failure.
+  if status:
+    print("FAILED TO PREPARE CALIBRATION SESSION")
+    return  ## Early exit on setup failure.
 
   ## Defining the expected list of processes.
   prepare_progress_check({
@@ -200,18 +200,24 @@ def run_standard_calibration(socketio, msg):
       'lowlight': session.cmd.board.dets(),
   })
 
+  print("WAITING USER ACTION")
   wait_user_action(socketio, __std_calibration_lighton_msg)
+  print("USER ACTION COMPLETE")
+
 
   # The visual alignment stuff.
+  print('RUNNING VISUAL CALIBARTION')
   set_light('on')
   for detid in session.order_dets:
     line = make_cmd_visualalign(detid)
     run_calib_cmd(socketio, line, 'visalign', detid)
   set_light('off')
+  print('VISUAL CALIBRATION COMPLETE')
 
   wait_user_action(socketio, __std_calibration_lightoff_msg)
 
   ## Running the luminosity part.
+  print("RUNNING LUMINOSITY SCANS")
   for index, detid in enumerate(reversed(session.order_dets)):
     even_line = bool((index % 2) == 0)
     zscan_line = make_cmd_zscan(detid=detid, dense=False, rev=~even_line)
@@ -222,6 +228,7 @@ def run_standard_calibration(socketio, msg):
     else:
       run_calib_cmd(socketio, lowlight_line, 'lowlight', detid)
       run_calib_cmd(socketio, zscan_line, 'zscan', detid)
+  print("EVERYTHING COMPLETE")
 
 
 ## Long message strings are disruptive to code reading are placed here.
@@ -255,7 +262,9 @@ def run_system_calibration(socketio, msg):
   sync_session_type(socketio, session.SESSION_TYPE_SYSTEM)
   sync_tileboard_type(socketio)
   status = prepare_calibration_session(socketio, msg['boardtype'])
-  if status: return
+  if status:
+    print("FAILED TO SETUP CALIBRATION SESSION")
+    return
 
   ## Defining the expected list of process
   prepare_progress_check({
@@ -445,8 +454,11 @@ def prepare_calibration_session(socketio,
   cmd = 'set --boardtype cfg/{dir}/{type}.json'.format(
       dir='standard' if boardid else 'system', type=boardtype)
   cmd += '  --boardid {id}'.format(id=boardid) if boardid else ''
-  status = session.run_single_cmd(cmd)
-  if (status != 0): return status
+  status = run_single_cmd(socketio, cmd)
+  if (status != 0):
+    print("ERROR RUNNING", cmd, "status", status)
+    return status
+  sync_tileboard_type(socketio)
 
   # Initializing the data cache.
   session.calib_session_time = datetime.datetime.now()

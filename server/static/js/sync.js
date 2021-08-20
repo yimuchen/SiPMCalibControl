@@ -21,7 +21,7 @@ const SESSION_TYPE_SYSTEM = 1;
 const SESSION_TYPE_STANDARD = 2;
 
 // progress
-var session_board_type = ''
+var session_board_type = "";
 
 /**
  * Basic function to allow for async functions to sleep for a certain duration.
@@ -29,7 +29,11 @@ var session_board_type = ''
  * https://www.sitepoint.com/delay-sleep-pause-wait/
  */
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function request_sync(msg) {
+  socketio.emit("resend", msg);
 }
 
 /**
@@ -42,34 +46,33 @@ function sleep(ms) {
  *    submitting an ajax request.
  */
 function sync_system_state(new_state) {
-  console.log(`Syncing system state`, new_state);
   session_state = new_state; // updating the raw system state.
 
   // Action button locking if state is not idle
   const lock = session_state != STATE_IDLE;
-  $('.action-button').each(function () {
-    $(this).prop('disabled', lock);
+  $(".action-button").each(function () {
+    $(this).prop("disabled", lock);
   });
 
   // Editing the user action HTML DOM elements
   if (session_state === STATE_WAIT_USER) {
     show_action_column();
-    $('#user-action').removeClass('hidden');
-    $('#user-action-complete').prop('disabled', false);
+    $("#user-action").removeClass("hidden");
+    $("#user-action-complete").prop("disabled", false);
     $.ajax({
-      dataType: 'json',
-      mimeType: 'application/json',
+      dataType: "json",
+      mimeType: "application/json",
       url: `report/useraction`,
       success: function (json) {
-        $('#user-action-msg').html(json);
+        $("#user-action-msg").html(json);
       },
       error: function () {
-        console.log('Failed to get user action message');
+        console.log("Failed to get user action message");
         iterate_status_update();
-      }
+      },
     });
   } else {
-    $('#user-action').addClass('hidden');
+    $("#user-action").addClass("hidden");
   }
 }
 
@@ -77,30 +80,28 @@ function sync_system_state(new_state) {
  * When the calibration session type is updated by the main calibration session.
  */
 function sync_session_type(new_type) {
-  console.log(`Syncing system type`, new_type);
   session_type = new_type;
 
   function clear_comment_fields(id_string) {
-    $(id_string).children('.signoff-comment-lines').html(``);
+    $(id_string).children(".signoff-comment-lines").html(``);
   }
 
   if (session_type == SESSION_TYPE_NONE) {
     clear_display();
-    $('#system-calib-signoff-container').addClass("hidden");
-    $('#standard-calib-signoff-container').addClass("hidden");
-    clear_comment_fields('#system-calib-signoff-container');
-    clear_comment_fields('#standard-calib-signoff-container');
+    $("#system-calib-signoff-container").addClass("hidden");
+    $("#standard-calib-signoff-container").addClass("hidden");
+    clear_comment_fields("#system-calib-signoff-container");
+    clear_comment_fields("#standard-calib-signoff-container");
   } else if (session_type == SESSION_TYPE_STANDARD) {
-    $('#standard-calib-signoff-container').removeClass("hidden");
-    clear_comment_fields('#system-calib-signoff-container');
-    clear_comment_fields('#standard-calib-signoff-container');
+    $("#standard-calib-signoff-container").removeClass("hidden");
+    clear_comment_fields("#system-calib-signoff-container");
+    clear_comment_fields("#standard-calib-signoff-container");
   } else if (session_type == SESSION_TYPE_SYSTEM) {
-    $('#system-calib-signoff-container').removeClass("hidden");
-    clear_comment_fields('#system-calib-signoff-container');
-    clear_comment_fields('#standard-calib-signoff-container');
+    $("#system-calib-signoff-container").removeClass("hidden");
+    clear_comment_fields("#system-calib-signoff-container");
+    clear_comment_fields("#standard-calib-signoff-container");
   }
 }
-
 
 /**
  * Handling of the signal from the settings. This function call the update
@@ -117,11 +118,12 @@ function sync_setting(new_settings) {
  * One is for the current running command progress.
  */
 function sync_cmd_progress(msg) {
-  let complete = msg[0]
-  let total = msg[1]
-  const percent = 100.0 * complete / total;
-  $('#command-progress')
-    .children('.progress-complete').css('width', `${percent}%`);
+  let complete = msg[0];
+  let total = msg[1];
+  const percent = (100.0 * complete) / total;
+  $("#command-progress")
+    .children(".progress-complete")
+    .css("width", `${percent}%`);
 }
 
 /**
@@ -132,15 +134,17 @@ function sync_cmd_progress(msg) {
  */
 function sync_tileboard_type(msg) {
   session_board_type = msg;
-
   // In the case board type is non-trivial setup the document to properly display
   // the a tileboard view elements. These functions are defined in the
   // tileboard_view.js file.
-  if (session_board_type != '') {
+  if (session_board_type != "") {
     make_tileboard_detector_html();
   } else {
     clear_tileboard_detector_html();
   }
+
+  request_sync('state');
+  request_sync('progress');
 }
 
 /**
@@ -148,18 +152,32 @@ function sync_tileboard_type(msg) {
  * required function have been split into the view_tileboard method for better
  * readability. As updating the the progress bars are potentially very taxing on
  * the client side while being rapidly updated on the server side, here we write
- * a very small safe guard.
+ * a very small safe guard. To ensure that the progress updates are performed in
+ * sequence of their arrival time.
  */
+var progress_queue = [];
 var updating_progress = false;
 
-function sync_calib_progress(progress) {
+async function sync_calib_progress(progress) {
+  progress_queue.push(progress); // Pushing the progress to the stack.
+  run_progress_update();
+}
+
+function run_progress_update() {
+  // early exit if and instance of the update function is already running.
   if (updating_progress) {
-    console.log('CALIB PROGRESS', progress);
-  } else {
-    updating_progress = true;
+    return;
+  }
+
+  updating_progress = true;
+  while (progress_queue.length) {
+    progress = progress_queue[0];
+    progress_queue.shift();
+
+    // Functions defined in view_progress.js
     progress_update_bar(progress);
     progress_update_table(progress);
     progress_update_det_summary(progress);
-    updating_progress = false;
   }
+  updating_progress = false;
 }

@@ -54,7 +54,7 @@ async function request_plot_by_file(filename, type, id) {
       if (!jQuery.isEmptyObject(json)) {
         parse_plot_data(json, id);
       } else {
-        console.log('no data available');
+        console.log(`no data available for ${filename}`);
       }
     },
     error: function () {
@@ -72,7 +72,7 @@ async function request_plot_by_detid(detid, type, id) {
       if (!jQuery.isEmptyObject(json)) {
         parse_plot_data(json, id);
       } else {
-        console.log('no data available');
+        console.log(`no data available for ${detid}, ${type}`);
       }
     },
     error: function () {
@@ -128,9 +128,9 @@ async function parse_plot_data(data, div_id) {
         console.log('Unknown plot type', type);
     }
   }
-  await sleep(500);
+  await sleep(1000);
   if (update) { // Rerunning the plot request
-    request_plot_by_file(filename, plottype, div_id);
+    request_plot_by_file(filename, type, div_id);
   }
 }
 

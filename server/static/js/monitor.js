@@ -5,7 +5,7 @@
  * script. Except with potential time dependent storage.
  */
 var session_status = {
-  start: '',
+  start: "",
   time: [],
   temperature1: [],
   temperature2: [],
@@ -17,19 +17,18 @@ var session_status = {
 /**
  * Global variable for progress monitoring
  */
-var progress = {}
-
+var progress = {};
 
 function clear_display(msg) {
-  $('#display-message').html('');
-  $('#tile-layout-grid').html('');
-  $('#single-det-summary').html('');
-  $('#det-details-content').html('');
-  $('#det-plot-and-figure').html('');
+  $("#display-message").html("");
+  $("#tile-layout-grid").html("");
+  $("#single-det-summary").html("");
+  $("#det-details-content").html("");
+  $("#det-plot-and-figure").html("");
 }
 
 function display_message(msg) {
-  $('#display-message').html(msg);
+  $("#display-message").html(msg);
 }
 
 /**
@@ -45,10 +44,12 @@ var status_update_flag = false;
 const status_update_interval = 500;
 
 async function run_status_update() {
-  if (!status_update_flag) { return; } // Early exit
+  if (!status_update_flag) {
+    return;
+  } // Early exit
   $.ajax({
-    dataType: 'json',
-    mimeType: 'application/json',
+    dataType: "json",
+    mimeType: "application/json",
     url: `report/status`,
     success: async function (json) {
       // Storing the object results
@@ -69,10 +70,10 @@ async function run_status_update() {
       run_status_update();
     },
     error: async function () {
-      console.log('status update failed');
-      await sleep(status_update_interval)
+      console.log("status update failed");
+      await sleep(status_update_interval);
       run_status_update();
-    }
+    },
   });
 }
 
@@ -80,17 +81,28 @@ async function run_status_update() {
  * Updating the uptime display container:
  */
 function status_update_time() {
-  const time = parseInt(session_status.time);
-  const time_hour = parseInt(time / 3600).toString().padStart(2, 0);
-  const time_min = parseInt((time / 60) % 60).toString().padStart(2, 0);
-  const time_sec = parseInt(time % 60).toString().padStart(2, 0);
-  const state_str = session_state == STATE_IDLE ? `IDLE` :
-    session_state == STATE_EXEC_CMD ? `EXECUTING COMMAND` :
-      session_state == STATE_RUN_PROCESS ? `PROCESSING` :
-        session_state == STATE_WAIT_USER ? `WAITING UESR ACTION` :
-          ``;
+  const time = parseInt(session_status.time[session_status.time.length - 1]);
+  const time_hour = parseInt(time / 3600)
+    .toString()
+    .padStart(2, 0);
+  const time_min = parseInt((time / 60) % 60)
+    .toString()
+    .padStart(2, 0);
+  const time_sec = parseInt(time % 60)
+    .toString()
+    .padStart(2, 0);
+  const state_str =
+    session_state == STATE_IDLE
+      ? `IDLE`
+      : session_state == STATE_EXEC_CMD
+      ? `EXECUTING COMMAND`
+      : session_state == STATE_RUN_PROCESS
+      ? `PROCESSING`
+      : session_state == STATE_WAIT_USER
+      ? `WAITING UESR ACTION`
+      : ``;
   $(`#up-time`).html(`Uptime: ${time_hour}:${time_min}:${time_sec}`);
-  $('#up-time-since').html(
+  $("#up-time-since").html(
     `Session is: ${state_str} </br>
      Since: ${session_status.start}`
   );
@@ -110,46 +122,56 @@ function status_update_monitor_data() {
     session_status.voltage2.shift();
   }
 
-  temperature_data = [{
-    x: session_status.time,
-    y: session_status.temperature1,
-    type: 'scatter',
-    name: 'Pulser'
-  }, {
-    x: session_status.time,
-    y: session_status.temperature2,
-    type: 'scatter',
-    name: 'Tileboard'
-  }];
+  temperature_data = [
+    {
+      x: session_status.time,
+      y: session_status.temperature1,
+      type: "scatter",
+      name: "Pulser",
+    },
+    {
+      x: session_status.time,
+      y: session_status.temperature2,
+      type: "scatter",
+      name: "Tileboard",
+    },
+  ];
 
-  voltage_data = [{
-    x: session_status.time,
-    y: session_status.voltage1,
-    type: 'scatter',
-    name: 'Pulser board Bias'
-  }, {
-    x: session_status.time,
-    y: session_status.voltage2,
-    type: 'scatter',
-    name: 'Secondary'
-  }];
+  voltage_data = [
+    {
+      x: session_status.time,
+      y: session_status.voltage1,
+      type: "scatter",
+      name: "Pulser board Bias",
+    },
+    {
+      x: session_status.time,
+      y: session_status.voltage2,
+      type: "scatter",
+      name: "Secondary",
+    },
+  ];
 
   if ($(`#temperature-plot`).length != 0) {
-    Plotly.newPlot('temperature-plot',
+    Plotly.newPlot(
+      "temperature-plot",
       temperature_data,
       temperature_plot_layout(),
-      layout_default_config);
+      layout_default_config
+    );
   } else {
-    console.log('temperature-plot DIV does not exist!');
+    console.log("temperature-plot DIV does not exist!");
   }
 
-  if ($('#voltage-plot').length != 0) {
-    Plotly.newPlot('voltage-plot',
+  if ($("#voltage-plot").length != 0) {
+    Plotly.newPlot(
+      "voltage-plot",
       voltage_data,
       voltage_plot_layout(),
-      layout_default_config);
+      layout_default_config
+    );
   } else {
-    console.log('voltage-plot DIV does nto exist!')
+    console.log("voltage-plot DIV does nto exist!");
   }
 }
 
@@ -164,32 +186,40 @@ function temperature_plot_layout() {
       nticks: 10,
       range: [
         session_status.time[0],
-        Math.max(parseInt(session_status.time[0]) + 10,
-          parseInt(session_status.time[session_status.time.length - 1]) + 0.1)
-      ]
+        Math.max(
+          parseInt(session_status.time[0]) + 10,
+          parseInt(session_status.time[session_status.time.length - 1]) + 0.1
+        ),
+      ],
     },
     yaxis: {
       title: "Temperature [°C]",
       range: [
-        Math.min(15, Math.min(...session_status.temperature1),
-          Math.min(...session_status.temperature2)),
-        Math.max(24, Math.max(...session_status.temperature1) + 4,
-          Math.max(...session_status.temperature2) + 4)
-      ]
+        Math.min(
+          15,
+          Math.min(...session_status.temperature1),
+          Math.min(...session_status.temperature2)
+        ),
+        Math.max(
+          24,
+          Math.max(...session_status.temperature1) + 4,
+          Math.max(...session_status.temperature2) + 4
+        ),
+      ],
     },
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
+    paper_bgcolor: "rgba(0,0,0,0)",
+    plot_bgcolor: "rgba(0,0,0,0)",
     margin: {
-      l: '40',
-      r: '5',
-      b: '40',
-      t: '10',
-      pad: 0
+      l: "40",
+      r: "5",
+      b: "40",
+      t: "10",
+      pad: 0,
     },
     legend: {
       x: 0.5,
-      y: 0.9
-    }
+      y: 0.9,
+    },
   };
 }
 
@@ -204,34 +234,36 @@ function voltage_plot_layout() {
       nticks: 10,
       range: [
         session_status.time[0],
-        Math.max(parseInt(session_status.time[0]) + 10,
-          parseInt(session_status.time[session_status.time.length - 1]) + 0.1)
-      ]
+        Math.max(
+          parseInt(session_status.time[0]) + 10,
+          parseInt(session_status.time[session_status.time.length - 1]) + 0.1
+        ),
+      ],
     },
     yaxis: {
       title: "Voltage [mV]",
-      range: [0, 5000]
+      range: [0, 5000],
     },
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
+    paper_bgcolor: "rgba(0,0,0,0)",
+    plot_bgcolor: "rgba(0,0,0,0)",
     margin: {
-      l: '60',
-      r: '5',
-      b: '40',
-      t: '10',
-      pad: 0
+      l: "60",
+      r: "5",
+      b: "40",
+      t: "10",
+      pad: 0,
     },
     legend: {
       x: 0.5,
-      y: 0.9
-    }
+      y: 0.9,
+    },
   };
 }
 
 const layout_default_config = {
-  'displayModeBar': false,
-  'responsive': true
-}
+  displayModeBar: false,
+  responsive: true,
+};
 
 /**
  * Two parts needs to be updated regarding the values. One is a text based
@@ -246,22 +278,21 @@ function status_update_coordinates() {
     `Gantry coordinates: (${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)})`
   );
 
-  var new_html = ``
+  var new_html = ``;
   new_html += `<polyline points="${x + 20},${510 - y}
                                    ${x + 25},${525 - y}
                                    ${x + 30},${510 - y}"
                   stroke="red"
                   fill="red"
-                  stroke-width="1px"/>`
+                  stroke-width="1px"/>`;
   new_html += `<polyline points="548,${520 - z}
                                    538,${525 - z}
                                    548,${530 - z}"
                   stroke="red"
                   fill="red"
-                  stroke-width="1px"/>`
+                  stroke-width="1px"/>`;
 
   $("#tile-layout-gantry-svg").html(new_html);
-
 }
 
 /**
@@ -269,7 +300,7 @@ function status_update_coordinates() {
  * out all cached monitor data.
  */
 function clear_status_data() {
-  session_status.start = '';
+  session_status.start = "";
   session_status.time = [];
   session_status.temperature1 = [];
   session_status.temperature2 = [];
@@ -290,13 +321,14 @@ function update_tileboard_types() {
 
 function update_tileboard_list(list_type) {
   $.ajax({
-    dataType: 'json',
-    mimeType: 'application/json',
+    dataType: "json",
+    mimeType: "application/json",
     url: `report/${list_type}boards`,
-    async: false,
     success: function (json) {
-      let new_html = list_type != 'standard' ? `` :
-        `<div class="input-row">
+      let new_html =
+        list_type != "standard"
+          ? ``
+          : `<div class="input-row">
                       <span class="input-name">Board ID</span>
                       <span class="input-units"></span>
                       <input type="text"
@@ -305,7 +337,7 @@ function update_tileboard_list(list_type) {
                     </div>`;
       let first = true;
       for (var boardtype in json) {
-        const prefix = first ? 'Board type' : '';
+        const prefix = first ? "Board type" : "";
         first = false;
         new_html += `
           <div class="input-row">
@@ -314,17 +346,17 @@ function update_tileboard_list(list_type) {
                    name="${list_type}-calibration-boardtype"
                    value="${boardtype}" />
             <span class="input-units">
-              ${json[boardtype]['name']}
-              (${json[boardtype]['number']})
+              ${json[boardtype]["name"]}
+              (${json[boardtype]["number"]})
             </span>
-          </div>`
+          </div>`;
       }
 
       $(`#${list_type}-calibration-boardtype-container`).html(new_html);
     },
     error: function () {
-      console.log(`Failed to update tile board types`)
-    }
+      console.log(`Failed to update tile board types`);
+    },
   });
 }
 
@@ -334,14 +366,13 @@ function update_tileboard_list(list_type) {
  */
 function update_valid_reference() {
   $.ajax({
-    dataType: 'json',
-    mimeType: 'application/json',
+    dataType: "json",
+    mimeType: "application/json",
     url: `report/validreference`,
-    async: false,
     success: function (json) {
       // clearing the html containers for references
-      $('#standard-calibration-boardtype-container')
-        .children('.input-row')
+      $("#standard-calibration-boardtype-container")
+        .children(".input-row")
         .each(function () {
           if ($(this).find("input[name='ref-calibration']").length > 0) {
             $(this).html(``);
@@ -349,9 +380,9 @@ function update_valid_reference() {
         });
 
       // Making the new reference calibration objects
-      let new_html = $('#standard-calibration-boardtype-container').html();
+      let new_html = $("#standard-calibration-boardtype-container").html();
       for (var i = 0; i < json.valid.length; ++i) {
-        const header = i == 0 ? 'Reference' : '';
+        const header = i == 0 ? "Reference" : "";
         const display = json.valid[i];
         new_html += `<div class="input-row">
                        <span class="input-name">${header}</span>
@@ -364,13 +395,13 @@ function update_valid_reference() {
                             ${json.valid[i].boardtype}
                             (${json.valid[i].time})
                           </span>
-                     </div>`
+                     </div>`;
       }
-      $('#standard-calibration-boardtype-container').html(new_html);
+      $("#standard-calibration-boardtype-container").html(new_html);
     },
     error: function () {
-      console.log(`Failed to update reference sessions`)
-    }
+      console.log(`Failed to update reference sessions`);
+    },
   });
 }
 
@@ -378,9 +409,9 @@ function update_valid_reference() {
  * Monitoring the debug processes
  */
 async function monitor_debug(debug_process) {
-  if (debug_process == 'debug_drs') {
-    console.log('Running the debug plot')
-    update_debug_drsplot()
+  if (debug_process == "debug_drs") {
+    console.log("Running the debug plot");
+    update_debug_drsplot();
   }
 
   await sleep(500);
@@ -388,96 +419,5 @@ async function monitor_debug(debug_process) {
   // Continuously update while session is command is still running.
   if (session_state != STATE_IDLE) {
     monitor_debug(debug_process);
-  }
-}
-
-
-/**
- *  updating the drs debugging plot via the cache data stored in the server
- *  session.
- */
-function update_debug_drsplot() {
-  $.ajax({
-    async: false,
-    // Forcing to be asynchronous because future routines relies on this to be
-    // completed.
-    dataType: 'json',
-    mimeType: 'application/json',
-    url: `debug_data/debug_drs`,
-    success: function (json) {
-      console.log('Updating the plot:', json)
-      // Early exit if data format is incorrect or has something wrong.
-      if (!('bincontent' in json && 'binedge' in json && 'rms' in json)) {
-        console.log('Wrong format!')
-        return
-      }
-      make_debug_drsplot(json)
-    },
-    error: function () {
-      console.log('Failed to get debug information');
-    }
-  });
-}
-
-function make_debug_drsplot(data) {
-  const y = data.bincontent;
-  var x = [];
-  for (var i = 0; i < data.bincontent.length; ++i) {
-    x.push((data.binedge[i] + data.binedge[i + 1]) / 2.0);
-  }
-
-  const plot_data = [{
-    x: x,
-    y: y,
-    type: 'bar',
-    mode: 'markers',
-    name: `RMS:${data.rms.toFixed(2)}`,
-    marker: {
-      color: 'rgb(41,55,199)',
-    }
-  }];
-
-  const layout = {
-    autosize: true,
-    xaxis: {
-      title: "Readout value  [mV-ns]",
-      autorange: true
-    },
-    yaxis: {
-      //type: 'log',
-      title: "Events",
-      autorange: true
-    },
-    showlegend: true,
-    legend: {
-      x: 1,
-      y: 1,
-      xanchor: 'right',
-    },
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    bargap: 0,
-    margin: {
-      l: 60,
-      r: 20,
-      b: 40,
-      t: 20,
-      pad: 5
-    }, title: false
-  }
-
-  const plotname = `debug-drs-readout`;
-
-  if ($(`#${plotname}`).length != 0) {
-    // Move to a different function to handle css formatting?
-    $(`#${plotname}`).css('height', '300px');
-    $(`#${plotname}`).css('width', '400px');
-
-    Plotly.newPlot(plotname,
-      plot_data,
-      layout,
-      layout_default_config);
-  } else {
-    console.log("Warning! DIV for plot doesn't exist");
   }
 }

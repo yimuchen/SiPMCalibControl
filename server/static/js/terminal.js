@@ -14,6 +14,7 @@ const term = new Terminal({
 
 var terminal_lock = true;
 
+const DEBUG_TERMINAL = false;
 
 /**
  * Linking the terminal object to the display element by id
@@ -24,7 +25,6 @@ function start_terminal() {
   term.open(document.getElementById("terminal-content"));
   // locking the terminal on start-up
   term.terminal_lock = true;
-
 
   // Sending a signal to refresh the prompt is prompt is available.
   parse_keystroke(String.fromCharCode(1)); // Sending ctl+a
@@ -48,16 +48,20 @@ function parse_keystroke(key) {
     return;
   }
 
-  str = ''
-  for (i = 0; i < key.length; ++i) {
-    str += ' ' + key.charCodeAt(i).toString()
-  }
-  console.log('combination:', str)
 
-  const code = key.charCodeAt(0);// parsing on first character
+  // Generating the helper string to the console to help debug console inputs
+  if (DEBUG_TERMINAL) {
+    str = "";
+    for (i = 0; i < key.length; ++i) {
+      str += " " + key.charCodeAt(i).toString();
+    }
+    // console.log('combination:', str)
+  }
+
+  const code = key.charCodeAt(0); // parsing on first character
   switch (code) {
     case 127: // backspace doesn't trigger backspace character
-      socketio.emit("xterminput", { input: '\b' });
+      socketio.emit("xterminput", { input: "\b" });
       break;
     default:
       socketio.emit("xterminput", { input: key });
@@ -70,23 +74,23 @@ function parse_keystroke(key) {
  */
 function parse_key_response(data) {
   // Parsing output is relatively simple
-  console.log("new output received from server:", data.output);
   term.write(data.output);
-};
+}
 
 /**
  * Terminal locking toggle
  */
 function check_terminal_lock() {
-  if (terminal_lock) { // unlocking the terminal
+  if (terminal_lock) {
+    // unlocking the terminal
     terminal_lock = false;
-    $('#terminal_status').html('TERMINAL IS UNLOCKED');
-    $('#terminal_lock').html('LOCK');
+    $("#terminal_status").html("TERMINAL IS UNLOCKED");
+    $("#terminal_lock").html("LOCK");
     // Getting the prompt in case it wasn't generated.
     parse_keystroke(String.fromCharCode(1));
   } else {
     terminal_lock = true; // locking the terminal
-    $('#terminal_status').html('TERMINAL IS LOCKED');
-    $('#terminal_lock').html('UNLOCK');
+    $("#terminal_status").html("TERMINAL IS LOCKED");
+    $("#terminal_lock").html("UNLOCK");
   }
 }

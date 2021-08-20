@@ -130,6 +130,10 @@ def create_server_flask(debug=False):
   def xterm_input(msg):
     terminal_input(socketio, msg)
 
+  @socketio.on('resend', namespace='/sessionsocket')
+  def resend(msg):
+    resend_sync(socketio, msg)
+
   @socketio.on('run-action-cmd', namespace='/sessionsocket')
   def run_action_cmd_socket(msg):
     run_action(socketio, msg)
