@@ -6,9 +6,9 @@ used to describe coding and programming technical details regarding the control
 software. See the following links for other documentations related to the SiPM
 calibration project:
 
-- Typical user operation documentation: this [twiki page][SiPMCalibTwiki]
-- Documented results for running the system: this [detector note][SiPMCalibDN]
-- Technical details for the analysis program: [here][SiPMCalibAnalysis]
+- Typical user operation documentation: this [twiki page][sipmcalibtwiki]
+- Documented results for running the system: this [detector note][sipmcalibdn]
+- Technical details for the analysis program: [here][sipmcalibanalysis]
 
 ## Contributing to the software
 
@@ -23,7 +23,7 @@ directories:
 - [ctlcmd](ctlcmd) Python objects for command line interface.
 - [server](server) Code for the web interface (client side and server side)
 
-[SiPMCalibTwiki]: https://twiki.cern.ch/twiki/bin/viewauth/CMS/UMDHGCalSiPMCalib
+[sipmcalibtwiki]: https://twiki.cern.ch/twiki/bin/viewauth/CMS/UMDHGCalSiPMCalib
 [docker]: https://docs.docker.com/get-docker/
-[SiPMCalibAnalysis]: https://github.com/yimuchen/SiPMCalib
-[SiPMCalibDN]: https://icms.cern.ch/tools/publications/notes/entries/DN/2019/048
+[sipmcalibanalysis]: https://github.com/yimuchen/SiPMCalib
+[sipmcalibdn]: https://icms.cern.ch/tools/publications/notes/entries/DN/2019/048
