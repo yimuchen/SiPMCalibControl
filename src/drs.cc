@@ -232,9 +232,11 @@ DRSContainer::WaveformSum( const unsigned channel,
   const double timeslice = 1.0/GetRate();
 
   for( unsigned i = intstart; i < intstop; ++i ){
-    ans += ( waveform[i] - pedvalue )*timeslice;
+    ans += waveform[i];
   }
 
+  ans -= pedvalue * ( intstop - intstart );
+  ans *= timeslice;
   return ans;
 }
 

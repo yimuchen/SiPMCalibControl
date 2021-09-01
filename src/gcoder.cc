@@ -38,7 +38,7 @@
  * values, so we place these here to avoid hardware damaged
  */
 const float GCoder::_max_x = 345;
-const float GCoder::_max_y = 450;
+const float GCoder::_max_y = 200;
 const float GCoder::_max_z = 460;
 
 /**
@@ -427,9 +427,15 @@ GCoder::MoveToRaw( float x, float y, float z, bool verbose )
       opz < 0 || opz > max_z() ){
     printwarn( "Coordinates is outside of gantry limit! Moving the "
       "destination back into reasonable limits." );
-    opx = std::max( std::min( opx, max_x() ), 0.0f );
-    opy = std::max( std::min( opy, max_y() ), 0.0f );
-    opz = std::max( std::min( opz, max_z() ), 0.0f );
+    if( opx < 0 || opx > max_x() ){
+      opx = std::max( std::min( opx, max_x() ), 0.0f );
+    }
+    if( opy < 0 || opy > max_y() ){
+      opy = std::max( std::min( opy, max_y() ), 0.0f );
+    }
+    if( opz < 0 || opz > max_z() ){
+      opz = std::max( std::min( opz, max_z() ), 0.0f );
+    }
   }
 
   // Running the code

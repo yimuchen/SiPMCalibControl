@@ -394,17 +394,42 @@ PicoUnit::WaveformString(
 float
 PicoUnit::WaveformSum(
   const int16_t  channel,
-  const unsigned capture
+  const unsigned capture,
+  const unsigned _intstart,
+  const unsigned _intstop,
+  const unsigned _pedstart,
+  const unsigned _pedstop
   ) const
 {
   const unsigned length = presamples + postsamples;
-  int ans               = 0;
+  double pedvalue       = 0;
 
-  for( unsigned i = 0; i < length; ++i ){
-    ans += GetBuffer( channel, capture, i ) / 256;
+  // Getting the pedestal value if required
+  if( _pedstart != _pedstop ){
+    const unsigned pedstart = std::max( unsigned(0), _pedstart );
+    const unsigned pedstop  = std::min( length, _pedstop );
+
+    for( unsigned i = pedstart; i < pedstop; ++i ){
+      pedvalue += GetBuffer( channel, capture, i ) / 256;
+    }
+
+    pedvalue *= adc2mv( channel, 256 ) / (double)( pedstop - pedstart );
   }
 
-  return ans * adc2mv( channel, 256 );
+  float ans = 0;
+  // Running the additional parsing.
+  const unsigned intstart = std::max( unsigned(0), _intstart );
+  const unsigned intstop  = std::min( length, _intstop );
+
+  for( unsigned i = intstart; i < intstop; ++i ){
+    ans += GetBuffer( channel, capture, i ) /256;
+  }
+
+  ans *= adc2mv( channel, 256 );
+  ans -= pedvalue * ( intstop - intstart );
+  ans *= 2;// We will always be using 2ns time slices
+
+  return ans;
 }
 
 /**

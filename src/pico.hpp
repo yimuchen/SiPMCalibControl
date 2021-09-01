@@ -42,9 +42,15 @@ public:
   void PrintInfo() const;
 
   std::string WaveformString( const int16_t  channel,
-                              const unsigned capture ) const;
+                              const unsigned capture
+                              ) const;
   float WaveformSum( const int16_t  channel,
-                     const unsigned capture ) const;
+                     const unsigned capture,
+                     const unsigned intstart = -1,
+                     const unsigned intstop  = -1,
+                     const unsigned pedstart = -1,
+                     const unsigned pedstop  = -1
+                     ) const;
 
   int WaveformAbsMax( const int16_t channel ) const;
 
