@@ -20,7 +20,6 @@ import cmod.board as board
 import cmod.logger as log
 import cmod.gpio as gpio
 import cmod.visual as visual
-import cmod.readout as readout
 import cmod.sshfiler as sshfiler
 import cmod.pico as pico
 import cmod.drs as drs
@@ -38,6 +37,7 @@ import time
 import traceback
 import shlex
 import select
+import enum
 
 
 class controlterm(cmd.Cmd):
@@ -78,7 +78,6 @@ class controlterm(cmd.Cmd):
     self.action = actionlist.ActionList()
     self.sighandle = sig.SigHandle()
     self.sighandle.release()
-    self.readout = readout.Readout(self)  # Must be after all other interfaces
 
     for com in cmdlist:
       comname = com.__name__.lower()
@@ -91,10 +90,13 @@ class controlterm(cmd.Cmd):
       self.__setattr__(compfunc, self.__getattribute__(comname).complete)
       self.__getattribute__(comname).cmd = self
 
+    # Modifying readline default behavior:
+    import readline
     # Removing hyphen and slash as completer delimiter, as it messes with
     # command auto completion
-    import readline
     readline.set_completer_delims(' \t\n`~!@#$%^&*()=+[{]}\\|;:\'",<>?')
+    ## Setting the history file
+    readline.set_history_length(1000)
 
     ## Additional members for command status logging
     self.last_cmd = ''  # string for containing the command that was last called
@@ -198,7 +200,6 @@ class controlcmd(object):
     self.visual = cmdsession.visual
     self.pico = cmdsession.pico
     self.drs = cmdsession.drs
-    self.readout = cmdsession.readout
     self.gpio = cmdsession.gpio
     self.action = cmdsession.action
     self.sighandle = cmdsession.sighandle
@@ -550,24 +551,32 @@ class savefilecmd(controlcmd):
     controlcmd.__init__(self, cmd)
 
   def add_args(self):
-    self.parser.add_argument('-f',
-                             '--savefile',
-                             type=str,
-                             default=self.DEFAULT_SAVEFILE,
-                             help="""
-                             Writing results to file. The filename can be
-                             specified using <ARG> to indicate placeholders to be
-                             used by argument values. Additional place holders
-                             that can be added include:
-                             - <TIMESTAMP> can be used for a string representing
-                               the current time.
-                             - <BOARDID> can be used for board id string
-                             - <BOARDTYPE> can be used for the board type string
-                                (like T3, TBMOCK...etc).\n
-                                default=%(default)s""")
-    self.parser.add_argument('--wipefile',
-                             action='store_true',
-                             help='Wipe existing content in output file')
+    group = self.parser.add_argument_group(
+        "file saving options", """
+    Options for changing the save file format. Specialized data formats for
+    saving full waveforms, data is typically stored in the standard formats of:
+
+    "time detid x y z pwm sipm_temp pulser_temp data1 data2..."
+
+    Where datax is specificed in the command.
+    """)
+    group.add_argument('-f',
+                       '--savefile',
+                       type=str,
+                       default=self.DEFAULT_SAVEFILE,
+                       help="""
+                       Writing results to file. The filename can be specified
+                       using <ARG> to indicate placeholders to be used by
+                       argument values. Additional place holders that can be
+                       added include:
+                       - <TIMESTAMP> can be used for a string representing the
+                         current time.
+                       - <BOARDID> can be used for board id string
+                       - <BOARDTYPE> can be used for the board type string (like
+                         T3, TBMOCK...etc).\n default=%(default)s""")
+    group.add_argument('--wipefile',
+                       action='store_true',
+                       help='Wipe existing content in output file')
 
   def parse(self, args):
     """
@@ -679,25 +688,27 @@ class singlexycmd(controlcmd):
     controlcmd.__init__(self, cmd)
 
   def add_args(self):
-    self.parser.add_argument('-x',
-                             type=float,
-                             help="""
-                             Specifying the x coordinate explicitly [mm]. If none
-                             is given the current gantry position will be used
-                             instead""")
-    self.parser.add_argument('-y',
-                             type=float,
-                             help="""
-                             Specifying the y coordinate explicitly [mm]. If none
-                             is given the current gantry' position will be
-                             used.""")
-    self.parser.add_argument('-c',
-                             '--detid',
-                             type=str,
-                             help="""
-                             Specify x-y coordinates via det id, input negative
-                             value to indicate that the det is a calibration one
-                             (so you can still specify coordinates with it)""")
+    group = self.parser.add_argument_group(
+        "horizontal position", """
+        Options for specifiying the operation postion in the x-y coordinates.
+    """)
+    group.add_argument('-x',
+                       type=float,
+                       help="""
+                       Specifying the x coordinate explicitly [mm]. If none is
+                       given the current gantry position will be used instead""")
+    group.add_argument('-y',
+                       type=float,
+                       help="""
+                       Specifying the y coordinate explicitly [mm]. If none is
+                       given the current gantry' position will be used.""")
+    group.add_argument('-c',
+                       '--detid',
+                       type=str,
+                       help="""
+                       Specify x-y coordinates via det id, input negative value
+                       to indicate that the det is a calibration one (so you can
+                       still specify coordinates with it)""")
 
   def parse(self, args):
     """
@@ -822,27 +833,28 @@ class hscancmd(singlexycmd):
     controlcmd.__init__(self, cmd)
 
   def add_args(self):
-    self.parser.add_argument('-z',
-                             '--scanz',
-                             type=float,
-                             default=self.HSCAN_ZVALUE,
-                             help="""
-                             Height to perform horizontal scan [mm] (default:
-                             %(default)f[mm]).""")
-    self.parser.add_argument('-r',
-                             '--range',
-                             type=float,
-                             default=self.HSCAN_RANGE,
-                             help="""
-                             Range to perform x-y scanning from central position
-                             [mm] (default=%(default)f)""")
-    self.parser.add_argument('-d',
-                             '--distance',
-                             type=float,
-                             default=self.HSCAN_SEPARATION,
-                             help="""
-                             Horizontal sampling distance [mm]
-                             (default=%(default)f)""")
+    group = self.parser.add_argument_group("options for setting up x-y grid")
+    group.add_argument('-z',
+                       '--scanz',
+                       type=float,
+                       default=self.HSCAN_ZVALUE,
+                       help="""
+                       Height to perform horizontal scan [mm] (default:
+                       %(default)f[mm]).""")
+    group.add_argument('-r',
+                       '--range',
+                       type=float,
+                       default=self.HSCAN_RANGE,
+                       help="""
+                       Range to perform x-y scanning from central position [mm]
+                       (default=%(default)f)""")
+    group.add_argument('-d',
+                       '--distance',
+                       type=float,
+                       default=self.HSCAN_SEPARATION,
+                       help="""
+                       Horizontal sampling distance [mm]
+                       (default=%(default)f)""")
 
   def parse(self, args):
     """
@@ -884,18 +896,19 @@ class zscancmd(controlcmd):
   ZSCAN_ZLIST = "[10 51 1]"
 
   def __init__(self, cmd):
-    control_cmd.__init__(self, cmd)
+    controlcmd.__init__(self, cmd)
 
   def add_args(self):
-    self.parser.add_argument('-z',
-                             '--zlist',
-                             type=str,
-                             nargs='+',
-                             default=self.ZSCAN_ZLIST,
-                             help="""
-                             List of z coordinate to perform scanning. One can
-                             add a list of number by the notation "[start_z end_z
-                             sepration]" """)
+    group = self.parser.add_argument_group("options for scanning in z")
+    group.add_argument('-z',
+                       '--zlist',
+                       type=str,
+                       nargs='+',
+                       default=self.ZSCAN_ZLIST,
+                       help="""
+                       List of z coordinate to perform scanning. One can add a
+                       list of number by the notation "[start_z end_z sepration]"
+                       """)
 
   def parse(self, args):
     """
@@ -940,28 +953,76 @@ class zscancmd(controlcmd):
 
 class readoutcmd(controlcmd):
   """
-  Commands that should have single readout models.
+  Commands that should have single readout models. This typically assumes that
+  the readout device (ADC/picoscope/drs4 or otherwise) has been properly set up
+  with the correct range and settings, and this class will provide the new
+  "self.readout" method to subsequent commands such that the the return can be a
+  singular number representing the readout value of triggers.
   """
+  class Mode(enum.IntEnum):
+    MODE_PICO = 1
+    MODE_ADC = 2
+    MODE_DRS = 3
+    MODE_NONE = -1
+
   def __init__(self, cmd):
+    from cmod.readoutmodel import SiPMModel, DiodeModel
     controlcmd.__init__(self, cmd)
+    self.sipm = SiPMModel()
+    self.diode = DiodeModel()
 
   def add_args(self):
-    self.parser.add_argument('--mode',
-                             type=int,
-                             choices=[-1, 1, 2, 3],
-                             help="""
-                             Readout method to be used: 1:picoscope, 2:ADC,
-                             3:DRS4, -1:Predefined model""")
-    self.parser.add_argument('--channel',
-                             type=int,
-                             default=None,
-                             help='Input channel to use')
-    self.parser.add_argument('--samples',
-                             type=int,
-                             default=5000,
-                             help="""
-                             Number of readout samples to take the average for
-                             luminosity measurement (default=%(default)d)""")
+    group = self.parser.add_argument_group(
+        "Readout", """
+    Arguments for changing the behaviour of readout without directly interacting
+    with the reaout interfaces.
+    """)
+    group.add_argument('--mode',
+                       type=int,
+                       choices=[e.value for e in readoutcmd.Mode],
+                       help="""
+                       Readout method to be used: 1:picoscope, 2:ADC, 3:DRS4,
+                      -1:Predefined model (simulated)""")
+    group.add_argument('--channel',
+                       type=int,
+                       default=None,
+                       help='Input channel to use')
+    group.add_argument('--samples',
+                       type=int,
+                       default=5000,
+                       help="""
+                       Number of readout samples to take the average for
+                       luminosity measurement (default=%(default)d)""")
+    group.add_argument('--intstart',
+                       type=int,
+                       default=-1,
+                       help="""
+                       Time slice to start integration for scope-like readouts
+                       (DRS4/Picoscope). Leave negative to intergrate over full
+                       range""")
+    group.add_argument('--intstop',
+                       type=int,
+                       default=-1,
+                       help="""
+                       Time slice to stop integration for scope-like readouts
+                       (DRS4/Picoscope). Leave negative to intergrate over full
+                       range""")
+    group.add_argument('--pedstart',
+                       type=int,
+                       default=-1,
+                       help="""
+                       Time slice to start integration to obtain value for
+                       pedestal subtraction for scope-like readouts
+                       (DRS4/Picoscope). Leave negative to ignore pedestal
+                       subtraction""")
+    group.add_argument('--pedstop',
+                       type=int,
+                       default=-1,
+                       help="""
+                       Time slice to start integration to obtain value for
+                       pedestal subtraction for scope-like readouts
+                       (DRS4/Picoscope). Leave negative to ignore pedestal
+                       subtraction""")
 
   def parse(self, args):
     """
@@ -979,7 +1040,7 @@ class readoutcmd(controlcmd):
     """
 
     ## Defaulting to the det id if it isn't specified exists
-    if not args.channel:
+    if args.channel is None:
       if hasattr(args, 'detid') and str(args.detid) in self.board.dets():
         args.channel = self.board.get_det(str(args.detid)).channel
       else:
@@ -990,18 +1051,145 @@ class readoutcmd(controlcmd):
       if hasattr(args, 'detid') and str(args.detid) in self.board.dets():
         args.mode = self.board.get_det(str(args.detid)).mode
       else:
-        args.mode = self.readout.mode
+        raise Exception("Readout mode needs to be specified")
 
     ## Double checking the readout channel is sensible
-    if args.mode == self.readout.MODE_PICO:
+    if args.mode == readoutcmd.Mode.MODE_PICO:
       if int(args.channel) < 0 or int(args.channel) > 1:
-        raise Exception('Channel for PICOSCOPE can only be 0 or 1')
-    elif args.mode == self.readout.MODE_ADC:
+        raise Exception(
+            f'Channel for PICOSCOPE can only be 0 or 1 (got {args.channel})')
+    elif args.mode == readoutcmd.Mode.MODE_ADC:
       if int(args.channel) < 0 or int(args.channel) > 3:
-        raise Exception('Channel for ADC can only be 0--3')
-    elif args.mode == self.readout.MODE_DRS:
+        raise Exception(f'Channel for ADC can only be 0--3 (got {args.channel})')
+    elif args.mode == readoutcmd.Mode.MODE_DRS:
       if int(args.channel) < 0 or int(args.channel) > 3:
-        raise Exception('Channel for DRS4 can only be 0--4')
+        raise Exception(
+            f'Channel for DRS4 can only be 0--4 (got {args.channel})')
 
-    self.readout.set_mode(args.mode)
+    ## Checking the integration settings
+    if args.mode == readoutcmd.Mode.MODE_PICO:
+      pass
+    elif args.mode == readoutcmd.Mode.MODE_DRS:
+      pass
+    else:
+      if (args.intstart > 0 or args.intstop or args.pedstart > 0
+          or args.pedstop > 0):
+        self.printwarn("""
+          Integration is not supported for this readout mode, integration
+          settings will be ignored.
+        """)
+
     return args
+
+  def readout(self, args, average=True):
+    """
+    Abstracting the readout method for child classes, the input should be the
+    parsed arguments along with a flag of whether the return should be some
+    averaged value with STD or some the full list.
+    """
+    readout_list = []
+    try:  # Stopping the stepper motors for cleaner readout
+      self.gcoder.disablestepper(False, False, True)
+    except:  # In case the gcode interface is not available, do nothing
+      pass
+
+    if args.mode == readoutcmd.Mode.MODE_PICO:
+      readout_list = self.read_pico(args)
+    elif args.mode == readoutcmd.Mode.MODE_ADC:
+      readout_list = self.read_adc(args)
+    elif args.mode == readoutcmd.Mode.MODE_DRS:
+      readout_list = self.read_drs(args)
+    else:
+      readout_list = self.read_model(args)
+
+    try:  # Re-enable the stepper motors
+      self.gcoder.enablestepper(True, True, True)
+    except:  # In the case that the gcode interface isn't availabe, do nothing.
+      pass
+
+    if average:
+      return np.mean(readout_list), np.std(readout_list)
+    else:
+      return readout_list
+
+  def read_adc(self, args):
+    """
+    Getting the averaged readout from the ADC. Here we provide a random sleep
+    between adc_read call to avoid any aliasing with either the readout rate or
+    the slow varying fluctuations in our DC systems.
+    """
+    val = []
+    for _ in range(args.samples):
+      val.append(self.gpio.adc_read(args.channel))
+      ## Sleeping for random time in ADC to avoid 60Hz aliasing
+      time.sleep(1 / 200 * np.random.random())
+    return val
+
+  def read_pico(self, args):
+    """
+    Averaged readout of the picoscope. Here we always set the blocksize to be
+    1000 captures. This function will continuously fire the trigger system until
+    a single rapidblock has been completed.
+    """
+    Nblock = 1000
+    val = []
+    while len(val) < args.samples:
+      self.pico.setblocknums(Nblock, self.pico.postsamples, self.pico.presamples)
+      self.pico.startrapidblocks()
+      while not self.pico.isready():
+        self._fire_trigger()
+      self.pico.flushbuffer()
+      val.extend(
+          self.pico.waveformsum(args.channel, x, args.intstart, args.intstop,
+                                args.pedstart, args.pedstop)
+          for x in range(Nblock))
+    return val
+
+  def read_drs(self, args):
+    """
+    Average the readout results from the DRS4. Here we will contiously fire the
+    trigger until collections have been completed.
+    """
+    val = []
+    for _ in range(args.samples):
+      self.drs.startcollect()
+      while not self.drs.is_ready():
+        self._fire_trigger()
+      # Decent settings for drs delay 550 and 2.0 GHz sample rate.
+      # Try to change programatically.
+      val.append(
+          self.drs.waveformsum(args.channel, args.intstart, args.intstop,
+                               args.pedstart, args.pedstop))
+
+    return val
+
+  def _fire_trigger(self, n=10, wait=100):
+    """
+    Helper function for firing trigger for the scope-like readouts.
+    """
+    try:  # For standalone runs with external trigger
+      self.gpio.pulse(n, wait)
+    except:
+      pass
+
+  def read_model(self, channel, samples):
+    """
+    Generating a fake readout from a predefined model. THe location is extracted
+    from the current gantry position
+    """
+    x = self.gcoder.opx
+    y = self.gcoder.opy
+    z = self.gcoder.opz
+
+    det_x = self.board.det_map[str(channel)].orig_coord[0]
+    det_y = self.board.det_map[str(channel)].orig_coord[1]
+
+    r0 = ((x - det_x)**2 + (y - det_y)**2)**0.5
+    pwm = self.gpio.pwm_duty(0)
+
+    if channel >= 0 or channel % 2 == 0:
+      ## This is a typical readout, expect a SiPM output,
+      return self.sipm.read_model(r0, z, pwm, samples)
+    else:
+      ## This is a linear photo diode readout
+      return self.diode.read_model(r0, z, pwm, samples)
