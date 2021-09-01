@@ -11,7 +11,6 @@
 
 import ctlcmd.cmdbase as cmdbase
 import cmod.logger as log
-from cmod.readout import Readout
 import argparse, re, os, sys, time
 
 
