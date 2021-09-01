@@ -427,7 +427,8 @@ PicoUnit::WaveformSum(
 
   ans *= adc2mv( channel, 256 );
   ans -= pedvalue * ( intstop - intstart );
-  ans *= 2;// We will always be using 2ns time slices
+  ans *= -2;
+  // We will always be using 2ns time slices, inverting for positive number
 
   return ans;
 }

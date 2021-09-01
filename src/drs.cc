@@ -236,7 +236,8 @@ DRSContainer::WaveformSum( const unsigned channel,
   }
 
   ans -= pedvalue * ( intstop - intstart );
-  ans *= timeslice;
+  ans *= -timeslice; // Negative to correct pulse direction
+
   return ans;
 }
 
