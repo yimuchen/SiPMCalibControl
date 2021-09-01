@@ -43,7 +43,7 @@ class Detector(object):
       """)
 
   def __str__(self):
-    return str(self.__dict__())
+    return str(self.__dict__)
 
   def __dict__(self):
     return {
@@ -126,12 +126,12 @@ class Board(object):
   def calib_dets(self):
     return sorted([k for k in self.dets() if int(k) < 0], reverse=True)
 
-  def add_calib_det(self, detid):
+  def add_calib_det(self, detid, mode=-1, channel=-1):
     detid = str(detid)
     if detid not in self.dets() and int(detid) < 0:
       self.det_map[detid] = Detector({
-          "mode": -1,
-          "channel": -1,
+          "mode": mode,
+          "channel": channel,
           "default coordinates": [-100, -100]
       })
 
