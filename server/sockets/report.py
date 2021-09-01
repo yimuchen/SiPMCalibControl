@@ -30,7 +30,6 @@ def report_system_status():
   over and is typically used for system normality diagnostics. Notice that these
   variables are typically not fully logged in the final data storage.
   """
-  print('status', (datetime.datetime.now()-session.start_time).total_seconds())
   return {
       'start': session.start_time.strftime('%Y/%m/%d/ %H:%M:%S'),
       'time': int(
