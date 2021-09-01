@@ -35,6 +35,7 @@ if __name__ == '__main__':
       getset.exit,  #
       getset.set,  #
       getset.get,  #
+      getset.history,  #
       getset.wait,  #
       getset.savecalib,  #
       getset.loadcalib,  #

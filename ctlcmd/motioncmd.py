@@ -234,9 +234,7 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
     for idx, (xval, yval) in enumerate(zip(args.x, args.y)):
       self.check_handle(args)
       self.move_gantry(xval, yval, args.scanz, False)
-      lumival, uncval = self.readout.read(channel=args.channel,
-                                          samples=args.samples,
-                                          average=True)
+      lumival, uncval = self.readout(args, average=True)
       self.update_progress(progress=(idx + 1, total),
                            coordinates=True,
                            temperature=True,
@@ -276,7 +274,7 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
     detid = str(args.detid)  ## Ensuring string convention in using this
     ## Generating calibration det id if using det coordinates
     if not detid in self.board.dets() and int(detid) < 0:
-      self.board.add_calib_det(detid)
+      self.board.add_calib_det(detid, args.mode, args.channel)
 
     ## Saving session information
     if not self.board.lumi_coord_hasz(detid, args.scanz) or args.overwrite:
@@ -297,7 +295,14 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
         ])
 
     ## Sending gantry to position
-    self.move_gantry(fitval[1], fitval[2], args.scanz, True)
+    if (fitval[1] > 0 and fitval[1] < self.gcoder.max_x() and fitval[2] > 0
+        and fitval[2] < self.gcoder.max_y()):
+      self.move_gantry(fitval[1], fitval[2], args.scanz, True)
+    else:
+      self.printwarn("""
+      Fit position is out of gantry bounds, the gantry will not attempt to move
+      there
+      """)
 
   @staticmethod
   def model(xydata, N, x0, y0, z, p):
@@ -347,9 +352,8 @@ class zscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.readoutcmd,
         lumival = 0
         uncval = 0
         while 1:
-          lumival, uncval = self.readout.read(channel=args.channel,
-                                              samples=args.samples)
-          if self.readout.mode == self.readout.MODE_PICO:
+          lumival, uncval = self.readout(args, average=True)
+          if args.mode == cmdbase.readoutcmd.Mode.MODE_PICO:
             wmax = self.pico.waveformmax(args.channel)
             current_range = self.pico.rangeA(
             ) if args.channel == 0 else self.pico.rangeB()
@@ -401,20 +405,19 @@ class lowlightcollect(cmdbase.singlexycmd, cmdbase.readoutcmd,
   def parse(self, args):
     if not args.power:
       args.power = self.gpio.pwm_duty(0)
+    ## Modifying the sample argument to make monitoring simpler:
+    args.nparts = (args.samples // 1000) + 1
+    args.samples = 1000
     return args
 
   def run(self, args):
     self.move_gantry(args.x, args.y, args.z, False)
     self.gpio.pwm(0, args.power, 1e5)
-    nparts = int(args.samples / 1000) + 1
-    for i in range(nparts):
+    for i in range(args.nparts):
       self.check_handle(args)
-      ## Collecting data in 1000 sample bunchs for better monitoring
-      readout = self.readout.read(channel=args.channel,
-                                  samples=1000,
-                                  average=False)
+      readout = self.readout(args, average=False)
       self.write_standard_line(readout, det_id=args.detid)
-      self.update_progress(progress=(i + 1, nparts),
+      self.update_progress(progress=(i + 1, args.nparts),
                            temperature=True,
                            coordinates=True,
                            display_data={'Lumi': (readout[-1], readout[-2])})
@@ -467,8 +470,7 @@ class timescan(cmdbase.readoutcmd, cmdbase.savefilecmd):
         self.gpio.pwm(0, args.testpwm[pwmindex], 1e5)
         pwmindex = (pwmindex + 1) % len(args.testpwm)
 
-      lumival, uncval = self.readout.read(channel=args.channel,
-                                          samples=args.samples)
+      lumival, uncval = self.readout(args, average=True)
       s2 = self.visual.get_latest().s2
       s4 = self.visual.get_latest().s4
       sample_time = time.time_ns()

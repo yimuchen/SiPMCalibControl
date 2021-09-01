@@ -79,14 +79,6 @@ class set(cmdbase.controlcmd):
     self.parser.add_argument('--drsdevice',
                              type=str,
                              help='Code flag to refresh DRS device')
-    self.parser.add_argument('--readout',
-                             '-r',
-                             type=int,
-                             choices=[
-                                 Readout.MODE_ADC, Readout.MODE_PICO,
-                                 Readout.MODE_DRS, Readout.MODE_NONE,
-                             ],
-                             help='Setting readout mode of the current session')
     self.parser.add_argument('--action',
                              '-a',
                              type=argparse.FileType(mode='r'),
@@ -116,8 +108,6 @@ class set(cmdbase.controlcmd):
       self.set_picodevice(args)
     if args.drsdevice:
       self.set_drs(args)
-    if args.readout:
-      self.readout.set_mode(args.readout)
     if args.action:
       self.action.add_json(args.action.name)
 
@@ -187,7 +177,6 @@ class get(cmdbase.controlcmd):
     self.parser.add_argument('--align', action='store_true')
     self.parser.add_argument('--pico', action='store_true')
     self.parser.add_argument('--drs', action='store_true')
-    self.parser.add_argument('--readout', action='store_true')
     self.parser.add_argument('--action', action='store_true')
 
     self.parser.add_argument('-a', '--all', action='store_true')
@@ -205,8 +194,6 @@ class get(cmdbase.controlcmd):
       self.pico.printinfo()
     if args.drs or args.all:
       self.print_drs()
-    if args.readout or args.all:
-      self.print_readout()
     if args.action or args.all:
       self.print_action()
 
@@ -268,13 +255,6 @@ class get(cmdbase.controlcmd):
 
   def print_drs(self):
     log.printmsg(self.drs.is_available())
-
-  def print_readout(self):
-    log.printmsg(
-      log.GREEN('[READOUT]'),
-      'PICOSCOPE' if self.readout.mode == readout.MODE_PICO else \
-      'ADC DET'  if self.readout.mode == readout.MODE_ADC  else \
-      'PREDEFINED MODEL')
 
   def print_action(self):
     header = log.GREEN('[ACTION]')
@@ -390,6 +370,24 @@ class promptaction(cmdbase.controlcmd):
       self.cmd.onecmd(cmd.strip())
 
 
+class history(cmdbase.controlcmd):
+  """
+  Getting the input history. Notice that this will only include the user input
+  history. Commands in the runfile will note be expanded.
+  """
+  LOG = log.GREEN("[SIPMCALIB HISTORY]")
+
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
+
+  def run(self, args):
+    import readline
+    self.printmsg(
+        f'commands since startup: {str(readline.get_current_history_length())}')
+    for idx in range(1, readline.get_current_history_length() + 1):
+      self.printmsg(readline.get_history_item(idx))
+
+
 class wait(cmdbase.controlcmd):
   """
   Suspending the interactive session for N seconds. Can be terminated early using
@@ -420,9 +418,11 @@ class runfile(cmdbase.controlcmd):
 
   Notice that while runfiles can be called recursively, you cannot call runfiles
   that have already been called, as this will cause infinite recursion. If any
-  command files, the whole runfile call will be terminated to prevent user error
-  from damaging the gantry.
+  command in the command file fails, the whole runfile call will be terminated to
+  prevent user error from damaging the gantry.
   """
+  LOG = log.GREEN('[RUNFILE LINE]')
+
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -459,12 +459,14 @@ class runfile(cmdbase.controlcmd):
       self.cmd.runfile_stack.append(args.file)
 
     with open(args.file) as f:
-      for cmdline in f.readlines():
+      for line in f.readlines():
+        line = line.strip()
         self.check_handle(args)
-        status = self.cmd.onecmd(cmdline.strip())
+        self.printmsg(line)
+        status = self.cmd.onecmd(line)
         if status != cmdbase.controlcmd.EXIT_SUCCESS:
           self.error_exit_run(f"""
-            Command [{cmdline.strip()}] in file [{args.file}] has failed.
+            Command [{line}] in file [{args.file}] has failed.
             Exiting top level runfile command.
           """)
     self.cmd.runfile_stack.pop(-1)
