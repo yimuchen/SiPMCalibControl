@@ -995,33 +995,33 @@ class readoutcmd(controlcmd):
                        luminosity measurement (default=%(default)d)""")
     group.add_argument('--intstart',
                        type=int,
-                       default=-1,
+                       default=0,
                        help="""
                        Time slice to start integration for scope-like readouts
-                       (DRS4/Picoscope). Leave negative to intergrate over full
+                       (DRS4/Picoscope). Leave 0 to intergrate over full
                        range""")
     group.add_argument('--intstop',
                        type=int,
-                       default=-1,
+                       default=0,
                        help="""
                        Time slice to stop integration for scope-like readouts
-                       (DRS4/Picoscope). Leave negative to intergrate over full
+                       (DRS4/Picoscope). Leave 0 to intergrate over full
                        range""")
     group.add_argument('--pedstart',
                        type=int,
-                       default=-1,
+                       default=0,
                        help="""
                        Time slice to start integration to obtain value for
                        pedestal subtraction for scope-like readouts
-                       (DRS4/Picoscope). Leave negative to ignore pedestal
+                       (DRS4/Picoscope). Leave 0 to ignore pedestal
                        subtraction""")
     group.add_argument('--pedstop',
                        type=int,
-                       default=-1,
+                       default=0,
                        help="""
                        Time slice to start integration to obtain value for
                        pedestal subtraction for scope-like readouts
-                       (DRS4/Picoscope). Leave negative to ignore pedestal
+                       (DRS4/Picoscope). Leave 0 to ignore pedestal
                        subtraction""")
 
   def parse(self, args):
