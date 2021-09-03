@@ -212,17 +212,6 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
                              help="""
                              Forcing the storage of scan results as session
                              information""")
-    self.parser.add_argument('--power',
-                             '-p',
-                             type=float,
-                             help="""
-                             PWM duty cycle for data collection, using current
-                             value if not specified""")
-
-  def parse(self, args):
-    if not args.power:
-      args.power = self.gpio.pwm_duty(0)  ## Getting the PWM value
-    return args
 
   def run(self, args):
     self.gpio.pwm(0, args.power, 1e5)  # Maximum PWM frequency
