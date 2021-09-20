@@ -22,7 +22,7 @@ const DEBUG_TERMINAL = false;
  */
 function start_terminal() {
   // Setting up the terminal to the standard container
-  term.open(document.getElementById("terminal-content"));
+  term.open(document.getElementById('terminal-content'));
   // locking the terminal on start-up
   term.terminal_lock = true;
 
@@ -48,12 +48,11 @@ function parse_keystroke(key) {
     return;
   }
 
-
   // Generating the helper string to the console to help debug console inputs
   if (DEBUG_TERMINAL) {
-    str = "";
+    str = '';
     for (i = 0; i < key.length; ++i) {
-      str += " " + key.charCodeAt(i).toString();
+      str += ' ' + key.charCodeAt(i).toString();
     }
     // console.log('combination:', str)
   }
@@ -61,10 +60,10 @@ function parse_keystroke(key) {
   const code = key.charCodeAt(0); // parsing on first character
   switch (code) {
     case 127: // backspace doesn't trigger backspace character
-      socketio.emit("xterminput", { input: "\b" });
+      socketio.emit('xterminput', { input: '\b' });
       break;
     default:
-      socketio.emit("xterminput", { input: key });
+      socketio.emit('xterminput', { input: key });
       break;
   }
 }
@@ -84,13 +83,13 @@ function check_terminal_lock() {
   if (terminal_lock) {
     // unlocking the terminal
     terminal_lock = false;
-    $("#terminal_status").html("TERMINAL IS UNLOCKED");
-    $("#terminal_lock").html("LOCK");
+    $('#terminal_status').html('TERMINAL IS UNLOCKED');
+    $('#terminal_lock').html('LOCK');
     // Getting the prompt in case it wasn't generated.
     parse_keystroke(String.fromCharCode(1));
   } else {
     terminal_lock = true; // locking the terminal
-    $("#terminal_status").html("TERMINAL IS LOCKED");
-    $("#terminal_lock").html("UNLOCK");
+    $('#terminal_status').html('TERMINAL IS LOCKED');
+    $('#terminal_lock').html('UNLOCK');
   }
 }

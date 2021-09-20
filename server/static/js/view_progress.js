@@ -8,30 +8,30 @@
 function progress_color(integer) {
   switch (integer) {
     case CMD_COMPLETE:
-      return "green";
+      return 'green';
     case CMD_PENDING:
-      return "cyan";
+      return 'cyan';
     case CMD_RUNNING:
-      return "yellow";
+      return 'yellow';
     case CMD_ERROR:
-      return "red";
+      return 'red';
     default:
-      return "none";
+      return 'none';
   }
 }
 
 function progress_status_string(integer) {
   switch (integer) {
     case CMD_COMPLETE:
-      return "DONE";
+      return 'DONE';
     case CMD_PENDING:
-      return "";
+      return '';
     case CMD_RUNNING:
-      return "running";
+      return 'running';
     case CMD_ERROR:
-      return "ERROR";
+      return 'ERROR';
     default:
-      return "";
+      return '';
   }
 }
 
@@ -69,17 +69,17 @@ function progress_update_bar(progress) {
   const error_percent = (100.0 * error) / total;
   const running_percent = (100 * running) / total;
 
-  var bar_elem = $("#session-progress");
-  bar_elem.children(".progress-complete").css("width", `${complete_percent}%`);
-  bar_elem.children(".progress-running").css("width", `${running_percent}%`);
-  bar_elem.children(".progress-error").css("width", `${error_percent}%`);
+  var bar_elem = $('#session-progress');
+  bar_elem.children('.progress-complete').css('width', `${complete_percent}%`);
+  bar_elem.children('.progress-running').css('width', `${running_percent}%`);
+  bar_elem.children('.progress-error').css('width', `${error_percent}%`);
 }
 
 /**
  * The table view as a list of all operations in the calibration to be displayed.
  */
 function progress_update_table(progress) {
-  div = $("#table-view");
+  div = $('#table-view');
   if (div.html() === ``) {
     // For empty HTML only
     make_table_html();
@@ -90,8 +90,8 @@ function progress_update_table(progress) {
     for (const detid in progress[tag]) {
       const progress_code = progress[tag][detid];
       $(`#table-${detid}-${tag}`).css(
-        "background-color",
-        progress_color(progress_code)
+        'background-color',
+        progress_color(progress_code),
       );
     }
   }
@@ -116,7 +116,7 @@ function make_table_html() {
     new_html += `<tr onclick=show_det_summary(${detid})>${row_html}</tr>`;
   }
 
-  $("#table-view").html(`<table>${new_html}</table>`);
+  $('#table-view').html(`<table>${new_html}</table>`);
 }
 
 /**
@@ -125,7 +125,7 @@ function make_table_html() {
  * There are two classes of elements that need to be updated: in the text based
  * summary, change the color of the text such that the user can see the
  * completed/error/ongoing calibration process, and an update to the background
- * of the tileboard layout so that the user can see whether where on the board
+ * of the tile board layout so that the user can see whether where on the board
  * errors has occurred.
  */
 function progress_update_det_summary(progress) {
@@ -152,23 +152,23 @@ function progress_update_det_summary(progress) {
       }
 
       // Updating the text based detector information.
-      var element = $("#single-det-summary-" + detid).find("#process-" + tag);
-      element.css("background-color", progress_color(progress_code));
+      var element = $('#single-det-summary-' + detid).find('#process-' + tag);
+      element.css('background-color', progress_color(progress_code));
       element.html(progress_status_string(progress_code));
     }
   }
 
   for (const detid in board_layout.detectors) {
     if (String(detid) == String(running_detid)) {
-      $(`#tile-layout-${detid}`).css("fill", "yellow");
+      $(`#tile-layout-${detid}`).css('fill', 'yellow');
     } else if (detid in det_job_progress) {
       const total = det_job_progress[detid][0];
       const comp = det_job_progress[detid][1];
       const base_color = `#00FF00`;
       const lighten = (200.0 * (total - comp)) / total;
       $(`#tile-layout-${detid}`).css(
-        "fill",
-        hex_lumi_shift(base_color, lighten)
+        'fill',
+        hex_lumi_shift(base_color, lighten),
       );
     }
   }

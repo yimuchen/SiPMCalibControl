@@ -21,10 +21,10 @@ const CMD_ERROR = 3;
 const calibration_update_interval = 1000; // Update interval in milliseconds
 
 // Processes flag that can be
-const plot_processes = ["zscan", "lowlight", "lumialign"];
-const can_rerun_process = ["zscan", "lowlight"];
-const can_extend_process = ["zscan", "lowlight"];
-const all_processes = ["vhscan", "visalign", "zscan", "lowlight", "lumialign"];
+const plot_processes = ['zscan', 'lowlight', 'lumialign'];
+const can_rerun_process = ['zscan', 'lowlight'];
+const can_extend_process = ['zscan', 'lowlight'];
+const all_processes = ['vhscan', 'visalign', 'zscan', 'lowlight', 'lumialign'];
 
 /**
  * This is largely split into 2 parts:
@@ -37,8 +37,8 @@ const all_processes = ["vhscan", "visalign", "zscan", "lowlight", "lumialign"];
  */
 function make_tileboard_detector_html() {
   $.ajax({
-    dataType: "json",
-    mimeType: "application/json",
+    dataType: 'json',
+    mimeType: 'application/json',
     url: `report/tileboard_layout`,
     success: function (json) {
       board_layout = json;
@@ -46,7 +46,7 @@ function make_tileboard_detector_html() {
       make_detector_summary_html();
     },
     error: function () {
-      console.log("Failed to get board layout");
+      console.log('Failed to get board layout');
     },
   });
 }
@@ -71,8 +71,8 @@ function clear_tileboard_detector_html() {
  */
 function make_tileboard_html() {
   $.ajax({
-    dataType: "json",
-    mimeType: "application/json",
+    dataType: 'json',
+    mimeType: 'application/json',
     url: `geometry/${board_layout.boardtype}`,
     success: make_tileboard_segment_html,
     error: make_tileboard_default_html,
@@ -96,8 +96,8 @@ function make_tileboard_default_html() {
   let text_html = ``;
   if (Object.keys(board_layout.detectors).length > 0) {
     for (var detid in board_layout.detectors) {
-      const x_raw = board_layout.detectors[detid]["orig"][0];
-      const y_raw = board_layout.detectors[detid]["orig"][1];
+      const x_raw = board_layout.detectors[detid]['orig'][0];
+      const y_raw = board_layout.detectors[detid]['orig'][1];
 
       const x = x_raw * scale + corner_offset;
       const y = x_max - y_raw * scale + corner_offset;
@@ -200,7 +200,7 @@ function make_tileboard_segment_html(tileboard_json) {
       t1,
       angle,
       offset_x,
-      offset_y
+      offset_y,
     );
     new_html += `<path
                   id="tile-layout-${detid}"
@@ -239,8 +239,8 @@ function make_detector_summary_html() {
     plot_html += make_detector_plot_html(detid);
   }
 
-  $("#single-det-summary").html(coordinate_html);
-  $("#det-plot-and-figure").html(plot_html);
+  $('#single-det-summary').html(coordinate_html);
+  $('#det-plot-and-figure').html(plot_html);
 }
 
 /**
@@ -340,18 +340,18 @@ function check_extend_button(detid, tag) {
  */
 function process_full_name(tag) {
   switch (tag) {
-    case "vhscan":
-      return "Visual Matrix";
-    case "visalign":
-      return "Visual alignment";
-    case "zscan":
-      return "Intensity scan";
-    case "lowlight":
-      return "Low light profile";
-    case "lumialign":
-      return "Luminosity alignment";
+    case 'vhscan':
+      return 'Visual Matrix';
+    case 'visalign':
+      return 'Visual alignment';
+    case 'zscan':
+      return 'Intensity scan';
+    case 'lowlight':
+      return 'Low light profile';
+    case 'lumialign':
+      return 'Luminosity alignment';
     default:
-      return "Custom";
+      return 'Custom';
   }
 }
 
@@ -397,7 +397,7 @@ function update_tileboard_coordinates() {
 
   function make_coordinate_string(detid, tag) {
     if (board_layout.detectors[detid][tag][0] < 0) {
-      return "NOT DONE";
+      return 'NOT DONE';
     } else {
       const x = board_layout.detectors[detid][tag][0].toFixed(1);
       const y = board_layout.detectors[detid][tag][1].toFixed(1);
@@ -407,33 +407,33 @@ function update_tileboard_coordinates() {
 
   for (const detid of board_layout.detectors) {
     var cont = $(`#single-det-summary-${detid}`);
-    cont.find("#coord-orig").html(make_coordinate_string(detid, "orig"));
-    cont.find("#coord-lumi").html(make_coordinate_string(detid, "lumi"));
-    cont.find("#coord-vis").html(make_coordinate_string(detid, "vis"));
+    cont.find('#coord-orig').html(make_coordinate_string(detid, 'orig'));
+    cont.find('#coord-lumi').html(make_coordinate_string(detid, 'lumi'));
+    cont.find('#coord-vis').html(make_coordinate_string(detid, 'vis'));
   }
 }
 
 function show_det_summary(detid) {
   // Showing the text based detector part.
-  $("#single-det-summary")
+  $('#single-det-summary')
     .children()
     .each(function () {
-      $(this).addClass("hidden");
+      $(this).addClass('hidden');
     });
 
-  $("#det-plot-and-figure")
+  $('#det-plot-and-figure')
     .children()
     .each(function () {
-      $(this).addClass("hidden");
+      $(this).addClass('hidden');
     });
 
-  $("#single-det-summary")
+  $('#single-det-summary')
     .children(`#single-det-summary-${detid}`)
-    .removeClass("hidden");
+    .removeClass('hidden');
 
-  $("#det-plot-and-figure")
+  $('#det-plot-and-figure')
     .children(`#det-plot-container-${detid}`)
-    .removeClass("hidden");
+    .removeClass('hidden');
 
   // Requesting the plots
   for (const tag of plot_processes) {
@@ -444,14 +444,14 @@ function show_det_summary(detid) {
   // check if visual alignment images have been taken
   $.ajax({
     url: `visualalign/${detid}`,
-    type: "get",
-    dataType: "html",
+    type: 'get',
+    dataType: 'html',
     success: function (data) {
-      console.log("Status: " + status + "\nData: " + data);
+      console.log('Status: ' + status + '\nData: ' + data);
       /* creating image */
       $(`#${detector_visalign_img_id(detid)}`).attr(
-        "src",
-        "data:image/gif;base64," + data
+        'src',
+        'data:image/gif;base64,' + data,
       );
     },
   });

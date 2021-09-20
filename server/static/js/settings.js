@@ -19,7 +19,7 @@ async function clear_settings() {
       console.log('Failed to sync with system settings');
       await sleep(500);
       clear_settings(); // Trying indefinitely.
-    }
+    },
   });
 }
 
@@ -74,13 +74,16 @@ function update_settings(json) {
   $('#trigger-postsample').val(json.picoscope['trigger-postsample']);
   $('#trigger-blocksize').val(json.picoscope['blocksize']);
 
-
-  $('#trigger-level-text').val(
-    adc_from_value(json.picoscope['trigger-value']));
+  $('#trigger-level-text').val(adc_from_value(json.picoscope['trigger-value']));
   $('#trigger-level-range').val(
-    adc_from_value(json.picoscope['trigger-value']));
-  $(`input[name="trigger-channel"][value="${json.picoscope['trigger-channel']}"]`).prop("checked", true);
-  $(`input[name="trigger-direction"][value="${json.picoscope['trigger-direction']}"]`).prop('checked', true);
+    adc_from_value(json.picoscope['trigger-value']),
+  );
+  $(
+    `input[name="trigger-channel"][value="${json.picoscope['trigger-channel']}"]`,
+  ).prop('checked', true);
+  $(
+    `input[name="trigger-direction"][value="${json.picoscope['trigger-direction']}"]`,
+  ).prop('checked', true);
   sync_pico_range();
   sync_pico_trigger();
 }
@@ -90,11 +93,13 @@ function update_settings(json) {
  * floats
  */
 function split_string_to_float_array(input_string) {
-  let str_array = input_string.split(/(\s+)/).filter(e => e.length > 1);
-  var ans = []
+  let str_array = input_string.split(/(\s+)/).filter((e) => e.length > 1);
+  var ans = [];
   for (const str of str_array) {
     const token = parseFloat(str);
-    if (!token.isNaN()) { ans.append(token) }
+    if (!token.isNaN()) {
+      ans.append(token);
+    }
   }
   return ans;
 }
@@ -105,13 +110,13 @@ function split_string_to_float_array(input_string) {
  */
 function image_settings_update() {
   const new_settings = {
-    'threshold': $('#image-threshold-text').val(),
-    'blur': $('#image-blur-text').val(),
-    'lumi': $('#image-lumi-text').val(),
-    'size': $('#image-size-text').val(),
-    'ratio': $('#image-ratio-text').val(),
-    'poly': $('#image-poly-text').val(),
-  }
+    threshold: $('#image-threshold-text').val(),
+    blur: $('#image-blur-text').val(),
+    lumi: $('#image-lumi-text').val(),
+    size: $('#image-size-text').val(),
+    ratio: $('#image-ratio-text').val(),
+    poly: $('#image-poly-text').val(),
+  };
 
   emit_action_cmd('image-settings', new_settings);
 }
@@ -122,13 +127,15 @@ function image_settings_update() {
  */
 function zscan_settings_update() {
   const new_settings = {
-    'samples': $('#zscan-settings-samples').val(),
-    'pwm': split_string_to_float_array($('#zscan-settings-pwm').val()),
-    'zlist_dense':
-      split_string_to_float_array($('#zscan-settings-zval-dense').val()),
-    'zlist_sparse':
-      split_string_to_float_array($('#zscan-settings-zval-sparse').val()),
-  }
+    samples: $('#zscan-settings-samples').val(),
+    pwm: split_string_to_float_array($('#zscan-settings-pwm').val()),
+    zlist_dense: split_string_to_float_array(
+      $('#zscan-settings-zval-dense').val(),
+    ),
+    zlist_sparse: split_string_to_float_array(
+      $('#zscan-settings-zval-sparse').val(),
+    ),
+  };
 
   emit_action_cmd('zscan-settings', new_settings);
 }
@@ -139,10 +146,10 @@ function zscan_settings_update() {
  */
 function lowlight_settings_update() {
   const new_settings = {
-    'samples': $('#lowlight-settings-samples').val(),
-    'pwm': $('#lowlight-settings-pwm').val(),
-    'zval': $('#lowlight-settings-zval').val(),
-  }
+    samples: $('#lowlight-settings-samples').val(),
+    pwm: $('#lowlight-settings-pwm').val(),
+    zval: $('#lowlight-settings-zval').val(),
+  };
 
   emit_action_cmd('lowlight-settings', new_settings);
 }
@@ -153,12 +160,12 @@ function lowlight_settings_update() {
  */
 function lumialign_settings_update() {
   const new_settings = {
-    'samples': $('#lumialign-settings-samples').val(),
-    'pwm': $('#lumialign-settings-pwm').val(),
-    'zval': $('#lumialign-settings-zval').val(),
-    'range': $('#lumialign-settings-range').val(),
-    'distance': $('#lumialign-settings-distance').val(),
-  }
+    samples: $('#lumialign-settings-samples').val(),
+    pwm: $('#lumialign-settings-pwm').val(),
+    zval: $('#lumialign-settings-zval').val(),
+    range: $('#lumialign-settings-range').val(),
+    distance: $('#lumialign-settings-distance').val(),
+  };
 
   emit_action_cmd('lumialign-settings', new_settings);
 }
@@ -168,8 +175,10 @@ function lumialign_settings_update() {
  * settings to the main session manager.
  */
 function picoscope_settings_update() {
-  const trigger_level = value_from_adc($('#trigger-level-text').val()
-    , $('input[name="trigger-channel"]:checked').val());
+  const trigger_level = value_from_adc(
+    $('#trigger-level-text').val(),
+    $('input[name="trigger-channel"]:checked').val(),
+  );
 
   const new_settings = {
     'channel-a-range': $('#channel-a-range').val(),
@@ -178,10 +187,10 @@ function picoscope_settings_update() {
     'trigger-level': trigger_level,
     'trigger-direction': $('input[name="trigger-direction"]:checked').val(),
     'trigger-delay': $('#trigger-delay').val(),
-    'presample': $('#trigger-presample').val(),
-    'postsample': $('#trigger-postsample').val(),
-    'blocksize': $('#trigger-blocksize').val()
-  }
+    presample: $('#trigger-presample').val(),
+    postsample: $('#trigger-postsample').val(),
+    blocksize: $('#trigger-blocksize').val(),
+  };
 
   emit_action_cmd('picoscope-settings', new_settings);
 }
@@ -195,7 +204,7 @@ function drs_settings_update() {
     'drs-triggerdelay': $('#drs-triggerdelay').val(),
     'drs-samplerate': $('#drs-samplerate').val(),
     'drs-samples': $('#drs-samples').val(),
-  }
+  };
 
   emit_action_cmd('drs-settings', new_settings);
 }
@@ -203,9 +212,9 @@ function drs_settings_update() {
 /**
  * Action emitting function for submitting a calibration call to the DRS manager.
  */
-var SEND_CALIB_SIGNAL = 0
+var SEND_CALIB_SIGNAL = 0;
 function drs_settings_calib() {
-  console.log('Sending the DRS calibration signal', session_state );
+  console.log('Sending the DRS calibration signal', session_state);
   emit_action_cmd('drs-calib', {});
   SENT_CALIB_SIGNAL = 1;
 }
@@ -217,13 +226,11 @@ function drs_settings_calib() {
  * that requested the calibration process to be ran.
  */
 function drs_calib_complete() {
-  if( SENT_CALIB_SIGNAL == 1 ){
-   drs_settings_update();
-   SENT_CALIB_SIGNAL = 0;
+  if (SENT_CALIB_SIGNAL == 1) {
+    drs_settings_update();
+    SENT_CALIB_SIGNAL = 0;
   }
 }
-
-
 
 /** ========================================================================== */
 /** PICOSCOPE SETTING FUNCTIONS */
@@ -239,15 +246,24 @@ function drs_calib_complete() {
  */
 function range_to_mv(range) {
   switch (range) {
-    case '3': return 100;
-    case '4': return 200;
-    case '5': return 500;
-    case '6': return 1000;
-    case '7': return 2000;
-    case '8': return 5000;
-    case '9': return 10000;
-    case '10': return 20000;
-    default: return 0;
+    case '3':
+      return 100;
+    case '4':
+      return 200;
+    case '5':
+      return 500;
+    case '6':
+      return 1000;
+    case '7':
+      return 2000;
+    case '8':
+      return 5000;
+    case '9':
+      return 10000;
+    case '10':
+      return 20000;
+    default:
+      return 0;
   }
 }
 
@@ -256,11 +272,13 @@ function range_to_mv(range) {
  * value. Not used for readout, only for client side trigger level conversion.
  */
 function value_from_adc(adc, channel) {
-  const range_idx
-    = parseInt(channel) == 0 ? $('#channel-a-range').val() :
-      parseInt(channel) == 1 ? $('#channel-b-range').val() :
-        '10';
-  return adc * range_to_mv(range_idx) / 32768.;
+  const range_idx =
+    parseInt(channel) == 0
+      ? $('#channel-a-range').val()
+      : parseInt(channel) == 1
+      ? $('#channel-b-range').val()
+      : '10';
+  return (adc * range_to_mv(range_idx)) / 32768;
 }
 
 /**
@@ -268,11 +286,13 @@ function value_from_adc(adc, channel) {
  * down). Not used for readout, only for client side trigger level conversion.
  */
 function adc_from_value(value, channel) {
-  const range_idx
-    = parseInt(channel) == 0 ? $('#channel-a-range').val() :
-      parseInt(channel) == 1 ? $('#channel-b-range').val() :
-        '10';
-  return parseInt(value * 32768. / range_to_mv(range_idx));
+  const range_idx =
+    parseInt(channel) == 0
+      ? $('#channel-a-range').val()
+      : parseInt(channel) == 1
+      ? $('#channel-b-range').val()
+      : '10';
+  return parseInt((value * 32768) / range_to_mv(range_idx));
 }
 
 /**
@@ -285,17 +305,18 @@ function sync_pico_range() {
   for (const id of id_list) {
     const range_mv = range_to_mv($(`#${id}`).val());
     $(`#${id}-value`).html(
-      range_mv < 1000 ? `${parseInt(range_mv)} mV` :
-        `${parseInt(range_mv / 1000)} V`
+      range_mv < 1000
+        ? `${parseInt(range_mv)} mV`
+        : `${parseInt(range_mv / 1000)} V`,
     );
   }
 }
 
 function sync_pico_trigger() {
-  var adc = $('#trigger-level-text').val()
+  var adc = $('#trigger-level-text').val();
   var channel = $("input[name='trigger-channel']:checked").val();
   var level = value_from_adc(parseInt(adc), channel);
-  var unit = 'mV'
+  var unit = 'mV';
   if (level > 1000) {
     unit = 'V';
     level /= 1000;
@@ -304,6 +325,5 @@ function sync_pico_trigger() {
     level /= 1000;
   }
 
-  $('#trigger-level-converted').html(
-    '(' + level.toFixed(1) + unit + ')');
+  $('#trigger-level-converted').html('(' + level.toFixed(1) + unit + ')');
 }

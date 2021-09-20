@@ -75,7 +75,7 @@ function update_indicator() {
  * clicked.
  */
 function tab_click(element) {
-  if (element.siblings('.tab-content').is(":hidden")) {
+  if (element.siblings('.tab-content').is(':hidden')) {
     element.children('i').removeClass('fa-angle-left');
     element.children('i').addClass('fa-angle-down');
   } else {
@@ -94,7 +94,7 @@ function tab_click(element) {
  */
 function hex_lumi_shift(col, amt) {
   var usePound = false;
-  if (col[0] == "#") {
+  if (col[0] == '#') {
     col = col.slice(1);
     usePound = true;
   }
@@ -102,26 +102,26 @@ function hex_lumi_shift(col, amt) {
   var r = (num >> 16) + amt;
   if (r > 255) r = 255;
   else if (r < 0) r = 0;
-  var b = ((num >> 8) & 0x00FF) + amt;
+  var b = ((num >> 8) & 0x00ff) + amt;
   if (b > 255) b = 255;
   else if (b < 0) b = 0;
-  var g = (num & 0x0000FF) + amt;
+  var g = (num & 0x0000ff) + amt;
   if (g > 255) g = 255;
   else if (g < 0) g = 0;
-  return (usePound ? "#" : "") + (g | (b << 8) | (r << 16)).toString(16);
+  return (usePound ? '#' : '') + (g | (b << 8) | (r << 16)).toString(16);
 }
 
 /**
- * Adding a comment line to the calibration signoff segment.
+ * Adding a comment line to the calibration sign-off segment.
  */
 function add_comment_line(element) {
   var det_select_html = `<select class="comment-header">
-                         <option value="general">General</option>`
+                         <option value="general">General</option>`;
 
   for (const det_id in board_layout.detectors) {
-    det_select_html += `<option value="det${det_id}">Det. ${det_id}</option>`
+    det_select_html += `<option value="det${det_id}">Det. ${det_id}</option>`;
   }
-  det_select_html += '</select>'
+  det_select_html += '</select>';
 
   var new_html = `<div class="input-row">
                     <div class="input-name">${det_select_html}</div>
@@ -143,21 +143,21 @@ function draw_tileboard_view_common() {
                             orient="auto-start-reverse">
                       <path d="M 0 0 L 10 5 L 0 10 z" />
                     </marker>
-                  </defs>`
+                  </defs>`;
 
   new_html += `<rect x="25" y="25"
                      width="500" height="500"
                      fill="none"
                      stroke-width="3px"
-                     stroke="#303030"/>`
+                     stroke="#303030"/>`;
   new_html += `<polyline points="12,475 12,537 75,537"
                          stroke-width="2px"
                          fill="none"
                          stroke="#303030"
                          marker-start="url(#arrow)"
                          marker-end="url(#arrow)"/>`;
-  new_html += `<text x="85" y="541">x</text>`
-  new_html += `<text x="8" y="465">y</text>`
+  new_html += `<text x="85" y="541">x</text>`;
+  new_html += `<text x="8" y="465">y</text>`;
 
   new_html += `<polyline
                  points="537,525 560,525 537,525
@@ -168,7 +168,7 @@ function draw_tileboard_view_common() {
                          537,25  560,25  537,25"
                  stroke-width="3px"
                  stroke="#303030"
-                 fill="none"/>`
+                 fill="none"/>`;
 
   $(`#tile-layout-common-svg`).html(new_html);
 }
@@ -178,7 +178,8 @@ function draw_tileboard_view_common() {
  */
 action_column_width = 500;
 function toggle_action_column() {
-  if ($(`#action-column`).css('right').startsWith('-')) { //
+  if ($(`#action-column`).css('right').startsWith('-')) {
+    //
     show_action_column();
   } else {
     hide_action_column();
@@ -210,8 +211,10 @@ function toggle_monitor_column() {
 function show_monitor_column() {
   $('#monitor-column').css('width', `${monitor_column_width}px`);
   $('#monitor-column').css('left', `0`);
-  $('#session-column').css('width',
-    `${window.innerWidth - monitor_column_width}px`);
+  $('#session-column').css(
+    'width',
+    `${window.innerWidth - monitor_column_width}px`,
+  );
   $('#session-column').css('margin-left', `${monitor_column_width}px`);
 }
 
