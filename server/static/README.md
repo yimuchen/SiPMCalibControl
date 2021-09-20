@@ -2,9 +2,9 @@
 
 The client side uses socket IO to real-time update a web-page to reflect the
 status and results of the existing calibration session. Here are try to keep all
-the data as simple javascript maps to reduce the complexity required for both
+the data as simple JavaScript maps to reduce the complexity required for both
 server and client, as JSON parser are the only message parsers needed. This
-packages uses [JQuery](jquery) for element selection and animation, and
+package uses [JQuery](jquery) for element selection and animation, and
 [Plotly](plotly) for plotting data.
 
 - [main.js](js/main.js) is the exhaustive list of all interactions within the
