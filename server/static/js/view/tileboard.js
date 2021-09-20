@@ -12,12 +12,6 @@
  */
 var board_layout = {}; // Global object for board layout
 
-// constant flags for the return status of a code
-const CMD_PENDING = 1;
-const CMD_RUNNING = 2;
-const CMD_COMPLETE = 0;
-const CMD_ERROR = 3;
-
 const calibration_update_interval = 1000; // Update interval in milliseconds
 
 // Processes flag that can be

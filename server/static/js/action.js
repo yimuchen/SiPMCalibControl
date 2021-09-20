@@ -1,3 +1,14 @@
+/********************************************************************************
+ *
+ * action.js
+ *
+ * Master file for "actions" should be initiated client side. Actions here by
+ * means that once the data is sent, the client should not need additional
+ * parsing. If display elements should be alter from the server side, the client
+ * should wait for the appropriate signals to be initiated form the server side.
+ *
+ *******************************************************************************/
+
 /**
  * Simplified interface for emitting a user action to the socket interface.
  *
@@ -6,10 +17,17 @@
  */
 function emit_action_cmd(id, msg) {
   $('#display-message').html('');
-  socketio.emit('run-action-cmd', {
-    id: id,
-    data: msg,
-  });
+  socketio.emit('run-action-cmd', { id: id, data: msg });
+}
+
+/**
+ * Action to send to the server on the completion of the user action. Hide the
+ * tab showing the required user action.
+ */
+function complete_user_action() {
+  hide_action_column();
+  $('#user-action').addClass('hidden');
+  socketio.emit('complete-user-action', '');
 }
 
 /**
@@ -109,10 +127,9 @@ function standard_calibration_signoff() {
 
 /**
  * Rerunning a calibration process for a single detector, either to extend the
- * amount of data collected or to perform a clean rerun.
- *
- * If the calibration process is tied to a plot, and a hard re-run is requested,
- * then the old plot is first cleared from the existing HTML element.
+ * amount of data collected or to perform a clean rerun. If the calibration
+ * process is tied to a plot, and a hard re-run is requested, then the old plot
+ * is first cleared from the existing HTML element.
  */
 async function rerun_single(action_tag, detid, extend) {
   emit_action_cmd('rerun-single', {
@@ -157,12 +174,145 @@ async function debug_request_plot() {
   request_plot_by_file(file, type, 'debug-plot-div');
 }
 
+/********************************************************************************
+ *
+ * SETTING RELATED FUNCTIONS.
+ *
+ *******************************************************************************/
+
 /**
- * On completion of the user action part. Hide the tab showing the required user
- * action. Send signal to main calibration session.
+ * Action emitting function for submitting the changes on the image processing
+ * changes from the client to the main session manager.
  */
-function complete_user_action() {
-  hide_action_column();
-  $('#user-action').addClass('hidden');
-  socketio.emit('complete-user-action', '');
+function image_settings_update() {
+  const new_settings = {
+    threshold: $('#image-threshold-text').val(),
+    blur: $('#image-blur-text').val(),
+    lumi: $('#image-lumi-text').val(),
+    size: $('#image-size-text').val(),
+    ratio: $('#image-ratio-text').val(),
+    poly: $('#image-poly-text').val(),
+  };
+
+  emit_action_cmd('image-settings', new_settings);
 }
+
+/**
+ * Action emitting function for submitting the changes on the zscan setting to
+ * the main session manager.
+ */
+function zscan_settings_update() {
+  const new_settings = {
+    samples: $('#zscan-settings-samples').val(),
+    pwm: split_string_to_float_array($('#zscan-settings-pwm').val()),
+    zlist_dense: split_string_to_float_array(
+      $('#zscan-settings-zval-dense').val(),
+    ),
+    zlist_sparse: split_string_to_float_array(
+      $('#zscan-settings-zval-sparse').val(),
+    ),
+  };
+
+  emit_action_cmd('zscan-settings', new_settings);
+}
+
+/**
+ * Action emitting function for submitting the changes on the lowlight scan
+ * settings to the main session manager.
+ */
+function lowlight_settings_update() {
+  const new_settings = {
+    samples: $('#lowlight-settings-samples').val(),
+    pwm: $('#lowlight-settings-pwm').val(),
+    zval: $('#lowlight-settings-zval').val(),
+  };
+
+  emit_action_cmd('lowlight-settings', new_settings);
+}
+
+/**
+ * Action emitting function for submitting the changes on the lumi-alignment
+ * calibration settings to the main session manager.
+ */
+function lumialign_settings_update() {
+  const new_settings = {
+    samples: $('#lumialign-settings-samples').val(),
+    pwm: $('#lumialign-settings-pwm').val(),
+    zval: $('#lumialign-settings-zval').val(),
+    range: $('#lumialign-settings-range').val(),
+    distance: $('#lumialign-settings-distance').val(),
+  };
+
+  emit_action_cmd('lumialign-settings', new_settings);
+}
+
+/**
+ * Action emitting function for submitting the changes on the picoscope readout
+ * settings to the main session manager.
+ */
+function picoscope_settings_update() {
+  const trigger_level = value_from_adc(
+    $('#trigger-level-text').val(),
+    $('input[name="trigger-channel"]:checked').val(),
+  );
+
+  const new_settings = {
+    'channel-a-range': $('#channel-a-range').val(),
+    'channel-b-range': $('#channel-b-range').val(),
+    'trigger-channel': $('input[name="trigger-channel"]:checked').val(),
+    'trigger-level': trigger_level,
+    'trigger-direction': $('input[name="trigger-direction"]:checked').val(),
+    'trigger-delay': $('#trigger-delay').val(),
+    presample: $('#trigger-presample').val(),
+    postsample: $('#trigger-postsample').val(),
+    blocksize: $('#trigger-blocksize').val(),
+  };
+
+  emit_action_cmd('picoscope-settings', new_settings);
+}
+
+/**
+ * Action emitting function for submitting changes to the drs readout settings to
+ * the main session manager.
+ */
+function drs_settings_update() {
+  const new_settings = {
+    'drs-triggerdelay': $('#drs-triggerdelay').val(),
+    'drs-samplerate': $('#drs-samplerate').val(),
+    'drs-samples': $('#drs-samples').val(),
+  };
+
+  emit_action_cmd('drs-settings', new_settings);
+}
+
+/**
+ * Action emitting function for submitting a calibration call to the DRS manager.
+ */
+var SEND_CALIB_SIGNAL = 0;
+function drs_settings_calib() {
+  console.log('Sending the DRS calibration signal', session.state);
+  emit_action_cmd('drs-calib', {});
+  SENT_CALIB_SIGNAL = 1;
+}
+
+/**
+ * Additional function used to handle additional processes to run when the
+ * calibration is done. Since the calibration changes some of the settings. we
+ * are going to rerun the drs_settings_update command if this machine is the one
+ * that requested the calibration process to be ran.
+ */
+function drs_calib_complete() {
+  if (SENT_CALIB_SIGNAL == 1) {
+    drs_settings_update();
+    SENT_CALIB_SIGNAL = 0;
+  }
+}
+
+/** ========================================================================== */
+/** PICOSCOPE SETTING FUNCTIONS */
+/** Below are function specific to the step of the picoscope readout system.
+ *   Since these function are only used by the picoscope function and nowhere
+ *   else. Though these function uses css manipulation, it was decided to put the
+ *   following function in the settings.js file.
+ */
+/** ========================================================================== */
