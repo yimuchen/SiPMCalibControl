@@ -23,14 +23,14 @@ def socket_connect(socketio):
   updated to all clients. All other information will be handled by client
   request. This will also start the socket session for passing through the
   terminal session via the xterm.js socketio interface. The terminal_passthrough
-  methods is defined in the sync method
+  methods is defined in the sync method.
   """
   print('Socket connected')
   sync_system_state(socketio, session.state)
   sync_session_type(socketio, session.session_type)
-  sync_cmd_progress(socketio)
-  sync_calib_progress(socketio)
   sync_tileboard_type(socketio)
+  send_cmd_progress(socketio)
+  send_calib_progress(socketio)
 
   # Before starting the first instance, we will be resetting the session file
   # descriptor used to monitor the session back to 0 so that the full history
@@ -49,14 +49,14 @@ def terminal_input(socketio, msg):
 
 def resend_sync(socketio, msg):
   """
-  Request for resending a sync signal
+  Client-side request for resending a sync signal.
   """
   if msg == 'state':
     sync_system_state(socketio, session.state)
   elif msg == 'tileboard':
     sync_tileboard_type(socketio)
   elif msg == 'progress':
-    sync_calib_progress(socketio)
+    send_calib_progress(socketio)
   else:
     print('Unrecognized request')
 

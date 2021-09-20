@@ -94,7 +94,9 @@ def run_picoscope_settings(socketio, data):
     time.sleep(1)
     # Forcing a sleep to make sure commands have been properly processed.
   except Exception as err:
-    pass  ## Since the picoscope might not exists
+    send_error_message(
+        socketio,
+        """Error setting up new PICO settings. Make sure picoscope exists.""")
   sync_calibration_settings(socketio)
 
 
@@ -126,11 +128,11 @@ def run_drs_calib(socketio):
   wait_user_action(
       socketio,
       """Running the DRS4 self calibration sequence, please make sure all
-    physical connectors to the 4 inputs channels are disconnected before
-    continuing""")
-  print("Running calibration command")
+      physical connectors to the 4 inputs channels are disconnected before
+      continuing""")
+  print("Running DRS calibration sequence")
   session.cmd.drs.run_calibrations()
-  send_sync_signal(socketio, 'sync-drs-calib-complete', '')
+  emit_sync_signal(socketio, 'sync-drs-calib-complete', '')
 
 
 def session_interrupt(socketio):
@@ -153,7 +155,7 @@ def run_calib_cmd(socketio, cmd, action, detid):
       session.progress_check[action] = {str(detid): status}
     else:
       session.progress_check[action][str(detid)] = status
-    sync_calib_progress(socketio)
+    send_calib_progress(socketio)
 
   set_status(action, detid, session.CMD_PENDING)
   set_status(action, detid, session.CMD_RUNNING)
@@ -203,7 +205,6 @@ def run_standard_calibration(socketio, msg):
   print("WAITING USER ACTION")
   wait_user_action(socketio, __std_calibration_lighton_msg)
   print("USER ACTION COMPLETE")
-
 
   # The visual alignment stuff.
   print('RUNNING VISUAL CALIBARTION')
@@ -521,8 +522,8 @@ def clear_cache():
 
 def set_light(state):
   """
-  Thin wrapper around the gpio lights on/off method. This is for local testing on
-  a machine that doesn't have real gpio control.
+  Thin wrapper around the GPIO lights on/off method. This is for local testing on
+  a machine that doesn't have real GPIO control.
   """
   try:
     if state == 'on':

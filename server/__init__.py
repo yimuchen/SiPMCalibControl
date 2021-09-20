@@ -1,3 +1,11 @@
+"""
+Defining show the socket io/Flask app instance is initialized, how client side
+defined (AJAX) URLs should be processes and a simple wrapper for the parsing of
+socket signals should be processes. For more detailed documentation of how
+signals will be processes, see the documentation in the [sockets](sockets)
+directory.
+"""
+
 from flask import Flask, render_template, Response, jsonify, request
 from flask_socketio import SocketIO
 import datetime
@@ -27,6 +35,12 @@ def create_server_flask(debug=False):
   """
   socketio.app = Flask(__name__)
   socketio.app.debug = debug
+
+  ###############################################################################
+  """
+  Defining the URLs used for page display.
+  """
+  ###############################################################################
 
   @socketio.app.route('/')
   def index():
@@ -61,11 +75,12 @@ def create_server_flask(debug=False):
     """
     return render_template('playground.html')
 
+  ###############################################################################
   """
-  URLs used for local file exposure. In this framework, local file exposures are
-  performed using AJAX requests. The following functions returns the requested
-  URLS.
+  URLs used for local file and session data exposure via client side AJAX
+  requests.
   """
+  ###############################################################################
 
   @socketio.app.route('/geometry/<boardtype>')
   def geometry(boardtype):
@@ -121,6 +136,12 @@ def create_server_flask(debug=False):
     return Response(current_image_bytes(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
+  ###############################################################################
+  """
+  Socket session processing. All processing functions are defined in parsing.py
+  """
+  ###############################################################################
+
   @socketio.on('connect', namespace='/sessionsocket')
   def establish_connection():
     print('Connection established')
@@ -145,6 +166,12 @@ def create_server_flask(debug=False):
   @socketio.on('interrupt', namespace='/sessionsocket')
   def interrupt():
     send_interrupt(socketio)
+
+  ###############################################################################
+  """
+  Initialization of the underlying command line instance.
+  """
+  ###############################################################################
 
   ## Resetting the socket application stuff
   socketio.init_app(socketio.app)
@@ -185,8 +212,8 @@ def create_server_flask(debug=False):
   except Exception as err:
     logger.printerr(str(err))
     logger.printwarn("""
-        There was error in the setup process, program will continue but will
-        most likely misbehave! Use at your own risk!
-        """)
+      There was error in the setup process, program will continue but will most
+      likely misbehave! Use at your own risk!
+      """)
 
   return socketio.app
