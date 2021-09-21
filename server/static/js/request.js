@@ -10,7 +10,7 @@
  *
  *******************************************************************************/
 
-const { ajax } = require('jquery');
+// const { ajax } = require('jquery');
 
 /**
  * Master function for submitting an AJAX request, since most of all return types
@@ -25,7 +25,7 @@ async function ajax_request(
   success,
   retry = -1,
   fail_msg = '',
-  max_try = 10
+  max_try = 10,
 ) {
   $.ajax({
     dataType: 'json',
@@ -43,7 +43,7 @@ async function ajax_request(
           ajax_request(url, success, retry, fail_msg, max_try - 1);
         } else {
           console.log(
-            `Failed too many times, not attempting ajax request at ${url}`
+            `Failed too many times, not attempting ajax request at ${url}`,
           );
         }
       }
@@ -90,7 +90,7 @@ async function request_status_update() {
       await sleep(session.client_engines.monitor_interval);
       request_status_update();
     },
-    session.client_engines.monitor_interval
+    session.client_engines.monitor_interval,
   );
 }
 
@@ -111,7 +111,7 @@ async function request_plot_by_file(filename, type, id) {
     `databyfile/${type}/${filename.replaceAll('/', '@')}`,
     async function (json) {
       parse_plot_data(json, id);
-    }
+    },
   );
 }
 
@@ -139,14 +139,14 @@ async function request_plot_by_detid(detid, type, id) {
  * For both the system and standard calibration processes.
  */
 function update_tileboard_types() {
-  update_tileboard_list(`system`);
-  update_tileboard_list(`standard`);
-}
-
-function update_tileboard_list(list_type) {
-  ajax_request(`report/${list_type}boards`, function (json) {
-    update_tileboard_list(list_type, json);
+  ajax_request(`report/systemboards`, function (json) {
+    update_tileboard_list('system', json);
   });
+  ajax_request(`report/standardboards`, function (json) {
+    update_tileboard_list('standard', json);
+  });
+  //update_tileboard_list(`system`);
+  //update_tileboard_list(`standard`);
 }
 
 /**
