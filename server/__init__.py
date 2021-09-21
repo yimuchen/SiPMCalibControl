@@ -22,7 +22,10 @@ import ctlcmd.picocmd as picocmd
 import cmod.logger as logger
 import sys, copy, io, json, os, re
 
-socketio = SocketIO(debug=False, async_mode='threading', )
+##
+# Right now only the threading async mode works without addition settings. This
+# is not ideal.
+socketio = SocketIO(debug=False, async_mode='threading', logger=False, )
 
 from .sockets import session
 from .sockets.parsing import *
@@ -50,13 +53,6 @@ def create_server_flask(debug=False):
     path.
     """
     return render_template('index.html')
-
-  @socketio.app.route('/testing')
-  def testing():
-    """
-    Testing page
-    """
-    return render_template('testing.html')
 
   @socketio.app.route('/debug')
   def expert():
