@@ -277,7 +277,6 @@ class visualcenterdet(cmdbase.singlexycmd, visualmeta):
 
       ## Early exit if det is not found.
       if (center.x < 0 or center.y < 0):
-        print(self.gcoder.opx, self.gcoder.opy)
         raise Exception("""
           Detector element in field-of-view lost! Check current camera position
           with command visualdetshow'""")

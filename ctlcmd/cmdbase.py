@@ -966,10 +966,7 @@ class readoutcmd(controlcmd):
     MODE_NONE = -1
 
   def __init__(self, cmd):
-    from cmod.readoutmodel import SiPMModel, DiodeModel
     controlcmd.__init__(self, cmd)
-    self.sipm = SiPMModel()
-    self.diode = DiodeModel()
 
   def add_args(self):
     group = self.parser.add_argument_group(
@@ -1023,6 +1020,11 @@ class readoutcmd(controlcmd):
                        pedestal subtraction for scope-like readouts
                        (DRS4/Picoscope). Leave 0 to ignore pedestal
                        subtraction""")
+
+    ## Additional initialization done here:
+    from cmod.readoutmodel import SiPMModel, DiodeModel
+    self.sipm = SiPMModel()
+    self.diode = DiodeModel()
 
   def parse(self, args):
     """
@@ -1108,7 +1110,11 @@ class readoutcmd(controlcmd):
       pass
 
     if average:
-      return np.mean(readout_list), np.std(readout_list)
+      if self._is_counting(args):
+        return np.mean(readout_list), np.std(readout_list) / np.sqrt(
+            args.samples)
+      else:
+        return np.mean(readout_list), np.std(readout_list)
     else:
       return readout_list
 
@@ -1169,10 +1175,28 @@ class readoutcmd(controlcmd):
     """
     try:  # For standalone runs with external trigger
       self.gpio.pulse(n, wait)
-    except:
+    except:  # Do nothing if trigger system isn't accessible
       pass
 
-  def read_model(self, channel, samples):
+  def _is_counting(self, args):
+    """
+    Simple check for whether this the target readout is a counting system
+    """
+    if args.mode == readoutcmd.Mode.MODE_PICO:
+      return True
+    elif args.mode == readoutcmd.Mode.MODE_DRS:
+      return True
+    elif args.mode == readoutcmd.Mode.MODE_ADC:
+      return True
+    else:  # For mock readouts
+      if args.channel >= 0:
+        return True
+      elif args.channel % 2 == 0:
+        return True
+      else:
+        return False
+
+  def read_model(self, args):
     """
     Generating a fake readout from a predefined model. THe location is extracted
     from the current gantry position
@@ -1181,15 +1205,15 @@ class readoutcmd(controlcmd):
     y = self.gcoder.opy
     z = self.gcoder.opz
 
-    det_x = self.board.det_map[str(channel)].orig_coord[0]
-    det_y = self.board.det_map[str(channel)].orig_coord[1]
+    det_x = self.board.det_map[str(args.channel)].orig_coord[0]
+    det_y = self.board.det_map[str(args.channel)].orig_coord[1]
 
     r0 = ((x - det_x)**2 + (y - det_y)**2)**0.5
     pwm = self.gpio.pwm_duty(0)
 
-    if channel >= 0 or channel % 2 == 0:
+    if self._is_counting(args):
       ## This is a typical readout, expect a SiPM output,
-      return self.sipm.read_model(r0, z, pwm, samples)
+      return self.sipm.read_model(r0, z, pwm, args.samples)
     else:
       ## This is a linear photo diode readout
-      return self.diode.read_model(r0, z, pwm, samples)
+      return self.diode.read_model(r0, z, pwm, args.samples)

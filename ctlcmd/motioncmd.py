@@ -82,10 +82,7 @@ class getcoord(cmdbase.controlcmd):
 
 
 class disablestepper(cmdbase.controlcmd):
-  """
-  Manual disabling of stepper motor. Boolean flag for stopping each of the x,y,z
-  components.
-  """
+  """Manual disabling of stepper motor."""
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -105,10 +102,7 @@ class disablestepper(cmdbase.controlcmd):
 
 
 class enablestepper(cmdbase.controlcmd):
-  """
-  Manual re-enabling of stepper motor. Boolean flag for stopping each of the
-  x,y,z components.
-  """
+  """Manual re-enabling of stepper motor."""
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -128,9 +122,7 @@ class enablestepper(cmdbase.controlcmd):
 
 
 class movespeed(cmdbase.controlcmd):
-  """
-  Setting the motion speed of the gantry x-y-z motors. Units in mm/s.
-  """
+  """Setting the motion speed of the gantry x-y-z motors. Units in mm/s."""
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -159,7 +151,7 @@ class movespeed(cmdbase.controlcmd):
 class sendhome(cmdbase.controlcmd):
   """
   Sending the gantry system home. This will reset in the internal coordinate
-  systems in the gantry. So use only when needed.
+  systems in the gantry, so use only when needed.
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -212,9 +204,21 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
                              help="""
                              Forcing the storage of scan results as session
                              information""")
+    self.parser.add_argument('--power',
+                             '-p',
+                             type=float,
+                             help="""
+                             The PWM duty cycle to set the pulser board during
+                             the luminosity scan.
+                             """)
+
+  def parse(self, args):
+    if args.power == None:
+      args.power = self.gpio.pwm_duty(0)
+    return args
 
   def run(self, args):
-    self.gpio.pwm(0, args.power, 1e5)  # Maximum PWM frequency
+    self.gpio.pwm(0, args.power, 1e5)
     lumi = []
     unc = []
     total = len(args.x)
