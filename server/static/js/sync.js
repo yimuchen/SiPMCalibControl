@@ -138,17 +138,17 @@ function run_progress_update() {
     return;
   }
 
-  updating_progress = true;
-  while (progress_queue.length) {
-    progress = progress_queue[0];
-    progress_queue.shift();
+  session.updating_progress = true;
+  while (session.progress_queue.length) {
+    progress = session.progress_queue[0];
+    session.progress_queue.shift();
 
     // Functions defined in view/progress.js
     progress_update_bar(progress);
     progress_update_table(progress);
     progress_update_det_summary(progress);
   }
-  updating_progress = false;
+  session.updating_progress = false;
 }
 
 /**
@@ -156,7 +156,7 @@ function run_progress_update() {
  * progress_update_cmd method in view/progress.js
  */
 function sync_cmd_progress(msg) {
-  progress_update_cmd(msg)
+  progress_update_cmd(msg);
 }
 
 /**
