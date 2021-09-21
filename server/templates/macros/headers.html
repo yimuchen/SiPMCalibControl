@@ -1,10 +1,14 @@
-{% macro headers() %}
-
-{# All relevant files should be downloadable by the ./get_external.sh script in the main server directory.#}
-
-{# External font/style sheets #}
-<link href="{{url_for('static', filename='external/fontawesome-free/css/all.min.css')}}" rel="stylesheet" />
-<link href="{{url_for('static', filename='external/xterm/css/xterm.css')}}" rel='stylesheet'/>
+{% macro headers() %} {# All relevant files should be downloadable by the
+./get_external.sh script in the main server directory.#} {# External font/style
+sheets #}
+<link
+  href="{{url_for('static', filename='external/fontawesome-free/css/all.min.css')}}"
+  rel="stylesheet"
+/>
+<link
+  href="{{url_for('static', filename='external/xterm/css/xterm.css')}}"
+  rel="stylesheet"
+/>
 
 {# External javascript libraries #}
 <script src="{{url_for('static', filename='external/jquery/dist/jquery.min.js')}}"></script>
@@ -13,17 +17,19 @@
 <script src="{{url_for('static', filename='external/xterm/lib/xterm.js')}}"></script>
 
 {#Our own CSS stylesheet #}
-<link rel="stylesheet" href="{{url_for('static',filename='style.css')}}">
+<link rel="stylesheet" href="{{url_for('static',filename='style.css')}}" />
 
 {# Common javascript elements #}
 <script src="{{url_for('static',filename='js/action.js')}}"></script>
-<script src="{{url_for('static',filename='js/monitor.js')}}"></script>
-<script src="{{url_for('static',filename='js/plotting.js')}}"></script>
-<script src="{{url_for('static',filename='js/settings.js')}}"></script>
-<script src="{{url_for('static',filename='js/styling.js')}}"></script>
+<script src="{{url_for('static',filename='js/global.js')}}"></script>
+<script src="{{url_for('static',filename='js/request.js')}}"></script>
 <script src="{{url_for('static',filename='js/sync.js')}}"></script>
-<script src="{{url_for('static',filename='js/terminal.js')}}"></script>
-<script src="{{url_for('static',filename='js/view_tileboard.js')}}"></script>
-<script src="{{url_for('static',filename='js/view_progress.js')}}"></script>
+<script src="{{url_for('static',filename='js/sync.js')}}"></script>
+<script src="{{url_for('static',filename='js/view/layout.js')}}"></script>
+<script src="{{url_for('static',filename='js/view/monitor.js')}}"></script>
+<script src="{{url_for('static',filename='js/view/plots.js')}}"></script>
+<script src="{{url_for('static',filename='js/view/progress.js')}}"></script>
+<script src="{{url_for('static',filename='js/view/settings.js')}}"></script>
+<script src="{{url_for('static',filename='js/view/tileboard.js')}}"></script>
 
 {% endmacro %}
