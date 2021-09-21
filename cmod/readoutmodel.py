@@ -47,10 +47,10 @@ class SiPMModel(object):
     self.npix = kwargs.get('npix', 1000)
     self.gain = kwargs.get('gain', 120)
     self.lamb = kwargs.get('lamb', 0.03)
-    self.ap_prob = kwargs.get('ap_prob', 0.08)
-    self.sig0 = kwargs.get('sig0', 0.04)
-    self.sig1 = kwargs.get('sig1', 0.01)
-    self.beta = kwargs.get('beta', 60)
+    self.ap_prob = kwargs.get('ap_prob', 0.05)
+    self.sig0 = kwargs.get('sig0', 20)
+    self.sig1 = kwargs.get('sig1', 5)
+    self.beta = kwargs.get('beta', 120 )
     self.eps = kwargs.get('eps', 0.005)
     self.dcfrac = kwargs.get('dcfrac', 0.04)
     self.dc_dist = DarkCurrentDistribution(self.gain, self.eps)
@@ -65,7 +65,7 @@ class SiPMModel(object):
     return self._smear_values(nfired)
 
   def _calc_npixels_fired(self, r0, z, pwm):
-    N0 = 30000 * self.npix * _pwm_multiplier(pwm)
+    N0 = 500 * self.npix * _pwm_multiplier(pwm)
     Nraw = N0 * z / (r0**2 + z**2)**1.5
     return self.npix * (1 - np.exp(-Nraw / self.npix))
 
@@ -98,7 +98,7 @@ class SiPMModel(object):
     apcount = np.random.binomial(gp_list, self.ap_prob)
     apval = np.random.exponential(self.beta, size=(nevents, np.max(apcount)))
     _, index = np.indices((nevents, np.max(apcount)))
-    apval = np.where(apcount[:, np.newaxis] > index, 0, apval)
+    apval = np.where(apcount[:, np.newaxis] > index, apval, 0)
     apval = np.sum(apval, axis=-1)  # Reducing of the last index
 
     # Adding the dark current distributions.
@@ -115,13 +115,12 @@ class SiPMModel(object):
 class DiodeModel(object):
   def __init__(self, **kwargs):
     """
-    This is a tset
+    Simple linear readout model for Diodes. Scaled output to be similar with the
+    SiPM model for easy comparison.
     """
     pass
 
   def read_model(self, r0, z, pwm, samples):
-    ## Setting this to have the same readout value at the low light end for
-    ## Easier comparison.
     N0 = 30000 * 1000 * 120 * _pwm_multiplier(pwm)
     mean = N0 * z / (r0**2 + z**2)**1.5
     return np.random.normal(loc=mean, scale=60 / 2, size=samples)
@@ -129,8 +128,8 @@ class DiodeModel(object):
 
 class DarkCurrentDistribution(stats.rv_continuous):
   """
-  Dark current distribution (Unsmeared!)
-  Smearing can be done by adding a Gaussian random number later
+  Unsmeared dark current distribution, as smearing can be done by adding a
+  Gaussian random number in numpy
   """
   def __init__(self, gain, epsilon):
     stats.rv_continuous.__init__(self, a=epsilon, b=gain - epsilon)
