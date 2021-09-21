@@ -86,8 +86,6 @@ function make_tileboard_default_html() {
 
   // Clear the tile-layout-svg first.
   $(`#tile-layout-svg`).html(``);
-  let shape_html = ``;
-  let text_html = ``;
   if (Object.keys(board_layout.detectors).length > 0) {
     for (var detid in board_layout.detectors) {
       const x_raw = board_layout.detectors[detid]['orig'][0];
@@ -97,7 +95,7 @@ function make_tileboard_default_html() {
       const y = x_max - y_raw * scale + corner_offset;
 
       $(`#tile-layout-svg`).append(
-        dom('rect', {
+        svgdom('rect', {
           x: `${x - 20}`,
           y: `${y - 20}`,
           width: '40',
@@ -108,7 +106,7 @@ function make_tileboard_default_html() {
       );
 
       $(`#tile-layout-svg`).append(
-        dom(
+        svgdom(
           'text',
           {
             x: `${x}`,
@@ -122,7 +120,7 @@ function make_tileboard_default_html() {
     }
   } else {
     $(`#tile-layout-svg`).append(
-      dom(
+      svgdom(
         'text',
         {
           x: '275',
@@ -218,7 +216,7 @@ function make_tileboard_segment_html(tileboard_json) {
 
     // Path part for display shape
     $(`#tile-layout-svg`).append(
-      dom('path', {
+      svgdom('path', {
         id: `tile-layout-${detid}`,
         d: `${path_str}`,
         onclick: `show_det_summary(${detid})`,
@@ -232,8 +230,8 @@ function make_tileboard_segment_html(tileboard_json) {
     const x = r_det * scale * Math.cos(a_det * deg) + offset_x;
     const y = r_det * scale * Math.sin(a_det * deg) + offset_y;
 
-    let text_dom = $(`#tile-layout-svg`).append(
-      dom(
+    $(`#tile-layout-svg`).append(
+      svgdom(
         'text',
         {
           x: `${x}`,
@@ -257,15 +255,12 @@ function make_tileboard_segment_html(tileboard_json) {
  */
 
 function make_detector_summary_html() {
-  let coordinate_html = ``;
-  let plot_html = ``;
+  $('#single-det-summary').html('');
+  $('#det-plot-and-figure').html('');
   for (const detid in board_layout.detectors) {
-    coordinate_html += make_detector_coordinate_html(detid);
-    plot_html += make_detector_plot_html(detid);
+    $('#single-det-summary').append(make_detector_coordinate_dom(detid));
+    $('#det-plot-and-figure').append(make_detector_plot_dom(detid));
   }
-
-  $('#single-det-summary').html(coordinate_html);
-  $('#det-plot-and-figure').html(plot_html);
 }
 
 /**
@@ -275,7 +270,7 @@ function make_detector_summary_html() {
  * apparent parsing would be for the various processes where re-run/extension
  * button will need to be added.
  */
-function make_detector_coordinate_html(detid) {
+function make_detector_coordinate_dom(detid) {
   align_dom = dom('div', { class: 'input-align' }, [
     dom('div', { class: 'input-row' }, [
       dom('span', { class: 'input-name' }, 'Det ID:'),
@@ -290,13 +285,16 @@ function make_detector_coordinate_html(detid) {
       dom('span', { class: 'input-name' }, 'Lumi. coord'),
       dom('span', { class: 'input-inputs', id: 'coord-lumi' }),
       dom('span', { class: 'input-units' }, [
-        dom('button', {
-          id: `rerun-lumi-scan-${detid}`,
-          class: 'action-button',
-          onclick: `rerun_single('lumialign','${detid}', false)`,
-          disabled: '',
-        }),
-        'Rerun',
+        dom(
+          'button',
+          {
+            id: `rerun-lumi-scan-${detid}`,
+            class: 'action-button',
+            onclick: `rerun_single('lumialign','${detid}', false)`,
+            disabled: '',
+          },
+          'Rerun',
+        ),
       ]),
     ]),
     // For visual alignment coordinates
@@ -304,13 +302,16 @@ function make_detector_coordinate_html(detid) {
       dom('span', { class: 'input-name' }, 'Vis. coord'),
       dom('span', { class: 'input-inputs', id: 'coord-vis' }),
       dom('span', { class: 'input-units' }, [
-        dom('button', {
-          id: `rerun-vis-scan-${detid}`,
-          class: 'action-button',
-          onclick: `rerun_single('visalign','${detid}', false)`,
-          disabled: '',
-        }),
-        'Rerun',
+        dom(
+          'button',
+          {
+            id: `rerun-vis-scan-${detid}`,
+            class: 'action-button',
+            onclick: `rerun_single('visalign','${detid}', false)`,
+            disabled: '',
+          },
+          'Rerun',
+        ),
       ]),
     ]),
   ]);
@@ -411,7 +412,7 @@ function detector_visalign_img_id(detid) {
 /**
  * Making the dummy detector HTML plot DOM objects
  */
-function make_detector_plot_html(detid) {
+function make_detector_plot_dom(detid) {
   let plot_dom = dom('div', { class: 'plot-container' });
   for (const tag of plot_processes) {
     plot_dom.append(
@@ -421,7 +422,7 @@ function make_detector_plot_html(detid) {
   plot_dom.append(
     dom(
       'div',
-      { class: 'plot', id: `single-det-summary-plot-${det}-visalign` },
+      { class: 'plot', id: `single-det-summary-plot-${detid}-visalign` },
       [
         dom('img', {
           id: `${detector_visalign_img_id(detid)}`,
@@ -431,7 +432,7 @@ function make_detector_plot_html(detid) {
     ),
   );
 
-  return dom('div', { class: 'hidden', id: 'det-plot-container-${detid}' }, [
+  return dom('div', { class: 'hidden', id: `det-plot-container-${detid}` }, [
     plot_dom,
   ]);
 }

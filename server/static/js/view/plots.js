@@ -45,7 +45,8 @@ async function parse_plot_data(data, div_id) {
         console.log('Unknown plot type', type);
     }
   }
-  await sleep(1000);
+  await sleep(200);
+  console.log('Requesting plot update!', update);
   if (update) {
     // Rerunning the plot request
     request_plot_by_file(filename, type, div_id);
