@@ -39,19 +39,19 @@ function tab_click(element) {
  * 8-bit limit.
  */
 function hex_lumi_shift(col, amt) {
-  var usePound = false;
+  let usePound = false;
   if (col[0] == '#') {
     col = col.slice(1);
     usePound = true;
   }
-  var num = parseInt(col, 16);
-  var r = (num >> 16) + amt;
+  let num = parseInt(col, 16);
+  let r = (num >> 16) + amt;
   if (r > 255) r = 255;
   else if (r < 0) r = 0;
-  var b = ((num >> 8) & 0x00ff) + amt;
+  let b = ((num >> 8) & 0x00ff) + amt;
   if (b > 255) b = 255;
   else if (b < 0) b = 0;
-  var g = (num & 0x0000ff) + amt;
+  let g = (num & 0x0000ff) + amt;
   if (g > 255) g = 255;
   else if (g < 0) g = 0;
   return (usePound ? '#' : '') + (g | (b << 8) | (r << 16)).toString(16);
@@ -61,62 +61,103 @@ function hex_lumi_shift(col, amt) {
  * Adding a comment line to the calibration sign-off segment.
  */
 function add_comment_line(element) {
-  var det_select_html = `<select class="comment-header">
-                         <option value="general">General</option>`;
+  let det_select_dom = dom('select', { class: 'comment-header' }, [
+    dom('option', { value: 'general' }, 'General'),
+  ]);
 
-  for (const det_id in board_layout.detectors) {
-    det_select_html += `<option value="det${det_id}">Det. ${det_id}</option>`;
-  }
-  det_select_html += '</select>';
+  board_layout.detectors.forEach((detid) => {
+    det_select_dom.append(
+      dom('option', { value: `det${detid}` }, `Det. ${detid}`)
+    );
+  });
 
-  var new_html = `<div class="input-row">
-                    <div class="input-name">${det_select_html}</div>
-                    <div class="input-units comment-content">
-                      <input type="text" class="comment-text"></input>
-                    </div>
-                  </div>`;
   console.log(element);
-  element.siblings('.signoff-comment-lines').append(new_html);
+  element
+    .siblings('.signoff-comment-lines')
+    .append(
+      dom('div', { class: 'input-row' }, [
+        dom('div', { class: 'input-name' }, [det_select_dom]),
+        dom(
+          'div',
+          { class: 'input-units comment-content' }[
+            dom('input', { type: 'text', class: 'comment-text' })
+          ]
+        ),
+      ])
+    );
 }
 
 /**
  * Drawing column elements of the tile board view
  */
 function draw_tileboard_view_common() {
-  let new_html = `<defs>
-                    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5"
-                            markerWidth="6" markerHeight="6"
-                            orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" />
-                    </marker>
-                  </defs>`;
+  // Getting the main canvas element
+  let svg = $(`#tile-layout-common-svg`);
 
-  new_html += `<rect x="25" y="25"
-                     width="500" height="500"
-                     fill="none"
-                     stroke-width="3px"
-                     stroke="#303030"/>`;
-  new_html += `<polyline points="12,475 12,537 75,537"
-                         stroke-width="2px"
-                         fill="none"
-                         stroke="#303030"
-                         marker-start="url(#arrow)"
-                         marker-end="url(#arrow)"/>`;
-  new_html += `<text x="85" y="541">x</text>`;
-  new_html += `<text x="8" y="465">y</text>`;
+  // Wiping the existing elements
+  svg.html('');
 
-  new_html += `<polyline
-                 points="537,525 560,525 537,525
-                         537,425 560,425 537,425
-                         537,325 560,325 537,325
-                         537,225 560,225 537,225
-                         537,125 560,125 537,125
-                         537,25  560,25  537,25"
-                 stroke-width="3px"
-                 stroke="#303030"
-                 fill="none"/>`;
+  // Adding the various elements into the tileboard view
 
-  $(`#tile-layout-common-svg`).html(new_html);
+  // The arrow marker style
+  svg.append(
+    dom('defs', {}, [
+      dom(
+        'marker',
+        {
+          id: 'arrow',
+          viewBox: '0 0 10 10',
+          refX: '5',
+          refY: '5',
+          markerWidth: '6',
+          markerHeight: '6',
+          orient: 'auto-start-reverse',
+        },
+        dom('path', { d: 'M 0 0 L 10 5 L 0 10 z' })
+      ),
+    ])
+  );
+
+  // The outer rectangle
+  svg.append(
+    dom('rect', {
+      x: '25',
+      y: '25',
+      width: '500',
+      height: '500',
+      fill: 'none',
+      stroke: '#303030',
+      'stroke-width': '3px',
+    })
+  );
+
+  // Adding the axis arrows
+  svg.append(
+    dom('polyline', {
+      points: '12,475 12,537 75,537',
+      fill: 'none',
+      stroke: '#303030',
+      'stroke-width': '2px',
+      'marker-start': 'url(#arrow)',
+      'marker-end': 'url(#arrow)',
+    })
+  );
+
+  // Adding the axis title
+  svg.append(dom('text', { x: '85', y: '541' }, 'x'));
+  svg.append(dom('text', { x: '8', y: '465' }, 'y'));
+
+  // Adding the z axis.
+  svg.append(
+    dom('polyline', {
+      points: `537,525 560,525 537,525 537,425 560,425 537,425 537,325 560,325
+               537,325 537,225 560,225 537,225 537,125 560,125 537,125 537,25
+               560,25  537,25`,
+      'stroke-width': '3px',
+      stroke: '#303030',
+      fill: 'none',
+    })
+  );
 }
 
 /**
@@ -159,7 +200,7 @@ function show_monitor_column() {
   $('#monitor-column').css('left', `0`);
   $('#session-column').css(
     'width',
-    `${window.innerWidth - monitor_column_width}px`,
+    `${window.innerWidth - monitor_column_width}px`
   );
   $('#session-column').css('margin-left', `${monitor_column_width}px`);
 }
@@ -169,4 +210,79 @@ function hide_monitor_column() {
   $(`#monitor-column`).css('left', `-${monitor_column_width}px`);
   $('#session-column').css('margin-left', `0px`);
   $(`#session-column`).css('width', `${window.innerWidth}px`);
+}
+
+function update_valid_reference(json) {
+  // clearing the html containers for references
+  $('#standard-calibration-boardtype-container')
+    .children('.input-row')
+    .each(function () {
+      if ($(this).find("input[name='ref-calibration']").length > 0) {
+        $(this).html(``);
+      }
+    });
+
+  // Making the new reference calibration objects
+  let new_html = $('#standard-calibration-boardtype-container').html();
+
+  for (var i = 0; i < json.valid.length; ++i) {
+    $('#standard-calibration-boardtype-container').append(
+      dom('div', { class: 'input-row' }, [
+        dom('span', { class: 'input-name' }, i == 0 ? 'Reference' : ''),
+        dom('span', { class: 'input-units' }, [
+          dom('input', {
+            type: 'radio',
+            name: 'ref-calibration',
+            value: `${json.valid[i].tag}`,
+          }),
+        ]),
+        dom(
+          'span',
+          { class: 'input-units' },
+          `${json.valid[i].boardtype} (${json.value[i].time})`
+        ),
+      ])
+    );
+  }
+}
+
+function update_tileboard_list(type, json) {
+  let list_dom = $(`#${list_type}-calibration-boardtype-container`);
+  list_dom.html(''); // Wiping existing content
+
+  // Adding header for standard type.dd
+  if (type == 'standard') {
+    list_dom.append(
+      dom('div', { class: 'input-row' }, [
+        dom('span', { class: 'input-name' }, 'Board ID'),
+        dom('span', { class: 'input-units' }),
+        dom('input', {
+          type: 'text',
+          id: 'std-calibration-boardid',
+          class: 'input-units',
+        }),
+      ])
+    );
+  }
+
+  let first = true;
+  for (var boardtype in json) {
+    const prefix = first ? 'Board type' : '';
+    first = false;
+    list_dom.append(
+      dom('div', { class: 'input-row' }, [
+        dom('span', { class: 'input-name' }, prefix),
+        dom('input', {
+          type: 'radio',
+          name: `${type}-calibration-boardtype`,
+          value: `${boardtype}`,
+        }),
+        dom(
+          'span',
+          { class: 'input-units' },
+          `${json[boardtype]['name']} (${json[boardtype]['number']})`
+        ),
+      ])
+    );
+  }
 }

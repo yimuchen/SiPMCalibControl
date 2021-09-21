@@ -25,7 +25,7 @@ async function ajax_request(
   success,
   retry = -1,
   fail_msg = '',
-  max_try = 10,
+  max_try = 10
 ) {
   $.ajax({
     dataType: 'json',
@@ -43,7 +43,7 @@ async function ajax_request(
           ajax_request(url, success, retry, fail_msg, max_try - 1);
         } else {
           console.log(
-            `Failed too many times, not attempting ajax request at ${url}`,
+            `Failed too many times, not attempting ajax request at ${url}`
           );
         }
       }
@@ -90,7 +90,7 @@ async function request_status_update() {
       await sleep(session.client_engines.monitor_interval);
       request_status_update();
     },
-    session.client_engines.monitor_interval,
+    session.client_engines.monitor_interval
   );
 }
 
@@ -111,7 +111,7 @@ async function request_plot_by_file(filename, type, id) {
     `databyfile/${type}/${filename.replaceAll('/', '@')}`,
     async function (json) {
       parse_plot_data(json, id);
-    },
+    }
   );
 }
 
@@ -128,12 +128,9 @@ async function request_plot_by_file(filename, type, id) {
  * generated.
  */
 async function request_plot_by_detid(detid, type, id) {
-  ajax_request(
-    `data/${type}/${detid}`,
-    async function (json) {
-      parse_plot_data(json, id);
-    },
-  );
+  ajax_request(`data/${type}/${detid}`, async function (json) {
+    parse_plot_data(json, id);
+  });
 }
 
 /**
@@ -147,43 +144,8 @@ function update_tileboard_types() {
 }
 
 function update_tileboard_list(list_type) {
-  $.ajax({
-    dataType: 'json',
-    mimeType: 'application/json',
-    url: `report/${list_type}boards`,
-    success: function (json) {
-      let new_html =
-        list_type != 'standard'
-          ? ``
-          : `<div class="input-row">
-                      <span class="input-name">Board ID</span>
-                      <span class="input-units"></span>
-                      <input type="text"
-                             id="std-calibration-boardid"
-                             class="input-units" />
-                    </div>`;
-      let first = true;
-      for (var boardtype in json) {
-        const prefix = first ? 'Board type' : '';
-        first = false;
-        new_html += `
-          <div class="input-row">
-            <span class="input-name">${prefix}</span>
-            <input type="radio"
-                   name="${list_type}-calibration-boardtype"
-                   value="${boardtype}" />
-            <span class="input-units">
-              ${json[boardtype]['name']}
-              (${json[boardtype]['number']})
-            </span>
-          </div>`;
-      }
-
-      $(`#${list_type}-calibration-boardtype-container`).html(new_html);
-    },
-    error: function () {
-      console.log(`Failed to update tile board types`);
-    },
+  ajax_request(`report/${list_type}boards`, function (json) {
+    update_tileboard_list(list_type, json);
   });
 }
 
@@ -191,45 +153,8 @@ function update_tileboard_list(list_type) {
  * Updating the display of reference calibration results available. This is
  * performed via an AJAX request.
  */
-function update_valid_reference() {
-  $.ajax({
-    dataType: 'json',
-    mimeType: 'application/json',
-    url: `report/validreference`,
-    success: function (json) {
-      // clearing the html containers for references
-      $('#standard-calibration-boardtype-container')
-        .children('.input-row')
-        .each(function () {
-          if ($(this).find("input[name='ref-calibration']").length > 0) {
-            $(this).html(``);
-          }
-        });
-
-      // Making the new reference calibration objects
-      let new_html = $('#standard-calibration-boardtype-container').html();
-      for (var i = 0; i < json.valid.length; ++i) {
-        const header = i == 0 ? 'Reference' : '';
-        const display = json.valid[i];
-        new_html += `<div class="input-row">
-                       <span class="input-name">${header}</span>
-                       <span class="input-units">
-                       <input type="radio"
-                              name="ref-calibration"
-                              value="${json.valid[i].tag}" />
-                       </span>
-                          <span class="input-units">
-                            ${json.valid[i].boardtype}
-                            (${json.valid[i].time})
-                          </span>
-                     </div>`;
-      }
-      $('#standard-calibration-boardtype-container').html(new_html);
-    },
-    error: function () {
-      console.log(`Failed to update reference sessions`);
-    },
-  });
+function request_valid_reference() {
+  ajax_request('report/validreference', update_valid_reference);
 }
 
 /**

@@ -12,8 +12,6 @@
  */
 var board_layout = {}; // Global object for board layout
 
-const calibration_update_interval = 1000; // Update interval in milliseconds
-
 // Processes flag that can be
 const plot_processes = ['zscan', 'lowlight', 'lumialign'];
 const can_rerun_process = ['zscan', 'lowlight'];
@@ -86,6 +84,8 @@ function make_tileboard_default_html() {
   const x_max = 500;
   const scale = canvas_target / x_max;
 
+  // Clear the tile-layout-svg first.
+  $(`#tile-layout-svg`).html(``);
   let shape_html = ``;
   let text_html = ``;
   if (Object.keys(board_layout.detectors).length > 0) {
@@ -95,25 +95,44 @@ function make_tileboard_default_html() {
 
       const x = x_raw * scale + corner_offset;
       const y = x_max - y_raw * scale + corner_offset;
-      // Needs to reverse the y axis scale for conversion
-      shape_html += `<rect
-                    x="${x - 20}" y="${y - 20}" width="40" height="40"
-                    id="tile-layout-${detid}"
-                    onclick="show_det_summary(${detid})"
-                    />`;
-      text_html += `<text x="${x}" y="${y}"
-                   text-anchor="middle"
-                   onclick="show_det_summary(${detid})"
-                  >${detid}</text>`;
+
+      $(`#tile-layout-svg`).append(
+        dom('rect', {
+          x: `${x - 20}`,
+          y: `${y - 20}`,
+          width: '40',
+          height: '40',
+          id: `tile-layout-${detid}`,
+          onclick: `show_det_summary(${detid})`,
+        }),
+      );
+
+      $(`#tile-layout-svg`).append(
+        dom(
+          'text',
+          {
+            x: `${x}`,
+            y: `${y}`,
+            'text-anchor': 'middle',
+            onclick: `show_det_summary(${detid})`,
+          },
+          `${detid}`,
+        ),
+      );
     }
   } else {
-    text_html = `<text x="275" y="275"
-                       text-anchor="middle">
-                   NO TILEBOARD LOADED
-                 </text>`;
+    $(`#tile-layout-svg`).append(
+      dom(
+        'text',
+        {
+          x: '275',
+          y: '275',
+          'text-anchor': 'middle',
+        },
+        'NO TILEBOARD LOADED',
+      ),
+    );
   }
-
-  $(`#tile-layout-svg`).html(`${shape_html} ${text_html}`);
 }
 
 /**
@@ -196,23 +215,35 @@ function make_tileboard_segment_html(tileboard_json) {
       offset_x,
       offset_y,
     );
-    new_html += `<path
-                  id="tile-layout-${detid}"
-                  d="${path_str}"
-                  onclick="show_det_summary(${detid})"
-                  class=""/>\n`;
+
+    // Path part for display shape
+    $(`#tile-layout-svg`).append(
+      dom('path', {
+        id: `tile-layout-${detid}`,
+        d: `${path_str}`,
+        onclick: `show_det_summary(${detid})`,
+        class: '',
+      }),
+    );
 
     // Adding text labeling to help with clarity
     const r_det = (inner + outer) / 2 + det_roffset;
     const a_det = -(t1 + angle / 2 + det_aoffset);
-
     const x = r_det * scale * Math.cos(a_det * deg) + offset_x;
     const y = r_det * scale * Math.sin(a_det * deg) + offset_y;
 
-    new_html += `<text x="${x}" y="${y}" text-anchor="middle">${detid}</text>`;
+    let text_dom = $(`#tile-layout-svg`).append(
+      dom(
+        'text',
+        {
+          x: `${x}`,
+          y: `${y}`,
+          'text-anchor': 'middle',
+        },
+        `${detid}`,
+      ),
+    );
   }
-
-  $(`#tile-layout-svg`).html(new_html);
 }
 
 /**
@@ -245,52 +276,64 @@ function make_detector_summary_html() {
  * button will need to be added.
  */
 function make_detector_coordinate_html(detid) {
-  const coord = `<div class="input-row">
-                    <span class="input-name">Det ID:</span>
-                    <span class="input-units"> ${detid} </span>
-                  </div>
-                  <div class="input-row">
-                    <span class="input-name">Coordinates:</span>
-                    <span class="input-units" id="coord-orig"></span>
-                  </div>
-                  <div class="input-row">
-                    <span class="input-name">Lumi. coord:</span>
-                    <span class="input-units" id="coord-lumi"></span>
-                    <span class="input-units">
-                      <button id="rerun-lumi-scan-${detid}"
-                            class="action-button",
-                            onclick="rerun_single('lumialign','${detid}',false)"
-                            disabled>
-                      Rerun</button>
-                    </span>
-                  </div>
-                  <div class="input-row">
-                    <span class="input-name">Vis. coord:</span>
-                    <span class="input-units" id="coord-vis"></span>
-                    <span class="input-units">
-                      <button class="action-button"
-                              id="rerun-vis-scan-${detid}"
-                              onclick="rerun_single('visalign','${detid}',false)"
-                              disabled>
-                              Rerun</button>
-                      </span>
-                   </div>`;
+  align_dom = dom('div', { class: 'input-align' }, [
+    dom('div', { class: 'input-row' }, [
+      dom('span', { class: 'input-name' }, 'Det ID:'),
+      dom('span', { class: 'input-units' }, `${detid}`),
+    ]),
+    dom('div', { class: 'input-row' }, [
+      dom('span', { class: 'input-name' }, 'Coordinates'),
+      dom('span', { class: 'input-name', id: 'coord-orig' }),
+    ]),
+    // For luminosity alignment  coordinates
+    dom('div', { class: 'input-row' }, [
+      dom('span', { class: 'input-name' }, 'Lumi. coord'),
+      dom('span', { class: 'input-inputs', id: 'coord-lumi' }),
+      dom('span', { class: 'input-units' }, [
+        dom('button', {
+          id: `rerun-lumi-scan-${detid}`,
+          class: 'action-button',
+          onclick: `rerun_single('lumialign','${detid}', false)`,
+          disabled: '',
+        }),
+        'Rerun',
+      ]),
+    ]),
+    // For visual alignment coordinates
+    dom('div', { class: 'input-row' }, [
+      dom('span', { class: 'input-name' }, 'Vis. coord'),
+      dom('span', { class: 'input-inputs', id: 'coord-vis' }),
+      dom('span', { class: 'input-units' }, [
+        dom('button', {
+          id: `rerun-vis-scan-${detid}`,
+          class: 'action-button',
+          onclick: `rerun_single('visalign','${detid}', false)`,
+          disabled: '',
+        }),
+        'Rerun',
+      ]),
+    ]),
+  ]);
 
-  let prog_html = ``;
   for (const tag of all_processes) {
-    prog_html += `<div class="input-row">
-                    <span class="input-name" id="process-${tag}"></span >
-                    <span class="input-units">${process_full_name(tag)}</span>
-                    ${check_rerun_button(detid, tag)}
-                    ${check_extend_button(detid, tag)}
-                  </div>`;
+    align_dom.append(
+      dom('div', { class: 'input-row' }, [
+        dom('span', { class: 'input-name', id: `process-${tag}` }),
+        dom('span', { class: 'input-units' }, `${process_full_name(tag)}`),
+        check_rerun_button(detid, tag),
+        check_extend_button(detid, tag),
+      ]),
+    );
   }
 
-  return `<div id="single-det-summary-${detid}" class="hidden">
-            <div class="input-align">
-              ${coord} ${prog_html}
-            </div>
-          </div>`;
+  return dom(
+    'div',
+    {
+      id: `single-det-summary-${detid}`,
+      class: 'hidden',
+    },
+    [align_dom],
+  );
 }
 
 /**
@@ -299,13 +342,17 @@ function make_detector_coordinate_html(detid) {
  */
 function check_rerun_button(detid, tag) {
   if (can_rerun_process.includes(tag)) {
-    return `<span class="input-units">
-              <button id="rerun-${tag}-${detid}"
-                      class="action-button"
-                      onclick="rerun_single('${tag}','${detid}', false)"
-                      disabled>
-              Rerun</button>
-            </span>`;
+    return dom('span', { class: 'input-units' }, [
+      dom(
+        'button',
+        {
+          id: `rerun-${tag}-${detid}`,
+          class: 'action-button',
+          onclick: `rerun_single('${tag}','${detid}',false)`,
+        },
+        'Rerun',
+      ),
+    ]);
   } else {
     return ``;
   }
@@ -317,13 +364,17 @@ function check_rerun_button(detid, tag) {
  */
 function check_extend_button(detid, tag) {
   if (can_extend_process.includes(tag)) {
-    return `<span class="input-units">
-              <button id="rerun-${tag}-${detid}"
-                      class="action-button"
-                      onclick="rerun_single('${tag}','${detid}', true)"
-                      disabled>
-              Extend </button>
-            </span>`;
+    return dom('span', { class: 'input-units' }, [
+      dom(
+        'button',
+        {
+          id: `rerun-${tag}-${detid}`,
+          class: 'action-button',
+          onclick: `rerun_single('${tag}','${detid}',true)`,
+        },
+        'Extend',
+      ),
+    ]);
   } else {
     return ``;
   }
@@ -361,22 +412,28 @@ function detector_visalign_img_id(detid) {
  * Making the dummy detector HTML plot DOM objects
  */
 function make_detector_plot_html(detid) {
-  let plot_html = ``;
+  let plot_dom = dom('div', { class: 'plot-container' });
   for (const tag of plot_processes) {
-    plot_html += `<div class="plot"
-                       id="${detector_plot_id(detid, tag)}">
-                  </div>`;
+    plot_dom.append(
+      dom('div', { class: 'plot', id: `${detector_plot_id(detid, tag)}` }),
+    );
   }
+  plot_dom.append(
+    dom(
+      'div',
+      { class: 'plot', id: `single-det-summary-plot-${det}-visalign` },
+      [
+        dom('img', {
+          id: `${detector_visalign_img_id(detid)}`,
+          src: 'static/icon/notdone.jpg',
+        }),
+      ],
+    ),
+  );
 
-  return `<div class="hidden" id="det-plot-container-${detid}">
-            <div class="plot-container">
-              ${plot_html}
-              <div class="plot" id="single-det-summary-plot-${detid}-visalign">
-                <img id="${detector_visalign_img_id(detid)}"
-                     src="static/icon/notdone.jpg"/>
-              </div>
-            </div>
-          </div>`;
+  return dom('div', { class: 'hidden', id: 'det-plot-container-${detid}' }, [
+    plot_dom,
+  ]);
 }
 
 /**

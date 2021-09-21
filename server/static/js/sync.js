@@ -85,26 +85,11 @@ function sync_session_type(new_type) {
 }
 
 /**
- * Handling of the signal from the settings. This function call the update
- * settings function from the settings.js file.
+ * Sync wrapper for the update_settings function defined in the the
+ * view/settings.js file.
  */
 function sync_setting(new_settings) {
   update_settings(new_settings);
-}
-
-/**
- * Updating the overall progress bar.
- *
- * There are two bars in the calculation part. One is for the overall progress.
- * One is for the current running command progress.
- */
-function sync_cmd_progress(msg) {
-  let complete = msg[0];
-  let total = msg[1];
-  const percent = (100.0 * complete) / total;
-  $('#command-progress')
-    .children('.progress-complete')
-    .css('width', `${percent}%`);
 }
 
 /**
@@ -129,24 +114,27 @@ function sync_tileboard_type(msg) {
 }
 
 /**
- * As updating the progress is a little more involved with the display elements,
- * required function have been split into the view_tileboard method for better
- * readability. As updating the the progress bars are potentially very taxing on
- * the client side while being rapidly updated on the server side, here we write
- * a very small safe guard. To ensure that the progress updates are performed in
- * sequence of their arrival time.
+ * As updating the the progress bars are potentially very taxing on the client
+ * side while short commands are being rapidly executed by the server, here we
+ * write a very small safe guard: the sync function will only every handled
+ * pushing the progress into the queue, then call the true function to fully
+ * process the progress status.
  */
-var progress_queue = [];
-var updating_progress = false;
-
 async function sync_calib_progress(progress) {
-  progress_queue.push(progress); // Pushing the progress to the stack.
+  session.progress_queue.push(progress); // Pushing the progress to the stack.
   run_progress_update();
 }
 
+/**
+ * Executing the progress element updates. If an progress update instance is
+ * already running do nothing. Otherwise, set the updating progress flag to be
+ * true and run the progress update on the oldest element in the queue, update
+ * the detector elements accordingly, shift the queue by 1, repeat until no
+ * progress updates remain.
+ */
 function run_progress_update() {
   // early exit if and instance of the update function is already running.
-  if (updating_progress) {
+  if (session.updating_progress) {
     return;
   }
 
@@ -155,12 +143,20 @@ function run_progress_update() {
     progress = progress_queue[0];
     progress_queue.shift();
 
-    // Functions defined in view_progress.js
+    // Functions defined in view/progress.js
     progress_update_bar(progress);
     progress_update_table(progress);
     progress_update_det_summary(progress);
   }
   updating_progress = false;
+}
+
+/**
+ * Updating the current command progress bar. This wrapper to the
+ * progress_update_cmd method in view/progress.js
+ */
+function sync_cmd_progress(msg) {
+  progress_update_cmd(msg)
 }
 
 /**
@@ -198,24 +194,25 @@ function parse_terminal_keystroke(key) {
 }
 
 /**
- * Displaying the output received from server side
+ * Displaying the output received from server side.
  */
 function parse_terminal_response(data) {
   // Parsing output is relatively simple
-  term.write(data.output);
+  session.terminal.write(data.output);
 }
 
 /**
- * Terminal locking toggle
+ * Terminal locking toggle. As there are no other elements regarding lock
+ * toggling. We are just going to defined this function there.
  */
 function check_terminal_lock() {
-  if (terminal_lock) {
+  if (session.terminal_lock) {
     // unlocking the terminal
-    terminal_lock = false;
+    session.terminal_lock = false;
     $('#terminal_status').html('TERMINAL IS UNLOCKED');
     $('#terminal_lock').html('LOCK');
     // Getting the prompt in case it wasn't generated.
-    parse_keystroke(String.fromCharCode(1));
+    parse_terminal_keystroke(String.fromCharCode(1));
   } else {
     terminal_lock = true; // locking the terminal
     $('#terminal_status').html('TERMINAL IS LOCKED');

@@ -35,7 +35,8 @@ var session = {
   board_type: '',
 
   // Variables used for progress monitoring
-  progress: {},
+  progress_queue: [],
+  updating_progress: false,
 
   /// Variables used for monitoring
   monitor: {
@@ -76,4 +77,21 @@ var session = {
  */
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Simple function for making DOM elements in a single function call without the
+ * need for custom tag handling.
+ */
+function dom(tag, attr, content = '') {
+  let ans = $(`< ${tag}></${tag}>`);
+  ans.attr(attr);
+  if (typeof content === 'string') {
+    ans.html(content);
+  } else if (content instanceof Array) {
+    content.forEach((element) => {
+      ans.append(element);
+    });
+  }
+  return ans;
 }

@@ -41,7 +41,7 @@ function run_system_calibration() {
 
   if (boardtype == undefined) {
     $('#system-calib-submit-error').html(
-      'System calibration board type not selected',
+      'System calibration board type not selected'
     );
   } else {
     $('#system-calib-submit-error').html('');
@@ -62,11 +62,11 @@ function run_std_calibration() {
     $('#standard-calib-submit-error').html('Board ID not specified');
   } else if (boardtype == undefined) {
     $('#standard-calib-submit-error').html(
-      'Board type for standard calibration is not selected',
+      'Board type for standard calibration is not selected'
     );
   } else if (reference == undefined) {
     $('#standard-calib-submit-error').html(
-      'Reference calibration session is not selected',
+      'Reference calibration session is not selected'
     );
   } else {
     $('#standard-calib-submit-error').html('');
@@ -114,8 +114,8 @@ async function calibration_signoff(session_type) {
     pwd: $(`#${session_type}-calib-user-pwd`).val(),
   });
 
-  await sleep(1000);
-  update_valid_reference();
+  await sleep(100);
+  request_valid_reference();
 }
 
 function system_calibration_signoff() {
@@ -149,8 +149,10 @@ async function rerun_single(action_tag, detid, extend) {
       $(`#det-plot-container-${detid}`)
         .children('.plot-container')
         .append(
-          `<div class="plot" id="single-det-summary-plot-${detid}-${action_tag}">
-       </div>`,
+          dom('div', {
+            class: 'plot',
+            id: `single-det-summary-plot-${det_id}-${action_tag}`,
+          })
         );
     } else {
       if (!extend) {
@@ -206,10 +208,10 @@ function zscan_settings_update() {
     samples: $('#zscan-settings-samples').val(),
     pwm: split_string_to_float_array($('#zscan-settings-pwm').val()),
     zlist_dense: split_string_to_float_array(
-      $('#zscan-settings-zval-dense').val(),
+      $('#zscan-settings-zval-dense').val()
     ),
     zlist_sparse: split_string_to_float_array(
-      $('#zscan-settings-zval-sparse').val(),
+      $('#zscan-settings-zval-sparse').val()
     ),
   };
 
@@ -253,7 +255,7 @@ function lumialign_settings_update() {
 function picoscope_settings_update() {
   const trigger_level = value_from_adc(
     $('#trigger-level-text').val(),
-    $('input[name="trigger-channel"]:checked').val(),
+    $('input[name="trigger-channel"]:checked').val()
   );
 
   const new_settings = {

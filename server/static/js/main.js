@@ -27,7 +27,7 @@ $(document).ready(function () {
     console.log('Connected to socket!');
     // Updating static elements.
     update_tileboard_types();
-    update_valid_reference();
+    request_valid_reference();
 
     // Starting the status monitor engine
     session.client_engines.monitor_interval = 500;

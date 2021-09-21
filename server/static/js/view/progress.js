@@ -91,7 +91,7 @@ function progress_update_table(progress) {
       const progress_code = progress[tag][detid];
       $(`#table-${detid}-${tag}`).css(
         'background-color',
-        progress_color(progress_code),
+        progress_color(progress_code)
       );
     }
   }
@@ -101,22 +101,28 @@ function progress_update_table(progress) {
  * Creating the HTML element for the table display.
  */
 function make_table_html() {
-  new_html = `<tr> <th></th>`;
-  for (const tag of all_progress) {
-    new_html += `<th><span>${process_full_name(tag)}</span></th>`;
-  }
-  new_html += `</tr>`;
+  let table_dom = dom('table', {});
 
-  for (const detid of board_layout.detectors) {
-    // This should be obtained from the main tab
-    let row_html = `<td c>${detid}</td>`;
-    for (const tag of all_progress) {
-      row_html += `<td id="table-${detid}-${tag}"></td>`;
-    }
-    new_html += `<tr onclick=show_det_summary(${detid})>${row_html}</tr>`;
+  // Making the header elements
+  let header_row_dom = dom('tr', {}, [dom('th', {})]);
+  all_progress.forEach((tag) => {
+    header_row_dom.append(
+      dom('th', {}, dom('span', {}, `${process_full_name(tag)}`))
+    );
+  });
+  table_dom.append(header_row_dom);
+
+  // Making each detector as a row
+  for (const det_id of board_layout.detectors) {
+    let row_dom = dom('tr', { onclick: `show_det_summary(${det_id})` });
+    row_dom.append(dom('td', { c: '' }, `${det_id}`));
+    all_progress.forEach((tag) => {
+      row_dom.append(dom('td', { id: `table-${det_id}-${tag}` }));
+    });
+    table_dom.append(row_dom);
   }
 
-  $('#table-view').html(`<table>${new_html}</table>`);
+  $('#table-view').html(table_dom);
 }
 
 /**
@@ -152,7 +158,7 @@ function progress_update_det_summary(progress) {
       }
 
       // Updating the text based detector information.
-      var element = $('#single-det-summary-' + detid).find('#process-' + tag);
+      var element = $(`#single-det-summary-${detid}`).find(`#process-${tag}`);
       element.css('background-color', progress_color(progress_code));
       element.html(progress_status_string(progress_code));
     }
@@ -168,8 +174,30 @@ function progress_update_det_summary(progress) {
       const lighten = (200.0 * (total - comp)) / total;
       $(`#tile-layout-${detid}`).css(
         'fill',
-        hex_lumi_shift(base_color, lighten),
+        hex_lumi_shift(base_color, lighten)
       );
     }
+  }
+}
+
+/**
+ * Updating the command progress bar.
+ */
+function progress_update_cmd(cmd_progress) {
+  const complete = cmd_progress[0];
+  const total = cmd_progress[1];
+  const percent = (100.0 * complete) / total;
+  $('#command-progress')
+    .children('.progress-complete')
+    .css('width', `${percent}%`);
+  if (total < 0) {
+    // If error occurred for the command
+    $('#command-progress')
+      .children('.progress-complete')
+      .css('background-color', progress_color(CMD_ERROR));
+  } else {
+    $('#command-progress')
+      .children('.progress-complete')
+      .css('background-color', progress_color(CMD_COMPLETE));
   }
 }
