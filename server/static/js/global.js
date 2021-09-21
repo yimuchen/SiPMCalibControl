@@ -84,8 +84,9 @@ function sleep(ms) {
  * need for custom tag handling.
  */
 function dom(tag, attr, content = '') {
-  let ans = $(`< ${tag}></${tag}>`);
+  let ans = $(`<${tag}></${tag}>`);
   ans.attr(attr);
+
   if (typeof content === 'string') {
     ans.html(content);
   } else if (content instanceof Array) {
@@ -93,5 +94,28 @@ function dom(tag, attr, content = '') {
       ans.append(element);
     });
   }
+  return ans;
+}
+
+/**
+ * Simple function for making DOM elements for svg inputs. This needs because the
+ * HTML/SVG uses not-entirely compatible XML tags and thus and requires
+ * additional namespace settings to work [1]. For the sake of consistency, we
+ * will be using the JQuery-flavored version of generation the tag [2].
+ * [1] https://stackoverflow.com/questions/3642035/jquerys-append-not-working-with-svg-element
+ * [2] https://stackoverflow.com/questions/2572304/what-is-jquery-for-document-createelementns
+ */
+function svgdom(tag, attr, content = '') {
+  let ans = $(document.createElementNS('http://www.w3.org/2000/svg', tag));
+  ans.attr(attr);
+
+  if (typeof content === 'string') {
+    ans.html(content);
+  } else if (content instanceof Array) {
+    content.forEach((element) => {
+      ans.append(element);
+    });
+  }
+
   return ans;
 }
