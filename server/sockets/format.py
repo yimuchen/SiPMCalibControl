@@ -108,8 +108,8 @@ def make_cmd_lumialign(detid):
          --channel={channel} --mode={mode}
          --sample={samples} -z {zval}  --overwrite
          --range={range} --distance={distance}
-         --power={power}
          -f={filename}
+         --power={power}
          --wipefile
   """.format(detid=detid,
              mode=session.cmd.board.get_det(detid).mode,
@@ -118,8 +118,8 @@ def make_cmd_lumialign(detid):
              zval=session.lumialign_zval,
              range=session.lumialign_range,
              distance=session.lumialign_distance,
-             power=session.lumialign_pwm,
-             filename=calibration_filename('halign', detid))
+             filename=calibration_filename('halign', detid),
+             power=session.lumialign_pwm)
   return reduce_cmd_whitespace(ans)
 
 
