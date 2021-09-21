@@ -25,7 +25,7 @@ function status_update_time() {
   $(`#up-time`).html(`Uptime: ${time_hour}:${time_min}:${time_sec}`);
   $('#up-time-since').html(
     `Session is: ${state_str} </br>
-     Since: ${session.monitor.start}`
+     Since: ${session.monitor.start}`,
   );
 }
 
@@ -78,7 +78,7 @@ function status_update_monitor_data() {
       'temperature-plot',
       temperature_data,
       temperature_plot_layout(),
-      layout_default_config
+      layout_default_config,
     );
   } else {
     console.log('temperature-plot DIV does not exist!');
@@ -89,7 +89,7 @@ function status_update_monitor_data() {
       'voltage-plot',
       voltage_data,
       voltage_plot_layout(),
-      layout_default_config
+      layout_default_config,
     );
   } else {
     console.log('voltage-plot DIV does nto exist!');
@@ -109,7 +109,7 @@ function temperature_plot_layout() {
         session.monitor.time[0],
         Math.max(
           parseInt(session.monitor.time[0]) + 10,
-          parseInt(session.monitor.time[session.monitor.time.length - 1]) + 0.1
+          parseInt(session.monitor.time[session.monitor.time.length - 1]) + 0.1,
         ),
       ],
     },
@@ -119,12 +119,12 @@ function temperature_plot_layout() {
         Math.min(
           15,
           Math.min(...session.monitor.temperature1),
-          Math.min(...session.monitor.temperature2)
+          Math.min(...session.monitor.temperature2),
         ),
         Math.max(
           24,
           Math.max(...session.monitor.temperature1) + 4,
-          Math.max(...session.monitor.temperature2) + 4
+          Math.max(...session.monitor.temperature2) + 4,
         ),
       ],
     },
@@ -157,7 +157,7 @@ function voltage_plot_layout() {
         session.monitor.time[0],
         Math.max(
           parseInt(session.monitor.time[0]) + 10,
-          parseInt(session.monitor.time[session.monitor.time.length - 1]) + 0.1
+          parseInt(session.monitor.time[session.monitor.time.length - 1]) + 0.1,
         ),
       ],
     },
@@ -196,25 +196,25 @@ function status_update_coordinates() {
   const y = session.monitor.gantry_position[1];
   const z = session.monitor.gantry_position[2];
   $(`#gantry-coordinates`).html(
-    `Gantry coordinates: (${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)})`
+    `Gantry coordinates: (${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)})`,
   );
 
   $('#tile-layout-gantry-svg').html('');
   $('#tile-layout-gantry-svg').append(
-    dom('polyline', {
+    svgdom('polyline', {
       points: `${x + 20},${510 - y} ${x + 25},${525 - y}  ${x + 30},${510 - y}`,
       stroke: 'red',
       fill: 'red',
       'stroke-width': '1px',
-    })
+    }),
   );
   $('#tile-layout-gantry-svg').append(
-    dom('polyline', {
+    svgdom('polyline', {
       points: `548,${520 - z} 538,${525 - z} 548,${530 - z}`,
       stroke: 'red',
       fill: 'red',
       'stroke-width': '1px',
-    })
+    }),
   );
 }
 
