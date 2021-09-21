@@ -67,7 +67,7 @@ function add_comment_line(element) {
 
   board_layout.detectors.forEach((detid) => {
     det_select_dom.append(
-      dom('option', { value: `det${detid}` }, `Det. ${detid}`)
+      dom('option', { value: `det${detid}` }, `Det. ${detid}`),
     );
   });
 
@@ -81,14 +81,16 @@ function add_comment_line(element) {
           'div',
           { class: 'input-units comment-content' }[
             dom('input', { type: 'text', class: 'comment-text' })
-          ]
+          ],
         ),
-      ])
+      ]),
     );
 }
 
 /**
- * Drawing column elements of the tile board view
+ * Drawing common elements of the tile board view.
+ *
+ * The elements includes the
  */
 function draw_tileboard_view_common() {
   // Getting the main canvas element
@@ -101,8 +103,8 @@ function draw_tileboard_view_common() {
 
   // The arrow marker style
   svg.append(
-    dom('defs', {}, [
-      dom(
+    svgdom('defs', {}, [
+      svgdom(
         'marker',
         {
           id: 'arrow',
@@ -113,14 +115,14 @@ function draw_tileboard_view_common() {
           markerHeight: '6',
           orient: 'auto-start-reverse',
         },
-        dom('path', { d: 'M 0 0 L 10 5 L 0 10 z' })
+        svgdom('path', { d: 'M 0 0 L 10 5 L 0 10 z' }),
       ),
-    ])
+    ]),
   );
 
   // The outer rectangle
   svg.append(
-    dom('rect', {
+    svgdom('rect', {
       x: '25',
       y: '25',
       width: '500',
@@ -128,35 +130,35 @@ function draw_tileboard_view_common() {
       fill: 'none',
       stroke: '#303030',
       'stroke-width': '3px',
-    })
+    }),
   );
 
   // Adding the axis arrows
   svg.append(
-    dom('polyline', {
+    svgdom('polyline', {
       points: '12,475 12,537 75,537',
       fill: 'none',
       stroke: '#303030',
       'stroke-width': '2px',
       'marker-start': 'url(#arrow)',
       'marker-end': 'url(#arrow)',
-    })
+    }),
   );
 
   // Adding the axis title
-  svg.append(dom('text', { x: '85', y: '541' }, 'x'));
-  svg.append(dom('text', { x: '8', y: '465' }, 'y'));
+  svg.append(svgdom('text', { x: '85', y: '541' }, 'x'));
+  svg.append(svgdom('text', { x: '8', y: '465' }, 'y'));
 
   // Adding the z axis.
   svg.append(
-    dom('polyline', {
+    svgdom('polyline', {
       points: `537,525 560,525 537,525 537,425 560,425 537,425 537,325 560,325
                537,325 537,225 560,225 537,225 537,125 560,125 537,125 537,25
                560,25  537,25`,
       'stroke-width': '3px',
       stroke: '#303030',
       fill: 'none',
-    })
+    }),
   );
 }
 
@@ -186,7 +188,7 @@ function hide_action_column() {
 /**
  * Functions related to the display of the monitor column
  */
-monitor_column_width = 400;
+const monitor_column_width = 400;
 function toggle_monitor_column() {
   if ($(`#monitor-column`).css('left').startsWith('-')) {
     show_monitor_column();
@@ -200,7 +202,7 @@ function show_monitor_column() {
   $('#monitor-column').css('left', `0`);
   $('#session-column').css(
     'width',
-    `${window.innerWidth - monitor_column_width}px`
+    `${window.innerWidth - monitor_column_width}px`,
   );
   $('#session-column').css('margin-left', `${monitor_column_width}px`);
 }
@@ -239,15 +241,19 @@ function update_valid_reference(json) {
         dom(
           'span',
           { class: 'input-units' },
-          `${json.valid[i].boardtype} (${json.value[i].time})`
+          `${json.valid[i].boardtype} (${json.value[i].time})`,
         ),
-      ])
+      ]),
     );
   }
 }
 
+/**
+ * Updating the selector interface for specifying a board type for either the
+ * system or the standard calibration sequence.
+ */
 function update_tileboard_list(type, json) {
-  let list_dom = $(`#${list_type}-calibration-boardtype-container`);
+  let list_dom = $(`#${type}-calibration-boardtype-container`);
   list_dom.html(''); // Wiping existing content
 
   // Adding header for standard type.dd
@@ -261,9 +267,11 @@ function update_tileboard_list(type, json) {
           id: 'std-calibration-boardid',
           class: 'input-units',
         }),
-      ])
+      ]),
     );
   }
+
+  console.log(json);
 
   let first = true;
   for (var boardtype in json) {
@@ -280,9 +288,9 @@ function update_tileboard_list(type, json) {
         dom(
           'span',
           { class: 'input-units' },
-          `${json[boardtype]['name']} (${json[boardtype]['number']})`
+          `${json[boardtype]['name']} (${json[boardtype]['number']})`,
         ),
-      ])
+      ]),
     );
   }
 }
