@@ -84,6 +84,25 @@ Updated 2021-09-24: Yi-Mu Chen
   --intstart 32 --intstop 102 --pedstart 2 --pedstop 32
   ```
 
+## Generating debugging plots for quick data quality assessment
+
+On the gateway control machine, open a browser and enter into the URL:
+
+http://localhost:9100/debug
+
+You will then be greeted with a dummy GUI session, where all inputs and controls
+will not function as no systems used is actually connected to the gateway
+machine. (The terminal that you can see is **NOT** an actual terminal that you
+can use to control the system inside the dark room.) However, here you can use
+the debugging tools to generate some basic quality plots to check for command
+setting errors.
+
+First, you will need to get the correct data file to the gateway machine. Then on
+the webpage, go to the "Debug plotting" section, put in the full path to the data
+file of interest, selection the type of plot that you wish to be displayed and
+hit the "request plot" button. The right-hand side should then display a simple
+plot representing the data stored in the specified file.
+
 ## Notes on editing the code for the control system
 
 Notice that the control code in the `~/SiPMCalibControl` directory will be
@@ -94,3 +113,5 @@ the custom commands, file a pull request on GitHub can contact Yi-Mu Chen to
 review the pull request. Data files are also not supposed to be stored on the
 gantry control Raspberry Pi, please copy data files to `~/Data` on this gantry
 control machine.
+
+

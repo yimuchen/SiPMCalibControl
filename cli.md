@@ -31,7 +31,8 @@ file with a various number of columns. The columns will represent the following:
 - `sipmtmp`: The temperature of the SiPM board, measured using a voltage divider
   circuit.
 - `data`: The remaining columns are all "data" measurements, the exact meaning of
-  which will depend on the
+  which will depend on the specific command used to generate the data file in
+  question.
 
 ## Raw waveform commands
 
