@@ -8,6 +8,5 @@ using the directory README files and the documentation strings included in the
 code. Until an easier solution is found, this page would be reserved for
 operation level documentation.
 
-## The CLI interface
+- [The CLI interface](cli)
 
-Here a set of documentations
