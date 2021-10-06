@@ -14,9 +14,10 @@ include:
     - [flask socketio][flasksocket]: For server hosting
     - [paramiko][paramiko]: For passing output to remote server
 - Hardware specific tools
-  - [libps5000][Picoscope]: For interfacing with the readout oscilloscope
+  - [libps5000][picoscope]: For interfacing with the readout oscilloscope
+  - [drs][drs]: For interfacing with the readout DRS readout oscilloscope
 - For web interface generation
-  - [sass][sass] for `css` file generation.
+  - [dart-sass][sass] for `css` file generation.
 
 The current configuration is designed to work on a [Raspberry Pi 3B+][raspi]
 running [Arch Linux ARM7][archarm], and is known to work with a typical Arch
@@ -31,14 +32,23 @@ Other than the standard developer packages such as a C++ compiler and make, ther
 are additional packages that need to be installed:
 
 ```bash
-pacman -Sy --noconfirm "cmake" "boost" "opencv"
-pacman -Sy --noconfirm "xorg-xauth" # For ssh tunneling for the CLI interface
+# For ssh tunneling for the CLI interface
+pacman -Sy --noconfirm "xorg-xauth"
+
+# The main C++ libraries
+pacman -Sy --noconfirm "cmake" "boost" "opencv" "pybind11"
+
+# For additional package management
 pacman -Sy --noconfirm "npm" "git"
-pacman -Sy --noconfirm "python-pip" ## For python packages
+
+## The main python packages
+pacman -Sy --noconfirm "python-scipy" "python-opencv" "python-psutil" "python-paramiko" "python-flask-socketio"
+
 ## Additional packages required for opencv, since we are using the high level interface
 pacman -Sy --noconfirm "qt5-base" "hdf5-openmpi" "vtk" "glew"
 
-pip install -r requirements.txt
+## For the external javascript libraries
+npm install
 ```
 
 ### Optional dependency installation
@@ -92,7 +102,7 @@ First ensure that the `i2c` interface and the `pwm` interface has been enabled o
 the device. For a Raspberry Pi, add the following lines in to the
 `/boot/config.txt` file. Notice if you are using this for local interface
 testing, **be careful** with the permission! The `i2c` and `pwm` may be used
-other systems in the machine (ex: For the air flow fans). Do *NOT* enable these
+other systems in the machine (ex: For the air flow fans). Do _NOT_ enable these
 permissions on your personal machine unless you are sure about what the
 permissions would affect. Note that the `dtparam` line must added after the
 kernel loading line.
@@ -157,15 +167,17 @@ dependencies translations are listed below:
 [cmake]: https://cmake.org/download/
 [pybind11]: https://pybind11.readthedocs.io/en/stable/
 [numpy]: https://numpy.org/
-[flasksocket]:https://flask-socketio.readthedocs.io/en/latest/
+[flasksocket]: https://flask-socketio.readthedocs.io/en/latest/
 [scipy]: https://www.scipy.org/scipylib/index.html
-[Picoscope]: https://www.picotech.com/downloads/linux
-[Picoscope_MAC]: https://www.picotech.com/downloads
+[picoscope]: https://www.picotech.com/downloads/linux
+[picoscope_mac]: https://www.picotech.com/downloads
 [sass]: https://sass-lang.com/install
 [picoscope_download]: https://labs.picotech.com/debian/pool/main/libp/libps5000/
-[ADS1x15]: https://github.com/adafruit/Adafruit_CircuitPython_ADS1x15
+[ads1x15]: https://github.com/adafruit/Adafruit_CircuitPython_ADS1x15
 [raspi]: https://www.raspberrypi.org/products/raspberry-pi-3-model-b-plus/
 [archarm]: https://archlinuxarm.org/about/downloads
 [paramiko]: http://www.paramiko.org/
 [brew]: https://brew.sh/
 [pip]: https://pip.pypa.io/en/stable/
+[drs]: https://www.psi.ch/en/drs/software-download
+[drs4_download]: https://www.psi.ch/en/drs/software-download
