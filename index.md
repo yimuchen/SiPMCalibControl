@@ -8,5 +8,9 @@ using the directory README files and the documentation strings included in the
 code. Until an easier solution is found, this page would be reserved for
 operation level documentation.
 
-- [The CLI interface](cli)
+Right now there are two large segments of the tutorial:
 
+- [The CLI interface](cli): For the most direct control of all subsystems of
+  provided in the gantry system.
+- [The Web-base interface](gui): For a high-level control of calibration
+  routines.

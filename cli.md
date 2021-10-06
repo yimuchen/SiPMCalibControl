@@ -34,10 +34,23 @@ file with a various number of columns. The columns will represent the following:
   which will depend on the specific command used to generate the data file in
   question.
 
+Here is a list of command that uses these analysis level output format:
+
+### `lowlightcollect`
+
+This command places the gantry at a fixed position
+
+### `halign`
+
+### `zscan`
+
+### `visalign`
+
+### `timescan`
+
 ## Raw waveform commands
 
 In certain cases, you might want to take a look at the
-
 
 ## Readout settings commands
 
