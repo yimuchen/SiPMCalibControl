@@ -66,13 +66,15 @@ if __name__ == '__main__':
 
   ## Using map to store Default values:
   default_overide = {
+      '--action': 'cfg/useractions.json',
+      # Devices that can actually switch interfaces with the given string.
       '--printerdev': '/dev/ttyUSB0',
       '--camdev': '/dev/video0',
-      #'-boardtype': 'cfg/static_calib.json',
-      '--action': 'cfg/useractions.json',
-      '--drsdevice': "MYDRS",  # CANNT actually set
-      '--picodevice': 'MYSERIAL',  #Cannot actually set. Just dummy for now
-      #'-remotehost' : ['hepcms.umd.edu', '']
+      # The DRS4 and picoscope CANNOT actually be set by some device string, but
+      # requires a fake /dev/ path to be able to trigger the initialization
+      # routine
+      '--drsdevice': "/dev/MYDRS4",
+      '--picodevice': '/dev/MYPICOSCOPE',
   }
 
   for action in prog_parser._actions:

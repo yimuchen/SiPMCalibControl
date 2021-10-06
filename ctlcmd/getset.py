@@ -108,40 +108,60 @@ class set(cmdbase.controlcmd):
       log.printwarn('Board type setting has failed, skipping over setting')
 
   def set_camera(self, args):
-    if args.camdev == self.visual.dev_path:
-      pass
-    try:
-      self.visual.init_dev(args.camdev)
-    except Exception as err:
-      log.printerr(str(err))
-      log.printwarn('Initializing webcam has failed, skipping over setting')
+    """Setting up the camera system, given /dev/video path"""
+    if (not self.is_dummy_dev(args.camdev, 'Visual System')
+        and args.camdev != self.visual.dev_path):
+      try:
+        self.visual.init_dev(args.camdev)
+      except Exception as err:
+        log.printerr(str(err))
+        log.printwarn('Initializing webcam has failed, skipping over setting')
 
   def set_printer(self, args):
-    if args.printerdev == self.gcoder.dev_path:
-      pass
-    try:
-      self.gcoder.init(args.printerdev)
-      printset = self.gcoder.getsettings()
-      printset = printset.split('\necho:')
-      for line in printset:
-        log.printmsg(log.GREEN('[PRINTER]'), line)
-    except Exception as err:
-      log.printerr(str(err))
-      log.printwarn('Failed to setup printer, skipping over settings')
+    """Setting up the gantry system, given the /dev/ USB path"""
+    if (not self.is_dummy_dev(args.printerdev, 'Printer')
+        and args.printerdev != self.gcoder.dev_path):
+      try:
+        self.gcoder.init(args.printerdev)
+        printset = self.gcoder.getsettings()
+        printset = printset.split('\necho:')
+        for line in printset:
+          log.printmsg(log.GREEN('[PRINTER]'), line)
+      except Exception as err:
+        self.printerr(str(err))
+        self.printwarn('Failed to setup printer, skipping over settings')
 
   def set_picodevice(self, args):
-    try:
-      self.pico.init()
-    except Exception as err:
-      log.printerr(str(err))
-      log.printwarn('Picoscope device is not properly set!')
+    """Setting up the pico device, Skipping if dummy path detected """
+    if not self.is_dummy_dev(args.picodevice, 'PicoScope'):
+      try:
+        self.pico.init()
+      except Exception as err:
+        self.printerr(str(err))
+        self.printwarn('Picoscope device is not properly set!')
 
   def set_drs(self, args):
-    try:
-      self.drs.init()
-    except Exception as err:
-      log.printerr(str(err))
-      log.printwarn('DRS device is not properly set!')
+    """Setting up the DRS4. Skipping if dummy path is detected"""
+    if not self.is_dummy_dev(args.drsdevice, 'DRS4'):
+      try:
+        self.drs.init()
+      except Exception as err:
+        self.printerr(str(err))
+        self.printwarn('DRS device is not properly set!')
+
+  def is_dummy_dev(self, dev, device_name):
+    """
+    Simple check for illegal device string, so that certain hardware interfaces
+    can be disabled. A legal device string must start with the '/dev' prefix and
+    must not contain the "dummy" string.
+    """
+    is_dummy = not dev.startswith('/dev') or 'dummy' in dev
+    self.printwarn(f"""
+      Path [{dev}] for device [{device_name}] is as dummy path, skipping setup of
+      device. If not already setup, then future commands using [{device_name}]
+      may misbehave.
+      """)
+    return is_dummy
 
 
 class get(cmdbase.controlcmd):
@@ -372,8 +392,8 @@ class history(cmdbase.controlcmd):
 
 class wait(cmdbase.controlcmd):
   """
-  Suspending the interactive session for N seconds. Can be terminated early using
-  Ctl+C.
+  Suspending the interactive session for N seconds. The wait time can be
+  terminated early using Ctl+C.
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -383,7 +403,7 @@ class wait(cmdbase.controlcmd):
                              '-t',
                              type=float,
                              default=30,
-                             help='TIme to suspend session (seconds)')
+                             help='Time to suspend session (seconds)')
 
   def run(self, args):
     start_time = time.time_ns()
