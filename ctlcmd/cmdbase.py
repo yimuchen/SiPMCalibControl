@@ -20,7 +20,6 @@ import cmod.board as board
 import cmod.logger as log
 import cmod.gpio as gpio
 import cmod.visual as visual
-import cmod.sshfiler as sshfiler
 import cmod.pico as pico
 import cmod.drs as drs
 import cmod.actionlist as actionlist
@@ -68,7 +67,6 @@ class controlterm(cmd.Cmd):
     """
     cmd.Cmd.__init__(self, **base_kwargs)
 
-    self.sshfiler = sshfiler.SSHFiler()
     self.gcoder = gcoder.GCoder.instance()
     self.board = board.Board()
     self.visual = visual.Visual()
@@ -194,7 +192,6 @@ class controlcmd(object):
     self.cmd = cmdsession  # Reference to the master object.
 
     ## Reference to control objects for all commands
-    self.sshfiler = cmdsession.sshfiler
     self.gcoder = cmdsession.gcoder
     self.board = cmdsession.board
     self.visual = cmdsession.visual
@@ -469,8 +466,9 @@ class controlcmd(object):
     """
     Wrapper for gantry motion command, suppresses the exception raised for in
     case that the gantry isn't connected so that one can test with pre-defined
-    models. Notice that the stepper motor disable will not be handled here, as
-    it should only be disabled for readout.
+    models. Notice that the stepper motor disable will not be handled here, as it
+    should only be disabled for readout. See the readoutcmd class to see how the
+    readout is handled.
     """
     try:
       # Try to move the gantry. Even if it fails there will be fail safes
@@ -621,7 +619,7 @@ class savefilecmd(controlcmd):
 
     # Opening the file using the remote file handle as an internal method to help
     # reduce verbosity.
-    self.savefile = self.sshfiler.remotefile(filename, args.wipefile)
+    self.savefile = self.opensavefile(filename, args.wipefile)
     return args
 
   def opensavefile(self, filename, wipefile):

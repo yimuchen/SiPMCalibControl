@@ -47,7 +47,7 @@ class set(cmdbase.controlcmd):
                              '-b',
                              type=argparse.FileType(mode='r'),
                              help="""
-                              Setting board type via a configuration json file
+                             Setting board type via a configuration json file
                              that lists DET_ID with x-y coordinates.""")
     self.parser.add_argument('--boardid',
                              '-i',
@@ -64,12 +64,6 @@ class set(cmdbase.controlcmd):
                              help="""
                              Device path for the primary camera, should be
                              something like `/dev/video<index>.`""")
-    self.parser.add_argument('--remotehost',
-                             type=str,
-                             help='Connecting to remote host for file transfer')
-    self.parser.add_argument('--remotepath',
-                             type=str,
-                             help='Remote directory to save files to')
     self.parser.add_argument('--picodevice',
                              type=str,
                              help="""
@@ -99,10 +93,6 @@ class set(cmdbase.controlcmd):
       self.set_camera(args)
     if args.printerdev:
       self.set_printer(args)
-    if args.remotehost:
-      self.set_host(args)
-    if args.remotepath:
-      self.sshfiler.setremotepath(args.remotepath)
     if args.picodevice:
       self.set_picodevice(args)
     if args.drsdevice:
@@ -138,13 +128,6 @@ class set(cmdbase.controlcmd):
     except Exception as err:
       log.printerr(str(err))
       log.printwarn('Failed to setup printer, skipping over settings')
-
-  def set_host(self, args):
-    try:
-      self.sshfiler.reconnect(args.remotehost)
-    except Exception as err:
-      log.printerr(str(err))
-      log.printwarn('Failed to establish connection remote host')
 
   def set_picodevice(self, args):
     try:

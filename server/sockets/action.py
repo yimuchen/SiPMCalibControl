@@ -374,7 +374,7 @@ def run_calibration_signoff(socketio, data, store):
   ## Saving the comment as a json dump.
   comments = {key: data['comments'][key].split('\n') for key in data['comments']}
   if not store: comments['reference'] = session.reference_session
-  comment_file = session.cmd.sshfiler.remotefile(calibration_filename('comment'),
+  comment_file = session.cmd.halign.opensavefile(calibration_filename('comment'),
                                                  wipefile=True)
   comment_file.write(json.dumps(comments))
 
