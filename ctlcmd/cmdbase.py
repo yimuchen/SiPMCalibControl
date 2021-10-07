@@ -334,7 +334,10 @@ class controlcmd(object):
         return controlcmd.globcomp(text)
       if action.nargs == 0:  ## For store_true options
         return optwithtext()
-      return ['input type: ' + str(action.type), 'Help: ' + action.help]
+      return [
+          'Input type: ' + str(action.type),
+          'Help: ' + controlterm.simplify_string(action.help)
+      ]
     else:
       return optwithtext()
 
