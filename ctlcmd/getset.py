@@ -156,11 +156,11 @@ class set(cmdbase.controlcmd):
     must not contain the "dummy" string.
     """
     is_dummy = not dev.startswith('/dev') or 'dummy' in dev
-    self.printwarn(f"""
-      Path [{dev}] for device [{device_name}] is as dummy path, skipping setup of
-      device. If not already setup, then future commands using [{device_name}]
-      may misbehave.
-      """)
+    if is_dummy:
+      self.printwarn(f"""
+        Path [{dev}] for device [{device_name}] is as dummy path, skipping setup
+        of device. If not already setup, then future commands using
+        [{device_name}] may misbehave.""")
     return is_dummy
 
 
