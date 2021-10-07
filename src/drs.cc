@@ -236,7 +236,7 @@ DRSContainer::WaveformSum( const unsigned channel,
   }
 
   ans -= pedvalue * ( intstop - intstart );
-  ans *= -timeslice; // Negative to correct pulse direction
+  ans *= -timeslice;// Negative to correct pulse direction
 
   return ans;
 }
@@ -292,14 +292,13 @@ DRSContainer::SetTrigger( const unsigned channel,
 
   // Certain trigger settings are only used for internal triggers.
   if( channel < 4 ){
-    printf( "Setting trigger level %lf\n", level );
     board->SetTriggerLevel( level );
     triggerlevel = level;
     board->SetTriggerPolarity( direction );
     triggerdirection = direction;
   }
 
-  printf( "Setting trigger delay %lf\n", delay );
+  triggerdelay = delay;
   board->SetTriggerDelayNs( delay );
 
   // Sleeping to allow settings to settle.
@@ -330,8 +329,7 @@ DRSContainer::TriggerDirection()
 double
 DRSContainer::TriggerDelay()
 {
-  CheckAvailable();
-  return board->GetTriggerDelayNs();
+  return triggerdelay;
 }
 
 /**
@@ -463,6 +461,13 @@ public:
 
   board->SetRefclk( 0 );
   board->CalibrateVolt( &_d );
+
+  // After running, we will need to reset the board trigger configurations
+  // By default setting to use the external trigger
+  SetTrigger( TriggerChannel(),// Channel external trigger
+    TriggerLevel(),// Trigger on 0.05 voltage
+    TriggerDirection(),// Rising edge
+    TriggerDelay() );// 0 nanosecond delay by default.
 }
 
 /********************************************************************************

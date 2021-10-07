@@ -63,6 +63,7 @@ private:
   double triggerlevel;
   unsigned triggerchannel;
   int triggerdirection;
+  double triggerdelay;
   unsigned samples;
 
 // singleton related stuff.
