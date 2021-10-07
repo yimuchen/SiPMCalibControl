@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
+#include <sys/file.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -79,6 +80,14 @@ GCoder::Init( const std::string& dev )
     sprintf( errormessage,
       "Failed to open printer IO [%d] %s", printer_IO, dev.c_str() );
     throw std::runtime_error( errormessage  );
+  }
+
+  int lock = flock( printer_IO, LOCK_EX | LOCK_NB );
+  if( lock ){
+    close( printer_IO );
+    printer_IO = -1;
+    sprintf( errormessage, "Failed to lock path [%s]", dev.c_str() );
+    throw std::runtime_error( errormessage );
   }
 
   if( tcgetattr( printer_IO, &tty ) < 0 ){
