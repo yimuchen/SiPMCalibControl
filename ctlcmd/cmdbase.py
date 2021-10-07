@@ -52,9 +52,26 @@ class controlterm(cmd.Cmd):
 
   intro = """
     SiPM Calibration Gantry Control System
-    Type help or ? to list commands.
-    Type help <cmd> for the individual help messages of each commands
+    - Type help or ? to list commands.
+    - Type help <cmd> for the individual help messages of each commands
+
+    Go to the official operator manual if you are unsure which command you should
+    used for you data collection needs:
+    https://yimuchen.github.io/SiPMCalibControl/cli
     """
+
+  doc_header = """
+    If you are unsure which command you should use, please consult the official
+    operator manual:
+    - https://yimuchen.github.io/SiPMCalibControl/cli
+
+    Below is a list of commands available to the be used. For the detailed
+    arguments available for each command, type "help <cmd>".
+
+  """# Trailing empty lines required
+
+  ruler = ''
+
   prompt = 'SiPMCalib> '
   last_status = None
 
