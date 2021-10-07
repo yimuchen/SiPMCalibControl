@@ -26,6 +26,7 @@
 #include <linux/i2c-dev.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -35,6 +36,41 @@
 #include <queue>
 #include <stdexcept>
 
+/**
+ * @brief Opening a file with a lock to ensure the program is the only process on
+ * the system that is using the path.
+ *
+ * Mainly following the solution given here [1]. In the case that the file
+ * descriptor cannot be opened or the lock instance cannot be generated, the
+ * existing file descriptor will be closed and a exception will be raised. Notice
+ * that the system lock will automatically be removed when the corresponding file
+ * descriptor is closed.
+ *
+ * [1] https://stackoverflow.com/questions/1599459/optimal-lock-file-method
+ */
+static int
+open_with_lock( char* path, int mode )
+{
+  char errmsg[1024];
+  int fd = open( path, mode );
+
+  if( fd == GPIO::OPEN_FAILED ){
+    sprintf( errmsg, "Failed to open path [%s]", path );
+    throw std::runtime_error( errmsg );
+  }
+  // Attempting to exclusively lock the file so that this processes uniquely has
+  // write access to the GPIO interface.  The _lock will be non-zero if the
+  // processes cannot create the lock instance
+  int lock = flock( fd, LOCK_EX | LOCK_NB );
+  if( lock ){
+    close( fd );
+    fd = -1;
+    sprintf( errmsg, "Failed to lock path [%s]", path );
+    throw std::runtime_error( errmsg );
+  }
+
+  return fd;
+}
 
 /********************************************************************************
  *
@@ -50,6 +86,7 @@
  * - Initialization is handled by the singleton class.
  * - Concrete pin indicies are fixed by the constructor.
  * - Concrete actions for designated pins are performed.
+ *
  *******************************************************************************/
 
 /**
@@ -68,11 +105,7 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
   char path[buffer_length];
   char errmsg[1024];
 
-  int fd = open( "/sys/class/gpio/export", O_WRONLY );
-  if( fd == OPEN_FAILED ){
-    sprintf( errmsg, "Failed to open /sys/class/gpio/export" );
-    throw std::runtime_error( errmsg );
-  }
+  int fd = open_with_lock( "/sys/class/gpio/export", O_WRONLY );
   write_length = snprintf( buffer, buffer_length, "%u", pin );
   write( fd, buffer, write_length );
   close( fd );
@@ -80,7 +113,7 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
   // Small pause for system settings to settle
   std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
-  // Setting direction.
+  // Getting the direction path
   snprintf( path, buffer_length, "/sys/class/gpio/gpio%d/direction", pin );
 
   // Waiting for the /sysfs to generated the corresponding file
@@ -88,12 +121,8 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
   }
 
-  fd = ( direction == READ ) ? open( path, O_WRONLY ) : open( path, O_WRONLY );
-  if( fd  == OPEN_FAILED ){
-    sprintf( errmsg, "Failed to open gpio [%d] direction! [%s]", pin, path );
-    throw std::runtime_error( errmsg );
-  }
-
+  fd = ( direction == READ ) ? open_with_lock( path, O_WRONLY ) :
+       open_with_lock( path, O_WRONLY );
   int status = write( fd
                     , direction == READ ? "in" : "out"
                     , direction == READ ? 2    : 3 );
@@ -105,11 +134,8 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
 
   // Opening GPIO PIN
   snprintf( path, buffer_length, "/sys/class/gpio/gpio%d/value", pin );
-  fd = ( direction == READ ) ? open( path, O_RDONLY ) : open( path, O_WRONLY );
-  if( fd == OPEN_FAILED ){
-    sprintf( errmsg, "Failed to open gpio [%d] value! [%s]", pin, path );
-    throw std::runtime_error( errmsg );
-  }
+  fd = ( direction == READ ) ? open_with_lock( path, O_RDONLY ) :
+       open_with_lock( path, O_WRONLY );
 
   return fd;
 }
@@ -149,14 +175,10 @@ GPIO::CloseGPIO( const int pin )
   static constexpr unsigned buffer_length = 3;
   unsigned write_length;
   char buffer[buffer_length];
-  int fd = open( "/sys/class/gpio/unexport", O_WRONLY );
-  if( fd == OPEN_FAILED ){
-    throw std::runtime_error( "Failed to open un-export for writing!" );
-  }
 
+  int fd = open_with_lock( "/sys/class/gpio/unexport", O_WRONLY );
   write_length = snprintf( buffer, buffer_length, "%d", pin );
   write( fd, buffer, write_length );
-
   close( fd );
 }
 
@@ -248,16 +270,13 @@ GPIO::SpareOff() const
 void
 GPIO::InitPWM()
 {
-  char errmsg[1024];
-
-  int fd = open( "/sys/class/pwm/pwmchip0/export", O_WRONLY );
-  if( fd == OPEN_FAILED ){
-    sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip0/export" );
-    pwm_enable[0] = -1;// Flagging the PWM stuff as unopened.
-    throw std::runtime_error( errmsg );
-  }
+  // Flaaing the pwm_enable as open failed.
+  pwm_enable[0] = OPEN_FAILED;
+  pwm_enable[1] = OPEN_FAILED;
+  int fd = open_with_lock( "/sys/class/pwm/pwmchip0/export", O_WRONLY );
   write( fd, "0", 1 );
-  write( fd, "1", 1 );
+  write( fd, "1", 1 );// Single write to enable interface
+  close( fd );
 
   // Waiting for the sysfs to generated the corresponding file
   while( access( "/sys/class/pwm/pwmchip0/pwm0/enable", F_OK ) == OPEN_FAILED ){
@@ -271,24 +290,36 @@ GPIO::InitPWM()
   }
 
   // Small loop to continuously try to open the PWM interface. If the interface
-  // cannot be opened. An exception would have been raised at the start of the
-  // function.
+  // cannot be opened, an exception would have been raised at the start of the
+  // function. But this requires a very long wait time for the open interface to
+  // become available for some reason.
   do{
     pwm_enable[0] = open( "/sys/class/pwm/pwmchip0/pwm0/enable",      O_WRONLY );
     pwm_duty[0]   = open( "/sys/class/pwm/pwmchip0/pwm0/duty_cycle",  O_WRONLY );
     pwm_period[0] = open( "/sys/class/pwm/pwmchip0/pwm0/period",      O_WRONLY );
 
-    pwm_enable[1] = open( "/sys/class/pwm/pwmchip0/pwm0/enable",      O_WRONLY );
-    pwm_duty[1]   = open( "/sys/class/pwm/pwmchip0/pwm0/duty_cycle",  O_WRONLY );
-    pwm_period[1] = open( "/sys/class/pwm/pwmchip0/pwm0/period",      O_WRONLY );
+    pwm_enable[1] = open( "/sys/class/pwm/pwmchip0/pwm1/enable",      O_WRONLY );
+    pwm_duty[1]   = open( "/sys/class/pwm/pwmchip0/pwm1/duty_cycle",  O_WRONLY );
+    pwm_period[1] = open( "/sys/class/pwm/pwmchip0/pwm1/period",      O_WRONLY );
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
   } while( pwm_enable[0] == UNOPENED || pwm_enable[0] == OPEN_FAILED );
 
-  if( pwm_enable[0] == OPEN_FAILED ){
-    sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip0/pwm0/enable" );
-    throw std::runtime_error( errmsg );
+  // Attempting to lock everything
+  for( int fd : {pwm_enable[0], pwm_duty[0], pwm_period[0],
+                 pwm_enable[1], pwm_duty[1], pwm_period[1]} ){
+    int lock = flock( fd, LOCK_EX | LOCK_NB );
+    if( lock ){
+      close( pwm_enable[0] );
+      close( pwm_duty[0] );
+      close( pwm_period[0] );
+      close( pwm_enable[1] );
+      close( pwm_duty[1] );
+      close( pwm_period[1] );
+      pwm_enable[0]   = pwm_duty[0] = pwm_period[0] =
+        pwm_enable[1] = pwm_duty[1] = pwm_period[1] = UNOPENED;
+      throw std::runtime_error( "Failed to lock PWM files" );
+    }
   }
-  close( fd );
 }
 
 /**
@@ -305,7 +336,6 @@ GPIO::ClosePWM()
       close( pwm_enable[channel] );
       close( pwm_duty[channel] );
       close( pwm_period[channel] );
-
     }
 
     sprintf( errmsg, "/sys/class/pwm/pwmchip0/unexport" );
@@ -339,7 +369,6 @@ GPIO::SetPWM( const unsigned c,
               const double   dc,
               const double   f )
 {
-
   // Limiting range
   const float frequency  = std::min( 1e5, f );
   const float duty_cycle = std::min( 1.0, std::max( 0.0, dc ) );
@@ -364,7 +393,6 @@ GPIO::SetPWM( const unsigned c,
     } else if( channel == 1 ){
       i2c_flush_array[3] = duty_cycle * 5000.0;
     }
-
   } else {
     write( pwm_enable[channel], "0",        1          );
     write( pwm_period[channel], period_str, period_len );
@@ -426,12 +454,7 @@ int
 GPIO::InitI2C()
 {
   char errmsg[1024];
-  int fd = open( "/dev/i2c-1", O_RDWR );
-  // open device
-  if( fd == OPEN_FAILED ){
-    sprintf( errmsg, "Error: Couldn't open i2c device! %s", "/dev/i2c-1" );
-    throw std::runtime_error( errmsg );
-  }
+  int fd = open_with_lock( "/dev/i2c-1", O_RDWR );
 
   // connect to ADS1115 as i2c slave
   if( ioctl( fd, I2C_SLAVE, 0x48 ) == IO_FAILED ){
