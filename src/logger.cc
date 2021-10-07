@@ -191,21 +191,3 @@ Logger::SetOutputDescriptor( const int fd )
     outputptr = fdopen( fd, "w" );// Open file descriptor to open mode
   }
 }
-
-#include <readline/readline.h>
-
-void
-set_rl_descriptors( const int in_fd, const int out_fd )
-{
-  if( in_fd == stdin->_fileno ){
-    rl_instream = stdin;
-  } else {
-    rl_instream = fdopen( in_fd, "r" );
-  }
-
-  if( out_fd == stdout->_fileno ){
-    rl_outstream = stdout;
-  } else {
-    rl_outstream = fdopen( out_fd, "w" );
-  }
-}

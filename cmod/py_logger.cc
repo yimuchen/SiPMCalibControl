@@ -25,5 +25,4 @@ PYBIND11_MODULE( logger, m )
   m.def( "printwarn",              &printwarn            );
   m.def( "printerr",               &printerr             );
   m.def( "set_logging_descriptor", &setloggingdescriptor );
-  m.def( "set_rl_descriptor",      &set_rl_descriptors   );
 }

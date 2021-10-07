@@ -17,6 +17,4 @@ extern void printwarn( const std::string& x );
 extern void printerr( const std::string& x );
 extern void setloggingdescriptor( const int );
 
-extern void set_rl_descriptors( const int, const int );
-
 #endif
