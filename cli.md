@@ -9,6 +9,8 @@ prompt. The documentation here is mainly going over a broader aspect of what sor
 of data you can expect out of various commands, and for what sort of use case
 you might want to perform the specific commands.
 
+{:toc}
+
 ## Analysis level commands
 
 Here is a list of commands that will typically be used for the individual SiPM
