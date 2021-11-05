@@ -29,7 +29,7 @@ class exit(cmdbase.controlcmd):
                       default='no'):
       self.printmsg("Sending gantry home...")
       # Fast motion to somewhere close to home
-      self.move_gantry(1, 1, 1)
+      self.move_gantry(1, 1, 1, False)
       # Activate send home
       self.gcoder.sendhome(True, True, True)
       return cmdbase.controlcmd.TERMINATE_SESSION
