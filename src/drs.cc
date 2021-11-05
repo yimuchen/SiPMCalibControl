@@ -72,7 +72,7 @@ DRSContainer::Init()
   /* set input range to -0.5V ... +0.5V */
   board->SetInputRange( 0 );
 
-  // DO NOT ENABLE INTERNAL CLOCK CLIBRATION!!
+  // DO NOT ENABLE INTERNAL CLOCK CALIBRATION!!
   // board->EnableTcal( 1 );
 
   // By default setting to use the external trigger
