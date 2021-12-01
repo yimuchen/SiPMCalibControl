@@ -989,9 +989,9 @@ class readoutcmd(controlcmd):
   def add_args(self):
     group = self.parser.add_argument_group(
         "Readout", """
-    Arguments for changing the behaviour of readout without directly interacting
-    with the reaout interfaces.
-    """)
+        Arguments for changing the behaviour of readout without directly
+        interacting with the readout interfaces.
+        """)
     group.add_argument('--mode',
                        type=int,
                        choices=[e.value for e in readoutcmd.Mode],
