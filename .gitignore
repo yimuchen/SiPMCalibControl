@@ -5,6 +5,9 @@
 # General Python exclusion
 *.pyc
 **/*.aux
+**/*.exe
+__pycache__
+**/__pycache__/**
 
 # Swap files
 *.swp
@@ -15,22 +18,30 @@
 *.log
 lib/*
 *.txt
+*.pdf
+data/**
+
+# CMake/compilation related
 Makefile
-__pycache__
-**/__pycache__/**
 *.cmake
 CMakeFiles/**
 */CMakeFiles/**
 build/**
+
+# Editing related
 .vscode/**
-**/*.exe
-*.pdf
-data/**
+
+# For nodeJS related stuff
 node_modules
 server/templates/playground.html
-package-lock.json 
+package-lock.json
 
 # inclusive directories
 !CMakeLists.txt
 !dofiles/*.txt
 !*.rules
+
+# Doxygen related
+docs/html
+docs/style.css
+docs/style.css.map
