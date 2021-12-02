@@ -12,7 +12,7 @@ var searchData=
   ['picoscope_20related_20settings_9',['Picoscope related settings',['../group__cli__readout1__pico.html',1,'']]],
   ['picoset_10',['picoset',['../classctlcmd_1_1picocmd_1_1picoset.html',1,'ctlcmd::picocmd']]],
   ['picounit_11',['PicoUnit',['../classPicoUnit.html',1,'']]],
-  ['post_5frun_12',['post_run',['../classctlcmd_1_1cmdbase_1_1controlcmd.html#a7461f81564db788ad1de4355e54cebd8',1,'ctlcmd.cmdbase.controlcmd.post_run()'],['../classctlcmd_1_1viscmd_1_1visualmeta.html#a1f316e8ebb9bee583c95566cf45ecd82',1,'ctlcmd.viscmd.visualmeta.post_run()'],['../classctlcmd_1_1cmdbase_1_1savefilecmd.html#a2b3fcc68eb9e27342981b5e600aa4580',1,'ctlcmd.cmdbase.savefilecmd.post_run()']]],
+  ['post_5frun_12',['post_run',['../classctlcmd_1_1cmdbase_1_1controlcmd.html#a7461f81564db788ad1de4355e54cebd8',1,'ctlcmd.cmdbase.controlcmd.post_run()'],['../classctlcmd_1_1cmdbase_1_1savefilecmd.html#a2b3fcc68eb9e27342981b5e600aa4580',1,'ctlcmd.cmdbase.savefilecmd.post_run()'],['../classctlcmd_1_1viscmd_1_1visualmeta.html#a1f316e8ebb9bee583c95566cf45ecd82',1,'ctlcmd.viscmd.visualmeta.post_run()']]],
   ['postcmd_13',['postcmd',['../classctlcmd_1_1cmdbase_1_1controlterm.html#abc70c4bb66c95eb4aa571818704c6532',1,'ctlcmd::cmdbase::controlterm']]],
   ['precmd_14',['precmd',['../classctlcmd_1_1cmdbase_1_1controlterm.html#ac594ff86b2a705af07d57dd8e103c395',1,'ctlcmd::cmdbase::controlterm']]],
   ['prepare_5fcalibration_5fsession_15',['prepare_calibration_session',['../namespaceserver_1_1sockets_1_1action.html#aebb76b00f7a92fb82e80626973344c19',1,'server::sockets::action']]],
@@ -27,5 +27,6 @@ var searchData=
   ['pulse_24',['pulse',['../classctlcmd_1_1digicmd_1_1pulse.html',1,'ctlcmd::digicmd']]],
   ['pulse_25',['Pulse',['../classGPIO.html#afe81fd1d9fdfd6418d239e8074e10976',1,'GPIO']]],
   ['pushadcsetting_26',['PushADCSetting',['../classGPIO.html#ac752b6b7512f39230cde2fb04901ed26',1,'GPIO']]],
-  ['pwm_27',['pwm',['../classctlcmd_1_1digicmd_1_1pwm.html',1,'ctlcmd::digicmd']]]
+  ['pwm_27',['pwm',['../classctlcmd_1_1digicmd_1_1pwm.html',1,'ctlcmd::digicmd']]],
+  ['python_20modules_20for_20session_20management_20helper_28',['Python modules for session management helper',['../md__github_workspace_cmod_README.html',1,'']]]
 ];

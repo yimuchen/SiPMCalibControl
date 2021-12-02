@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.2"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SiPM Calibration Control Program: SiPM Calibration Control Program</title>
+<title>SiPM Calibration Control Program: server Namespace Reference</title>
 <!-- Overriding the tabs css with our own -->
 <!--link href="tabs.css" rel="stylesheet" type="text/css"/-->
 <script type="text/javascript" src="jquery.js"></script>
@@ -60,7 +60,6 @@ $(function() {
 /* @license-end */
 </script>
 <div id="main-nav"></div>
-</div><!-- top -->
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -75,20 +74,49 @@ $(function() {
 </iframe>
 </div>
 
-<div><div class="header">
-  <div class="headertitle"><div class="title">SiPM Calibration Control Program </div></div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
+  <div class="headertitle"><div class="title">server Namespace Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p ><a class="anchor" id="md_mainpage"></a> The official documentation of the SiPM calibaration control program. This documentation covers both the user-level manual and the software design aspects. The official code is hosted on <a href="https://github.com/yimuchen/SiPMCalibControl">GitHub</a>, the analysis of the data collected by this package is performed by a separate software package that can be found <a href="https://github.com/yimuchen/SiPMCalib">here</a>.</p>
-<h2>For system users</h2>
-<p >The manual for operating the system is found here:</p>
-<ul>
-<li>For the <a class="el" href="group__cli.html">command line interface</a>. Alternatively you can search for the command of interest if you are already aware of a specific command that you are looking for.</li>
-<li>For the GUI (currently under constructions)</li>
-</ul>
-<h2>For developers</h2>
-<p >Consult this <a class="el" href="developer.html">page</a> for more information on how to deploy the program, general design philosophies and patterns, and other documentations. </p>
-</div></div><!-- PageDoc -->
+
+<p>Defining show the socket io/Flask app instance is initialized, how client side defined (AJAX) URLs should be processes and a simple wrapper for the parsing of socket signals should be processes.  
+<a href="namespaceserver.html#details">More...</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a1036cee3149b4d989ef5d40fc4cc4362"><td class="memItemLeft" align="right" valign="top"><a id="a1036cee3149b4d989ef5d40fc4cc4362" name="a1036cee3149b4d989ef5d40fc4cc4362"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>create_server_flask</b> (debug=False)</td></tr>
+<tr class="memdesc:a1036cee3149b4d989ef5d40fc4cc4362"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generating the server instance, keeping the app instance as a member of the global socketio object so other members can use this. <br /></td></tr>
+<tr class="separator:a1036cee3149b4d989ef5d40fc4cc4362"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a3830a4a7c1cdf02f5e41808027a8cc31"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceserver.html#a3830a4a7c1cdf02f5e41808027a8cc31">socketio</a> = SocketIO(debug=False, async_mode='threading', logger=False, )</td></tr>
+<tr class="memdesc:a3830a4a7c1cdf02f5e41808027a8cc31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Right now only the threading async mode works without addition settings.  <a href="namespaceserver.html#a3830a4a7c1cdf02f5e41808027a8cc31">More...</a><br /></td></tr>
+<tr class="separator:a3830a4a7c1cdf02f5e41808027a8cc31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p >For more detailed documentation of how signals will be processes, see the documentation in the [sockets](sockets) directory. </p>
+</div><h2 class="groupheader">Variable Documentation</h2>
+<a id="a3830a4a7c1cdf02f5e41808027a8cc31" name="a3830a4a7c1cdf02f5e41808027a8cc31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3830a4a7c1cdf02f5e41808027a8cc31">&#9670;&nbsp;</a></span>socketio</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">server.socketio = SocketIO(debug=False, async_mode='threading', logger=False, )</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >This is not ideal. </p>
+
+</div>
+</div>
 </div><!-- contents -->
 <!-- HTML footer for doxygen 1.8.14-->
 <!-- start footer part -->

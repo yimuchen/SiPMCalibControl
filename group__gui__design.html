@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.2"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SiPM Calibration Control Program: SiPM Calibration Control Program</title>
+<title>SiPM Calibration Control Program: GUI Design</title>
 <!-- Overriding the tabs css with our own -->
 <!--link href="tabs.css" rel="stylesheet" type="text/css"/-->
 <script type="text/javascript" src="jquery.js"></script>
@@ -75,20 +75,29 @@ $(function() {
 </iframe>
 </div>
 
-<div><div class="header">
-  <div class="headertitle"><div class="title">SiPM Calibration Control Program </div></div>
+<div class="header">
+  <div class="summary">
+<a href="#groups">Modules</a>  </div>
+  <div class="headertitle"><div class="title">GUI Design</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p ><a class="anchor" id="md_mainpage"></a> The official documentation of the SiPM calibaration control program. This documentation covers both the user-level manual and the software design aspects. The official code is hosted on <a href="https://github.com/yimuchen/SiPMCalibControl">GitHub</a>, the analysis of the data collected by this package is performed by a separate software package that can be found <a href="https://github.com/yimuchen/SiPMCalib">here</a>.</p>
-<h2>For system users</h2>
-<p >The manual for operating the system is found here:</p>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<p >The key tech used in the web based interface is a <a href="https://en.wikipedia.org/wiki/WebSocket">web socket</a> communication between a server containing the command line interface described in the <a href="../ctlcmd">CLI documentation</a>, and a web-page hosting the client JavaScript for data display. The GUI is designed mainly for standard calibration sequences, so while a make-shift CLI interface is available for raw command controls, not every function will be supported.</p>
+<p >The “GUI” has two logically disconnected components: the server side that is used to handle the underlying hardware, and the client side that is used to display results and controls to the end users. Here we define 3 types of communications:</p>
 <ul>
-<li>For the <a class="el" href="group__cli.html">command line interface</a>. Alternatively you can search for the command of interest if you are already aware of a specific command that you are looking for.</li>
-<li>For the GUI (currently under constructions)</li>
+<li>The client sending data to the server side as “action requests”: these are small data packages that is used to trigger hardware action. In such cases, all future action request will be discarded until all requested hardware actions have been completed. The creation of such signals can be found in the <a href="static/js"><code>static/js/action.js</code></a> file, while the corresponding processing of these signals will be handled in the [<code>sockets/action.py</code>](sockets) file.</li>
+<li>The server will send data to the client via a "sync" type data, these are data needs the client to see identical values with the data to avoid operation errors, or is frequently updated server side. The emission of these communications on the server side can be found in the "sync.py" and the handling of such signals should be found in the <a href="static/js"><code>static/js/sync.js</code></a> file.</li>
+<li>The server will send data to the client via "report" requests. This is data that is either expensive to compute server side or is not critical to the operation of the calibration, so is only presented to the client on request. For the client side, this should be done via AJAX URL request, and response of these requests will be handled in the [<code>sockets/report.py</code>](sockets) file.</li>
 </ul>
-<h2>For developers</h2>
-<p >Consult this <a class="el" href="developer.html">page</a> for more information on how to deploy the program, general design philosophies and patterns, and other documentations. </p>
-</div></div><!-- PageDoc -->
+<p >The socket-io server for handling various signals and communicating user commands with the underlying command line application is documented in the [<code>sockets</code>](sockets) directory. Client side GUI design element CSS layout is placed in [static/sass](static), and the JavaScript for processing data for display is found in [static/js](static) </p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="groups" name="groups"></a>
+Modules</h2></td></tr>
+<tr class="memitem:group__gui__server"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__gui__server.html">GUI Server</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:group__gui__client"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__gui__client.html">GUI client</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
 </div><!-- contents -->
 <!-- HTML footer for doxygen 1.8.14-->
 <!-- start footer part -->

@@ -26,9 +26,9 @@ var menudata={children:[
 {text:"Main Page",url:"index.html"},
 {text:"CLI manual",url:"group__cli.html"},
 {text:"CLI design",url:"group__cli__design.html"},
-{text:"Common",url:"@ref Common"},
-{text:"EDMUtils",url:"@ref EDMUtils"},
-{text:"PhysUtils",url:"@ref PhysUtils"},
+{text:"GUI manual",url:"gui.html"},
+{text:"GUI design",url:"group__gui__design.html"},
+{text:"Hardware implementations",url:"group__hardware.html"},
 {text:"Classes",url:"annotated.html",children:[
 {text:"Class List",url:"annotated.html"},
 {text:"Class Index",url:"classes.html"},
