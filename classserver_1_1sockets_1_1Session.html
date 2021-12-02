@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.2"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>UserUtils: server.sockets.Session Class Reference</title>
+<title>SiPM Calibration Control Program: server.sockets.Session Class Reference</title>
 <!-- Overriding the tabs css with our own -->
 <!--link href="tabs.css" rel="stylesheet" type="text/css"/-->
 <script type="text/javascript" src="jquery.js"></script>
@@ -35,7 +35,7 @@ MathJax.Hub.Config({
  <tbody>
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">UserUtils
+   <div id="projectname">SiPM Calibration Control Program
    </div>
   </td>
  </tr>
@@ -88,38 +88,23 @@ $(function() {
   <div class="headertitle"><div class="title">server.sockets.Session Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="dynheader">
-Inheritance diagram for server.sockets.Session:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classserver_1_1sockets_1_1Session.png" alt=""/>
- </div></div>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><pre class="fragment">Session object that contains all of the session parameters. Since a bunch of
-the manipulation of the data member is heavily tied with the calibration
-processes, this fill will only contain a list the data members. The actual
-manipulation of the data members will be written in the action.py file behind
-the calibration part.
-
-In addition, so pass the full functionality of the underlying cmd class to the
-GUI terminal, we will be using the following file descriptors to interact with
-the cmd class. Two descriptors will be opened for each of the file input output
-sessions as reading and writing will need two different descriptor values. For
-the sake of having semi-servicable terminal interactions, a string buffer and
-buffer index is also used to keep track of the current line.
-
-This class is strictly a container class, with minimal amounts of data
-manipulation. All manipulations of the global container instance 'session' is
-handled by the various function methods in the .py files.
-</pre> </div><table class="memberdecls">
+<div class="textblock"><p >Since a bunch of the manipulation of the data member is heavily tied with the calibration processes, this fill will only contain a list the data members. The actual manipulation of the data members will be written in the action.py file behind the calibration part.</p>
+<p >In addition, so pass the full functionality of the underlying cmd class to the GUI terminal, we will be using the following file descriptors to interact with the cmd class. Two descriptors will be opened for each of the file input output sessions as reading and writing will need two different descriptor values. For the sake of having semi-servicable terminal interactions, a string buffer and buffer index is also used to keep track of the current line.</p>
+<p >This class is strictly a container class, with minimal amounts of data manipulation. All manipulations of the global container instance 'session' is handled by the various function methods in the .py files. </p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a64b02f4c625da7d51784ce6dc0d8f7b3"><td class="memItemLeft" align="right" valign="top"><a id="a64b02f4c625da7d51784ce6dc0d8f7b3" name="a64b02f4c625da7d51784ce6dc0d8f7b3"></a>
 def&#160;</td><td class="memItemRight" valign="bottom"><b>__init__</b> (self)</td></tr>
 <tr class="separator:a64b02f4c625da7d51784ce6dc0d8f7b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3772468f8bf16d6166f16948f9ba9ebc"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classserver_1_1sockets_1_1Session.html#a3772468f8bf16d6166f16948f9ba9ebc">__del__</a> (self)</td></tr>
+<tr class="memitem:a3772468f8bf16d6166f16948f9ba9ebc"><td class="memItemLeft" align="right" valign="top"><a id="a3772468f8bf16d6166f16948f9ba9ebc" name="a3772468f8bf16d6166f16948f9ba9ebc"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>__del__</b> (self)</td></tr>
+<tr class="memdesc:a3772468f8bf16d6166f16948f9ba9ebc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closing the IO session file. <br /></td></tr>
 <tr class="separator:a3772468f8bf16d6166f16948f9ba9ebc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1d0bcd740b1b8bde0880995bf0bedeb1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classserver_1_1sockets_1_1Session.html#a1d0bcd740b1b8bde0880995bf0bedeb1">run_single_cmd</a> (self, cmd)</td></tr>
+<tr class="memitem:a1d0bcd740b1b8bde0880995bf0bedeb1"><td class="memItemLeft" align="right" valign="top"><a id="a1d0bcd740b1b8bde0880995bf0bedeb1" name="a1d0bcd740b1b8bde0880995bf0bedeb1"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>run_single_cmd</b> (self, cmd)</td></tr>
+<tr class="memdesc:a1d0bcd740b1b8bde0880995bf0bedeb1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Running a single command via for the underlying session with return value. <br /></td></tr>
 <tr class="separator:a1d0bcd740b1b8bde0880995bf0bedeb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d83d1f567793a2acc9cc0360639feba"><td class="memItemLeft" align="right" valign="top"><a id="a2d83d1f567793a2acc9cc0360639feba" name="a2d83d1f567793a2acc9cc0360639feba"></a>
 def&#160;</td><td class="memItemRight" valign="bottom"><b>is_running_cmd</b> (self)</td></tr>
@@ -255,56 +240,12 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>SESSION_TYPE_SYSTEM</b
 int&#160;</td><td class="memItemRight" valign="bottom"><b>SESSION_TYPE_STANDARD</b> = 2</td></tr>
 <tr class="separator:af36b5534e6738d9cefcb88bb2ed4cd5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a3772468f8bf16d6166f16948f9ba9ebc" name="a3772468f8bf16d6166f16948f9ba9ebc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3772468f8bf16d6166f16948f9ba9ebc">&#9670;&nbsp;</a></span>__del__()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def server.sockets.Session.__del__ </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre class="fragment">Closing the IO session file
-</pre> 
-</div>
-</div>
-<h2 class="groupheader">Member Function Documentation</h2>
-<a id="a1d0bcd740b1b8bde0880995bf0bedeb1" name="a1d0bcd740b1b8bde0880995bf0bedeb1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1d0bcd740b1b8bde0880995bf0bedeb1">&#9670;&nbsp;</a></span>run_single_cmd()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def server.sockets.Session.run_single_cmd </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>cmd</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre class="fragment">Running a single command via for the underlying session with return value.
-</pre> 
-</div>
-</div>
+<div class="dynheader">
+Inheritance diagram for server.sockets.Session:</div>
+<div class="dyncontent">
+ <div class="center">
+  <img src="classserver_1_1sockets_1_1Session.png" alt=""/>
+ </div></div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>/github/workspace/server/sockets/__init__.py</li>
 </ul>

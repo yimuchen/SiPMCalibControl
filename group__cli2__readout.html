@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.2"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>UserUtils: The GUI server session</title>
+<title>SiPM Calibration Control Program: Readout Settings Commands</title>
 <!-- Overriding the tabs css with our own -->
 <!--link href="tabs.css" rel="stylesheet" type="text/css"/-->
 <script type="text/javascript" src="jquery.js"></script>
@@ -35,7 +35,7 @@ MathJax.Hub.Config({
  <tbody>
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">UserUtils
+   <div id="projectname">SiPM Calibration Control Program
    </div>
   </td>
  </tr>
@@ -60,6 +60,7 @@ $(function() {
 /* @license-end */
 </script>
 <div id="main-nav"></div>
+</div><!-- top -->
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -74,21 +75,28 @@ $(function() {
 </iframe>
 </div>
 
-</div><!-- top -->
-<div><div class="header">
-  <div class="headertitle"><div class="title">The GUI server session </div></div>
+<div class="header">
+  <div class="summary">
+<a href="#groups">Modules</a>  </div>
+  <div class="headertitle"><div class="title">Readout Settings Commands<div class="ingroups"><a class="el" href="group__cli.html">Command Line Interface Manual</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p >The server session uses the <a href="https://flask-socketio.readthedocs.io/en/latest/">flask socketio</a> for the socket i/o handling. A single global <code>SocketIO()</code> instance is initiated in the package <code>__init__.py</code> file for all sub-routines to emit signals. In the same <code>__init__.py</code> file, a global instance of the <code>Session</code> object is used to record the system status and progress, as well as containing and controlling the underlying command line session. All server interactions are then defined as functions that interact with these two global objects.</p>
-<ul>
-<li><a href="parsing.py"><code>parsing.py</code></a> contains the functions for immediately processing the socket signals and AJAX request, determining whether to process the signal and which subsequent functions to call for the client side request.</li>
-<li><a href="action.py"><code>action.py</code></a> Functions to perform server side calibration actions, including individual commands and sets of calibration commands for the full tileboard calibration runs.</li>
-<li><a href="sync.py"><code>sync.py</code></a> Functions for emitting operation critical signals to ensure that the GUI client sees the precise server state. Sync-like signals can be emitted at any time and the client should respond accordingly.</li>
-<li><a href="report.py"><code>report.py</code></a> Functions for emitting non-critical information to the client, either for aesthetic for progress checking or basic data quality management.</li>
-<li><a href="format.py"><code>format.py</code></a> Additional helper functions for ensuring the format of certain actions. </li>
-</ul>
-</div></div><!-- contents -->
-</div><!-- PageDoc -->
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<p >This is more details </p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="groups" name="groups"></a>
+Modules</h2></td></tr>
+<tr class="memitem:group__cli__readout0__drs"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cli__readout0__drs.html">DRS settings</a></td></tr>
+<tr class="memdesc:group__cli__readout0__drs"><td class="mdescLeft">&#160;</td><td class="mdescRight">commands for explcitly settings the DRS4 <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:group__cli__readout1__pico"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cli__readout1__pico.html">Picoscope related settings</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:group__cli__readout2__visual"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cli__readout2__visual.html">Visual system settings</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:group__cli__readout3__gpio"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__cli__readout3__gpio.html">GPIO settings</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+</div><!-- contents -->
 <!-- HTML footer for doxygen 1.8.14-->
 <!-- start footer part -->
 <hr class="footer"/>

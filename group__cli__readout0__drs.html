@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.2"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>UserUtils: Python modules for session management helper</title>
+<title>SiPM Calibration Control Program: DRS settings</title>
 <!-- Overriding the tabs css with our own -->
 <!--link href="tabs.css" rel="stylesheet" type="text/css"/-->
 <script type="text/javascript" src="jquery.js"></script>
@@ -35,7 +35,7 @@ MathJax.Hub.Config({
  <tbody>
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">UserUtils
+   <div id="projectname">SiPM Calibration Control Program
    </div>
   </td>
  </tr>
@@ -60,6 +60,7 @@ $(function() {
 /* @license-end */
 </script>
 <div id="main-nav"></div>
+</div><!-- top -->
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -74,25 +75,25 @@ $(function() {
 </iframe>
 </div>
 
-</div><!-- top -->
-<div><div class="header">
-  <div class="headertitle"><div class="title">Python modules for session management helper </div></div>
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">Classes</a>  </div>
+  <div class="headertitle"><div class="title">DRS settings<div class="ingroups"><a class="el" href="group__cli.html">Command Line Interface Manual</a> &raquo; <a class="el" href="group__cli2__readout.html">Readout Settings Commands</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p >Here are a bunch of python modules to help handle session variables, written in python since most of these libraries either is for string parsing for configuration files, or simply uses high level system library such as specialized IO handling. Most of these are relatively simple single file classes that handle in single task. Also note that the C++ libraries in the <a href="../src"><code>src</code> directory</a> will be placed here, to simplify the python call. For the sake of simplifying the make process, the C++ files for pybind11 are also placed here.</p>
-<h1>Overview for libraries</h1>
-<h2><a href="board.py">board.py</a></h2>
-<p >Simple container for a board in a calibration session. Basically a list of photo-detector ids, and a map that records the default and measure coordinates of the photo-detectors. Can save and read results in json format.</p>
-<h2><a href="readout.py">readout.py</a></h2>
-<p >Python abstraction of the readout. This makes it so that the commands in the can obtain the readout of a photo-detector in a unified interface, either from the ADC interface, the picoscope or a mathematical model for testing. This function also handles the averaging and error estimation for reading out data in multiple samples.</p>
-<h2><a href="signal.py">sighandle.py</a></h2>
-<p >Simple class for overwriting default signal handling behavior so that actions like 'CTL+C' can be used to exit a calibration process safely.</p>
-<h2><a href="sshfiler.py">sshfiler.py</a></h2>
-<p >Simple class for abstracting opening a file to some server over SSH. Handing for passing file directory over to Tier 3 for hosting. Also opens an accompanying file in 'read' mode to progress extraction.</p>
-<h2><a href="actionlist.py">actionlist.py</a></h2>
-<p >Simple class for defining a set of action lists. Basically a parser for a simple json file corresponding for a user action “tag” and a user action “message” to pause a session indefinitely until the user confirmation input. </p>
-</div></div><!-- contents -->
-</div><!-- PageDoc -->
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<p >My test </p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1drscmd_1_1drsset.html">ctlcmd.drscmd.drsset</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setting DRS4 readout operation parameters.  <a href="classctlcmd_1_1drscmd_1_1drsset.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1drscmd_1_1drscalib.html">ctlcmd.drscmd.drscalib</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Running the DRS calibration process.  <a href="classctlcmd_1_1drscmd_1_1drscalib.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+</div><!-- contents -->
 <!-- HTML footer for doxygen 1.8.14-->
 <!-- start footer part -->
 <hr class="footer"/>

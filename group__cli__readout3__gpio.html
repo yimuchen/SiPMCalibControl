@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.2"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>UserUtils: Python command line interface</title>
+<title>SiPM Calibration Control Program: GPIO settings</title>
 <!-- Overriding the tabs css with our own -->
 <!--link href="tabs.css" rel="stylesheet" type="text/css"/-->
 <script type="text/javascript" src="jquery.js"></script>
@@ -35,7 +35,7 @@ MathJax.Hub.Config({
  <tbody>
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">UserUtils
+   <div id="projectname">SiPM Calibration Control Program
    </div>
   </td>
  </tr>
@@ -60,6 +60,7 @@ $(function() {
 /* @license-end */
 </script>
 <div id="main-nav"></div>
+</div><!-- top -->
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -74,23 +75,12 @@ $(function() {
 </iframe>
 </div>
 
-</div><!-- top -->
-<div><div class="header">
-  <div class="headertitle"><div class="title">Python command line interface </div></div>
+<div class="header">
+  <div class="headertitle"><div class="title">GPIO settings<div class="ingroups"><a class="el" href="group__cli.html">Command Line Interface Manual</a> &raquo; <a class="el" href="group__cli2__readout.html">Readout Settings Commands</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p >Is directory contain the core of the command line interface. The <code>controlterm</code> class in the <a href="cmdbase.py">cmdbase.py</a> file extends the <a href="https://docs.python.org/3/library/cmd.html">python <code>Cmd</code></a> class to accept <code>controlcmd</code> classes in the constructor to define the command line functions (for example of construction, see the main <a href="../control.py"><code>control.py</code></a> file). The <code>run_cmd</code> function behaviour is augmented to handle exceptions raised by the commands routines, and the <code>help_cmd</code> function automatically gets the doc string and the option-parser help string to reduce code verbosity. The autocompletion function also handles the option-parser to get easier completion functionalities. The <code>controlterm</code> class instance also contains the class handles of the various interfaces defined in <a href="../cmod"><code>cmod</code></a> and <a href="../src"><code>src</code></a> directory.</p>
-<p >Each <code>controlcmd</code> classes instance <a href="https://docs.python.org/3/library/argparse.html"><code>argparse</code></a> python class for the option parsing, with some common options and parsing pattern defined for decent class uses. Each controlcmd class instance also contains a reference to the parent <code>controlterm</code> class so that the commands can use the various interfaces as needed.</p>
-<p >The implementation of the commands that is required to run the calibrations are defined in the various files:</p>
-<ul>
-<li><a href="digicmd.py">digicmd.py</a> contains commands for <a class="el" href="classGPIO.html">GPIO</a> interface controls.</li>
-<li><a href="getset.py">getset.py</a> contains commands for session variable settings.</li>
-<li><a href="picocmd.py">picocmd.py</a> contains commands for setting picoscope configurations.</li>
-<li><a href="motioncmd.py">motioncmd.py</a> contains commands for gantry motion and the majority of luminosity measurement commands.</li>
-<li><a href="viscmd.py">viscmd.py</a> contains commands for all visual measurement related commands. </li>
-</ul>
-</div></div><!-- contents -->
-</div><!-- PageDoc -->
+<p >my test </p>
+</div><!-- contents -->
 <!-- HTML footer for doxygen 1.8.14-->
 <!-- start footer part -->
 <hr class="footer"/>

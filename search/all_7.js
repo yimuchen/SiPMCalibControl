@@ -26,7 +26,8 @@ var searchData=
   ['getvisresult_23',['GetVisResult',['../classVisual.html#ab6a5d4b57d0adee00eba0a68a822386b',1,'Visual']]],
   ['getwaveform_24',['GetWaveform',['../classDRSContainer.html#ad7fdbaabf1241621b75b5d989a29464e',1,'DRSContainer']]],
   ['gpio_25',['GPIO',['../classGPIO.html',1,'']]],
-  ['gpio_2ecc_26',['gpio.cc',['../gpio_8cc.html',1,'']]],
-  ['gpioread_27',['GPIORead',['../classGPIO.html#a0cc048d46544bc9be95f22bb7f670a12',1,'GPIO']]],
-  ['gpiowrite_28',['GPIOWrite',['../classGPIO.html#a960201daa506963d5764ce64a0542441',1,'GPIO']]]
+  ['gpio_20settings_26',['GPIO settings',['../group__cli__readout3__gpio.html',1,'']]],
+  ['gpio_2ecc_27',['gpio.cc',['../gpio_8cc.html',1,'']]],
+  ['gpioread_28',['GPIORead',['../classGPIO.html#a0cc048d46544bc9be95f22bb7f670a12',1,'GPIO']]],
+  ['gpiowrite_29',['GPIOWrite',['../classGPIO.html#a960201daa506963d5764ce64a0542441',1,'GPIO']]]
 ];

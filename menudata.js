@@ -24,8 +24,8 @@
 */
 var menudata={children:[
 {text:"Main Page",url:"index.html"},
-{text:"PlotUtils",url:"@ref PlotUtils"},
-{text:"MathUtils",url:"@ref MathUtils"},
+{text:"CLI manual",url:"group__cli.html"},
+{text:"CLI design",url:"group__cli__design.html"},
 {text:"Common",url:"@ref Common"},
 {text:"EDMUtils",url:"@ref EDMUtils"},
 {text:"PhysUtils",url:"@ref PhysUtils"},

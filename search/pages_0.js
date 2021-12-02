@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['low_20level_20hardware_20interfaces_20with_20c_2b_2b_0',['Low level hardware interfaces with C++',['../md__github_workspace_src_README.html',1,'']]]
+  ['sipm_20calibration_20control_20program_0',['SiPM Calibration Control Program',['../index.html',1,'']]]
 ];

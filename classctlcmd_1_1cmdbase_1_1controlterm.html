@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.2"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>UserUtils: ctlcmd.cmdbase.controlterm Class Reference</title>
+<title>SiPM Calibration Control Program: ctlcmd.cmdbase.controlterm Class Reference</title>
 <!-- Overriding the tabs css with our own -->
 <!--link href="tabs.css" rel="stylesheet" type="text/css"/-->
 <script type="text/javascript" src="jquery.js"></script>
@@ -35,7 +35,7 @@ MathJax.Hub.Config({
  <tbody>
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">UserUtils
+   <div id="projectname">SiPM Calibration Control Program
    </div>
   </td>
  </tr>
@@ -76,7 +76,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>ctlcmd</b></li><li class="navelem"><a class="el" href="namespacectlcmd_1_1cmdbase.html">cmdbase</a></li><li class="navelem"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlterm.html">controlterm</a></li>  </ul>
+<li class="navelem"><b>ctlcmd</b></li><li class="navelem"><b>cmdbase</b></li><li class="navelem"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlterm.html">controlterm</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -86,40 +86,42 @@ $(function() {
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="classctlcmd_1_1cmdbase_1_1controlterm-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">ctlcmd.cmdbase.controlterm Class Reference</div></div>
+  <div class="headertitle"><div class="title">ctlcmd.cmdbase.controlterm Class Reference<div class="ingroups"><a class="el" href="group__cli__design.html">CLI Framework</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<div class="dynheader">
-Inheritance diagram for ctlcmd.cmdbase.controlterm:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classctlcmd_1_1cmdbase_1_1controlterm.png" alt=""/>
- </div></div>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><pre class="fragment">The master Command-line parsing class. Which holds:
-
-- All instances of the interface classes.
-- All instances of the controlcmd classes that will be used to map functions
-
-Additional helper method will also be provided to help with common routines of
-across commands.
-</pre> </div><table class="memberdecls">
+<div class="textblock"><p >The master command-line session management class. Which holds:</p>
+<ul>
+<li>All instances of the interface classes.</li>
+<li>All instances of the controlcmd classes that will be used to map functions</li>
+</ul>
+<p >During construction, additional methods for this class are automatically spawned from the input class methods. As this class is also spawned as the control class for GUI interface, there are a couple of book keeping classes to keep track of the status of the last executed command. </p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a836c5fd17a6bf14d9531500093de01d0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlterm.html#a836c5fd17a6bf14d9531500093de01d0">__init__</a> (self, cmdlist, **base_kwargs)</td></tr>
+<tr class="memdesc:a836c5fd17a6bf14d9531500093de01d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructing the command line instance from a list of classes that is requested.  <a href="classctlcmd_1_1cmdbase_1_1controlterm.html#a836c5fd17a6bf14d9531500093de01d0">More...</a><br /></td></tr>
 <tr class="separator:a836c5fd17a6bf14d9531500093de01d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac594ff86b2a705af07d57dd8e103c395"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlterm.html#ac594ff86b2a705af07d57dd8e103c395">precmd</a> (self, line)</td></tr>
+<tr class="memdesc:ac594ff86b2a705af07d57dd8e103c395"><td class="mdescLeft">&#160;</td><td class="mdescRight">routines to run just before executing a command.  <a href="classctlcmd_1_1cmdbase_1_1controlterm.html#ac594ff86b2a705af07d57dd8e103c395">More...</a><br /></td></tr>
 <tr class="separator:ac594ff86b2a705af07d57dd8e103c395"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc70c4bb66c95eb4aa571818704c6532"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlterm.html#abc70c4bb66c95eb4aa571818704c6532">postcmd</a> (self, stop, line)</td></tr>
+<tr class="memdesc:abc70c4bb66c95eb4aa571818704c6532"><td class="mdescLeft">&#160;</td><td class="mdescRight">routines to run just after executing the command  <a href="classctlcmd_1_1cmdbase_1_1controlterm.html#abc70c4bb66c95eb4aa571818704c6532">More...</a><br /></td></tr>
 <tr class="separator:abc70c4bb66c95eb4aa571818704c6532"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a25c7a6a5519310533014633cafab320e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlterm.html#a25c7a6a5519310533014633cafab320e">get_names</a> (self)</td></tr>
+<tr class="memitem:a25c7a6a5519310533014633cafab320e"><td class="memItemLeft" align="right" valign="top"><a id="a25c7a6a5519310533014633cafab320e" name="a25c7a6a5519310533014633cafab320e"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>get_names</b> (self)</td></tr>
+<tr class="memdesc:a25c7a6a5519310533014633cafab320e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Overriding the the original get_names command to allow for the dynamic introduced commands to be listed in the master help method. <br /></td></tr>
 <tr class="separator:a25c7a6a5519310533014633cafab320e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe8182e221802e015047275c7e8a004d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlterm.html#afe8182e221802e015047275c7e8a004d">emptyline</a> (self)</td></tr>
+<tr class="memitem:afe8182e221802e015047275c7e8a004d"><td class="memItemLeft" align="right" valign="top"><a id="afe8182e221802e015047275c7e8a004d" name="afe8182e221802e015047275c7e8a004d"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>emptyline</b> (self)</td></tr>
+<tr class="memdesc:afe8182e221802e015047275c7e8a004d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Overide behavior for empty line inputs: don't do anything. <br /></td></tr>
 <tr class="separator:afe8182e221802e015047275c7e8a004d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a1573e6f182fdcbebee289f041da4d510"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlterm.html#a1573e6f182fdcbebee289f041da4d510">simplify_string</a> (text)</td></tr>
+<tr class="memitem:a1573e6f182fdcbebee289f041da4d510"><td class="memItemLeft" align="right" valign="top"><a id="a1573e6f182fdcbebee289f041da4d510" name="a1573e6f182fdcbebee289f041da4d510"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>simplify_string</b> (text)</td></tr>
+<tr class="memdesc:a1573e6f182fdcbebee289f041da4d510"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simplifying multiline text in python to a single line text in python, which also removes the additional whitespaces at the beginning of lines. <br /></td></tr>
 <tr class="separator:a1573e6f182fdcbebee289f041da4d510"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
@@ -148,8 +150,9 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a85e9a07e642556c449ac992102ef2696"><td class="memItemLeft" align="right" valign="top"><a id="a85e9a07e642556c449ac992102ef2696" name="a85e9a07e642556c449ac992102ef2696"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>sighandle</b></td></tr>
 <tr class="separator:a85e9a07e642556c449ac992102ef2696"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d3d9d61b3927ccbe7111394125bc286"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlterm.html#a2d3d9d61b3927ccbe7111394125bc286">last_cmd</a></td></tr>
-<tr class="memdesc:a2d3d9d61b3927ccbe7111394125bc286"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setting the history file.  <a href="classctlcmd_1_1cmdbase_1_1controlterm.html#a2d3d9d61b3927ccbe7111394125bc286">More...</a><br /></td></tr>
+<tr class="memitem:a2d3d9d61b3927ccbe7111394125bc286"><td class="memItemLeft" align="right" valign="top"><a id="a2d3d9d61b3927ccbe7111394125bc286" name="a2d3d9d61b3927ccbe7111394125bc286"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>last_cmd</b></td></tr>
+<tr class="memdesc:a2d3d9d61b3927ccbe7111394125bc286"><td class="mdescLeft">&#160;</td><td class="mdescRight">Additional members for command status logging. <br /></td></tr>
 <tr class="separator:a2d3d9d61b3927ccbe7111394125bc286"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab00130972a6a3205f801f541b05392e8"><td class="memItemLeft" align="right" valign="top"><a id="ab00130972a6a3205f801f541b05392e8" name="ab00130972a6a3205f801f541b05392e8"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>last_cmd_status</b></td></tr>
@@ -212,52 +215,11 @@ string&#160;</td><td class="memItemRight" valign="bottom"><b>prompt</b> = 'SiPMC
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Constructing the command line instance from a list of classes that is
-requested. The `do_&lt;cmd&gt;`, `help_&lt;cmd&gt;`, and `complete_&lt;cmd&gt;` methods will be
-spawned in after the the command classes have been created, and the method
-will be mapped to the cmd.&lt;do&gt; methods of the spawned class.
-</pre> 
+<p >First the various hardware interface instances are created under for this class. Then all provided command classes will have a corresponding <code>do_&lt;cmd&gt;</code>, <code>help_&lt;cmd&gt;</code>, and <code>complete_&lt;cmd&gt;</code> methods spawned. As the autocomplete method uses the <code>readline</code> package, we also augment the readline behavior so that we can invoke autocompletion on hyphen-started arguments. </p>
+
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="afe8182e221802e015047275c7e8a004d" name="afe8182e221802e015047275c7e8a004d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afe8182e221802e015047275c7e8a004d">&#9670;&nbsp;</a></span>emptyline()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def ctlcmd.cmdbase.controlterm.emptyline </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre class="fragment">Don't do anything for empty lines</pre> 
-</div>
-</div>
-<a id="a25c7a6a5519310533014633cafab320e" name="a25c7a6a5519310533014633cafab320e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a25c7a6a5519310533014633cafab320e">&#9670;&nbsp;</a></span>get_names()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def ctlcmd.cmdbase.controlterm.get_names </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre class="fragment">Overriding the the original get_names command to allow for the dynamic
-introduced commands to be listed in the master help method.
-</pre> 
-</div>
-</div>
 <a id="abc70c4bb66c95eb4aa571818704c6532" name="abc70c4bb66c95eb4aa571818704c6532"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abc70c4bb66c95eb4aa571818704c6532">&#9670;&nbsp;</a></span>postcmd()</h2>
 
@@ -289,10 +251,8 @@ introduced commands to be listed in the master help method.
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Printing extra empty line after command completion for clarity, also removing
-all return values to stop the command from exiting with the default return
-value
-</pre> 
+<p >As the python cmd class uses a simple True/False check on the stop signal for whether the command session should be terminated, we cannot directly pass the command execution status to the base class. </p>
+
 </div>
 </div>
 <a id="ac594ff86b2a705af07d57dd8e103c395" name="ac594ff86b2a705af07d57dd8e103c395"></a>
@@ -320,36 +280,8 @@ value
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Additional logging to be performed before the command has been run
-</pre> 
-</div>
-</div>
-<a id="a1573e6f182fdcbebee289f041da4d510" name="a1573e6f182fdcbebee289f041da4d510"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1573e6f182fdcbebee289f041da4d510">&#9670;&nbsp;</a></span>simplify_string()</h2>
+<p >Storing the last line, making sure that the current command status is set to <code>None</code>, as well as logging the start time of the command. </p>
 
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">def ctlcmd.cmdbase.controlterm.simplify_string </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>text</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<pre class="fragment">Simplifying multiline text in python to a single line text in python, which
-also removes the additional whitespaces at the beginning of lines
-</pre> 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
@@ -415,23 +347,14 @@ also removes the additional whitespaces at the beginning of lines
 </div><!-- fragment -->
 </div>
 </div>
-<a id="a2d3d9d61b3927ccbe7111394125bc286" name="a2d3d9d61b3927ccbe7111394125bc286"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d3d9d61b3927ccbe7111394125bc286">&#9670;&nbsp;</a></span>last_cmd</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">ctlcmd.cmdbase.controlterm.last_cmd</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p >Additional members for command status logging </p>
-
-</div>
-</div>
+<div class="dynheader">
+Inheritance diagram for ctlcmd.cmdbase.controlterm:</div>
+<div class="dyncontent">
+ <div class="center">
+  <img src="classctlcmd_1_1cmdbase_1_1controlterm.png" alt=""/>
+ </div></div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>/github/workspace/ctlcmd/cmdbase.py</li>
+<li>/github/workspace/ctlcmd/<a class="el" href="cmdbase_8py.html">cmdbase.py</a></li>
 </ul>
 </div><!-- contents -->
 <!-- HTML footer for doxygen 1.8.14-->
