@@ -15,6 +15,37 @@ import cv2
 import copy
 
 
+class visualmeta(cmdbase.controlcmd):
+  """
+  @brief Meta class for additional options needed for visual operations
+  @ingroup cli_design
+  """
+  WINDOWS_NAME = 'SIPMCALIB PROCESS'
+
+  def add_args(self):
+    self.parser.add_argument('-m',
+                             '--monitor',
+                             action='store_true',
+                             help="""
+                             Whether or not to open a windw monitoring window (as
+                             this is working over SSH, this could be very
+                             slow!!)""")
+    self.parser.add_argument('--vwait',
+                             type=float,
+                             default=0.2,
+                             help="""
+                             Time to wait between motion and image acquisiation
+                             (seconds)""")
+
+  def show_img(self, args, raw=False):
+    if args.monitor:
+      cv2.imshow(self.WINDOWS_NAME, np.copy(self.visual.get_image(raw)))
+      cv2.waitKey(1)
+
+  def post_run(self):
+    cv2.destroyAllWindows()
+
+
 class visualset(cmdbase.controlcmd):
   """@brief Defining the parameters used for finding the detector in the field of view."""
   def __init__(self, cmd):
@@ -72,37 +103,6 @@ class visualset(cmdbase.controlcmd):
       self.visual.ratio_cutoff = args.ratio
     if args.poly:
       self.visual.poly_range = args.poly
-
-
-class visualmeta(cmdbase.controlcmd):
-  """
-  @brief Meta class for additional options needed for visual operations
-  @ingroup cli_design
-  """
-  WINDOWS_NAME = 'SIPMCALIB PROCESS'
-
-  def add_args(self):
-    self.parser.add_argument('-m',
-                             '--monitor',
-                             action='store_true',
-                             help="""
-                             Whether or not to open a windw monitoring window (as
-                             this is working over SSH, this could be very
-                             slow!!)""")
-    self.parser.add_argument('--vwait',
-                             type=float,
-                             default=0.2,
-                             help="""
-                             Time to wait between motion and image acquisiation
-                             (seconds)""")
-
-  def show_img(self, args, raw=False):
-    if args.monitor:
-      cv2.imshow(self.WINDOWS_NAME, np.copy(self.visual.get_image(raw)))
-      cv2.waitKey(1)
-
-  def post_run(self):
-    cv2.destroyAllWindows()
 
 
 class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
