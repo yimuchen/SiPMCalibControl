@@ -150,12 +150,12 @@
       <dirs visible="yes" title=""/>
       <files visible="yes" title=""/>
       <namespaces visible="yes" title=""/>
-      <classes visible="yes" title=""/>
       <defines title=""/>
       <typedefs title=""/>
       <enums title=""/>
       <enumvalues title=""/>
       <functions title=""/>
+      <classes visible="yes" title=""/>
       <variables title=""/>
       <signals title=""/>
       <publicslots title=""/>

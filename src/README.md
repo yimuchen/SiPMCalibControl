@@ -1,13 +1,11 @@
 @defgroup hardware Hardware Interface
 
-# Low level hardware interfaces with C++
-
-The code in this software is designed to expose-low level hardware control
-interfaces to python with C++. C++ is used to allow for some time critical
-processes to run (such as the fast pulse required for the data collection
-trigger), and keep the library requirements to a minimal. The `pybind11` related
-files used to expose the interfaces to python will be separated into the
-[`cmod`](../cmod) directory with the other low level python interfaces.
+The document details how exposure of low-level hardware control interfaces to
+python with C++ is done. C++ is used to allow for some time critical processes to
+run (such as the fast pulse required for the data collection trigger), and keep
+the library requirements to a minimal. The `pybind11` related files used to
+expose the interfaces to python will be separated into the [`cmod`](../cmod)
+directory with the other low level python interfaces.
 
 ## General design philosophy
 
@@ -20,11 +18,11 @@ exceptions** during the *initialization* phase, and should simply **do nothing**
 interface regardless. This allows for the user to test the various
 functionalities of the system during interface testing.
 
-To help the user be aware of which interfaces are available, the start up and
+To help the user be aware of which interfaces are available, the start-up and
 shutdown of each interface will be verbose (i.e. many `printf` or `cout`
 statements).
 
-As the pybind11 section of the code is separated out into a separate directory.
+As the `pybind11` section of the code is separated out into a separate directory.
 All interfaces should have their dedicated header file. The documentation within
 the header file should be kept to a minimum, with the detailed explanations
 placed next to the various functions. We will intentionally choose a different
@@ -36,29 +34,6 @@ format compared with python, with both functions and class names in the
 Here we go over the technology used in the various interface, as well as
 independent design philosophies used for the various interfaces. All libraries
 are compiled using [pybind11][pybind11] for exposure to python interface.
-
-### Logger
-
-Files: [logger.cc](logger.cc), [logger.hpp](logger.hpp)
-
-The logger is a library for unifying the output of C++ libraries, this allows for
-the same command that requires more constant monitoring (think monitoring the
-current position of the gantry) to be flushed and refreshed onto a single line
-instead of swamping the terminal with new lines. The library also defines the
-decorator strings for allowing colored text to be printed onto the terminal. All
-of these uses raw [UNIX escape characters][escapechar] to reduce dependencies.
-
-### G-Code interface for gantry control
-
-Files: [gcoder.cc](gcoder.cc), [gcoder](gcoder.hpp)
-
-Controls of the gantry system involves streaming marlin flavored [g-code][gcode]
-to the gantry system over a USB interface. Since we are not using fancy printer
-control motions for object shape tracing, we use the standard UNIX C interfaces
-to write directory to `/dev/ttyUSBX` object. Additional technology includes
-parsing of the response `OK` signal of the printer to know when a motion command
-has been completed and to monitor the position of the gantry in real time.
-Technical details can be found in the [source code](gcoder.cc).
 
 ### GPIO interface for ADC, PWM and raw trigger control
 
@@ -107,7 +82,6 @@ of view is that it is effectively driverless, using only the USB drivers already
 in place in most UNIX systems.
 
 [gcode]: https://marlinfw.org/meta/gcode/
-[escapechar]: https://en.wikipedia.org/wiki/ANSI_escape_code
 [pybind11]: https://pybind11.readthedocs.io/en/stable/
 [gpio-elinux]: https://elinux.org/GPIO
 [pwm]: https://jumpnowtek.com/rpi/Using-the-Raspberry-Pi-Hardware-PWM-timers.html

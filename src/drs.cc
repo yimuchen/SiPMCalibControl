@@ -470,30 +470,7 @@ public:
     TriggerDelay() );// 0 nanosecond delay by default.
 }
 
-/********************************************************************************
- *
- * SINGLETON SYNTAX
- *
- *******************************************************************************/
-std::unique_ptr<DRSContainer> DRSContainer::_instance = nullptr;
-
-static int __make_instance_call = DRSContainer::make_instance();
-
-DRSContainer&
-DRSContainer::instance()
-{
-  return *_instance;
-}
-
-int
-DRSContainer::make_instance()
-{
-  if( _instance.get() == nullptr ){
-    _instance.reset( new DRSContainer() );
-  }
-  return 0;
-}
-
+IMPLEMENT_SINGLETON( DRSContainer );
 DRSContainer::DRSContainer() :
   board( nullptr )
 {}

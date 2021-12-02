@@ -559,26 +559,6 @@ PicoUnit::FindTimeInterval()
   }
 }
 
-/********************************************************************************
- *
- * SINGLETON SYNTAX
- *
- *******************************************************************************/
-std::unique_ptr<PicoUnit> PicoUnit::_instance = nullptr;
-
-PicoUnit&
-PicoUnit::instance(){ return *_instance; }
-
-int
-PicoUnit::make_instance()
-{
-  if( _instance == nullptr ){
-    _instance.reset( new PicoUnit() );
-  }
-  return 0;
-}
-
-static const int __make_instance_call = PicoUnit::make_instance();
 
 PicoUnit::PicoUnit() :
   device( 0 ),
@@ -600,3 +580,5 @@ PicoUnit::~PicoUnit()
   ps5000CloseUnit( device );
   printf( "PICOSCOPE interface closed\n" );
 }
+
+IMPLEMENT_SINGLETON( PicoUnit );

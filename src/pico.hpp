@@ -1,6 +1,7 @@
 #ifndef PICO_HPP
 #define PICO_HPP
 
+#include "singleton.hpp"
 #include <memory>
 #include <vector>
 
@@ -86,18 +87,7 @@ private:
   void FindTimeInterval();// Running once and not changing;
 
 // Singleton stuff
-
-private:
-  static std::unique_ptr<PicoUnit> _instance;
-  PicoUnit();
-  PicoUnit( const PicoUnit& )  = delete;
-  PicoUnit( const PicoUnit&& ) = delete;
-
-public:
-  ~PicoUnit();
-  static PicoUnit& instance();
-  static int       make_instance();
-
+  DECLARE_SINGLETON( PicoUnit );
 };
 
 #endif

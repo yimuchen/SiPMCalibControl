@@ -5,9 +5,10 @@
 #include <memory>
 #include <string>
 
+#include "singleton.hpp"
+
 struct GCoder
 {
-  // Static data members
   static const float _max_x;
   static const float _max_y;
   static const float _max_z;
@@ -18,31 +19,25 @@ struct GCoder
 
   void Init( const std::string& dev );
 
-  // Raw motion command setup
   std::string RunGcode( const std::string& gcode,
                         const unsigned     attempt = 0,
                         const unsigned     waitack = 1e4,
                         const bool         verbose = false ) const;
 
-  // Abstaction of actual GCode commands
-  void SendHome( bool x, bool y, bool z );
-
+  // Motion command abstraction
   std::string GetSettings() const;
-
-  void SetSpeedLimit( float x = std::nanf(""),
-                      float y = std::nanf(""),
-                      float z = std::nanf("") );
-
-  void MoveTo( float      x       = std::nanf(""),
-               float      y       = std::nanf(""),
-               float      z       = std::nanf(""),
-               const bool verbose = false );
-
+  void        SendHome( bool x, bool y, bool z );
+  void        SetSpeedLimit( float x = std::nanf(""),
+                             float y = std::nanf(""),
+                             float z = std::nanf("") );
+  void MoveTo( float      x          = std::nanf(""),
+               float      y          = std::nanf(""),
+               float      z          = std::nanf(""),
+               const bool verbose    = false );
   void MoveToRaw( float      x       = std::nanf(""),
                   float      y       = std::nanf(""),
                   float      z       = std::nanf(""),
                   const bool verbose = false );
-
   void EnableStepper( bool x, bool y, bool z );
   void DisableStepper( bool x, bool y, bool z );
   bool InMotion( float x, float y, float z );
@@ -52,23 +47,12 @@ struct GCoder
 
 public:
   int         printer_IO;
-  float       opx, opy, opz; // target position of the printer
-  float       cx, cy, cz; // current position of the printer
-  float       vx, vy, vz; // Speed of the gantry head.
+  float       opx, opy, opz; /** target position of the printer */
+  float       cx, cy, cz; /** current position of the printer */
+  float       vx, vy, vz; /** Speed of the gantry head. */
   std::string dev_path;
 
-private:
-  static std::unique_ptr<GCoder> _instance;
-  GCoder();
-  GCoder( const GCoder& )  = delete;
-  GCoder( const GCoder&& ) = delete;
-
-public:
-  static GCoder& instance();
-  static int     make_instance();
-  ~GCoder();
-
+  DECLARE_SINGLETON( GCoder );
 };
-
 
 #endif

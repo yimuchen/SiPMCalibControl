@@ -824,26 +824,4 @@ GPIO::StatusPWM() const
          pwm_period[1] >= NORMAL_PTR;
 }
 
-/********************************************************************************
- *
- * SINGLETON SYNTAX
- *
- *******************************************************************************/
-std::unique_ptr<GPIO> GPIO::_instance = nullptr;
-
-GPIO&
-GPIO::instance()
-{
-  return *_instance;
-}
-
-int
-GPIO::make_instance()
-{
-  if( _instance == nullptr ){
-    _instance.reset( new GPIO() );
-  }
-  return 0;
-}
-
-static const int __make_instance_call = GPIO::make_instance();
+IMPLEMENT_SINGLETON( GPIO );

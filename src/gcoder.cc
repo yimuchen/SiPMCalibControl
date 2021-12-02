@@ -3,19 +3,27 @@
  * @author Yi-Mu Chen
  * @brief Implementation of the GCode transfer interface.
  *
- * The GCoder class is responsible for the transmission of instructions to the
- * 3D-printer for motion control. The transmission in performed over USB using
- * the UNIX termios interface. The full documentation could be found here: [1].
+ * @class GCoder
+ * @ingroup hardware
+ * @brief Handling the transmission of gcode motion commands.
+ *
+ * @details Handling the transmission of gcode commands used for motion control
+ * from raw gcode operations to user-ready, human-readable function with
+ * appropriate abstraction of command sequences and additional signal parsing
+ * between commands. The GCoder class is responsible for the transmission of
+ * instructions to the 3D-printer for motion control. The transmission in
+ * performed over USB using the UNIX termios interface. The full documentation
+ * could be found [here][s-port].
  *
  * The class also abstracts motion controls which may or may not involve many
  * gcode commands into single functions with parameters which is simpler to call
- * for end users. For the full list of available marlin-flavored gcode, see here
- * [2]. Due to how communications is handled in the kernel not, all motions is
- * abstractable in C++, with some needing to be handled at python level. Those
- * will be high-lighted for in the various code segments.
+ * for end users. For the full list of available marlin-flavored gcode, see
+ * [here][marlin]. Due to how communications is handled in the kernel, not all
+ * motions is abstractable in C++, with some needing to be handled at python
+ * level. Those will be high-lighted for in the various code segments.
  *
- * [1] https://www.xanthium.in/Serial-Port-Programming-on-Linux
- * [2] https://marlinfw.org/meta/gcode/
+ * [s-port]: https://www.xanthium.in/Serial-Port-Programming-on-Linux
+ * [marlin]: https://marlinfw.org/meta/gcode/
  */
 #include "gcoder.hpp"
 #include "logger.hpp"
@@ -35,12 +43,16 @@
 #include <unistd.h>
 
 /**
- * Hard limit for gantry motion. Important as there is not stop signal at max
- * values, so we place these here to avoid hardware damaged
+ * @brief Hard limit coordinates for gantry motion.
+ * @details As there are now stop limiter for the gantry maximum motion range
+ * value, here, progammatically add a hard input into the system to avoid
+ * hardware damaged.
+ * @{
  */
 const float GCoder::_max_x = 345;
 const float GCoder::_max_y = 200;
 const float GCoder::_max_z = 460;
+/** @} */
 
 /**
  * @brief Forward declaration of static helper functions.
@@ -50,25 +62,22 @@ static bool check_ack( const std::string& cmd, const std::string& msg );
 /**
  * @brief Initializing the communications interface.
  *
- * This is low level instructions in the termios interface for setting up the
- * read speed and mode for the communicating with the printer over USB. This part
- * of the code currently considered black-magic as most of the statements are
- * copy from here [1], so do not edit statements containing the tty container
- * unless you are absolutely sure about what you are doing.
+ * Low level instructions in the termios interface for setting up the read speed
+ * and mode for the communicating with the printer over USB. This part of the
+ * code currently considered black-magicm as most of the statements are copy from
+ * [here][s-port], so do not edit statements containing the tty container unless
+ * you are absolutely sure about what you are doing.
  *
  * After initialization, the printer will always perform these 3 steps:
  * - Send the gantry back home and reset coordinates ot (0,0,0).
  * - Set the motion speed to something much faster
  * - Set the acceleration speed to 3 times the factory default.
  *
- * [1] https://www.xanthium.in/Serial-Port-Programming-on-Linux
+ * [s-port]: https://www.xanthium.in/Serial-Port-Programming-on-Linux
  */
 void
 GCoder::Init( const std::string& dev )
 {
-  // General documentation here:
-  // https://www.xanthium.in/Serial-Port-Programming-on-Linux
-
   static const int speed = B115200;
   struct termios tty;
   char errormessage[2048];
@@ -140,14 +149,14 @@ GCoder::Init( const std::string& dev )
  * newline character. This function will parse the gcode string to the printer
  * via the defined interface, and pass the return string of the printer as the
  * return value. Notice that the function will check the return string for the
- * acknowledgement string ('ok' at the start of a line) to know that the command
+ * acknowledgement string ("ok" at the start of a line) to know that the command
  * has been executed by the printer. If this acknowledgement string is not
  * received after a wait period, then the command is tried again up to 10 times.
  *
- * Notice that when the 'ack' string is reported will depend on the gcode command
- * in question, and so later functions of abstracting gcode commands should be
- * responsible for choosing an appropriate timeout duration to reduce multiple
- * function calls.
+ * Notice that exactly when the acknowledgement string is reported will depend on
+ * the gcode command in question, and so later functions of abstracting gcode
+ * commands should be responsible for choosing an appropriate timeout duration to
+ * reduce multiple function calls.
  */
 std::string
 GCoder::RunGcode(
@@ -528,8 +537,8 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
 }
 
 /**
- * @brief Simple function to check if two numbers match the same coordinate
- * system within 0.1(mm), the finest resolution of the gantry.
+ * @brief Simple function to check if two coordinate values are identical, with
+ * the gantry resolution of 0.1 mm
  */
 bool
 GCoder::MatchCoord( double x, double y )
@@ -539,36 +548,6 @@ GCoder::MatchCoord( double x, double y )
   y = std::round( y * 10 ) / 10;
   return x == y;
 }
-
-/********************************************************************************
- *
- * SINGLETON SYNTAX
- *
- * The class is declared as a singleton: there will only ever be 1 instance of
- * the class in a single process. This ensures that the same gantry interface is
- * used throughout the code, with not change of accidental copies.
- *
- * Constructions are made private, and the instance method used to access the
- * unique gcoder instance will be the only constructor-like interface exposed to
- * python.
- *
- *******************************************************************************/
-std::unique_ptr<GCoder> GCoder::_instance = nullptr;
-
-GCoder&
-GCoder::instance(){ return *_instance;}
-
-int
-GCoder::make_instance()
-{
-  // printf( "Making the gcoder instance" );
-  if( _instance == nullptr ){
-    _instance.reset( new GCoder() );
-  }
-  return 0;
-}
-
-static const int __make_gcoder_instance_call = GCoder::make_instance();
 
 GCoder::GCoder() :
   printer_IO( -1 ),
@@ -585,3 +564,5 @@ GCoder::~GCoder()
   }
   printf( "Gantry system closed\n" );
 }
+
+IMPLEMENT_SINGLETON( GCoder );

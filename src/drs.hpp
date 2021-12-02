@@ -2,6 +2,7 @@
 #define DRS_HPP
 
 #include "DRS.h"
+#include "singleton.hpp"
 
 #include <memory>
 #include <string>
@@ -66,24 +67,7 @@ private:
   double triggerdelay;
   unsigned samples;
 
-// singleton related stuff.
-
-private:
-  // static variables for singleton class
-  static std::unique_ptr<DRSContainer> _instance;
-  // Hiding the initializer class.
-  DRSContainer();
-  DRSContainer( const DRSContainer& )  = delete;
-  DRSContainer( const DRSContainer&& ) = delete;
-
-public:
-  // Destructor is still public since there is nothing special regarding the
-  // variable memory management of the class instance.
-  ~DRSContainer();// Destructor still bpu
-
-  // Methods for accessing and creating the instance class.
-  static DRSContainer& instance();
-  static int           make_instance();
+  DECLARE_SINGLETON( DRSContainer );
 };
 
 

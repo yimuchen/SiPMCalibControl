@@ -5,6 +5,8 @@
 #include <memory>
 #include <thread>
 
+#include "singleton.hpp"
+
 class GPIO
 {
 public:
@@ -114,17 +116,7 @@ private:
   float i2c_flush_array[4];
 
 /// singleton stuff
-
-private:
-  static std::unique_ptr<GPIO> _instance;
-  GPIO();
-  GPIO( const GPIO& )  = delete;
-  GPIO( const GPIO&& ) = delete;
-public:
-  ~GPIO();
-  static GPIO& instance();
-  static int make_instance();
-
+  DECLARE_SINGLETON( GPIO )
 };
 
 #endif
