@@ -1,4 +1,4 @@
-# Web-based GUI design
+@defgroup gui_design GUI Design
 
 The key tech used in the web based interface is a [web socket][websocket]
 communication between a server containing the command line interface described in

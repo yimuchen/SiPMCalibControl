@@ -1,4 +1,3 @@
-/*!
 @defgroup cli1_waveform Waveform Extraction commands
 
 @ingroup cli
@@ -22,9 +21,6 @@ waveforms. There are two commands that can be used for getting waveform-like
 readouts.
 
 
-@cond
-===============================================================================
-@endcond
 
 @class ctlcmd.drscmd.drsrun
 
@@ -32,9 +28,6 @@ readouts.
 
 @details UNDER CONSTRUCTION
 
-@cond
-===============================================================================
-@endcond
 
 
 @class ctlcmd.picocmd.picorunblock
@@ -42,5 +35,3 @@ readouts.
 @ingroup cli1_waveform
 
 @details UNDER CONSTRUCTION
-
-*/

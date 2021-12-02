@@ -1,4 +1,7 @@
-# The GUI Client session
+@defgroup gui_client GUI client
+
+@ingroup gui_design
+
 
 The client side uses socket IO to real-time update a web-page to reflect the
 status and results of the existing calibration session. Here are try to keep all

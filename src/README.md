@@ -1,3 +1,5 @@
+@defgroup hardware Hardware Interface
+
 # Low level hardware interfaces with C++
 
 The code in this software is designed to expose-low level hardware control
@@ -91,7 +93,7 @@ compartment the relevant code in the given reference main function to fit our
 needs. The reference code can be found in the open source part of the part of the
 [picoscope reference software][picoscope]. Notice that the picoscope requires
 proprietary drivers from PicoTechnology, you can find how to install it in the
-[install instructions](../INSTALL.md)
+[install instructions](@ref developer)
 
 ### DRS4 interfacoe for high resolution SiPM data collection
 

@@ -1,4 +1,6 @@
-# Installing Instructions
+@page developer Developers notes
+
+# Installing the system
 
 Installation should be done on the machine that is capable of interfacing with
 both the readout system and the trigger system. Current installation requirements
@@ -18,34 +20,38 @@ include:
   - [drs][drs]: For interfacing with the readout DRS readout oscilloscope
 - For web interface generation
   - [dart-sass][sass] for `css` file generation.
+  - [npm][npm] for javascript libraries for the GUI.
 
 The current configuration is designed to work on a [Raspberry Pi 3B+][raspi]
 running [Arch Linux ARM7][archarm], and is known to work with a typical Arch
 Linux machine for local testing. Equivalent packages for different Linux
-distribution should also work, but have not been exhaustively tested.
+distribution should also work, but have not been exhaustively tested. Notice,
+that this system is intended to work with some ARM-based headless system. As
+network configurations should not be stored online, contact the system
+maintainers if you have issues connecting to the system.
 
 ## Arch Linux ARM for Deployment
 
 ### Dependency installation
 
 Other than the standard developer packages such as a C++ compiler and make, there
-are additional packages that need to be installed:
+are additional packages that need to be installed via pacman.
 
-```bash
+```
 # For ssh tunneling for the CLI interface
-pacman -Sy --noconfirm "xorg-xauth"
+pacman -Sy --noconfirm xorg-xauth
 
-# The main C++ libraries
-pacman -Sy --noconfirm "cmake" "boost" "opencv" "pybind11"
+# The main C++ libraries and building
+pacman -Sy --noconfirm cmake boost opencv pybind11
 
 # For additional package management
-pacman -Sy --noconfirm "npm" "git"
+pacman -Sy --noconfirm npm git
 
 ## The main python packages
-pacman -Sy --noconfirm "python-scipy" "python-opencv" "python-psutil" "python-paramiko" "python-flask-socketio"
+pacman -Sy --noconfirm python-scipy python-opencv python-psutil python-paramiko python-flask-socketio
 
 ## Additional packages required for opencv, since we are using the high level interface
-pacman -Sy --noconfirm "qt5-base" "hdf5-openmpi" "vtk" "glew"
+pacman -Sy --noconfirm qt5-base hdf5-openmpi vtk glew
 
 ## For the external javascript libraries
 npm install
@@ -57,6 +63,7 @@ Not all interfaces are required for the package compile to complete. Which is
 useful when testing on personal hardware where one might not want to install the
 exotic hardware drivers.
 
+
 #### Picoscope
 
 The picoscope is a testing readout solution used during the calibration system
@@ -67,8 +74,8 @@ instruction for adding the picoscope to the external directory to be installed.
 
 ```bash
 cd external
-wget https://labs.picotech.com/debian/pool/main/libp/libps5000/libps5000_<version>.deb
-ar x libps5000*.deb
+wget https://labs.picotech.com/debian/pool/main/libp/libps5000/libps5000_version.deb
+ar x libps5000_version.deb
 
 tar xvf data.tar.xz
 mv opt/picoscope ./
@@ -132,7 +139,9 @@ the provided rules file to the `/etc/udev/rules.d` directory. A reboot is
 required for the results to take effect.
 
 ```bash
-cp external/rules/*.rules  /etc/udev/rules/
+cp external/rules/pico.rules  /etc/udev/rules/
+cp external/rules/drs.rules  /etc/udev/rules/
+cp external/rules/digi.rules  /etc/udev/rules/
 ```
 
 If you are running the control software on your laptop, do **NOT** copy the
@@ -157,12 +166,33 @@ python3 gui_control.py # For starting GUI server
 
 ## Deployment in non-standard systems for development and debugging
 
-Installation instructions above works for x86 Arch Linux installations, and up to
-the permission settings is what is used to generate the [Dockerfile](Dockerfile)
-for testing the interface on the various machines. An entirely local installation
-would work if all the dependencies are satisfied. A non-exhaustive list of
-dependencies translations are listed below:
+Installation instructions above works for x86 Arch Linux installations, and such
+work for all UNIX based systems assuming all the dependencies are satisfied. See
+the sections above to see the dependencies.
 
+# Contributing to the code
+
+The main code is hosted at this [GitHub repository][github]. Contact the developers for
+the pull request if you have something you want to add into the code base!
+
+## Code organization
+
+Documentations for control software development can be found in their various
+directories:
+
+- Documentation of the Hardware interfaces and other minimal dependency helper
+  objects/functions can be found [here](@ref hardware). The `src` directory
+  contains the C++ implemented classes, and the `cmod` directory contains the
+  python objects along with the python bindings for the C++ classes.
+- Documentation of the CLI interface can be found [here](@ref cli_design). Files for
+  this is typically found in the `ctlcmd` directory.
+- Documentation of the GUI interface can be found [here](@ref gui_design). Files for
+  this is typically found in the `server` directory:
+  - The server side code is found in the `server/sockets` directory.
+  - The client side code is found in the `server/static/js` directory.
+  - Styling file will likely not get their own documentation.
+
+[github]: https://github.com/yimuchen/SiPMCalibControl
 [opencv]: https://opencv.org/releases/
 [cmake]: https://cmake.org/download/
 [pybind11]: https://pybind11.readthedocs.io/en/stable/
@@ -181,3 +211,4 @@ dependencies translations are listed below:
 [pip]: https://pip.pypa.io/en/stable/
 [drs]: https://www.psi.ch/en/drs/software-download
 [drs4_download]: https://www.psi.ch/en/drs/software-download
+[npm]: https://www.npmjs.com/

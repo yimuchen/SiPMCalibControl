@@ -5,9 +5,9 @@
     <tab type="mainpage" visible="yes" title=""/>
     <tab type="user" url="@ref cli"        title="CLI manual"/>
     <tab type="user" url="@ref cli_design" title="CLI design"/>
-    <tab type="user" url="@ref Common"    title="Common"/>
-    <tab type="user" url="@ref EDMUtils"  title="EDMUtils"/>
-    <tab type="user" url="@ref PhysUtils" title="PhysUtils"/>
+    <tab type="user" url="@ref gui"        title="GUI manual"/>
+    <tab type="user" url="@ref gui_design" title="GUI design"/>
+    <tab type="user" url="@ref hardware"   title="Hardware implementations"/>
     <!--tab type="pages" visible="yes" title="" intro=""/-->
     <!--tab type="modules" visible="yes" title="All modules" intro=""/-->
     <tab type="namespaces" visible="no" title="">

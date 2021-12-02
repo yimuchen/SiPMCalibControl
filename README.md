@@ -6,24 +6,14 @@ used to describe coding and programming technical details regarding the control
 software. See the following links for other documentations related to the SiPM
 calibration project:
 
-- Typical user operation documentation: this [twiki page][sipmcalibtwiki]
+- Typical user operation documentation, for the CLI [manual-cli]
+- For the general documentation for developers, see the [official
+  documentation][doc]
 - Documented results for running the system: this [detector note][sipmcalibdn]
 - Technical details for the analysis program: [here][sipmcalibanalysis]
 
-## Contributing to the software
 
-Documentations for control software development can be found in their various
-directories:
-
-- [INSTALL.md](INSTALL.md) Installing instructions, including a list of dependencies
-  and additional permission setups.
-- [CONNECT.md](CONNECT.md) Additional instructions for network debugging.
-- [src](src) Lowest level hardware interfacing with C++.
-- [cmod](cmod) Python help classes for calibration session management.
-- [ctlcmd](ctlcmd) Python objects for command line interface.
-- [server](server) Code for the web interface (client side and server side)
-
-[sipmcalibtwiki]: https://twiki.cern.ch/twiki/bin/viewauth/CMS/UMDHGCalSiPMCalib
-[docker]: https://docs.docker.com/get-docker/
+[manual-cli]: https://yimuchen.github.io/SiPMCalibControl/group__cli.html
+[doc]: https://yimuchen.github.io/SiPMCalibControl/index.html
 [sipmcalibanalysis]: https://github.com/yimuchen/SiPMCalib
 [sipmcalibdn]: https://icms.cern.ch/tools/publications/notes/entries/DN/2019/048

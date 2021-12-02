@@ -1,4 +1,5 @@
-# The GUI server session
+@defgroup gui_server GUI Server
+@ingroup gui_design
 
 The server session uses the [flask socketio][flasksocket] for the socket i/o
 handling. A single global `SocketIO()` instance is initiated in the package

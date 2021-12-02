@@ -1,4 +1,3 @@
-/*!
 @defgroup cli Command Line Interface Manual
 
 @brief Documentation of user-level command
@@ -11,4 +10,3 @@ always be accessed using command: `help <cmd>` from within the control command
 prompt. The documentation here is mainly going over a broader aspect of what sort
 of data you can expect out of various commands, and for what sort of use case you
 might want to perform the specific commands.
-*/

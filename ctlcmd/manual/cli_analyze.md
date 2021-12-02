@@ -1,5 +1,3 @@
-/*!
-
 @defgroup cli0_analysis SiPM Analysis-Level commands
 
 @ingroup  cli
@@ -66,9 +64,6 @@ The command will typically share the following same similar command arguments
 
   - `--samples [int]`: The number of waveforms to take before for the readout average.
 
-@cond
-===============================================================================
-@endcond
 
 
 @class ctlcmd.motioncmd.lowlightcollect
@@ -78,9 +73,6 @@ The command will typically share the following same similar command arguments
 @details This is a test
 
 
-@cond
-===============================================================================
-@endcond
 
 @class ctlcmd.motioncmd.halign
 
@@ -89,9 +81,6 @@ The command will typically share the following same similar command arguments
 @details This is a test
 
 
-@cond
-===============================================================================
-@endcond
 
 
 @class ctlcmd.motioncmd.zscan
@@ -101,9 +90,6 @@ The command will typically share the following same similar command arguments
 @details This is a test
 
 
-@cond
-===============================================================================
-@endcond
 
 @class ctlcmd.viscmd.visualhscan
 
@@ -111,9 +97,6 @@ The command will typically share the following same similar command arguments
 
 @details This is a test
 
-@cond
-===============================================================================
-@endcond
 
 @class ctlcmd.viscmd.visualcenterdet
 
@@ -123,14 +106,9 @@ The command will typically share the following same similar command arguments
 
 
 
-@cond
-===============================================================================
-@endcond
 
 @class ctlcmd.viscmd.visualmaxsharp
 
 @ingroup cli0_analysis
 
 @details This is a test
-
-*/

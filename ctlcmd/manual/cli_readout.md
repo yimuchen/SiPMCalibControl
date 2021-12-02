@@ -1,7 +1,3 @@
-/*!
-@cond
-===================================================================================================
-@endcond
 
 @defgroup cli2_readout Readout Settings Commands
 
@@ -14,9 +10,6 @@
 
 
 
-@cond
-===================================================================================================
-@endcond
 
 @defgroup cli_readout0_drs DRS settings
 
@@ -26,9 +19,6 @@
 
 @details My test
 
-@cond
-------------------------------------
-@endcond
 
 
 @class ctlcmd.drscmd.drsset
@@ -37,9 +27,6 @@
 
 @details More details
 
-@cond
-------------------------------------
-@endcond
 
 @class ctlcmd.drscmd.drscalib
 
@@ -51,9 +38,6 @@
 
 
 
-@cond
-===================================================================================================
-@endcond
 
 
 @defgroup cli_readout1_pico Picoscope related settings
@@ -63,9 +47,6 @@
 @details my test
 
 
-@cond
-------------------------------------
-@endcond
 
 @class ctlcmd.picocmd.picoset
 
@@ -74,9 +55,6 @@
 @details This is a test
 
 
-@cond
-------------------------------------
-@endcond
 
 @class ctlcmd.picocmd.picorange
 
@@ -86,9 +64,6 @@
 
 
 
-@cond
-===============================================================================
-@endcond
 
 
 
@@ -99,9 +74,6 @@
 @details my test
 
 
-@cond
-------------------------------------
-@endcond
 
 @class ctlcmd.viscmd.visualset
 
@@ -110,9 +82,6 @@
 @details This is a test
 
 
-@cond
-===================================================================================================
-@endcond
 
 
 @defgroup cli_readout3_gpio GPIO settings
@@ -121,5 +90,3 @@
 
 @details my test
 
-
-*/
