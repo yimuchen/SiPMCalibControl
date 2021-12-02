@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['_7egpio_0',['~GPIO',['../classGPIO.html#ae8205f95f108a15a612485b6358031a1',1,'GPIO']]]
+  ['yellow_0',['YELLOW',['../group__Logger.html#gaba4e028a5dd00811634073ed50bae500',1,'YELLOW(const std::string &amp;str):&#160;logger.cc'],['../group__Logger.html#gaba4e028a5dd00811634073ed50bae500',1,'YELLOW(const std::string &amp;):&#160;logger.cc']]]
 ];

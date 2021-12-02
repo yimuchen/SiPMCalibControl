@@ -20,5 +20,6 @@ var searchData=
   ['getvisresult_17',['GetVisResult',['../classVisual.html#ab6a5d4b57d0adee00eba0a68a822386b',1,'Visual']]],
   ['getwaveform_18',['GetWaveform',['../classDRSContainer.html#ad7fdbaabf1241621b75b5d989a29464e',1,'DRSContainer']]],
   ['gpioread_19',['GPIORead',['../classGPIO.html#a0cc048d46544bc9be95f22bb7f670a12',1,'GPIO']]],
-  ['gpiowrite_20',['GPIOWrite',['../classGPIO.html#a960201daa506963d5764ce64a0542441',1,'GPIO']]]
+  ['gpiowrite_20',['GPIOWrite',['../classGPIO.html#a960201daa506963d5764ce64a0542441',1,'GPIO']]],
+  ['green_21',['GREEN',['../group__Logger.html#ga7d4623129191ee18cef0cb95a4e3009d',1,'GREEN(const std::string &amp;str):&#160;logger.cc'],['../group__Logger.html#ga7d4623129191ee18cef0cb95a4e3009d',1,'GREEN(const std::string &amp;):&#160;logger.cc']]]
 ];

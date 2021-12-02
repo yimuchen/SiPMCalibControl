@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.2"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SiPM Calibration Control Program: GCoder Struct Reference</title>
+<title>SiPM Calibration Control Program: GCoder Class Reference</title>
 <!-- Overriding the tabs css with our own -->
 <!--link href="tabs.css" rel="stylesheet" type="text/css"/-->
 <script type="text/javascript" src="jquery.js"></script>
@@ -80,14 +80,16 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="structGCoder-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">GCoder Struct Reference</div></div>
+  <div class="headertitle"><div class="title">GCoder Class Reference<div class="ingroups"><a class="el" href="group__hardware.html">Hardware Interface</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<table class="memberdecls">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p >Handling the transmission of gcode commands used for motion control from raw gcode operations to user-ready, human-readable function with appropriate abstraction of command sequences and additional signal parsing between commands. The <a class="el" href="structGCoder.html" title="Handling the transmission of gcode motion commands.">GCoder</a> class is responsible for the transmission of instructions to the 3D-printer for motion control. The transmission in performed over USB using the UNIX termios interface. The full documentation could be found <a href="https://www.xanthium.in/Serial-Port-Programming-on-Linux">here</a>.</p>
+<p >The class also abstracts motion controls which may or may not involve many gcode commands into single functions with parameters which is simpler to call for end users. For the full list of available marlin-flavored gcode, see <a href="https://marlinfw.org/meta/gcode/">here</a>. Due to how communications is handled in the kernel, not all motions is abstractable in C++, with some needing to be handled at python level. Those will be high-lighted for in the various code segments. </p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a9aa59bd0b7c0d926d0c911b0534be95e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGCoder.html#a9aa59bd0b7c0d926d0c911b0534be95e">Init</a> (const std::string &amp;dev)</td></tr>
@@ -96,13 +98,13 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a8bfd6378e36fc3ddcb8e9b6e8dc87641"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGCoder.html#a8bfd6378e36fc3ddcb8e9b6e8dc87641">RunGcode</a> (const std::string &amp;gcode, const unsigned attempt=0, const unsigned waitack=1e4, const bool verbose=false) const</td></tr>
 <tr class="memdesc:a8bfd6378e36fc3ddcb8e9b6e8dc87641"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main function abstraction for sending a gcode command to the session.  <a href="structGCoder.html#a8bfd6378e36fc3ddcb8e9b6e8dc87641">More...</a><br /></td></tr>
 <tr class="separator:a8bfd6378e36fc3ddcb8e9b6e8dc87641"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9c45fc67887a3c799fcb38776ef10d36"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGCoder.html#a9c45fc67887a3c799fcb38776ef10d36">SendHome</a> (bool x, bool y, bool z)</td></tr>
-<tr class="memdesc:a9c45fc67887a3c799fcb38776ef10d36"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sending the gantry to home.  <a href="structGCoder.html#a9c45fc67887a3c799fcb38776ef10d36">More...</a><br /></td></tr>
-<tr class="separator:a9c45fc67887a3c799fcb38776ef10d36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d2308ca05f78f5d7a7d995d5d35c6bc"><td class="memItemLeft" align="right" valign="top"><a id="a4d2308ca05f78f5d7a7d995d5d35c6bc" name="a4d2308ca05f78f5d7a7d995d5d35c6bc"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>GetSettings</b> () const</td></tr>
 <tr class="memdesc:a4d2308ca05f78f5d7a7d995d5d35c6bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Getting a list of settings a the string reported by the gantry. <br /></td></tr>
 <tr class="separator:a4d2308ca05f78f5d7a7d995d5d35c6bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c45fc67887a3c799fcb38776ef10d36"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGCoder.html#a9c45fc67887a3c799fcb38776ef10d36">SendHome</a> (bool x, bool y, bool z)</td></tr>
+<tr class="memdesc:a9c45fc67887a3c799fcb38776ef10d36"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sending the gantry to home.  <a href="structGCoder.html#a9c45fc67887a3c799fcb38776ef10d36">More...</a><br /></td></tr>
+<tr class="separator:a9c45fc67887a3c799fcb38776ef10d36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab5fd4da405a16c662eea1375e02ba4c7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGCoder.html#ab5fd4da405a16c662eea1375e02ba4c7">SetSpeedLimit</a> (float x=std::nanf(&quot;&quot;), float y=std::nanf(&quot;&quot;), float z=std::nanf(&quot;&quot;))</td></tr>
 <tr class="memdesc:ab5fd4da405a16c662eea1375e02ba4c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setting the motion speed limit (in units of mm/s)  <a href="structGCoder.html#ab5fd4da405a16c662eea1375e02ba4c7">More...</a><br /></td></tr>
 <tr class="separator:ab5fd4da405a16c662eea1375e02ba4c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -135,11 +137,11 @@ static float&#160;</td><td class="memItemRight" valign="bottom"><b>max_z</b> ()<
 <tr class="separator:a974d28cff1bb08261447c8771108a805"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad25591d06ba002a2a8513deb24f830f8"><td class="memItemLeft" align="right" valign="top"><a id="ad25591d06ba002a2a8513deb24f830f8" name="ad25591d06ba002a2a8513deb24f830f8"></a>
 static bool&#160;</td><td class="memItemRight" valign="bottom"><b>MatchCoord</b> (double x, double y)</td></tr>
-<tr class="memdesc:ad25591d06ba002a2a8513deb24f830f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simple function to check if two numbers match the same coordinate system within 0.1(mm), the finest resolution of the gantry. <br /></td></tr>
+<tr class="memdesc:ad25591d06ba002a2a8513deb24f830f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simple function to check if two coordinate values are identical, with the gantry resolution of 0.1 mm. <br /></td></tr>
 <tr class="separator:ad25591d06ba002a2a8513deb24f830f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae08fce5588cfb945d6b9ed32cda3e5f7"><td class="memItemLeft" align="right" valign="top"><a id="ae08fce5588cfb945d6b9ed32cda3e5f7" name="ae08fce5588cfb945d6b9ed32cda3e5f7"></a>
+<tr class="memitem:abf0c52a5b8afb508c0f6c1c2cd6d9545"><td class="memItemLeft" align="right" valign="top"><a id="abf0c52a5b8afb508c0f6c1c2cd6d9545" name="abf0c52a5b8afb508c0f6c1c2cd6d9545"></a>
 static <a class="el" href="structGCoder.html">GCoder</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>instance</b> ()</td></tr>
-<tr class="separator:ae08fce5588cfb945d6b9ed32cda3e5f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:abf0c52a5b8afb508c0f6c1c2cd6d9545"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab2e0897044d8d5db080a20407a1a4129"><td class="memItemLeft" align="right" valign="top"><a id="ab2e0897044d8d5db080a20407a1a4129" name="ab2e0897044d8d5db080a20407a1a4129"></a>
 static int&#160;</td><td class="memItemRight" valign="bottom"><b>make_instance</b> ()</td></tr>
 <tr class="separator:ab2e0897044d8d5db080a20407a1a4129"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -158,8 +160,7 @@ float&#160;</td><td class="memItemRight" valign="bottom"><b>opy</b></td></tr>
 <tr class="memitem:a7be71640f06b352b12d767cede3e9ea7"><td class="memItemLeft" align="right" valign="top"><a id="a7be71640f06b352b12d767cede3e9ea7" name="a7be71640f06b352b12d767cede3e9ea7"></a>
 float&#160;</td><td class="memItemRight" valign="bottom"><b>opz</b></td></tr>
 <tr class="separator:a7be71640f06b352b12d767cede3e9ea7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab216457715e907c472ddad6ffbd8e3c0"><td class="memItemLeft" align="right" valign="top"><a id="ab216457715e907c472ddad6ffbd8e3c0" name="ab216457715e907c472ddad6ffbd8e3c0"></a>
-float&#160;</td><td class="memItemRight" valign="bottom"><b>cx</b></td></tr>
+<tr class="memitem:ab216457715e907c472ddad6ffbd8e3c0"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGCoder.html#ab216457715e907c472ddad6ffbd8e3c0">cx</a></td></tr>
 <tr class="separator:ab216457715e907c472ddad6ffbd8e3c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2c54c1c6e276513eb83b700f91055b11"><td class="memItemLeft" align="right" valign="top"><a id="a2c54c1c6e276513eb83b700f91055b11" name="a2c54c1c6e276513eb83b700f91055b11"></a>
 float&#160;</td><td class="memItemRight" valign="bottom"><b>cy</b></td></tr>
@@ -167,8 +168,7 @@ float&#160;</td><td class="memItemRight" valign="bottom"><b>cy</b></td></tr>
 <tr class="memitem:ac23bd2d59b724aaaae4e61793e32be1f"><td class="memItemLeft" align="right" valign="top"><a id="ac23bd2d59b724aaaae4e61793e32be1f" name="ac23bd2d59b724aaaae4e61793e32be1f"></a>
 float&#160;</td><td class="memItemRight" valign="bottom"><b>cz</b></td></tr>
 <tr class="separator:ac23bd2d59b724aaaae4e61793e32be1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aef1ce3e570fbfbde2f6ff8607af68d1b"><td class="memItemLeft" align="right" valign="top"><a id="aef1ce3e570fbfbde2f6ff8607af68d1b" name="aef1ce3e570fbfbde2f6ff8607af68d1b"></a>
-float&#160;</td><td class="memItemRight" valign="bottom"><b>vx</b></td></tr>
+<tr class="memitem:aef1ce3e570fbfbde2f6ff8607af68d1b"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGCoder.html#aef1ce3e570fbfbde2f6ff8607af68d1b">vx</a></td></tr>
 <tr class="separator:aef1ce3e570fbfbde2f6ff8607af68d1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af405197392aee4beb8f124bc489cab9e"><td class="memItemLeft" align="right" valign="top"><a id="af405197392aee4beb8f124bc489cab9e" name="af405197392aee4beb8f124bc489cab9e"></a>
 float&#160;</td><td class="memItemRight" valign="bottom"><b>vy</b></td></tr>
@@ -176,19 +176,20 @@ float&#160;</td><td class="memItemRight" valign="bottom"><b>vy</b></td></tr>
 <tr class="memitem:a3d3359d77757823881acdebb5730f901"><td class="memItemLeft" align="right" valign="top"><a id="a3d3359d77757823881acdebb5730f901" name="a3d3359d77757823881acdebb5730f901"></a>
 float&#160;</td><td class="memItemRight" valign="bottom"><b>vz</b></td></tr>
 <tr class="separator:a3d3359d77757823881acdebb5730f901"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac7341ee1195207149f271ac51ebb8ed5"><td class="memItemLeft" align="right" valign="top"><a id="ac7341ee1195207149f271ac51ebb8ed5" name="ac7341ee1195207149f271ac51ebb8ed5"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><b>dev_path</b></td></tr>
+<tr class="memitem:ac7341ee1195207149f271ac51ebb8ed5"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGCoder.html#ac7341ee1195207149f271ac51ebb8ed5">dev_path</a></td></tr>
 <tr class="separator:ac7341ee1195207149f271ac51ebb8ed5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
+<tr><td colspan="2"><div class="groupHeader"></div></td></tr>
 <tr class="memitem:af29459e06c2ad3fba98a23aeae568663"><td class="memItemLeft" align="right" valign="top">static const float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGCoder.html#af29459e06c2ad3fba98a23aeae568663">_max_x</a> = 345</td></tr>
+<tr class="memdesc:af29459e06c2ad3fba98a23aeae568663"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hard limit coordinates for gantry motion.  <a href="structGCoder.html#af29459e06c2ad3fba98a23aeae568663">More...</a><br /></td></tr>
 <tr class="separator:af29459e06c2ad3fba98a23aeae568663"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7832a308d83b5c75935e9e916d77c701"><td class="memItemLeft" align="right" valign="top"><a id="a7832a308d83b5c75935e9e916d77c701" name="a7832a308d83b5c75935e9e916d77c701"></a>
-static const float&#160;</td><td class="memItemRight" valign="bottom"><b>_max_y</b> = 200</td></tr>
+<tr class="memitem:a7832a308d83b5c75935e9e916d77c701"><td class="memItemLeft" align="right" valign="top">static const float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGCoder.html#a7832a308d83b5c75935e9e916d77c701">_max_y</a> = 200</td></tr>
+<tr class="memdesc:a7832a308d83b5c75935e9e916d77c701"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hard limit coordinates for gantry motion.  <a href="structGCoder.html#a7832a308d83b5c75935e9e916d77c701">More...</a><br /></td></tr>
 <tr class="separator:a7832a308d83b5c75935e9e916d77c701"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a477dd0481d4241fe57f9a93170bb06cd"><td class="memItemLeft" align="right" valign="top"><a id="a477dd0481d4241fe57f9a93170bb06cd" name="a477dd0481d4241fe57f9a93170bb06cd"></a>
-static const float&#160;</td><td class="memItemRight" valign="bottom"><b>_max_z</b> = 460</td></tr>
+<tr class="memitem:a477dd0481d4241fe57f9a93170bb06cd"><td class="memItemLeft" align="right" valign="top">static const float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGCoder.html#a477dd0481d4241fe57f9a93170bb06cd">_max_z</a> = 460</td></tr>
+<tr class="memdesc:a477dd0481d4241fe57f9a93170bb06cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hard limit coordinates for gantry motion.  <a href="structGCoder.html#a477dd0481d4241fe57f9a93170bb06cd">More...</a><br /></td></tr>
 <tr class="separator:a477dd0481d4241fe57f9a93170bb06cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
@@ -292,13 +293,12 @@ static std::unique_ptr&lt; <a class="el" href="structGCoder.html">GCoder</a> &gt
         </tr>
       </table>
 </div><div class="memdoc">
-<p >This is low level instructions in the termios interface for setting up the read speed and mode for the communicating with the printer over USB. This part of the code currently considered black-magic as most of the statements are copy from here [1], so do not edit statements containing the tty container unless you are absolutely sure about what you are doing.</p>
+<p >Low level instructions in the termios interface for setting up the read speed and mode for the communicating with the printer over USB. This part of the code currently considered black-magicm as most of the statements are copy from <a href="https://www.xanthium.in/Serial-Port-Programming-on-Linux">here</a>, so do not edit statements containing the tty container unless you are absolutely sure about what you are doing.</p>
 <p >After initialization, the printer will always perform these 3 steps:</p><ul>
 <li>Send the gantry back home and reset coordinates ot (0,0,0).</li>
 <li>Set the motion speed to something much faster</li>
-<li>Set the acceleration speed to 3 times the factory default.</li>
+<li>Set the acceleration speed to 3 times the factory default. </li>
 </ul>
-<p >[1] <a href="https://www.xanthium.in/Serial-Port-Programming-on-Linux">https://www.xanthium.in/Serial-Port-Programming-on-Linux</a> </p>
 
 </div>
 </div>
@@ -467,8 +467,8 @@ static std::unique_ptr&lt; <a class="el" href="structGCoder.html">GCoder</a> &gt
         </tr>
       </table>
 </div><div class="memdoc">
-<p >As a standard in this program, all gcode command string should end in a newline character. This function will parse the gcode string to the printer via the defined interface, and pass the return string of the printer as the return value. Notice that the function will check the return string for the acknowledgement string ('ok' at the start of a line) to know that the command has been executed by the printer. If this acknowledgement string is not received after a wait period, then the command is tried again up to 10 times.</p>
-<p >Notice that when the 'ack' string is reported will depend on the gcode command in question, and so later functions of abstracting gcode commands should be responsible for choosing an appropriate timeout duration to reduce multiple function calls. </p>
+<p >As a standard in this program, all gcode command string should end in a newline character. This function will parse the gcode string to the printer via the defined interface, and pass the return string of the printer as the return value. Notice that the function will check the return string for the acknowledgement string ("ok" at the start of a line) to know that the command has been executed by the printer. If this acknowledgement string is not received after a wait period, then the command is tried again up to 10 times.</p>
+<p >Notice that exactly when the acknowledgement string is reported will depend on the gcode command in question, and so later functions of abstracting gcode commands should be responsible for choosing an appropriate timeout duration to reduce multiple function calls. </p>
 
 </div>
 </div>
@@ -570,11 +570,102 @@ static std::unique_ptr&lt; <a class="el" href="structGCoder.html">GCoder</a> &gt
   </tr>
 </table>
 </div><div class="memdoc">
-<p >Hard limit for gantry motion. Important as there is not stop signal at max values, so we place these here to avoid hardware damaged </p>
+<p >As there are now stop limiter for the gantry maximum motion range value, here, progammatically add a hard input into the system to avoid hardware damaged. </p>
 
 </div>
 </div>
-<hr/>The documentation for this struct was generated from the following files:<ul>
+<a id="a7832a308d83b5c75935e9e916d77c701" name="a7832a308d83b5c75935e9e916d77c701"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7832a308d83b5c75935e9e916d77c701">&#9670;&nbsp;</a></span>_max_y</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const float GCoder::_max_y = 200</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p >As there are now stop limiter for the gantry maximum motion range value, here, progammatically add a hard input into the system to avoid hardware damaged. </p>
+
+</div>
+</div>
+<a id="a477dd0481d4241fe57f9a93170bb06cd" name="a477dd0481d4241fe57f9a93170bb06cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a477dd0481d4241fe57f9a93170bb06cd">&#9670;&nbsp;</a></span>_max_z</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const float GCoder::_max_z = 460</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p >As there are now stop limiter for the gantry maximum motion range value, here, progammatically add a hard input into the system to avoid hardware damaged. </p>
+
+</div>
+</div>
+<a id="ab216457715e907c472ddad6ffbd8e3c0" name="ab216457715e907c472ddad6ffbd8e3c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab216457715e907c472ddad6ffbd8e3c0">&#9670;&nbsp;</a></span>cx</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float GCoder::cx</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >target position of the printer </p>
+
+</div>
+</div>
+<a id="ac7341ee1195207149f271ac51ebb8ed5" name="ac7341ee1195207149f271ac51ebb8ed5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac7341ee1195207149f271ac51ebb8ed5">&#9670;&nbsp;</a></span>dev_path</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string GCoder::dev_path</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >Speed of the gantry head. </p>
+
+</div>
+</div>
+<a id="aef1ce3e570fbfbde2f6ff8607af68d1b" name="aef1ce3e570fbfbde2f6ff8607af68d1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef1ce3e570fbfbde2f6ff8607af68d1b">&#9670;&nbsp;</a></span>vx</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float GCoder::vx</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >current position of the printer </p>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following files:<ul>
 <li>/github/workspace/src/<a class="el" href="gcoder_8hpp_source.html">gcoder.hpp</a></li>
 <li>/github/workspace/src/<a class="el" href="gcoder_8cc.html">gcoder.cc</a></li>
 </ul>

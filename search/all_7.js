@@ -30,8 +30,9 @@ var searchData=
   ['gpio_2ecc_27',['gpio.cc',['../gpio_8cc.html',1,'']]],
   ['gpioread_28',['GPIORead',['../classGPIO.html#a0cc048d46544bc9be95f22bb7f670a12',1,'GPIO']]],
   ['gpiowrite_29',['GPIOWrite',['../classGPIO.html#a960201daa506963d5764ce64a0542441',1,'GPIO']]],
-  ['gui_20client_30',['GUI client',['../group__gui__client.html',1,'']]],
-  ['gui_20design_31',['GUI Design',['../group__gui__design.html',1,'']]],
-  ['gui_20manual_32',['GUI manual',['../gui.html',1,'']]],
-  ['gui_20server_33',['GUI Server',['../group__gui__server.html',1,'']]]
+  ['green_30',['GREEN',['../group__Logger.html#ga7d4623129191ee18cef0cb95a4e3009d',1,'GREEN(const std::string &amp;str):&#160;logger.cc'],['../group__Logger.html#ga7d4623129191ee18cef0cb95a4e3009d',1,'GREEN(const std::string &amp;):&#160;logger.cc']]],
+  ['gui_20client_31',['GUI client',['../group__gui__client.html',1,'']]],
+  ['gui_20design_32',['GUI Design',['../group__gui__design.html',1,'']]],
+  ['gui_20manual_33',['GUI manual',['../gui.html',1,'']]],
+  ['gui_20server_34',['GUI Server',['../group__gui__server.html',1,'']]]
 ];

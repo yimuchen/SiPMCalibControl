@@ -100,10 +100,7 @@ $(function() {
 <code>#include &lt;termios.h&gt;</code><br />
 <code>#include &lt;unistd.h&gt;</code><br />
 </div><a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><dl class="section author"><dt>Author</dt><dd>Yi-Mu Chen</dd></dl>
-<p>The <a class="el" href="structGCoder.html">GCoder</a> class is responsible for the transmission of instructions to the 3D-printer for motion control. The transmission in performed over USB using the UNIX termios interface. The full documentation could be found here: [1].</p>
-<p >The class also abstracts motion controls which may or may not involve many gcode commands into single functions with parameters which is simpler to call for end users. For the full list of available marlin-flavored gcode, see here [2]. Due to how communications is handled in the kernel not, all motions is abstractable in C++, with some needing to be handled at python level. Those will be high-lighted for in the various code segments.</p>
-<p >[1] <a href="https://www.xanthium.in/Serial-Port-Programming-on-Linux">https://www.xanthium.in/Serial-Port-Programming-on-Linux</a> [2] <a href="https://marlinfw.org/meta/gcode/">https://marlinfw.org/meta/gcode/</a> </p>
+<div class="textblock"><dl class="section author"><dt>Author</dt><dd>Yi-Mu Chen </dd></dl>
 </div></div><!-- contents -->
 <!-- HTML footer for doxygen 1.8.14-->
 <!-- start footer part -->

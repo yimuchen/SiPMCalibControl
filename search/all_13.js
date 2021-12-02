@@ -11,5 +11,6 @@ var searchData=
   ['visualsaveframe_8',['visualsaveframe',['../classctlcmd_1_1viscmd_1_1visualsaveframe.html',1,'ctlcmd::viscmd']]],
   ['visualset_9',['visualset',['../classctlcmd_1_1viscmd_1_1visualset.html',1,'ctlcmd::viscmd']]],
   ['visualshowdet_10',['visualshowdet',['../classctlcmd_1_1viscmd_1_1visualshowdet.html',1,'ctlcmd::viscmd']]],
-  ['visualzscan_11',['visualzscan',['../classctlcmd_1_1viscmd_1_1visualzscan.html',1,'ctlcmd::viscmd']]]
+  ['visualzscan_11',['visualzscan',['../classctlcmd_1_1viscmd_1_1visualzscan.html',1,'ctlcmd::viscmd']]],
+  ['vx_12',['vx',['../structGCoder.html#aef1ce3e570fbfbde2f6ff8607af68d1b',1,'GCoder']]]
 ];
