@@ -3,9 +3,7 @@ import cmod.logger as log
 
 
 class picoset(cmdbase.controlcmd):
-  """
-  Setting picoscope operation parameters
-  """
+  """@brief Setting picoscope operation parameters"""
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -102,9 +100,9 @@ class picoset(cmdbase.controlcmd):
 
 
 class picorunblock(cmdbase.savefilecmd):
-  """
-  Initiating a single run block instance. This assumes that the program will
-  finish without user intervension (no program fired triggering)
+  """@brief Initiating a single run block instance."""
+  """ This assumes that the program will finish without user intervension (no
+  program fired triggering)
   """
 
   DEFAULT_SAVEFILE = 'picoblock_<TIMESTAMP>.txt'
@@ -165,10 +163,8 @@ class picorunblock(cmdbase.savefilecmd):
 
 
 class picorange(cmdbase.controlcmd):
-  """
-  Automatically setting the voltage range of the picoscope based on a few set
-  waveforms of data.
-  """
+  """@brief Automatically setting the voltage range of the picoscope based on a few set
+  waveforms of data."""
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 

@@ -15,9 +15,7 @@ import argparse, re, os, sys, time
 
 
 class exit(cmdbase.controlcmd):
-  """
-  Command for exiting the main session
-  """
+  """@brief Command for exiting the main session"""
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -31,13 +29,16 @@ class exit(cmdbase.controlcmd):
       # Fast motion to somewhere close to home
       self.move_gantry(1, 1, 1, False)
       # Activate send home
-      self.gcoder.sendhome(True, True, True)
+      try:
+        self.gcoder.sendhome(True, True, True)
+      except Exception as err:
+        pass
       return cmdbase.controlcmd.TERMINATE_SESSION
 
 
 class set(cmdbase.controlcmd):
   """
-  Setting calibration devices. This will only modify opening and closing the
+  @brief Setting calibration system devices. This will only modify opening and closing the
   interface, not the actual operation of the various interfaces.
 
   - For visual system settings, see command: visualset
@@ -170,10 +171,7 @@ class set(cmdbase.controlcmd):
 
 
 class get(cmdbase.controlcmd):
-  """
-  Printing out the session parameters, and equipment settings. This is bundle
-  here for simple debugging.
-  """
+  """@brief Printing out the session parameters, and equipment settings."""
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -275,9 +273,7 @@ class get(cmdbase.controlcmd):
 
 
 class savecalib(cmdbase.controlcmd):
-  """
-  Saving current calibration information into a json file
-  """
+  """@brief Saving current calibration information into a json file"""
   LOG = log.GREEN('[SAVE_CALIB]')
 
   def __init__(self, cmd):
@@ -302,9 +298,7 @@ class savecalib(cmdbase.controlcmd):
 
 
 class loadcalib(cmdbase.controlcmd):
-  """
-  Loading calibration information from a json file
-  """
+  """@brief Loading calibration information from a json file"""
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -325,9 +319,9 @@ class loadcalib(cmdbase.controlcmd):
 
 
 class promptaction(cmdbase.controlcmd):
-  """
-  Displaying message that requires manual intervention. This is handy for
-  inserting pause points in a runfile that requires user intervension.
+  """@brief Displaying message that requires manual intervention."""
+  """This is handy for inserting pause points in a runfile that requires user
+  intervension.
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -396,9 +390,8 @@ class history(cmdbase.controlcmd):
 
 
 class wait(cmdbase.controlcmd):
-  """
-  Suspending the interactive session for N seconds. The wait time can be
-  terminated early using Ctl+C.
+  """@brief Suspending the interactive session for N seconds."""
+  """The wait time can be terminated early using Ctl+C.
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -421,8 +414,9 @@ class wait(cmdbase.controlcmd):
 
 class runfile(cmdbase.controlcmd):
   """
-  Running a file with a list of commands.
-
+  @brief Running a file with a list of commands.
+  """
+  """
   Notice that while runfiles can be called recursively, you cannot call runfiles
   that have already been called, as this will cause infinite recursion. If any
   command in the command file fails, the whole runfile call will be terminated to

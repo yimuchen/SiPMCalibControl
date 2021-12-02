@@ -3,8 +3,8 @@
   <!-- Navigation index tabs for HTML output -->
   <navindex>
     <tab type="mainpage" visible="yes" title=""/>
-    <tab type="user" url="@ref PlotUtils" title="PlotUtils"/>
-    <tab type="user" url="@ref MathUtils" title="MathUtils"/>
+    <tab type="user" url="@ref cli"        title="CLI manual"/>
+    <tab type="user" url="@ref cli_design" title="CLI design"/>
     <tab type="user" url="@ref Common"    title="Common"/>
     <tab type="user" url="@ref EDMUtils"  title="EDMUtils"/>
     <tab type="user" url="@ref PhysUtils" title="PhysUtils"/>
@@ -30,7 +30,6 @@
   <!-- Layout definition for a class page -->
   <class>
     <!--briefdescription visible="yes"/-->
-    <inheritancegraph visible="$CLASS_GRAPH"/>
     <collaborationgraph visible="$COLLABORATION_GRAPH"/>
     <detaileddescription title=""/>
     <memberdecl>
@@ -80,6 +79,7 @@
       <properties title=""/>
       <events title=""/>
     </memberdef>
+    <inheritancegraph visible="$CLASS_GRAPH"/>
     <allmemberslink visible="yes"/>
     <includes visible="$SHOW_INCLUDE_FILES"/>
     <usedfiles visible="$SHOW_USED_FILES"/>

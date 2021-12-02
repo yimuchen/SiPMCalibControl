@@ -1,4 +1,5 @@
-/********************************************************************************
+/**
+ * @file: THis is a atest
  *
  * request.js
  *
@@ -8,7 +9,7 @@
  * processing with the manipulation of the display elements should be placed in
  * the corresponding view/*.js files.
  *
- *******************************************************************************/
+ **/
 
 // const { ajax } = require('jquery');
 

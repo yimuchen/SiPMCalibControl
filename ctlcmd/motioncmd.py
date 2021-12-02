@@ -371,9 +371,8 @@ class zscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.readoutcmd,
 
 class lowlightcollect(cmdbase.singlexycmd, cmdbase.readoutcmd,
                       cmdbase.savefilecmd):
-  """
-  Collection of low light data at a single gantry position, collecting data as
-  fast as possible no waiting.
+  """@brief Collection of low light data at a single gantry position, collecting
+  data as fast as possible no waiting.
   """
   DEFAULT_SAVEFILE = 'lowlight_<BOARDTYPE>_<BOARDID>_<DETID>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[LUMI LOWLIGHT]')

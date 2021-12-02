@@ -5,9 +5,7 @@ import time
 
 
 class drsset(cmdbase.controlcmd):
-  """
-  Setting DRS4 readout operation parameters
-  """
+  """@brief Setting DRS4 readout operation parameters"""
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -81,9 +79,9 @@ class drsset(cmdbase.controlcmd):
 
 
 class drscalib(cmdbase.controlcmd):
-  """
-  Running the DRS calibration process. This function will confirm with the user
-  where or not the DRS is in the correct configuration before continuing.
+  """@brief Running the DRS calibration process."""
+  """This function will confirm with the user where or not the DRS is in the
+  correct configuration before continuing.
   """
   LOG = log.GREEN('[DRSCALIB]')
 
@@ -102,10 +100,8 @@ class drscalib(cmdbase.controlcmd):
 
 
 class drsrun(cmdbase.savefilecmd):
-  """
-  Running the DRS stand alone waveform extraction for debugging and detailed
-  output analysis.
-  """
+  """@brief Running the DRS stand alone waveform extraction"""
+
   LOG = log.GREEN('[DRS]')
   DEFAULT_SAVEFILE = 'drsrun_<TIMESTAMP>.txt'
 

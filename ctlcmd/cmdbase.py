@@ -1,19 +1,58 @@
 """
-  cmdbase.py
+@file cmdbase.py
 
-  The core class for creating the command-line interface for the gantry control
-  system. The base of the class is controlterm class derived from the python
-  cmd.Cmd class. Rather than defining all commands under the various `do_<cmd>`
-  methods within the Cmd class, we opt to split out the the commands into the
-  various classes defined from our custom controlcmd and have python dynamically
-  create commands based on the class name, which allows for very verbose commands
-  while keeping the files more readable. The master Cmd class also spawns in the
-  interface instances, and exposes this to all command such that commands can use
-  which ever interface needed.
 
-  Additional "meta command" classes will be provided to unify certain interface
-  actions (like gantry motion), and provide common command line options and
-  parsing methods.
+@defgroup cli_design CLI Framework
+
+The command line interface is designe daround the python [`cmd.Cmd`][python-cmd]
+class: the `ctlcmd.cmdbase.controlterm` class inherits from the python base
+class, and expects a list of `ctlcmd.cmdbase.controlcmd` classes during
+construction, this allows for a simplified construction of commands of arbitrary
+execution complexity while having a reusable framework for common routines such
+as command argument parsing with [`argparse`][python-argparse].
+
+## Framework overview
+
+In vanilla python, the [`cmd`][python-cmd] class implements command as a series
+of `do_<cmd>` function, with corresponding, `help_<cmd>` and `complete_<cmd>`
+function to manage help message generation and tag-autocomplete with GNU
+readline. The [`controlterm`][controlterm] constructs these methods according to
+the given list of [`controlcmd`][controlcmd] derived classes, with the
+`control.do_<cmd>` method being mapped to the `<cmd>.do` method, and so on. The
+`controlterm` class is also responsible for handling the various hardware
+interface objects used for system control.
+
+The [`controlcmd`][controlcmd] class further breaks down the `do` method into
+common routines: first, the raw `line` string input is process via the
+`argparse.ArgumentParser` instance with additional processing performed by the
+overloaded `controlcmd.parse` methods. The argument argument is then passed over
+to the `run` method for actually running. As many commands for the system control
+will have similar/identical argument parsing processes, additional subclasses
+have been provided for the argument construction and argument parsing. To such
+processing will *always* be performed in the sequence of the class derivative
+sequence (order listed in the `__mro__` method)
+
+## Documentation guidelines
+
+For user-level command classes (classes that actually get passed into the
+construction of the master `controlterm` object), as the `__doc__` string of the
+command classes is used for both the command line help message and the generation
+of the user manual, developers should keep just a `@brief` documentation in the
+user-level command class's `__doc__` string, more detail documentation of how the
+command works should be kept in the dedicated documentation files, which can also
+give examples as to how the various command should be used. This is only true for
+the class level `__doc__` strings, however. All *method* `__doc__` string should
+be kept self contained within the class.
+
+For non user-level command classes, we keep in the usual convention that
+documentation should be kept close to the implementation, to help with
+bookkeeping during development, so use the typical doxygen tag directly in the
+class and method  `__doc__` strings.
+
+[python-cmd]: https://docs.python.org/3/library/cmd.html
+[python-argparse]: https://docs.python.org/3/library/argparse.html
+[controlterm]: @ref ctlcmd.cmdbase.controlterm
+[controlcmd]: @ref ctlcmd.cmdbase.controlcmd
 """
 import cmod.gcoder as gcoder
 import cmod.board as board
@@ -41,13 +80,19 @@ import enum
 
 class controlterm(cmd.Cmd):
   """
-  The master Command-line parsing class. Which holds:
+  @ingroup cli_design
+
+  @brief Overloading the terminal class.
+
+  @details The master command-line session management class. Which holds:
 
   - All instances of the interface classes.
   - All instances of the controlcmd classes that will be used to map functions
 
-  Additional helper method will also be provided to help with common routines of
-  across commands.
+  During construction, additional methods for this class are automatically
+  spawned from the input class methods. As this class is also spawned as the
+  control class for GUI interface, there are a couple of book keeping classes to
+  keep track of the status of the last executed command.
   """
 
   intro = """
@@ -77,10 +122,14 @@ class controlterm(cmd.Cmd):
 
   def __init__(self, cmdlist, **base_kwargs):
     """
-    Constructing the command line instance from a list of classes that is
-    requested. The `do_<cmd>`, `help_<cmd>`, and `complete_<cmd>` methods will be
-    spawned in after the the command classes have been created, and the method
-    will be mapped to the cmd.<do> methods of the spawned class.
+    @brief Constructing the command line instance from a list of classes that is
+    requested.
+
+    @details First the various hardware interface instances are created under for
+    this class. Then all provided command classes will have a corresponding
+    `do_<cmd>`, `help_<cmd>`, and `complete_<cmd>` methods spawned. As the
+    autocomplete method uses the `readline` package, we also augment the readline
+    behavior so that we can invoke autocompletion on hyphen-started arguments.
     """
     cmd.Cmd.__init__(self, **base_kwargs)
 
@@ -107,10 +156,7 @@ class controlterm(cmd.Cmd):
 
     # Modifying readline default behavior:
     import readline
-    # Removing hyphen and slash as completer delimiter, as it messes with
-    # command auto completion
     readline.set_completer_delims(' \t\n`~!@#$%^&*()=+[{]}\\|;:\'",<>?')
-    ## Setting the history file
     readline.set_history_length(1000)
 
     ## Additional members for command status logging
@@ -122,7 +168,10 @@ class controlterm(cmd.Cmd):
 
   def precmd(self, line):
     """
-    Additional logging to be performed before the command has been run
+    @brief routines to run just before executing a command.
+
+    @details Storing the last line, making sure that the current command status
+    is set to `None`, as well as logging the start time of the command.
     """
     self.last_cmd = line
     self.last_cmd_status = None
@@ -133,9 +182,11 @@ class controlterm(cmd.Cmd):
 
   def postcmd(self, stop, line):
     """
-    Printing extra empty line after command completion for clarity, also removing
-    all return values to stop the command from exiting with the default return
-    value
+    @brief routines to run just after executing the command
+
+    @details As the python cmd class uses a simple True/False check on the stop
+    signal for whether the command session should be terminated, we cannot
+    directly pass the command execution status to the base class.
     """
     log.printmsg("")
     self.last_cmd_status = stop
@@ -145,13 +196,15 @@ class controlterm(cmd.Cmd):
 
   def get_names(self):
     """
-    Overriding the the original get_names command to allow for the dynamic
+    @brief Overriding the the original get_names command to allow for the dynamic
     introduced commands to be listed in the master help method.
     """
     return dir(self)
 
   def emptyline(self):
-    """Don't do anything for empty lines"""
+    """
+    @brief Overide behavior for empty line inputs: don't do anything.
+    """
     pass
 
   @staticmethod
@@ -165,11 +218,14 @@ class controlterm(cmd.Cmd):
 
 class controlcmd(object):
   """
-  The control command is the base interface for defining a command in the
-  terminal class, the instance do, callhelp and complete functions corresponds to
-  the functions do_<cmd>, help_<cmd> and complete_<cmd> functions in the vallina
-  python cmd class. Here we will be using the argparse class by default to call
-  for the help and complete functions.
+  @ingroup cli_design
+  @brief Base interface for command classes.
+
+  @details The control command is the base interface for defining a command in
+  the terminal class, the instance do, callhelp and complete functions
+  corresponds to the functions do_<cmd>, help_<cmd> and complete_<cmd> functions
+  in the vallina python cmd class. Here we will be using the argparse class by
+  default to call for the help and complete functions.
 
   In addition, the class will also contain a `LOG` instance which is used to
   prettify the output of the printerr methods. This should be overridden in all
@@ -178,14 +234,14 @@ class controlcmd(object):
   One big part of this class the the consistent construction of argument elements
   and the parsing of elements. This is how the creation and parsing of the
   arguments are performed:
-  - Arguments will be added in the inverse order listed in the __mro__ method via
-    the `add_args` method that meta-command classes and command classes should
-    overload.
-  - Arguments will be also be parsed in the order inversely listed in the __mro__
-    method via the `parse` argument. Because of this, the input args object in
-    the `parse` argument in inherited classes should simply assume that the
-    `parse` of parent classes' has already been assumed, and should not attempt
-    to call the parent class's parse method.
+  - Arguments will be added in the inverse order listed in the `__mro__` method
+    via the `add_args` method that meta-command classes and command classes
+    should overload.
+  - Arguments will be also be parsed in the order inversely listed in the
+    `__mro__` method via the `parse` argument. Because of this, the input args
+    object in the `parse` argument in inherited classes should simply assume that
+    the `parse` of parent classes' has already been assumed, and should not
+    attempt to call the parent class's parse method.
   """
   PARSE_ERROR = -1
   EXECUTE_ERROR = -2
@@ -203,9 +259,10 @@ class controlcmd(object):
     Each command will have accession to the cmd session, and by extension,
     every interface object the could potentially be used.
     """
-    self.parser = argparse.ArgumentParser(prog=self.__class__.__name__.lower(),
-                                          description=self.__class__.__doc__,
-                                          add_help=False)
+    self.parser = argparse.ArgumentParser(
+        prog=self.__class__.__name__.lower(),
+        description=self.__class__.__doc__.replace('@brief', ''),
+        add_help=False)
     self.cmd = cmdsession  # Reference to the master object.
 
     ## Reference to control objects for all commands
@@ -272,7 +329,7 @@ class controlcmd(object):
 
   def post_run(self):
     """
-    Routines to run after the run argument. is called.
+    Routines to run after the run argument is called.
     """
     log.clear_update()
 
@@ -512,7 +569,7 @@ class controlcmd(object):
     answer.
 
     'question' is a string that is presented to the user. 'default' is the
-    presumed answer if the user just hits <Enter>. It must be 'yes' (the
+    presumed answer if the user just hits \<Enter\>. It must be 'yes' (the
     default), 'no' or None (meaning an answer is required of the user).
 
     The 'answer' return value is True for 'yes' or False for 'no'.
@@ -558,10 +615,15 @@ class controlcmd(object):
 
 class savefilecmd(controlcmd):
   """
-  Command with the need to save a file. A standard method is provided adding the
-  savefile options to the argparse instance, as well as additional parsing and
-  handling of the method. All function that wish to have their default save
-  location overridden should simple change the DEFAULT_SAVEFILE static variable.
+  @brief commands that will save to a file
+
+  @ingroup cli_design
+
+  @details Command with the need to save a file. A standard method is provided
+  adding the savefile options to the argparse instance, as well as additional
+  parsing and handling of the method. All function that wish to have their
+  default save location overridden should simple change the DEFAULT_SAVEFILE
+  static variable.
   """
   DEFAULT_SAVEFILE = 'SAVEFILE_<TIMESTAMP>'
 
@@ -690,13 +752,16 @@ class savefilecmd(controlcmd):
 
 class singlexycmd(controlcmd):
   """
-  Commands that require the motion around a single x-y position. This class will
-  also provide the static variable to act as the flag for whether the target
-  position should add the visual offset position or not (say for visual alignment
-  and lumi-alignment, we want to keep the command similar for align at detector
-  1, while working at different physical coordinates.) The default offset for
-  when there no valid calibration data is available is provided should be based
-  on the gantry head design.
+  @ingroup cli_design
+
+  @brief Commands that require the motion around a single x-y position.
+
+  @details This class will also provide the static variable to act as the flag
+  for whether the target position should add the visual offset position or not
+  (say for visual alignment and lumi-alignment, we want to keep the command
+  similar for align at detector 1, while working at different physical
+  coordinates.) The default offset for when there no valid calibration data is
+  available is provided should be based on the gantry head design.
   """
   VISUAL_OFFSET = False
   DEFAULT_XOFFSET = -35
@@ -839,9 +904,13 @@ class singlexycmd(controlcmd):
 
 class hscancmd(singlexycmd):
   """
-  Commands that expand the operations around a (x,y) point to a small grid for
-  alignment purposes. This classes uses the static variables to designate the
-  grid range and mesh finess.
+  @ingroup cli_design
+
+  @brief Commands that expand the operations around a (x,y) point to a small grid
+  for alignment purposes.
+
+  @details This classes uses the static variables to designate the grid range and
+  mesh finess.
   """
   HSCAN_ZVALUE = 20
   HSCAN_RANGE = 5
@@ -907,9 +976,13 @@ class hscancmd(singlexycmd):
 
 class zscancmd(controlcmd):
   """
-  Commands that will scan over a range of z positions. As string parsing is used
-  for abbreviate lists, the default zscan values should be provided using syntax
-  corrected string rather a list of numbers.
+  @ingroup cli_design
+
+  @brief  Commands that will scan over a range of z positions.
+
+  @details As string parsing is used for abbreviate lists, the default zscan
+  values should be provided using syntax corrected string rather a list of
+  numbers.
   """
   ZSCAN_ZLIST = "[10 51 1]"
 
@@ -971,11 +1044,15 @@ class zscancmd(controlcmd):
 
 class readoutcmd(controlcmd):
   """
-  Commands that should have single readout models. This typically assumes that
-  the readout device (ADC/picoscope/drs4 or otherwise) has been properly set up
-  with the correct range and settings, and this class will provide the new
-  "self.readout" method to subsequent commands such that the the return can be a
-  singular number representing the readout value of triggers.
+  @ingroup cli_design
+
+  @details Commands that should have single readout models.
+
+  @details This typically assumes that the readout device (ADC/picoscope/drs4 or
+  otherwise) has been properly set up with the correct range and settings, and
+  this class will provide the new "self.readout" method to subsequent commands
+  such that the the return can be a singular number representing the readout
+  value of triggers.
   """
   class Mode(enum.IntEnum):
     MODE_PICO = 1

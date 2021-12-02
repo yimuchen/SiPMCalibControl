@@ -16,9 +16,7 @@ import copy
 
 
 class visualset(cmdbase.controlcmd):
-  """
-  Defining the parameters used for finding the detector in the field of view.
-  """
+  """@brief Defining the parameters used for finding the detector in the field of view."""
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -78,7 +76,8 @@ class visualset(cmdbase.controlcmd):
 
 class visualmeta(cmdbase.controlcmd):
   """
-  Meta class for additional options needed for visual operations
+  @brief Meta class for additional options needed for visual operations
+  @ingroup cli_design
   """
   WINDOWS_NAME = 'SIPMCALIB PROCESS'
 
@@ -108,8 +107,9 @@ class visualmeta(cmdbase.controlcmd):
 
 class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
   """
-  Performing horizontal scan with camera system
-
+  @brief Performing horizontal scan with camera system
+  """
+  """
   This command assumes that at most a single detector element will be visible to
   the visual system at one time. The command then stores the gantry coordinates
   and the found detector center in pixel cooridnates together, and this is used
@@ -212,8 +212,12 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
 
 class visualcenterdet(cmdbase.singlexycmd, visualmeta):
   """
+  @brief
   Moving the gantry so that the detector element is centered in field of view.
   Before running this function the user must make sure that:
+
+  """
+  """
 
   - That the detector can be found in the camera at the default coordinates.
   - That a working visual-gantry transformation has already been constructed.
@@ -344,7 +348,9 @@ class visualcenterdet(cmdbase.singlexycmd, visualmeta):
 
 class visualmaxsharp(cmdbase.singlexycmd, cmdbase.zscancmd, visualmeta):
   """
-  Moving the gantry to the position such that the image sharpness is maximized.
+  @brief Moving the gantry to the position such that the image sharpness is maximized.
+  """
+  """
   The user is required to input the z points to scan for maximum sharpness.
   """
   LOG = log.GREEN('[VISMAXSHARP]')
@@ -439,7 +445,7 @@ class visualmaxsharp(cmdbase.singlexycmd, cmdbase.zscancmd, visualmeta):
 
 class visualsaveframe(cmdbase.controlcmd):
   """
-  Saving the current image to some path
+  @brief Saving the current image to some path
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -460,7 +466,7 @@ class visualsaveframe(cmdbase.controlcmd):
 class visualzscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.savefilecmd,
                   visualmeta):
   """
-  Scanning focus to calibrate z distance
+  @brief Scanning focus to calibrate z distance
   """
   VISUAL_OFFSET = True
   DEFAULT_SAVEFILE = 'vscan_<DETID>_<TIMESTAMP>.txt'
@@ -501,9 +507,7 @@ class visualzscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.savefilecmd,
 
 
 class visualshowdet(visualmeta):
-  """
-  Display of detector position, until termination signal is obtained.
-  """
+  """@brief Display of detector position, until termination signal is obtained."""
   LOG = log.GREEN('[SHOW DETECTOR]')
 
   def __init__(self, cmd):

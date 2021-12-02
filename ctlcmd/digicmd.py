@@ -1,8 +1,7 @@
 """
+@file digicmd.py
 
-  digicmd.py
-
-  Commands for raw control and display of GPIO/ADC/PWM related interfaces
+@brief Commands for raw control and display of GPIO/ADC/PWM related interfaces
   functions
 
 """
@@ -15,6 +14,8 @@ class pulse(cmdbase.controlcmd):
   """
   Running the trigger for a certain about of pulses with alternative wait
   options.
+
+  @details this is some test
   """
 
   LOG = log.GREEN('[PULSE]')
@@ -147,9 +148,8 @@ class lighton(cmdbase.controlcmd):
 
 
 class lightoff(cmdbase.controlcmd):
-  """
-  Turning the LED lights on.
-  """
+  """@brief This is a test"""
+  """Turning the LED lights off."""
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
