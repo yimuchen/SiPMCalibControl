@@ -13,7 +13,7 @@ For the various interfaces, we expect that there will be issues with the certain
 interface not existing, either because the system is in a non-standard
 configuration for testing, or the system in question is some personal machine
 used for local testing. In such a case, the program in question should **raise
-exceptions** during the *initialization* phase, and should simply **do nothing**
+exceptions** during the _initialization_ phase, and should simply **do nothing**
 (other than perhaps printing an error messages) if the user tries to use the
 interface regardless. This allows for the user to test the various
 functionalities of the system during interface testing.
@@ -65,21 +65,21 @@ Files: [pico.cc](pico.cc), [pico.hpp](pico.hpp)
 
 We are using the C++ interface provided by Pico Technology. Essentially we are
 compartment the relevant code in the given reference main function to fit our
-needs. The reference code can be found in the open source part of the part of the
-[picoscope reference software][picoscope]. Notice that the picoscope requires
-proprietary drivers from PicoTechnology, you can find how to install it in the
-[install instructions](@ref developer)
+needs. The reference code can be found in the open source part of the part of
+the [picoscope reference software][picoscope]. Notice that the picoscope
+requires proprietary drivers from PicoTechnology, you can find how to install
+it in the [install instructions](@ref developer)
 
 ### DRS4 interfacoe for high resolution SiPM data collection
 
 Files: [drs.cc](drs.cc), [drs.hpp](drs.hpp)
 
-Similar to the picoscope, we are exposing the C-interface of the DRS4, as well as
-abstracting various control flows commonly used by the system into single
-high-level functions. The reference for the code can be found in the open source
-[reference code][drs4_ref]. The nice thing about the DRS4 from a software point
-of view is that it is effectively driverless, using only the USB drivers already
-in place in most UNIX systems.
+Similar to the picoscope, we are exposing the C-interface of the DRS4, as well
+as abstracting various control flows commonly used by the system into single
+high-level functions. The reference for the code can be found in the open
+source [reference code][drs4_ref]. The nice thing about the DRS4 from a
+software point of view is that it is effectively driverless, using only the USB
+drivers already in place in most UNIX systems.
 
 [gcode]: https://marlinfw.org/meta/gcode/
 [pybind11]: https://pybind11.readthedocs.io/en/stable/

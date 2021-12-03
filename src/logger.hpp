@@ -9,11 +9,11 @@
  *
  * @details Logging here means the manipulation display of messages on the
  * terminal, not the persistent logging of the system status. Instead of C++'s
- * `std::cout` method and the python `print` method, all terminal printing in the
- * packages should used the facilities provided here to allow for consistent
- * output and piping of the monitoring stream when specified. Functions are also
- * provided to the decorator strings for colored text to be easily printed onto
- * the terminal. All functions should use raw [UNIX escape
+ * `std::cout` method and the python `print` method, all terminal printing in
+ * the packages should used the facilities provided here to allow for
+ * consistent output and piping of the monitoring stream when specified.
+ * Functions are also provided to the decorator strings for colored text to be
+ * easily printed onto the terminal. All functions should use raw [UNIX escape
  * characters][escapechar] for fancy string manipulation to reduce dependencies
  * on external libraries.
  *

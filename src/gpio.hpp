@@ -81,12 +81,12 @@ private:
   void ClosePWM();
 
   static constexpr int ads_default_address = 0x48;
-  static int InitI2C();
-  void       PushADCSetting();
-  int16_t    ADCReadRaw();
-  void       FlushLoop( std::atomic<bool>& );
-  void       InitI2CFlush();
-  void       CloseI2CFlush();
+  static int           InitI2C();
+  void                 PushADCSetting();
+  int16_t              ADCReadRaw();
+  void                 FlushLoop( std::atomic<bool>& );
+  void                 InitI2CFlush();
+  void                 CloseI2CFlush();
 
   // File pointers triggers direct GPIO
   int gpio_trigger;
@@ -112,8 +112,8 @@ private:
 
   // I2C interface continuous streaming.
   std::atomic<bool> i2c_flush;
-  std::thread i2c_flush_thread;
-  float i2c_flush_array[4];
+  std::thread       i2c_flush_thread;
+  float             i2c_flush_array[4];
 
 /// singleton stuff
   DECLARE_SINGLETON( GPIO )

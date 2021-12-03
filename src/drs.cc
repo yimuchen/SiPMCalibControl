@@ -5,15 +5,15 @@
  *
  * Here we provide a simpler interface to interface to initialize the DRS4
  * oscilloscope with the default settings required for SiPM data collection, as
- * well as abstraction for the typical actions of pulse-like waveform aquisition
- * and waveform summing, and status report. This is basically a stripped down and
- * specialized method found in the DRS4 reference program[1] that serves as the
- * main reference of this file.
+ * well as abstraction for the typical actions of pulse-like waveform
+ * aquisition and waveform summing, and status report. This is basically a
+ * stripped down and specialized method found in the DRS4 reference program[1]
+ * that serves as the main reference of this file.
  *
  * The collection will always be in single-shot mode, with no exposure the
- * methods required to this setting. Notice that the DRS4 will not have a timeout
- * for single shot mode once collection is requested, so the user will be
- * responsible for making sure that the appropriate trigger is provided.
+ * methods required to this setting. Notice that the DRS4 will not have a
+ * timeout for single shot mode once collection is requested, so the user will
+ * be responsible for making sure that the appropriate trigger is provided.
  *
  * [1] https://www.psi.ch/en/drs/software-download
  */
@@ -28,8 +28,8 @@
  * @brief Initializing the DRS4 container in single shot mode, and external
  * triggers.
  *
- * As the reference program is a bit verbose, here we reduce the input to what is
- * needed for out single-shot operation. We also include explicit settings
+ * As the reference program is a bit verbose, here we reduce the input to what
+ * is needed for out single-shot operation. We also include explicit settings
  * commented out to make sure future development doesn't open certain settings
  * that is already known to cause issues by accident.
  */
@@ -85,13 +85,14 @@ DRSContainer::Init()
   usleep( 2 );
 }
 
+
 /**
  * @brief Waiting for the DRS4 to be ready for data transfer.
  *
- * This function will suspend the thread indefinitely until the DRS4 is ready for
- * data transfer operation. After the suspension, the data will always be flushed
- * to the main buffer (as this main program is only ever intended to be done with
- * the DRS4 running in single-shot mode).
+ * This function will suspend the thread indefinitely until the DRS4 is ready
+ * for data transfer operation. After the suspension, the data will always be
+ * flushed to the main buffer (as this main program is only ever intended to be
+ * done with the DRS4 running in single-shot mode).
  */
 void
 DRSContainer::WaitReady()
@@ -105,6 +106,7 @@ DRSContainer::WaitReady()
   board->TransferWaves( 0, 8 );// Flush all waveforms into buffer.
 }
 
+
 /**
  * @brief Getting the time slice array for precision timing of a specific
  * channel.
@@ -116,101 +118,108 @@ DRSContainer::WaitReady()
  * display. The timing returned is in units of nanoseconds.
  */
 std::vector<float>
-DRSContainer::GetTimeArray( const unsigned channel )
+DRSContainer::GetTimeArray( const unsigned channel
+  )
 {
   static const unsigned len = 2048;
-  float time_array[len];
+  float                 time_array[len];
 
   WaitReady();
-  board->GetTime( 0, 2*channel, board->GetTriggerCell( 0 ), time_array );
+  board->GetTime( 0, 2 * channel, board->GetTriggerCell( 0 ), time_array );
 
-  return std::vector<float>( time_array, time_array + len );
+  return std::vector<float>( time_array, time_array+len );
 }
+
 
 /**
  * @brief Returning the last collected waveform as an array of floats
  *
- * This is a lowest level interface with the DRS4 API, and so no conversion will
- * be returned here, the return vector will always be a fixed length long (2048).
- * Conversion should be handled by the other functions.
+ * This is a lowest level interface with the DRS4 API, and so no conversion
+ * will be returned here, the return vector will always be a fixed length long
+ * (2048). Conversion should be handled by the other functions.
  *
- * Notice that this function will wait indefinitely for the board to finish data
- * collection. So the user is responsible for making sure that the appropriate
- * trigger signal is sent.
+ * Notice that this function will wait indefinitely for the board to finish
+ * data collection. So the user is responsible for making sure that the
+ * appropriate trigger signal is sent.
  */
 std::vector<float>
-DRSContainer::GetWaveform( const unsigned channel )
+DRSContainer::GetWaveform( const unsigned channel
+  )
 {
   static const unsigned len = 2048;
-  float waveform[len];
+  float                 waveform[len];
 
   WaitReady();
   // Notice that channel index 0-1 both correspond to the the physical
   // channel 1 input, and so on.
-  int status = board->GetWave( 0, channel*2, waveform );
+  int status = board->GetWave( 0, channel * 2, waveform );
 
   if( status ){
     throw std::runtime_error( "Error running DRSBoard::GetWave" );
   }
 
-  return std::vector<float>( waveform, waveform + len );
+  return std::vector<float>( waveform, waveform+len );
 }
+
 
 /**
  * @brief Returning the latest collected waveform at specified channel in a
  * hex-string format.
  *
  * Each waveforma value is converted to a (signed) 16bit integer with 1bit
- * representing 0.1mV. The 16bit integer is then converted into hex-string format
- * and returned.
+ * representing 0.1mV. The 16bit integer is then converted into hex-string
+ * format and returned.
  */
 std::string
-DRSContainer::WaveformStr( const unsigned channel )
+DRSContainer::WaveformStr( const unsigned channel
+  )
 {
-  const auto waveform   = GetWaveform( channel );
-  const unsigned length = std::min( (unsigned)board->GetChannelDepth()
-                                  , samples );
+  const auto     waveform   = GetWaveform( channel );
+  const unsigned length = std::min( (unsigned)board->GetChannelDepth(),
+    samples );
   std::string ans( 4 * length, '\0' );
 
   for( unsigned i = 0; i < length; ++i ){
     // Converting to 16 bit with 0.1mV as a ADC value.
     const int16_t raw = waveform[i] / 0.1;
-    const int8_t dig0 = ( raw >> 12 ) & 0xf;
-    const int8_t dig1 = ( raw >> 8 )  & 0xf;
-    const int8_t dig2 = ( raw >> 4 )  & 0xf;
-    const int8_t dig3 = raw & 0xf;
-    ans[4*i+0] = dig0 <= 9 ? '0' + dig0 : 'a' + ( dig0 % 10 );
-    ans[4*i+1] = dig1 <= 9 ? '0' + dig1 : 'a' + ( dig1 % 10 );
-    ans[4*i+2] = dig2 <= 9 ? '0' + dig2 : 'a' + ( dig2 % 10 );
-    ans[4*i+3] = dig3 <= 9 ? '0' + dig3 : 'a' + ( dig3 % 10 );
+    const int8_t  dig0 = ( raw >> 12 ) & 0xf;
+    const int8_t  dig1 = ( raw >> 8 )  & 0xf;
+    const int8_t  dig2 = ( raw >> 4 )  & 0xf;
+    const int8_t  dig3 = raw & 0xf;
+    ans[4 * i+0] = dig0 <= 9 ? '0'+dig0 : 'a'+( dig0 % 10 );
+    ans[4 * i+1] = dig1 <= 9 ? '0'+dig1 : 'a'+( dig1 % 10 );
+    ans[4 * i+2] = dig2 <= 9 ? '0'+dig2 : 'a'+( dig2 % 10 );
+    ans[4 * i+3] = dig3 <= 9 ? '0'+dig3 : 'a'+( dig3 % 10 );
   }
 
   return ans;
 }
 
+
 /**
  * @brief Returning the waveform of a given channel summed over the integration
  * window, with a pedestal subtraction if needed.
  *
- * The integration window and pedestal window is specified by sample indices, so
- * you will need to calculate the required window from the timing information.
- * The return will be single double for the waveform area in units of mV x ns.
- * Notice that timing information will *NOT* be used, as we simply assuming
- * perfect temporal spacing between the sampled values.
+ * The integration window and pedestal window is specified by sample indices,
+ * so you will need to calculate the required window from the timing
+ * information. The return will be single double for the waveform area in units
+ * of mV x ns. Notice that timing information will *NOT* be used, as we simply
+ * assuming perfect temporal spacing between the sampled values.
  *
  * In case you do not want to to perform pedestal subtraction, the starting the
  * stopping indices to the same value.
  */
 double
 DRSContainer::WaveformSum( const unsigned channel,
-                           const unsigned _intstart,
-                           const unsigned _intstop,
-                           const unsigned _pedstart,
-                           const unsigned _pedstop )
+  const unsigned                          _intstart,
+  const unsigned                          _intstop,
+  const unsigned                          _pedstart,
+  const unsigned                          _pedstop
+  )
 {
-  const auto waveform   = GetWaveform( channel );
+  const auto     waveform   = GetWaveform( channel );
   const unsigned maxlen = board->GetChannelDepth();
-  double pedvalue       = 0;
+  double         pedvalue       = 0;
 
   // Getting the pedestal value if required
   if( _pedstart != _pedstop ){
@@ -221,25 +230,26 @@ DRSContainer::WaveformSum( const unsigned channel,
       pedvalue += waveform[i];
     }
 
-    pedvalue /= (double)( pedstop - pedstart );
+    pedvalue /= (double)( pedstop-pedstart );
   }
 
   // Running the additional parsing.
   const unsigned intstart = std::max( unsigned(0), _intstart );
   const unsigned intstop  = std::min( maxlen, _intstop );
 
-  double ans             = 0;
-  const double timeslice = 1.0/GetRate();
+  double       ans             = 0;
+  const double timeslice = 1.0 / GetRate();
 
   for( unsigned i = intstart; i < intstop; ++i ){
     ans += waveform[i];
   }
 
-  ans -= pedvalue * ( intstop - intstart );
+  ans -= pedvalue * ( intstop-intstart );
   ans *= -timeslice;// Negative to correct pulse direction
 
   return ans;
 }
+
 
 /**
  * @brief Printing the latest buffer collection results on the screen for
@@ -249,11 +259,12 @@ DRSContainer::WaveformSum( const unsigned channel,
  * waveform summation will not use the timing information.
  */
 void
-DRSContainer::DumpBuffer( const unsigned channel )
+DRSContainer::DumpBuffer( const unsigned channel
+  )
 {
   static const std::string head = GREEN( "[DRSBUFFER]" );
 
-  char print_line[256];// Display string;
+  char       print_line[256];// Display string;
   const auto waveform   = GetWaveform( channel );
   const auto time_array = GetTimeArray( channel );
 
@@ -272,6 +283,7 @@ DRSContainer::DumpBuffer( const unsigned channel )
   printmsg( "" );
 }
 
+
 /**
  * @brief Setting the trigger
  *
@@ -281,9 +293,10 @@ DRSContainer::DumpBuffer( const unsigned channel )
  */
 void
 DRSContainer::SetTrigger( const unsigned channel,
-                          const double   level,
-                          const unsigned direction,
-                          const double   delay  )
+  const double                           level,
+  const unsigned                         direction,
+  const double                           delay
+  )
 {
   CheckAvailable();
   board->EnableTrigger( 1, 0 );// Using hardware trigger
@@ -305,6 +318,7 @@ DRSContainer::SetTrigger( const unsigned channel,
   usleep( 500 );
 }
 
+
 /**
  * @brief Getting the trigger channel stored in object.
  */
@@ -313,6 +327,7 @@ DRSContainer::TriggerChannel()
 {
   return triggerchannel;
 }
+
 
 /**
  * @brief Getting the trigger direction stored in object.
@@ -323,6 +338,7 @@ DRSContainer::TriggerDirection()
   return triggerdirection;
 }
 
+
 /**
  * @brief Getting the trigger delay in the DRS instance.
  */
@@ -331,6 +347,7 @@ DRSContainer::TriggerDelay()
 {
   return triggerdelay;
 }
+
 
 /**
  * @brief Getting the trigger level stored in object
@@ -341,17 +358,21 @@ DRSContainer::TriggerLevel()
   return triggerlevel;
 }
 
+
 /**
- * @brief Setting the data sampling rate. Notice that this will not be the real
- * sampling rate, the DRS will automatically round to the closest available
- * value.
+ * @brief Setting the data sampling rate.
+ *
+ * Notice that this will not be the real sampling rate, the DRS will
+ * automatically round to the closest available value.
  */
 void
-DRSContainer::SetRate( const double x )
+DRSContainer::SetRate( const double x
+  )
 {
   CheckAvailable();
   board->SetFrequency( x, true );
 }
+
 
 /**
  * @brief Getting the true sampling rate
@@ -367,6 +388,7 @@ DRSContainer::GetRate()
   return ans;
 }
 
+
 /**
  * @brief Getting the number of sample to store.
  */
@@ -376,14 +398,17 @@ DRSContainer::GetSamples()
   return std::min( (unsigned)board->GetChannelDepth(), samples );
 }
 
+
 /**
  * @brief Setting the number of values to store by default
  */
 void
-DRSContainer::SetSamples( const unsigned x )
+DRSContainer::SetSamples( const unsigned x
+  )
 {
   samples = x;
 }
+
 
 /**
  * @brief Starting a single-shot collection request.
@@ -395,6 +420,7 @@ DRSContainer::StartCollect()
   board->StartDomino();
 }
 
+
 /**
  * @brief Forcing the collection to stop.
  */
@@ -404,6 +430,7 @@ DRSContainer::ForceStop()
   CheckAvailable();
   board->SoftTrigger();
 }
+
 
 /**
  * @brief Checking that a DRS4 is available for operation. Throw exception if
@@ -417,6 +444,7 @@ DRSContainer::CheckAvailable() const
   }
 }
 
+
 /**
  * @brief True/False flag for whether the DRS4 is available for operation.
  */
@@ -425,6 +453,7 @@ DRSContainer::IsAvailable() const
 {
   return drs != nullptr && board != nullptr;
 }
+
 
 /**
  * @brief Simple check for whether data collection has finished.
@@ -435,11 +464,14 @@ DRSContainer::IsReady()
   return !board->IsBusy();
 }
 
+
 /**
  * @brief Simple wrapper function for running the calibration at the current
- * settings. This C++ function will assume that the DRS is in a correct
- * configuration to be calibrated (all inputs disconnected). Additional user
- * instructions will be handled by the python part.
+ * settings.
+ *
+ * This C++ function will assume that the DRS is in a correct configuration to
+ * be calibrated (all inputs disconnected). Additional user instructions will
+ * be handled by the python part.
  */
 void
 DRSContainer::RunCalib()
@@ -448,7 +480,8 @@ DRSContainer::RunCalib()
   class DummyCallback : public DRSCallback
   {
 public:
-    virtual void Progress( int ){};// Do nothing
+    virtual void Progress( int ){};
+    // Do nothing
   };
 
   CheckAvailable();
@@ -470,7 +503,9 @@ public:
     TriggerDelay() );// 0 nanosecond delay by default.
 }
 
+
 IMPLEMENT_SINGLETON( DRSContainer );
+
 DRSContainer::DRSContainer() :
   board( nullptr )
 {}

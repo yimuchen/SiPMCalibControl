@@ -26,30 +26,34 @@ struct GCoder
 
   // Motion command abstraction
   std::string GetSettings() const;
-  void        SendHome( bool x, bool y, bool z );
-  void        SetSpeedLimit( float x = std::nanf(""),
-                             float y = std::nanf(""),
-                             float z = std::nanf("") );
-  void MoveTo( float      x          = std::nanf(""),
-               float      y          = std::nanf(""),
-               float      z          = std::nanf(""),
-               const bool verbose    = false );
+  void SendHome( bool x, bool y, bool z );
+  void EnableStepper( bool x, bool y, bool z );
+  void DisableStepper( bool x, bool y, bool z );
+  bool InMotion( float x, float y, float z );
+
+  void SetSpeedLimit( float x = std::nanf(""),
+                      float y = std::nanf(""),
+                      float z = std::nanf("") );
+
+  void MoveTo( float      x       = std::nanf(""),
+               float      y       = std::nanf(""),
+               float      z       = std::nanf(""),
+               const bool verbose = false );
+
   void MoveToRaw( float      x       = std::nanf(""),
                   float      y       = std::nanf(""),
                   float      z       = std::nanf(""),
                   const bool verbose = false );
-  void EnableStepper( bool x, bool y, bool z );
-  void DisableStepper( bool x, bool y, bool z );
-  bool InMotion( float x, float y, float z );
+
 
   // Floating point comparison.
   static bool MatchCoord( double x, double y );
 
 public:
-  int         printer_IO;
-  float       opx, opy, opz; /** target position of the printer */
-  float       cx, cy, cz; /** current position of the printer */
-  float       vx, vy, vz; /** Speed of the gantry head. */
+  int printer_IO;
+  float opx, opy, opz;       /** target position of the printer */
+  float cx, cy, cz;       /** current position of the printer */
+  float vx, vy, vz;       /** Speed of the gantry head. */
   std::string dev_path;
 
   DECLARE_SINGLETON( GCoder );

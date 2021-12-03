@@ -10,9 +10,12 @@
  * Static single instance global class for handling the output loggings. Raw
  * escape ASCII code is used to handle vertical navigation of the output string.
  *
- * The update function functions is handled by a map of header string to the line
- * strings. Each time an update is requested, first the screen is scrubbed of the
- * stored contents based on the length of the of the stored string, the internals
+ * The update function functions is handled by a map of header string to the
+ *line
+ * strings. Each time an update is requested, first the screen is scrubbed of
+ *the
+ * stored contents based on the length of the of the stored string, the
+ *internals
  * map is updated, then for each line stored in the map, a new string is printed
  * onto the terminal. Notice this means that if the used mixes Update calls and
  * Print calls, the output may become mangled, and there probably isn't a easy
@@ -33,10 +36,10 @@ public:
 
 private:
   std::map<std::string, std::string> _update;
-  void screenclear_update();
-  void screenflush_update();
-  void screenprint_update();
-  FILE* outputptr;
+  void                               screenclear_update();
+  void                               screenflush_update();
+  void                               screenprint_update();
+  FILE*                              outputptr;
 };
 
 static Logger GlobalLogger;// global object
@@ -48,6 +51,7 @@ color( const std::string& str, const unsigned colorcode )
   sprintf( ans, "\033[1;%dm%s\033[0m", colorcode, str.c_str() );
   return ans;
 }
+
 
 /**
  * @brief Making the string green when printed in the terminal
@@ -87,6 +91,7 @@ update( const std::string& a, const std::string& b )
   GlobalLogger.Update( a, b );
 }
 
+
 /**
  * @brief Clearing all lines associated with updates.
  */
@@ -96,6 +101,7 @@ clear_update()
   GlobalLogger.ClearUpdate();
 }
 
+
 /**
  * @brief Forcing all update string to be printed on screen now.
  */
@@ -104,6 +110,7 @@ flush_update()
 {
   GlobalLogger.FlushUpdate();
 }
+
 
 /**
  * @brief Printing a message on screen with a standard header. This is
@@ -115,8 +122,10 @@ printmsg( const std::string& header, const std::string& x )
   GlobalLogger.PrintMessage( x, header );
 }
 
+
 /**
- * @brief Printing a message on screen. Notice that a new line will automatically
+ * @brief Printing a message on screen. Notice that a new line will
+ *automatically
  * be added at the end of the string..
  */
 void
@@ -125,9 +134,10 @@ printmsg( const std::string& x )
   GlobalLogger.PrintMessage( x );
 }
 
+
 /**
- * @brief Printing a message on screen with the standard yellow `[WARNING]` string at
- * the start of the line.
+ * @brief Printing a message on screen with the standard yellow `[WARNING]`
+ *string at the start of the line.
  */
 void
 printwarn( const std::string& x )
@@ -135,9 +145,10 @@ printwarn( const std::string& x )
   GlobalLogger.PrintMessage( x, YELLOW( "[WARNING]" ) );
 }
 
+
 /**
- * @brief Printing a message on screen with the standard red `[ERROR]` string at
- * the start of the line.
+ * @brief Printing a message on screen with the standard red `[ERROR]` string
+ * at the start of the line.
  */
 void
 printerr( const std::string& x )
@@ -145,17 +156,20 @@ printerr( const std::string& x )
   GlobalLogger.PrintMessage( x, RED( "[ERROR]" ) );
 }
 
+
 /**
- * @brief Setting the logging output to some specific file descriptor. Notice
- * this is not the FILE*, but the integer file descriptor used by the operating
- * system. This allows for non-standard files, such the stdout and stderr, or
- * other pseudo-file outputs to be used.
+ * @brief Setting the logging output to some specific file descriptor.
+ *
+ * Notice this is not the FILE*, but the integer file descriptor used by the
+ * operating system. This allows for non-standard files, such the stdout and
+ * stderr, or other pseudo-file outputs to be used.
  */
 void
 setloggingdescriptor( const int fd )
 {
   GlobalLogger.SetOutputDescriptor( fd );
 }
+
 
 /**
  * @brief Initialize to have output go to STDOUT.
@@ -165,6 +179,7 @@ Logger::Logger()
   outputptr = stdout;
 }
 
+
 /**
  * @brief Attempt to close the descriptor.
  */
@@ -172,6 +187,7 @@ Logger::~Logger()
 {
   fclose( outputptr );
 }
+
 
 /**
  * @brief Main function to call for update-like screen logging
@@ -183,6 +199,7 @@ Logger::Update( const std::string& key, const std::string& msg )
   _update[key] = msg;
   screenprint_update();
 }
+
 
 /**
  * @brief Main function to call for one-shot screen logging, new line is
@@ -199,6 +216,7 @@ Logger::PrintMessage( const std::string& msg, const std::string& header )
   fflush( outputptr );
 }
 
+
 /**
  * @brief Forcing update to be printed again.
  */
@@ -207,6 +225,7 @@ Logger::FlushUpdate()
 {
   Logger::screenprint_update();
 }
+
 
 /**
  * @brief Clearing the update outputs and clearing the internal storage.
@@ -218,6 +237,7 @@ Logger::ClearUpdate()
   _update.clear();
 }
 
+
 /**
  * @brief Clearing the screen of string stroed in update map.
  *
@@ -227,12 +247,12 @@ Logger::ClearUpdate()
 void
 Logger::screenclear_update()
 {
-  static const char prevline[] = "\033[A";
-  char clearline[1024]         = {0};
+  static const char prevline[]      = "\033[A";
+  char              clearline[1024] = {0};
 
   for( auto it = _update.rbegin(); it != _update.rend(); ++it ){
-    const auto& p               = *it;
-    const unsigned total_length = p.first.length() + p.second.length() + 1;
+    const auto&    p            = *it;
+    const unsigned total_length = p.first.length()+p.second.length()+1;
 
     for( unsigned i = 0; i < total_length; ++i ){
       clearline[i] = ' ';
@@ -243,6 +263,7 @@ Logger::screenclear_update()
     fflush( outputptr );
   }
 }
+
 
 /**
  * @brief Printing the current update cache onto the screen
@@ -255,6 +276,7 @@ Logger::screenprint_update()
     fflush( outputptr );
   }
 }
+
 
 /**
  * @brief Changing the file descriptor to write to.

@@ -62,11 +62,11 @@ static bool check_ack( const std::string& cmd, const std::string& msg );
 /**
  * @brief Initializing the communications interface.
  *
- * Low level instructions in the termios interface for setting up the read speed
- * and mode for the communicating with the printer over USB. This part of the
- * code currently considered black-magicm as most of the statements are copy from
- * [here][s-port], so do not edit statements containing the tty container unless
- * you are absolutely sure about what you are doing.
+ * Low level instructions in the termios interface for setting up the read
+ * speed and mode for the communicating with the printer over USB. This part of
+ * the code currently considered black-magicm as most of the statements are
+ * copy from [here][s-port], so do not edit statements containing the tty
+ * container unless you are absolutely sure about what you are doing.
  *
  * After initialization, the printer will always perform these 3 steps:
  * - Send the gantry back home and reset coordinates ot (0,0,0).
@@ -79,15 +79,17 @@ void
 GCoder::Init( const std::string& dev )
 {
   static const int speed = B115200;
-  struct termios tty;
-  char errormessage[2048];
+  struct termios   tty;
+  char             errormessage[2048];
 
   dev_path   = dev;
   printer_IO = open( dev.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK | O_ASYNC );
 
   if( printer_IO < 0 ){
     sprintf( errormessage,
-      "Failed to open printer IO [%d] %s", printer_IO, dev.c_str() );
+             "Failed to open printer IO [%d] %s",
+             printer_IO,
+             dev.c_str() );
     throw std::runtime_error( errormessage  );
   }
 
@@ -101,7 +103,8 @@ GCoder::Init( const std::string& dev )
 
   if( tcgetattr( printer_IO, &tty ) < 0 ){
     sprintf( errormessage,
-      "Error getting termios settings %s",  strerror( errno ) );
+             "Error getting termios settings %s",
+             strerror( errno ) );
     throw std::runtime_error( errormessage );
   }
 
@@ -116,7 +119,8 @@ GCoder::Init( const std::string& dev )
   tty.c_cflag &= ~CRTSCTS;// no hardware flowcontrol
 
   // setup for non-canonical mode
-  tty.c_iflag &= ~( IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON );
+  tty.c_iflag &=
+    ~( IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON );
   tty.c_lflag &= ~( ECHO | ECHONL | ICANON | ISIG | IEXTEN );
   tty.c_oflag &= ~OPOST;
 
@@ -142,6 +146,7 @@ GCoder::Init( const std::string& dev )
   return;
 }
 
+
 /**
  * @brief Main function abstraction for sending a gcode command to the session.
  *
@@ -149,42 +154,45 @@ GCoder::Init( const std::string& dev )
  * newline character. This function will parse the gcode string to the printer
  * via the defined interface, and pass the return string of the printer as the
  * return value. Notice that the function will check the return string for the
- * acknowledgement string ("ok" at the start of a line) to know that the command
- * has been executed by the printer. If this acknowledgement string is not
- * received after a wait period, then the command is tried again up to 10 times.
+ * acknowledgement string ("ok" at the start of a line) to know that the
+ * command has been executed by the printer. If this acknowledgement string is
+ * not received after a wait period, then the command is tried again up to 10
+ * times.
  *
- * Notice that exactly when the acknowledgement string is reported will depend on
- * the gcode command in question, and so later functions of abstracting gcode
- * commands should be responsible for choosing an appropriate timeout duration to
- * reduce multiple function calls.
+ * Notice that exactly when the acknowledgement string is reported will depend
+ * on the gcode command in question, and so later functions of abstracting
+ * gcode commands should be responsible for choosing an appropriate timeout
+ * duration to reduce multiple function calls.
  */
 std::string
-GCoder::RunGcode(
-  const std::string& gcode,
-  const unsigned     attempt,
-  const unsigned     waitack,
-  const bool         verbose ) const
+GCoder::RunGcode( const std::string& gcode,
+                  const unsigned     attempt,
+                  const unsigned     waitack,
+                  const bool         verbose ) const
 {
   using namespace std::chrono;
 
   // static variables
-  static const unsigned maxtry     = 10;
-  static const unsigned buffersize = 65536;
-  static const std::string msghead = GREEN( "[GCODE-SEND]" );
+  static const unsigned    maxtry     = 10;
+  static const unsigned    buffersize = 65536;
+  static const std::string msghead    = GREEN( "[GCODE-SEND]" );
 
   // Readout data
-  char buffer[buffersize];
-  char msg[1024];
-  int readlen;
+  char        buffer[buffersize];
+  char        msg[1024];
+  int         readlen;
   std::string ackstr = "";
-  bool awk           = false;
+  bool        awk    = false;
 
   // Pretty output
   std::string pstring = gcode;
   pstring[pstring.length()-1] = '\0';// Getting rid of trailing new line
 
-  sprintf( msg, "[%s] to USBTERM[%d] (attempt %u)...",
-    pstring.c_str(), printer_IO, attempt );
+  sprintf( msg,
+           "[%s] to USBTERM[%d] (attempt %u)...",
+           pstring.c_str(),
+           printer_IO,
+           attempt );
 
   if( printer_IO < 0 ){
     throw std::runtime_error( "Printer is not available for commands" );
@@ -192,9 +200,11 @@ GCoder::RunGcode(
 
   if( attempt >= maxtry ){
     sprintf( msg,
-      "ACK string for command [%s] was not received after [%d] attempts!"
-      " The message could be dropped or there is something wrong with"
-      " the printer!", pstring.c_str(), maxtry );
+             "ACK string for command [%s] was not received after [%d] attempts!"
+             " The message could be dropped or there is something wrong with"
+             " the printer!",
+             pstring.c_str(),
+             maxtry );
     throw std::runtime_error( msg );
   }
 
@@ -208,7 +218,7 @@ GCoder::RunGcode(
 
   // Checking the output for the acknowledge/completion return
   do {
-    readlen = read( printer_IO, buffer, sizeof( buffer ) - 1 );
+    readlen = read( printer_IO, buffer, sizeof( buffer )-1 );
 
     if( readlen > 0 ){
       buffer[readlen] = 1;
@@ -230,7 +240,7 @@ GCoder::RunGcode(
 
     // Flushing the printer buffer after executing the command.
     while( readlen > 0 ){
-      readlen = read( printer_IO, buffer, sizeof( buffer ) -1 );
+      readlen = read( printer_IO, buffer, sizeof( buffer )-1 );
       std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
     }
 
@@ -258,7 +268,7 @@ GCoder::RunGcode(
 static bool
 check_ack( const std::string& cmd, const std::string& msg )
 {
-  auto has_substr = []( const std::string& str, const std::string& sub)->bool {
+  auto has_substr = []( const std::string& str, const std::string& sub )->bool {
                       return str.find( sub ) != std::string::npos;
                     };
   if( !has_substr( msg, "ok" ) ){ return false; }
@@ -311,14 +321,15 @@ GCoder::SendHome( bool x, bool y, bool z )
   clear_update();
 }
 
+
 /**
  * @brief Disabling the stepper motors.
  *
  * The power supply of the gantry is rather noisy, causing issues with the
- * readout system. Disabling the stepper closes the relevant power supplies while
- * the gantry still remembers where it is, at the cost of less stability of the
- * gantry position. Python will be handling for disabling the stepper motors when
- * readout systems are invoked.
+ * readout system. Disabling the stepper closes the relevant power supplies
+ * while the gantry still remembers where it is, at the cost of less stability
+ * of the gantry position. Python will be handling for disabling the stepper
+ * motors when readout systems are invoked.
  */
 void
 GCoder::DisableStepper( bool x, bool y, bool z )
@@ -333,6 +344,7 @@ GCoder::DisableStepper( bool x, bool y, bool z )
     RunGcode( "M18 Z E\n", 0, 1e5, false );
   }
 }
+
 
 /**
  * @brief Enabling the stepper motors.
@@ -353,6 +365,7 @@ GCoder::EnableStepper( bool x, bool y, bool z )
   }
 }
 
+
 /**
  * @brief Getting a list of settings a the string reported by the gantry.
  */
@@ -361,6 +374,7 @@ GCoder::GetSettings() const
 {
   return RunGcode( "M503\n" );
 }
+
 
 /**
  * @brief Setting the motion speed limit (in units of mm/s)
@@ -381,11 +395,11 @@ GCoder::GetSettings() const
 void
 GCoder::SetSpeedLimit( float x, float y, float z )
 {
-  static const char gcode1_fmt[] = "M203 X%.2f Y%.2f Z%.2f\n";
-  static const char gcode2_fmt[] = "G0 F%.2f\n";
-  static const float maxv        = 200.0;// Setting the maximum speed
-  static const float maxz        = 30.0;// Maximum speed for z axis
-  char gcode[1024];
+  static const char  gcode1_fmt[] = "M203 X%.2f Y%.2f Z%.2f\n";
+  static const char  gcode2_fmt[] = "G0 F%.2f\n";
+  static const float maxv         = 200.0;// Setting the maximum speed
+  static const float maxz         = 30.0;// Maximum speed for z axis
+  char               gcode[1024];
 
   // NAN detection.
   if( x != x ){ x = vx; }
@@ -400,7 +414,7 @@ GCoder::SetSpeedLimit( float x, float y, float z )
   RunGcode( gcode, 0, 1e5, false );
 
   const float vmax = std::max( std::max( x, y ), z );
-  sprintf( gcode, gcode2_fmt, vmax*60  );
+  sprintf( gcode, gcode2_fmt, vmax * 60  );
   RunGcode( gcode, 0, 1e5, false );
 
   vx = x;
@@ -408,11 +422,12 @@ GCoder::SetSpeedLimit( float x, float y, float z )
   vz = z;
 }
 
+
 /**
  * @brief Sending the command for linear motion.
  *
- * This is a very simple interface for the linear motion G0 command, here we will
- * do very minimal parsing on the coordinates:
+ * This is a very simple interface for the linear motion G0 command, here we
+ * will do very minimal parsing on the coordinates:
  *
  * - Make sure that the (x,y,z) coordinates are within physical limitations.
  * - Round the coordinates to the closest 0.1 mm value.
@@ -424,8 +439,8 @@ GCoder::SetSpeedLimit( float x, float y, float z )
 void
 GCoder::MoveToRaw( float x, float y, float z, bool verbose )
 {
-  static const std::string msghead = GREEN( "[GANTRYPOS]" );
-  static const char move_fmt[]     = "G0 X%.1f Y%.1f Z%.1f\n";
+  static const std::string msghead    = GREEN( "[GANTRYPOS]" );
+  static const char        move_fmt[] = "G0 X%.1f Y%.1f Z%.1f\n";
 
   char gcode[128];
 
@@ -444,7 +459,7 @@ GCoder::MoveToRaw( float x, float y, float z, bool verbose )
       opy < 0 || opy > max_y() ||
       opz < 0 || opz > max_z() ){
     printwarn( "Coordinates is outside of gantry limit! Moving the "
-      "destination back into reasonable limits." );
+               "destination back into reasonable limits." );
     if( opx < 0 || opx > max_x() ){
       opx = std::max( std::min( opx, max_x() ), 0.0f );
     }
@@ -464,14 +479,15 @@ GCoder::MoveToRaw( float x, float y, float z, bool verbose )
   return;
 }
 
+
 /**
  * @brief Checking whether the gantry has completed the motion to a set of
  * coordinates.
  *
- * The file description interface used for communicating with the gantry does not
- * play well with other interfaces when used as a continuous stream. So rather
- * than having the file interface suspend the thread while the gantry is in
- * motion, we opt to have the gantry perfrom simple one-off checks, and have
+ * The file description interface used for communicating with the gantry does
+ * not play well with other interfaces when used as a continuous stream. So
+ * rather than having the file interface suspend the thread while the gantry is
+ * in motion, we opt to have the gantry perfrom simple one-off checks, and have
  * thread suspension be handled by the higher interfaces.
  *
  * The function will only return false (gantry has completed motion) if the
@@ -488,12 +504,18 @@ bool
 GCoder::InMotion( float x, float y, float z )
 {
   float temp;// feed position of extruder.
-  int check;
+  int   check;
   try {
     const std::string checkmsg = RunGcode( "M114\n" );
     check = sscanf( checkmsg.c_str(),
-      "X:%f Y:%f Z:%f E:%f Count X:%f Y:%f Z:%f",
-      &opx, &opy, &opz, &temp, &cx, &cy, &cz );
+                    "X:%f Y:%f Z:%f E:%f Count X:%f Y:%f Z:%f",
+                    &opx,
+                    &opy,
+                    &opz,
+                    &temp,
+                    &cx,
+                    &cy,
+                    &cz );
   } catch( std::exception& e ){
     return true;
   }
@@ -508,6 +530,7 @@ GCoder::InMotion( float x, float y, float z )
     return true;
   }
 }
+
 
 /**
  * @brief Simple abstraction of the motion command to ensure motion safety.
@@ -536,6 +559,7 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
   }
 }
 
+
 /**
  * @brief Simple function to check if two coordinate values are identical, with
  * the gantry resolution of 0.1 mm
@@ -549,11 +573,11 @@ GCoder::MatchCoord( double x, double y )
   return x == y;
 }
 
-GCoder::GCoder() :
-  printer_IO( -1 ),
-  opx( -1 ),
-  opy( -1 ),
-  opz( -1 )
+
+GCoder::GCoder() : printer_IO( -1 ),
+  opx                        ( -1 ),
+  opy                        ( -1 ),
+  opz                        ( -1 )
 {};
 
 GCoder::~GCoder()
@@ -564,5 +588,6 @@ GCoder::~GCoder()
   }
   printf( "Gantry system closed\n" );
 }
+
 
 IMPLEMENT_SINGLETON( GCoder );

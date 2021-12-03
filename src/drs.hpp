@@ -58,13 +58,13 @@ public:
 private:
   // Variables for handling the various handles.
   std::unique_ptr<DRS> drs;
-  DRSBoard* board;
+  DRSBoard*            board;
 
   // Time samples
-  double triggerlevel;
+  double   triggerlevel;
   unsigned triggerchannel;
-  int triggerdirection;
-  double triggerdelay;
+  int      triggerdirection;
+  double   triggerdelay;
   unsigned samples;
 
   DECLARE_SINGLETON( DRSContainer );
