@@ -103,9 +103,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>ForceStop</b> ()</td>
 <tr class="memitem:abe43936afad4e00e5c3cea3d88896340"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDRSContainer.html#abe43936afad4e00e5c3cea3d88896340">SetTrigger</a> (const unsigned channel, const double level, const unsigned direction, const double delay)</td></tr>
 <tr class="memdesc:abe43936afad4e00e5c3cea3d88896340"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setting the trigger.  <a href="classDRSContainer.html#abe43936afad4e00e5c3cea3d88896340">More...</a><br /></td></tr>
 <tr class="separator:abe43936afad4e00e5c3cea3d88896340"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a57caf2363876a5c99b9338a3e74ea301"><td class="memItemLeft" align="right" valign="top"><a id="a57caf2363876a5c99b9338a3e74ea301" name="a57caf2363876a5c99b9338a3e74ea301"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>SetRate</b> (const double frequency)</td></tr>
-<tr class="memdesc:a57caf2363876a5c99b9338a3e74ea301"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setting the data sampling rate. Notice that this will not be the real sampling rate, the DRS will automatically round to the closest available value. <br /></td></tr>
+<tr class="memitem:a57caf2363876a5c99b9338a3e74ea301"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDRSContainer.html#a57caf2363876a5c99b9338a3e74ea301">SetRate</a> (const double frequency)</td></tr>
+<tr class="memdesc:a57caf2363876a5c99b9338a3e74ea301"><td class="mdescLeft">&#160;</td><td class="mdescRight">Setting the data sampling rate.  <a href="classDRSContainer.html#a57caf2363876a5c99b9338a3e74ea301">More...</a><br /></td></tr>
 <tr class="separator:a57caf2363876a5c99b9338a3e74ea301"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a22af517cf74630c1e60ec26bbb66e6"><td class="memItemLeft" align="right" valign="top"><a id="a1a22af517cf74630c1e60ec26bbb66e6" name="a1a22af517cf74630c1e60ec26bbb66e6"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>SetSamples</b> (const unsigned)</td></tr>
@@ -132,9 +131,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>SetSamples</b> (const
 <tr class="memitem:adeb8f913db7deb7377f7899209f484bc"><td class="memItemLeft" align="right" valign="top"><a id="adeb8f913db7deb7377f7899209f484bc" name="adeb8f913db7deb7377f7899209f484bc"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>TimeSlice</b> (const unsigned channel)</td></tr>
 <tr class="separator:adeb8f913db7deb7377f7899209f484bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4f73a736ee08f7a6de87650b865085b"><td class="memItemLeft" align="right" valign="top"><a id="af4f73a736ee08f7a6de87650b865085b" name="af4f73a736ee08f7a6de87650b865085b"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>RunCalib</b> ()</td></tr>
-<tr class="memdesc:af4f73a736ee08f7a6de87650b865085b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simple wrapper function for running the calibration at the current settings. This C++ function will assume that the DRS is in a correct configuration to be calibrated (all inputs disconnected). Additional user instructions will be handled by the python part. <br /></td></tr>
+<tr class="memitem:af4f73a736ee08f7a6de87650b865085b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDRSContainer.html#af4f73a736ee08f7a6de87650b865085b">RunCalib</a> ()</td></tr>
+<tr class="memdesc:af4f73a736ee08f7a6de87650b865085b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simple wrapper function for running the calibration at the current settings.  <a href="classDRSContainer.html#af4f73a736ee08f7a6de87650b865085b">More...</a><br /></td></tr>
 <tr class="separator:af4f73a736ee08f7a6de87650b865085b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af73272346abe0aa7ab5a23aab40ac2b5"><td class="memItemLeft" align="right" valign="top"><a id="af73272346abe0aa7ab5a23aab40ac2b5" name="af73272346abe0aa7ab5a23aab40ac2b5"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>TriggerChannel</b> ()</td></tr>
@@ -312,6 +310,43 @@ static std::unique_ptr&lt; <a class="el" href="classDRSContainer.html">DRSContai
       </table>
 </div><div class="memdoc">
 <p >As the reference program is a bit verbose, here we reduce the input to what is needed for out single-shot operation. We also include explicit settings commented out to make sure future development doesn't open certain settings that is already known to cause issues by accident. </p>
+
+</div>
+</div>
+<a id="af4f73a736ee08f7a6de87650b865085b" name="af4f73a736ee08f7a6de87650b865085b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4f73a736ee08f7a6de87650b865085b">&#9670;&nbsp;</a></span>RunCalib()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void DRSContainer::RunCalib </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >This C++ function will assume that the DRS is in a correct configuration to be calibrated (all inputs disconnected). Additional user instructions will be handled by the python part. </p>
+
+</div>
+</div>
+<a id="a57caf2363876a5c99b9338a3e74ea301" name="a57caf2363876a5c99b9338a3e74ea301"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57caf2363876a5c99b9338a3e74ea301">&#9670;&nbsp;</a></span>SetRate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void DRSContainer::SetRate </td>
+          <td>(</td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>x</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >Notice that this will not be the real sampling rate, the DRS will automatically round to the closest available value. </p>
 
 </div>
 </div>

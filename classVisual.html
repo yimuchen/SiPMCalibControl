@@ -131,20 +131,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>SaveImage</b> (const 
 <tr class="memitem:aa6fa7214ef7b72a441af3274ffc07cc5"><td class="memItemLeft" align="right" valign="top"><a id="aa6fa7214ef7b72a441af3274ffc07cc5" name="aa6fa7214ef7b72a441af3274ffc07cc5"></a>
 std::vector&lt; uchar &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>GetImageBytes</b> ()</td></tr>
 <tr class="separator:aa6fa7214ef7b72a441af3274ffc07cc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a91676c34eb02387862935c452bcff0b0"><td class="memItemLeft" align="right" valign="top"><a id="a91676c34eb02387862935c452bcff0b0" name="a91676c34eb02387862935c452bcff0b0"></a>
-std::vector&lt; ContourList &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>FindContours</b> (const cv::Mat &amp;) const</td></tr>
-<tr class="memdesc:a91676c34eb02387862935c452bcff0b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given an base image, find the contours and group them according to the various selection criteria. The convex hull of all contours passing the selection criteria would be sorted by size (bounding box area). All contours found other than those that fail the size constrains will be returned, as they are useful for debugging parameters. <br /></td></tr>
+<tr class="memitem:a91676c34eb02387862935c452bcff0b0"><td class="memItemLeft" align="right" valign="top">std::vector&lt; ContourList &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classVisual.html#a91676c34eb02387862935c452bcff0b0">FindContours</a> (const cv::Mat &amp;) const</td></tr>
+<tr class="memdesc:a91676c34eb02387862935c452bcff0b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given an base image, find the contours and group them according to the various selection criteria.  <a href="classVisual.html#a91676c34eb02387862935c452bcff0b0">More...</a><br /></td></tr>
 <tr class="separator:a91676c34eb02387862935c452bcff0b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a067821b0c0b442f442757059365a74de"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structVisual_1_1VisResult.html">VisResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classVisual.html#a067821b0c0b442f442757059365a74de">MakeResult</a> (const cv::Mat &amp;, const Contour_t &amp;) const</td></tr>
 <tr class="memdesc:a067821b0c0b442f442757059365a74de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given the original image in cv::Mat format, and the candidate convexhull contour, compute all the information:  <a href="classVisual.html#a067821b0c0b442f442757059365a74de">More...</a><br /></td></tr>
 <tr class="separator:a067821b0c0b442f442757059365a74de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e93641ff63d0c20c124baf9019bf8d3"><td class="memItemLeft" align="right" valign="top"><a id="a5e93641ff63d0c20c124baf9019bf8d3" name="a5e93641ff63d0c20c124baf9019bf8d3"></a>
 cv::Mat&#160;</td><td class="memItemRight" valign="bottom"><b>MakeDisplay</b> (const cv::Mat &amp;, const std::vector&lt; ContourList &gt; &amp;) const</td></tr>
-<tr class="memdesc:a5e93641ff63d0c20c124baf9019bf8d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given the original image in cv::Mat format, and the sorted list of countors found. Display the processed image, with each different fail mode displayed in a different color for debugging. <br /></td></tr>
+<tr class="memdesc:a5e93641ff63d0c20c124baf9019bf8d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given the original image in cv::Mat format, and the sorted list of countors found, display the processed image, with each different fail mode displayed in a different color for debugging. <br /></td></tr>
 <tr class="separator:a5e93641ff63d0c20c124baf9019bf8d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ade5f606904c07440f14dc25d93c986a6"><td class="memItemLeft" align="right" valign="top"><a id="ade5f606904c07440f14dc25d93c986a6" name="ade5f606904c07440f14dc25d93c986a6"></a>
-ContourList&#160;</td><td class="memItemRight" valign="bottom"><b>GetRawContours</b> (const cv::Mat &amp;) const</td></tr>
-<tr class="memdesc:ade5f606904c07440f14dc25d93c986a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">The thresholding and contouring algorithm. An extra blur is applied to the gray-scaled image to avoid noise speckles from affecting the sharpness measure. <br /></td></tr>
+<tr class="memitem:ade5f606904c07440f14dc25d93c986a6"><td class="memItemLeft" align="right" valign="top">ContourList&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classVisual.html#ade5f606904c07440f14dc25d93c986a6">GetRawContours</a> (const cv::Mat &amp;) const</td></tr>
+<tr class="memdesc:ade5f606904c07440f14dc25d93c986a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">The thresholding and contouring algorithm.  <a href="classVisual.html#ade5f606904c07440f14dc25d93c986a6">More...</a><br /></td></tr>
 <tr class="separator:ade5f606904c07440f14dc25d93c986a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75b46c542684091db55c9889ce4dfdc1"><td class="memItemLeft" align="right" valign="top"><a id="a75b46c542684091db55c9889ce4dfdc1" name="a75b46c542684091db55c9889ce4dfdc1"></a>
 Contour_t&#160;</td><td class="memItemRight" valign="bottom"><b>GetConvexHull</b> (const Contour_t &amp;) const</td></tr>
@@ -155,7 +153,7 @@ Contour_t&#160;</td><td class="memItemRight" valign="bottom"><b>GetPolyApprox</b
 <tr class="memdesc:ab29ab1579667f002294add26897acf01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Abstraction for getting a polygon approximation. <br /></td></tr>
 <tr class="separator:ab29ab1579667f002294add26897acf01"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aceee7d9db78cceeccd7a4f5fe19b95b1"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classVisual.html#aceee7d9db78cceeccd7a4f5fe19b95b1">GetImageLumi</a> (const cv::Mat &amp;, const Contour_t &amp;) const</td></tr>
-<tr class="memdesc:aceee7d9db78cceeccd7a4f5fe19b95b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given the the original image and a contour of interest. computed the luminosity of the internal area. Here we use the conversion to luminosity using the formula found here:  <a href="classVisual.html#aceee7d9db78cceeccd7a4f5fe19b95b1">More...</a><br /></td></tr>
+<tr class="memdesc:aceee7d9db78cceeccd7a4f5fe19b95b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given the the original image and a contour of interest, computed the luminosity of the internal area.  <a href="classVisual.html#aceee7d9db78cceeccd7a4f5fe19b95b1">More...</a><br /></td></tr>
 <tr class="separator:aceee7d9db78cceeccd7a4f5fe19b95b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a60e32aa20fc5c512d3fd820083e8df39"><td class="memItemLeft" align="right" valign="top">std::pair&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classVisual.html#a60e32aa20fc5c512d3fd820083e8df39">sharpness</a> (const cv::Mat &amp;, const cv::Rect &amp;) const</td></tr>
 <tr class="memdesc:a60e32aa20fc5c512d3fd820083e8df39"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given the original image and a rectangular region of interest, compute the sharpness measure.  <a href="classVisual.html#a60e32aa20fc5c512d3fd820083e8df39">More...</a><br /></td></tr>
@@ -246,6 +244,25 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><b>loop_mutex</b><
 <tr class="separator:ab0f1b08986621bcc51985e679bbbc548"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a91676c34eb02387862935c452bcff0b0" name="a91676c34eb02387862935c452bcff0b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a91676c34eb02387862935c452bcff0b0">&#9670;&nbsp;</a></span>FindContours()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; Visual::ContourList &gt; Visual::FindContours </td>
+          <td>(</td>
+          <td class="paramtype">const cv::Mat &amp;&#160;</td>
+          <td class="paramname"><em>img</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >The convex hull of all contours passing the selection criteria would be sorted by size (bounding box area). All contours found other than those that fail the size constrains will be returned, as they are useful for debugging parameters. </p>
+
+</div>
+</div>
 <a id="af7735b790d77eaf33bfe3dd49e84c167" name="af7735b790d77eaf33bfe3dd49e84c167"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af7735b790d77eaf33bfe3dd49e84c167">&#9670;&nbsp;</a></span>GetImage()</h2>
 
@@ -290,7 +307,26 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><b>loop_mutex</b><
         </tr>
       </table>
 </div><div class="memdoc">
-<p ><a href="https://en.wikipedia.org/wiki/Relative_luminance">https://en.wikipedia.org/wiki/Relative_luminance</a> </p>
+<p >Here we use the conversion to luminosity using the formula found here: <a href="https://en.wikipedia.org/wiki/Relative_luminance">https://en.wikipedia.org/wiki/Relative_luminance</a> </p>
+
+</div>
+</div>
+<a id="ade5f606904c07440f14dc25d93c986a6" name="ade5f606904c07440f14dc25d93c986a6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade5f606904c07440f14dc25d93c986a6">&#9670;&nbsp;</a></span>GetRawContours()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; Visual::Contour_t &gt; Visual::GetRawContours </td>
+          <td>(</td>
+          <td class="paramtype">const cv::Mat &amp;&#160;</td>
+          <td class="paramname"><em>img</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >An extra blur is applied to the gray-scaled image to avoid noise speckles from affecting the sharpness measure. </p>
 
 </div>
 </div>
