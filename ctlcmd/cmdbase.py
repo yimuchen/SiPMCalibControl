@@ -103,14 +103,14 @@ class controlterm(cmd.Cmd):
     For the sake of declutering the interface, documentations of the commands in
     the interface will be kept brief. Go to the official operator manual if you
     are unsure which command/options you should used for you data collection needs:
-    https://yimuchen.github.io/SiPMCalibControl/group__cli.html
+    https://umdcms.github.io/SiPMCalibControl/index.html/group__cli.html
     """
 
   doc_header = """
     For the sake of declutering the interface, documentations of the commands in
     the interface will be kept brief. Go to the official operator manual if you
     are unsure which command/options you should used for you data collection needs:
-    https://yimuchen.github.io/SiPMCalibControl/group__cli.html
+    https://umdcms.github.io/SiPMCalibControl/index.html/group__cli.html
 
     Below is a list of commands available to the be used. For the detailed
     arguments available for each command, type "help <cmd>".
