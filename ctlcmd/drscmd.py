@@ -13,9 +13,7 @@ class drsset(cmdbase.controlcmd):
     self.parser.add_argument('--triggerchannel',
                              type=int,
                              help="""
-                             Index representing which channel to trigger on. See
-                             the outputs of "get --drs" for the available
-                             numbers""")
+                             Index representing which channel to trigger on.""")
     self.parser.add_argument('--triggerdirection',
                              type=int,
                              help="""

@@ -38,22 +38,18 @@ public:
                            const unsigned pedstop  = -1 );
 
   // Debugging methods
-  void DumpBuffer( const unsigned channel );
-  void TimeSlice( const unsigned channel );
-
-  void RunCalib();
-
+  void     DumpBuffer( const unsigned channel );
+  void     TimeSlice( const unsigned channel );
+  void     RunCalib();
   int      TriggerChannel();
   int      TriggerDirection();
   double   TriggerDelay();
   double   TriggerLevel();
   double   GetRate();
   unsigned GetSamples();
-
-
-  bool IsAvailable() const;
-  bool IsReady();
-  void CheckAvailable() const;
+  bool     IsAvailable() const;
+  bool     IsReady();
+  void     CheckAvailable() const;
 
 private:
   // Variables for handling the various handles.
@@ -66,7 +62,6 @@ private:
   int      triggerdirection;
   double   triggerdelay;
   unsigned samples;
-
   DECLARE_SINGLETON( DRSContainer );
 };
 

@@ -23,6 +23,7 @@ public:
   void SetPWM( const unsigned channel,
                const double   duty_cycle,
                const double   frequency );
+
   // Only storing the duty cycle for external reference.
   float GetPWM( unsigned channel );
 
@@ -39,7 +40,7 @@ public:
   static constexpr unsigned trigger_pin = 21;// PHYS PIN 40
   static constexpr unsigned light_pin   = 26; // PHYS PIN 37
   static constexpr unsigned spare_pin   = 20; // PHYS PIN 38
-
+  // Helper
   static constexpr unsigned READ  = 0;
   static constexpr unsigned WRITE = 1;
   static constexpr unsigned LOW   = 0;
@@ -51,6 +52,7 @@ public:
   static constexpr int IO_FAILED   = -1;
   static constexpr int NORMAL_PTR  = 0;
 
+  // ADC Range setting code
   static const uint8_t ADS_RANGE_6V;
   static const uint8_t ADS_RANGE_4V;
   static const uint8_t ADS_RANGE_2V;
@@ -58,6 +60,7 @@ public:
   static const uint8_t ADS_RANGE_p5V;
   static const uint8_t ADS_RANGE_p25V;
 
+  // ADC sampling rate code
   static const uint8_t ADS_RATE_8SPS;
   static const uint8_t ADS_RATE_16SPS;
   static const uint8_t ADS_RATE_32SPS;
@@ -66,20 +69,17 @@ public:
   static const uint8_t ADS_RATE_250SPS;
   static const uint8_t ADS_RATE_475SPS;
   static const uint8_t ADS_RATE_860SPS;
-
-  bool StatusGPIO() const;
-  bool StatusADC() const;
-  bool StatusPWM() const;
+  bool                 StatusGPIO() const;
+  bool                 StatusADC() const;
+  bool                 StatusPWM() const;
 
 private:
-  static int  InitGPIOPin( const int pin, const unsigned direction );
-  static void CloseGPIO( const int pin );
-  static int  GPIORead( const int fd );
-  static void GPIOWrite( const int fd, const unsigned val );
-
-  void InitPWM();
-  void ClosePWM();
-
+  static int           InitGPIOPin( const int pin, const unsigned direction );
+  static void          CloseGPIO( const int pin );
+  static int           GPIORead( const int fd );
+  static void          GPIOWrite( const int fd, const unsigned val );
+  void                 InitPWM();
+  void                 ClosePWM();
   static constexpr int ads_default_address = 0x48;
   static int           InitI2C();
   void                 PushADCSetting();
@@ -102,13 +102,11 @@ private:
   int pwm_period[2];
 
   // Storing present duty cycle settings .
-  float pwm_duty_value[2];
-
+  float   pwm_duty_value[2];
   uint8_t adc_range;
   uint8_t adc_rate;
   uint8_t adc_channel;
-
-  float reference_voltage[4];
+  float   reference_voltage[4];
 
   // I2C interface continuous streaming.
   std::atomic<bool> i2c_flush;

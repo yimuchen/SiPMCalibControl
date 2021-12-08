@@ -12,7 +12,7 @@ PYBIND11_MODULE( visual, m )
   .def( "FrameHeight",   &Visual::FrameHeight  )
   .def( "get_latest",    &Visual::GetVisResult )
   .def( "SaveImage",     &Visual::SaveImage    )
-  .def( "GetImageBytes", [](Visual& vis ){
+  .def( "GetImageBytes", []( Visual& vis ){
     // Inline conversion to python bytes
     const auto cbytes = vis.GetImageBytes();
     std::string sbytes( cbytes.begin(), cbytes.end() );
@@ -22,7 +22,8 @@ PYBIND11_MODULE( visual, m )
     // Inline conversion of cv::Mat to numpy arrays
     cv::Mat img = vis.GetImage( raw );
     return pybind11::array_t<unsigned char>(
-      {img.rows, img.cols, 3}, img.data );
+      {img.rows, img.cols, 3},
+      img.data );
   } )
   .def_readonly(  "dev_path",     &Visual::dev_path     )
   .def_readwrite( "threshold",    &Visual::threshold    )

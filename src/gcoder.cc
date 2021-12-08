@@ -52,6 +52,7 @@
 const float GCoder::_max_x = 345;
 const float GCoder::_max_y = 200;
 const float GCoder::_max_z = 460;
+
 /** @} */
 
 /**
@@ -79,8 +80,9 @@ void
 GCoder::Init( const std::string& dev )
 {
   static const int speed = B115200;
-  struct termios   tty;
-  char             errormessage[2048];
+
+  struct termios tty;
+  char           errormessage[2048];
 
   dev_path   = dev;
   printer_IO = open( dev.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK | O_ASYNC );
@@ -104,7 +106,8 @@ GCoder::Init( const std::string& dev )
   if( tcgetattr( printer_IO, &tty ) < 0 ){
     sprintf( errormessage,
              "Error getting termios settings %s",
-             strerror( errno ) );
+             strerror(
+               errno ) );
     throw std::runtime_error( errormessage );
   }
 
@@ -140,6 +143,7 @@ GCoder::Init( const std::string& dev )
 
   // Setting speed to be as fast as possible
   SetSpeedLimit( 1000, 1000, 1000 );
+
   // Setting acceleration to 3x the factory default:
   RunGcode( "M201 X1000 Y1000 Z300\n", 0, 1e5, false );
 
@@ -200,9 +204,9 @@ GCoder::RunGcode( const std::string& gcode,
 
   if( attempt >= maxtry ){
     sprintf( msg,
-             "ACK string for command [%s] was not received after [%d] attempts!"
-             " The message could be dropped or there is something wrong with"
-             " the printer!",
+             "ACK string for command [%s] was not received after [%d] attempts!
+              The message could be dropped or there is something wrong with
+              the printer!",
              pstring.c_str(),
              maxtry );
     throw std::runtime_error( msg );
@@ -445,9 +449,15 @@ GCoder::MoveToRaw( float x, float y, float z, bool verbose )
   char gcode[128];
 
   // Setting up target position
-  opx = ( x == x ) ? x : opx;
-  opy = ( y == y ) ? y : opy;
-  opz = ( z == z ) ? z : opz;
+  opx = ( x == x ) ?
+        x :
+        opx;
+  opy = ( y == y ) ?
+        y :
+        opy;
+  opz = ( z == z ) ?
+        z :
+        opz;
 
   // Rounding to closest 0.1 (precision of gantry system)
   opx = std::round( opx * 10 ) / 10;
@@ -455,11 +465,11 @@ GCoder::MoveToRaw( float x, float y, float z, bool verbose )
   opz = std::round( opz * 10 ) / 10;
 
   // checking for boundary
-  if( opx < 0 || opx > max_x() ||
-      opy < 0 || opy > max_y() ||
-      opz < 0 || opz > max_z() ){
-    printwarn( "Coordinates is outside of gantry limit! Moving the "
-               "destination back into reasonable limits." );
+  if( opx < 0 || opx > max_x() || opy < 0 || opy > max_y() || opz < 0 ||
+      opz > max_z() ){
+    printwarn(
+      "Coordinates is outside of gantry limit! Moving the "
+      "destination back into reasonable limits." );
     if( opx < 0 || opx > max_x() ){
       opx = std::max( std::min( opx, max_x() ), 0.0f );
     }
@@ -507,24 +517,23 @@ GCoder::InMotion( float x, float y, float z )
   int   check;
   try {
     const std::string checkmsg = RunGcode( "M114\n" );
-    check = sscanf( checkmsg.c_str(),
-                    "X:%f Y:%f Z:%f E:%f Count X:%f Y:%f Z:%f",
-                    &opx,
-                    &opy,
-                    &opz,
-                    &temp,
-                    &cx,
-                    &cy,
-                    &cz );
+    check = sscanf(
+      checkmsg.c_str(),
+      "X:%f Y:%f Z:%f E:%f Count X:%f Y:%f Z:%f",
+      &opx,
+      &opy,
+      &opz,
+      &temp,
+      &cx,
+      &cy,
+      &cz );
   } catch( std::exception& e ){
     return true;
   }
 
   if( check != 7 ){return true;}
 
-  if( MatchCoord( x, cx ) &&
-      MatchCoord( y, cy ) &&
-      MatchCoord( z, cz ) ){
+  if( MatchCoord( x, cx ) && MatchCoord( y, cy ) && MatchCoord( z, cz ) ){
     return false;
   } else {
     return true;
@@ -574,11 +583,12 @@ GCoder::MatchCoord( double x, double y )
 }
 
 
-GCoder::GCoder() : printer_IO( -1 ),
-  opx                        ( -1 ),
-  opy                        ( -1 ),
-  opz                        ( -1 )
-{};
+GCoder::GCoder() :
+  printer_IO( -1 ),
+  opx       ( -1 ),
+  opy       ( -1 ),
+  opz       ( -1 )
+{}
 
 GCoder::~GCoder()
 {

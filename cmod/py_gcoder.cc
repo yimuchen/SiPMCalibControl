@@ -4,11 +4,14 @@
 PYBIND11_MODULE( gcoder, m )
 {
   pybind11::class_<GCoder>( m, "GCoder" )
+
   // Explicity hiding the constructor instance, using just the instance method
   // for getting access to the singleton class.
-  .def( "instance",        &GCoder::instance
-      , pybind11::return_value_policy::reference  )
+  .def( "instance",
+        &GCoder::instance,
+        pybind11::return_value_policy::reference  )
   .def( "init",            &GCoder::Init          )
+
   // Hiding functions from python
   .def( "run_gcode",       &GCoder::RunGcode       )
   .def( "getsettings",     &GCoder::GetSettings    )
