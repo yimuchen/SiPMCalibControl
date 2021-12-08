@@ -8,18 +8,16 @@
  * @ingroup Logger
  *
  * Static single instance global class for handling the output loggings. Raw
- * escape ASCII code is used to handle vertical navigation of the output string.
+ * escape ASCII code is used to handle vertical navigation of the output
+ * string.
  *
  * The update function functions is handled by a map of header string to the
- *line
- * strings. Each time an update is requested, first the screen is scrubbed of
- *the
- * stored contents based on the length of the of the stored string, the
- *internals
- * map is updated, then for each line stored in the map, a new string is printed
- * onto the terminal. Notice this means that if the used mixes Update calls and
- * Print calls, the output may become mangled, and there probably isn't a easy
- * way to get around this.
+ * line strings. Each time an update is requested, first the screen is scrubbed
+ * of the stored contents based on the length of the of the stored string, the
+ * internals map is updated, then for each line stored in the map, a new string
+ * is printed onto the terminal. Notice this means that if the used mixes
+ * Update calls and Print calls, the output may become mangled, and there
+ * probably isn't a easy way to get around this.
  */
 class Logger
 {
@@ -56,29 +54,25 @@ color( const std::string& str, const unsigned colorcode )
 /**
  * @brief Making the string green when printed in the terminal
  */
-std::string
-GREEN( const std::string& str )
+std::string GREEN( const std::string& str )
 { return color( str, 32 ); }
 
 /**
  * @brief Making the string yellow when printed in the terminal
  */
-std::string
-YELLOW( const std::string& str )
+std::string YELLOW( const std::string& str )
 { return color( str, 33 );}
 
 /**
  * @brief Making the string red when printed in the terminal
  */
-std::string
-RED( const std::string& str )
+std::string RED( const std::string& str )
 { return color( str, 31 ); }
 
 /**
  * @brief Making the string cyan when printed in the terminal
  */
-std::string
-CYAN( const std::string& str )
+std::string CYAN( const std::string& str )
 { return color( str, 36 ); }
 
 
@@ -124,9 +118,10 @@ printmsg( const std::string& header, const std::string& x )
 
 
 /**
- * @brief Printing a message on screen. Notice that a new line will
- *automatically
- * be added at the end of the string..
+ * @brief Printing a message on screen.
+ *
+ * Notice that a new line will automatically be added at the end of the
+ * string.
  */
 void
 printmsg( const std::string& x )
@@ -137,7 +132,7 @@ printmsg( const std::string& x )
 
 /**
  * @brief Printing a message on screen with the standard yellow `[WARNING]`
- *string at the start of the line.
+ * string at the start of the line.
  */
 void
 printwarn( const std::string& x )

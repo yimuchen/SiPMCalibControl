@@ -1,11 +1,10 @@
-#include <pybind11/pybind11.h>
 #include "gpio.hpp"
+#include <pybind11/pybind11.h>
 
 PYBIND11_MODULE( gpio, m )
 {
   pybind11::class_<GPIO>( m, "GPIO"  )
-  .def( "instance",    &GPIO::instance
-      , pybind11::return_value_policy::reference  )
+  .def( "instance", &GPIO::instance, pybind11::return_value_policy::reference  )
   .def( "init",        &GPIO::Init                )
   .def( "pulse",       &GPIO::Pulse               )
   .def( "light_on",    &GPIO::LightsOn            )
@@ -21,6 +20,7 @@ PYBIND11_MODULE( gpio, m )
   .def( "gpio_status", &GPIO::StatusGPIO          )
   .def( "adc_status",  &GPIO::StatusADC           )
   .def( "pwm_status",  &GPIO::StatusPWM           )
+
   // Static variables
   .def_readonly_static( "ADS_RANGE_6V",    &GPIO::ADS_RANGE_6V )
   .def_readonly_static( "ADS_RANGE_4V",    &GPIO::ADS_RANGE_4V )

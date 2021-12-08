@@ -33,20 +33,20 @@ static const cv::Scalar green( 100, 255, 100 );
 static const cv::Scalar white( 255, 255, 255 );
 
 // Setting OPENCV into silent mode
-static const auto __dummy_settings
-  = cv::utils::logging::setLogLevel( cv::utils::logging::LOG_LEVEL_SILENT );
-
-
-Visual::Visual() : cam (),
-  run_loop             ( false )
+static const auto __dummy_settings = cv::utils::logging::setLogLevel(
+  cv::utils::logging::LOG_LEVEL_SILENT );
+Visual::Visual() :
+  cam      (),
+  run_loop ( false )
 {
   InitVarDefault();
   StartLoopThread();
 }
 
 
-Visual::Visual( const std::string& dev ) : cam (),
-  run_loop                                     ( false )
+Visual::Visual( const std::string& dev ) :
+  cam      (),
+  run_loop ( false )
 {
   init_dev( dev );
   InitVarDefault();
@@ -82,12 +82,12 @@ Visual::init_dev( const std::string& dev )
   if( !cam.isOpened() ){// check if we succeeded
     throw std::runtime_error( "Cannot open webcam" );
   }
+
   // Additional camera settings
   cam.set( cv::CAP_PROP_FRAME_WIDTH,  1280 );
   cam.set( cv::CAP_PROP_FRAME_HEIGHT, 1024 );
   cam.set( cv::CAP_PROP_BUFFERSIZE,   1 );// Reducing buffer for fast capture
   cam.set( cv::CAP_PROP_SHARPNESS,    0 );// disable postprocess sharpening.
-
   StartLoopThread();
 }
 
@@ -140,7 +140,6 @@ Visual::FrameHeight() const
  * stopping of the loop is also simple.
  *
  ******************************************************************************/
-
 /**
  * @brief The method used for running the loop.
  *
@@ -160,25 +159,21 @@ Visual::RunMainLoop( std::atomic<bool>& run_loop )
                     return st::duration_cast<st::microseconds>(
                       st::high_resolution_clock::now().time_since_epoch()).count();
                   };
-
-  while( run_loop == true ){
-    const size_t time_start = get_time();
-    size_t       time_end   = get_time();
-
-    loop_mutex.lock();
-
-    do {
-      cam >> image;
-    } while( ( image.empty() || image.cols == 0 ) && cam.isOpened() );
-
-    latest = FindDetector( image );
-    loop_mutex.unlock();
-
-    while( time_end-time_start < 5e3 ){
-      std::this_thread::sleep_for( st::milliseconds( 1 ) );
-      time_end = get_time();
-    }
-  }
+  while( run_loop == true ){const size_t time_start = get_time();
+                            size_t       time_end   = get_time();
+                            loop_mutex.lock();
+                            do {
+                              cam >> image;
+                            } while( ( image.empty() || image.cols == 0 ) &&
+                                     cam.isOpened() );
+                            latest = FindDetector( image );
+                            loop_mutex.unlock();
+                            while( time_end-time_start <
+                                   5e3 ){std::this_thread::sleep_for( st::milliseconds(
+                                                                        1 ) );
+                                         time_end =
+                                           get_time();
+                            }}
 }
 
 
@@ -234,15 +229,15 @@ Visual::GetVisResult()
 cv::Mat
 Visual::GetImage( const bool raw )
 {
-  static const cv::Mat blank_frame(
-    cv::Size( FrameWidth(), FrameHeight() ),
-    CV_8UC3, cv::Scalar( 0, 0, 0 ) );
-
+  static const cv::Mat blank_frame( cv::Size( FrameWidth(), FrameHeight() ),
+                                    CV_8UC3, cv::Scalar( 0, 0, 0 ) );
   loop_mutex.lock();
-  cv::Mat ans_mat = ( display.empty() || display.cols == 0 ) ? blank_frame :
-                    raw ? image : display;
+  cv::Mat ans_mat = ( display.empty() || display.cols == 0 ) ?
+                    blank_frame :
+                    raw ?
+                    image :
+                    display;
   loop_mutex.unlock();
-
   return ans_mat;
 }
 
@@ -308,7 +303,6 @@ Visual::GetImageBytes()
  * for arbitrary levels of debugging and feature demonstration.
  *
  *******************************************************************************/
-
 /**
  * @brief Default values of the algorithm
  *
@@ -328,26 +322,25 @@ Visual::InitVarDefault()
 
 /**
  * @brief Given image in cv::Mat format. Compute the visual algorithm results
- * and
- * stored in a processed version of the image in the internal buffer.
+ * and stored in a processed version of the image in the internal buffer.
  */
 Visual::VisResult
 Visual::FindDetector( const cv::Mat& img )
 {
-  static const VisResult empty_return = VisResult { -1, -1, 0, 0, 0,
-                                                    0, 0, 0, 0,
-                                                    0, 0, 0, 0 };
+  static const VisResult empty_return =
+    VisResult { -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
   // Early exits if image is not found.
   if( img.empty() || img.cols == 0 ){
     return empty_return;
   }
-
   const auto  contours = FindContours( img );
   const auto& hulls    = contours.at( 0 );
-
-  const auto ans = hulls.empty() ? empty_return :
-                   MakeResult( img, hulls.at( 0 ) );
+  const auto  ans      = hulls.empty() ?
+                         empty_return :
+                         MakeResult( img,
+                                     hulls.at(
+                                       0 ) );
   display = MakeDisplay( img, contours );
   return ans;
 }
@@ -373,38 +366,32 @@ Visual::FindContours( const cv::Mat& img ) const
 
   // Calculating all contour properties
   for( const auto& cont : contours ){
-    const double size = GetContourSize( cont );
-    if( size < size_cutoff ){ continue; }
-
+    const double size = GetContourSize(
+      cont );
+    if( size < size_cutoff ){
+      continue;
+    }
     const cv::Rect bound = cv::boundingRect( cont );
     const double   ratio = (double)bound.height / (double)bound.width;
     if( ratio > ratio_cutoff || ratio < 1. / ratio_cutoff ){
       failed_ratio.push_back( cont );
       continue;
     }
-
     const double lumi = GetImageLumi( img, cont );
     if( lumi > lumi_cutoff ){
       failed_lumi.push_back( cont );
       continue;
     }
-
     const Contour_t hull = GetConvexHull( cont );
     const Contour_t poly = GetPolyApprox( hull );
     if( poly.size() != 4 ){
       failed_rect.push_back( cont );
       continue;
     }
-
     hulls.push_back( hull );
   }
-
   std::sort( hulls.begin(), hulls.end(), Visual::CompareContourSize );
-
-  return { hulls,
-           failed_rect,
-           failed_lumi,
-           failed_ratio };
+  return { hulls, failed_rect, failed_lumi, failed_ratio };
 }
 
 
@@ -429,24 +416,13 @@ Visual::MakeResult( const cv::Mat& img, const Visual::Contour_t& hull ) const
   const cv::Rect  bound        = cv::boundingRect( hull );
   const cv::Rect  double_bound = cv::Rect( bound.x-bound.width / 2,
                                            bound.y-bound.height / 2,
-                                           bound.width * 2,
-                                           bound.height * 2 );
+                                           bound.width * 2, bound.height * 2 );
   const auto p = sharpness( img, double_bound );
-
-  return VisResult {
-    m.m10 / m.m00, m.m01 / m.m00,
-    p.second,
-    p.first,
-    m.m00, distmax,
-    poly.at( 0 ).x,
-    poly.at( 1 ).x,
-    poly.at( 2 ).x,
-    poly.at( 3 ).x,
-    poly.at( 0 ).y,
-    poly.at( 1 ).y,
-    poly.at( 2 ).y,
-    poly.at( 3 ).y,
-  };
+  return VisResult {m.m10 / m.m00, m.m01 / m.m00, p.second, p.first, m.m00,
+                    distmax, poly.at( 0 ).x, poly.at( 1 ).x, poly.at( 2 ).x,
+                    poly.at( 3 ).x,
+                    poly.at( 0 ).y, poly.at( 1 ).y, poly.at( 2 ).y,
+                    poly.at( 3 ).y, };
 }
 
 
@@ -461,27 +437,20 @@ Visual::MakeDisplay( const cv::Mat&                          img,
 {
   // Drawing variables
   char    msg[1024];
-  cv::Mat ret = img.clone();
-
-  auto PlotContourList = [this, &ret]( const Visual::ContourList& list,
-                                       const cv::Scalar& color ) -> void {
-                           for( unsigned i = 0; i < list.size(); ++i ){
-                             cv::drawContours( ret, list, i, color );
-                           }
-                         };
-
-  auto PlotText = [this, &ret]( const std::string& str,
-                                const cv::Point& pos,
-                                const cv::Scalar& col ) -> void {
-                    cv::putText( ret,
-                                 str,
-                                 pos,
-                                 cv::FONT_HERSHEY_SIMPLEX,
-                                 0.8,
-                                 col,
-                                 2 );
-                  };
-
+  cv::Mat ret             = img.clone();
+  auto    PlotContourList =
+    [this, &ret]( const Visual::ContourList& list,
+                  const cv::Scalar& color )->void {
+      for( unsigned i = 0; i < list.size(); ++i ){
+        cv::drawContours( ret, list, i, color );
+      }
+    };
+  auto PlotText =
+    [this, &ret]( const std::string& str, const cv::Point& pos,
+                  const cv::Scalar& col )->void {
+      cv::putText( ret, str, pos, cv::FONT_HERSHEY_SIMPLEX, 0.8,
+                   col, 2 );
+    };
   PlotContourList( contlist.at( 0 ), cyan   );
   PlotContourList( contlist.at( 1 ), white );
   PlotContourList( contlist.at( 2 ), green );
@@ -496,15 +465,13 @@ Visual::MakeDisplay( const cv::Mat&                          img,
     const double y   = res.y;
     const double s2  = res.sharpness_m2;
     const double s4  = res.sharpness_m4;
-
-    sprintf( msg, "x:%.1lf y:%.1lf",                   x, y ),
-    sprintf( msg, "x:%.1lf y:%.1lf s2:%.2lf s4:%.2lf", x, y, s2, s4 ),
+    sprintf( msg, "x:%.1lf y:%.1lf",                   x, y ), sprintf( msg,
+                                                                        "x:%.1lf y:%.1lf s2:%.2lf s4:%.2lf", x, y, s2,
+                                                                        s4 ),
     cv::drawContours( ret, contlist.at( 0 ), 0, red, 3 );
     cv::circle( ret, cv::Point( x, y ), 3, red, cv::FILLED );
     PlotText( msg, cv::Point( 20, 20 ), red );
-  }
-
-  return ret;
+  } return ret;
 }
 
 
@@ -524,18 +491,9 @@ Visual::GetRawContours( const cv::Mat& img ) const
   // Standard image processing.
   cv::cvtColor( img, gray_img, cv::COLOR_BGR2GRAY );
   cv::blur( gray_img, gray_img, cv::Size( blur_range, blur_range ) );
-  cv::threshold( gray_img,
-                 gray_img,
-                 threshold,
-                 255,
-                 cv::THRESH_BINARY );
-  cv::findContours( gray_img,
-                    contours,
-                    hierarchy,
-                    cv::RETR_TREE,
-                    cv::CHAIN_APPROX_SIMPLE,
-                    cv::Point( 0, 0 ) );
-
+  cv::threshold( gray_img, gray_img, threshold, 255, cv::THRESH_BINARY );
+  cv::findContours( gray_img, contours, hierarchy, cv::RETR_TREE,
+                    cv::CHAIN_APPROX_SIMPLE, cv::Point( 0, 0 ) );
   return contours;
 }
 
@@ -552,16 +510,10 @@ Visual::GetImageLumi( const cv::Mat& img, const Contour_t& cont ) const
 {
   // Expecting the internals of the photosensor to be dark.
   const std::vector<Contour_t> v_cont = { cont };
-
-  cv::Mat mask = cv::Mat::zeros( img.size(), CV_8UC1 );
-
+  cv::Mat                      mask   = cv::Mat::zeros( img.size(), CV_8UC1 );
   cv::drawContours( mask, v_cont, 0, 255, cv::FILLED );
-
   const cv::Scalar meancol = cv::mean( img, mask );
-
-  return 0.2126 * meancol[0]
-         +0.7152 * meancol[1]
-         +0.0722 * meancol[2];
+  return 0.2126 * meancol[0]+0.7152 * meancol[1]+0.0722 * meancol[2];
 }
 
 
@@ -573,7 +525,6 @@ Visual::CompareContourSize( const Contour_t& x, const Contour_t& y )
 {
   const cv::Rect x_bound = cv::boundingRect( x );
   const cv::Rect y_bound = cv::boundingRect( y );
-
   return x_bound.area() > y_bound.area();
 }
 
@@ -598,9 +549,7 @@ Visual::GetPolyApprox( const Contour_t& x ) const
 {
   Contour_t    ans;
   const double size = GetContourSize( x );
-
   cv::approxPolyDP( x, ans, size * poly_range, true );
-
   return ans;
 }
 
@@ -625,13 +574,11 @@ Visual::GetContourMaxMeasure( const Contour_t& x ) const
 {
   // Maximum distance in contour
   double ans = 0;
-
   for( const auto& p1 : x ){
     for( const auto& p2 : x ){
       ans = std::max( ans, cv::norm( p2-p1 ) );
     }
   }
-
   return ans;
 }
 
@@ -659,19 +606,16 @@ Visual::sharpness( const cv::Mat& img, const cv::Rect& crop ) const
 
   // Getting green channel image image converting to gray scale cv::split( img,
   // cimg ); cimg[1].convertTo( fimg, CV_32FC1 );
-
   // Creating the crops
   if( crop.width == 0 || crop.height == 0 ){
     return std::pair<double, double>( 0, 0 );
   }
 
   // Cropping to range sometimes is bad... not sure why just yet
-  try {
-    bimg = bimg( crop ).clone();
+  try {bimg = bimg( crop ).clone();
   } catch( cv::Exception& e ){
     return std::pair<double, double>( 0, 0 );
   }
-
   cv::blur( bimg, bimg, cv::Size( 2, 2 ) );
 
   // Calculating lagrangian
@@ -680,7 +624,6 @@ Visual::sharpness( const cv::Mat& img, const cv::Rect& crop ) const
   // Calculating the 2nd and 4th moment
   mu = cv::mean( lap );
   double mo2 = 0, mo4 = 0;
-
   for( int r = 0; r < lap.rows; ++r ){
     for( int c = 0; c < lap.cols; ++c ){
       const double val  = lap.at<double>( r, c );
@@ -689,9 +632,7 @@ Visual::sharpness( const cv::Mat& img, const cv::Rect& crop ) const
       mo4 += diff * diff * diff * diff;
     }
   }
-
   mo2 /= lap.rows * lap.cols;
   mo4 /= lap.rows * lap.cols;
-
   return std::pair<double, double>( mo4 / ( mo2 * mo2 ), mo2 );
 }

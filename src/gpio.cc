@@ -52,8 +52,7 @@
  * [1] https://stackoverflow.com/questions/1599459/optimal-lock-file-method
  */
 static int
-open_with_lock( char* path, int mode
-  )
+open_with_lock( char*path, int mode )
 {
   char errmsg[1024];
   int  fd = open( path, mode );
@@ -61,6 +60,7 @@ open_with_lock( char* path, int mode
     sprintf( errmsg, "Failed to open path [%s]", path );
     throw std::runtime_error( errmsg );
   }
+
   // Attempting to exclusively lock the file so that this processes uniquely has
   // write access to the GPIO interface.  The _lock will be non-zero if the
   // processes cannot create the lock instance
@@ -100,8 +100,7 @@ open_with_lock( char* path, int mode
  * command. The return value will be the successfully opened file descriptor.
  */
 int
-GPIO::InitGPIOPin( const int pin, const unsigned direction
-  )
+GPIO::InitGPIOPin( const int pin, const unsigned direction )
 {
   static constexpr unsigned buffer_length = 35;
   unsigned                  write_length;
@@ -109,32 +108,46 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction
   char                      path[buffer_length];
   char                      errmsg[1024];
   int                       fd = open_with_lock( "/sys/class/gpio/export",
-    O_WRONLY );
+                                                 O_WRONLY );
   write_length = snprintf( buffer, buffer_length, "%u", pin );
   write( fd, buffer, write_length );
   close( fd );
+
   // Small pause for system settings to settle
   std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+
   // Getting the direction path
   snprintf( path, buffer_length, "/sys/class/gpio/gpio%d/direction", pin );
+
   // Waiting for the /sysfs to generated the corresponding file
   while( access( path, F_OK ) == -1 ){
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
   }
-  fd = ( direction == READ ) ? open_with_lock( path, O_WRONLY ) :
-    open_with_lock( path, O_WRONLY );
+  fd = ( direction == READ ) ?
+       open_with_lock( path, O_WRONLY ) :
+       open_with_lock(
+    path,
+    O_WRONLY );
   int status = write( fd,
-    direction == READ ? "in" : "out",
-    direction == READ ? 2    : 3 );
+                      direction == READ ?
+                      "in" :
+                      "out",
+                      direction == READ ?
+                      2    :
+                      3 );
   if( status == IO_FAILED ){
     sprintf( errmsg, "Failed to set gpio [%d] direction!", pin );
     throw std::runtime_error( errmsg );
   }
   close( fd );
+
   // Opening GPIO PIN
   snprintf( path, buffer_length, "/sys/class/gpio/gpio%d/value", pin );
-  fd = ( direction == READ ) ? open_with_lock( path, O_RDONLY ) :
-    open_with_lock( path, O_WRONLY );
+  fd = ( direction == READ ) ?
+       open_with_lock( path, O_RDONLY ) :
+       open_with_lock(
+    path,
+    O_WRONLY );
   return fd;
 }
 
@@ -143,8 +156,7 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction
  * @brief Reading from a GPIO initialized file descriptor
  */
 int
-GPIO::GPIORead( const int fd
-  )
+GPIO::GPIORead( const int fd )
 {
   char value_str[3];
   if( read( fd, value_str, 3 ) == IO_FAILED ){
@@ -158,10 +170,13 @@ GPIO::GPIORead( const int fd
  * @brief Writing to a GPIO initialized file descriptor
  */
 void
-GPIO::GPIOWrite( const int fd, const unsigned val
-  )
+GPIO::GPIOWrite( const int fd, const unsigned val )
 {
-  if( write( fd, LOW == val ? "0" : "1", 1 ) == IO_FAILED ){
+  if( write( fd,
+             LOW == val ?
+             "0" :
+             "1",
+             1 ) == IO_FAILED ){
     throw std::runtime_error( "Failed to write gpio value!" );
   }
 }
@@ -173,14 +188,13 @@ GPIO::GPIOWrite( const int fd, const unsigned val
  * program.
  */
 void
-GPIO::CloseGPIO( const int pin
-  )
+GPIO::CloseGPIO( const int pin )
 {
   static constexpr unsigned buffer_length = 3;
   unsigned                  write_length;
   char                      buffer[buffer_length];
   int                       fd = open_with_lock( "/sys/class/gpio/unexport",
-    O_WRONLY );
+                                                 O_WRONLY );
   write_length = snprintf( buffer, buffer_length, "%d", pin );
   write( fd, buffer, write_length );
   close( fd );
@@ -194,8 +208,7 @@ GPIO::CloseGPIO( const int pin
  * down time. The fastest pulse rate is about 100 microseconds.
  */
 void
-GPIO::Pulse( const unsigned n, const unsigned wait
-  ) const
+GPIO::Pulse( const unsigned n, const unsigned wait ) const
 {
   if( gpio_trigger == OPEN_FAILED ){
     throw std::runtime_error( "GPIO for trigger pin is not initialized" );
@@ -287,39 +300,35 @@ GPIO::InitPWM()
   write( fd, "0", 1 );
   write( fd, "1", 1 );// Single write to enable interface
   close( fd );
+
   // Waiting for the sysfs to generated the corresponding file
-  while( access( "/sys/class/pwm/pwmchip0/pwm0/enable", F_OK ) ==
-    OPEN_FAILED ){
+  while( access( "/sys/class/pwm/pwmchip0/pwm0/enable", F_OK ) == OPEN_FAILED ){
     printf( "Waiting for /sys/class/pwm/pwmchip0/pwm0/enable" );
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
   }
-  while( access( "/sys/class/pwm/pwmchip0/pwm1/enable", F_OK ) ==
-    OPEN_FAILED ){
+  while( access( "/sys/class/pwm/pwmchip0/pwm1/enable", F_OK ) == OPEN_FAILED ){
     printf( "Waiting for /sys/class/pwm/pwmchip0/pwm1/enable" );
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
   }
+
   // Small loop to continuously try to open the PWM interface. If the interface
   // cannot be opened, an exception would have been raised at the start of the
   // function. But this requires a very long wait time for the open interface to
   // become available for some reason.
   do{
-    pwm_enable[0] = open( "/sys/class/pwm/pwmchip0/pwm0/enable",
-      O_WRONLY );
-    pwm_duty[0]   = open( "/sys/class/pwm/pwmchip0/pwm0/duty_cycle",
-      O_WRONLY );
-    pwm_period[0] = open( "/sys/class/pwm/pwmchip0/pwm0/period",
-      O_WRONLY );
-    pwm_enable[1] = open( "/sys/class/pwm/pwmchip0/pwm1/enable",
-      O_WRONLY );
-    pwm_duty[1]   = open( "/sys/class/pwm/pwmchip0/pwm1/duty_cycle",
-      O_WRONLY );
-    pwm_period[1] = open( "/sys/class/pwm/pwmchip0/pwm1/period",
-      O_WRONLY );
+    pwm_enable[0] = open( "/sys/class/pwm/pwmchip0/pwm0/enable", O_WRONLY );
+    pwm_duty[0]   = open( "/sys/class/pwm/pwmchip0/pwm0/duty_cycle", O_WRONLY );
+    pwm_period[0] = open( "/sys/class/pwm/pwmchip0/pwm0/period", O_WRONLY );
+    pwm_enable[1] = open( "/sys/class/pwm/pwmchip0/pwm1/enable", O_WRONLY );
+    pwm_duty[1]   = open( "/sys/class/pwm/pwmchip0/pwm1/duty_cycle", O_WRONLY );
+    pwm_period[1] = open( "/sys/class/pwm/pwmchip0/pwm1/period", O_WRONLY );
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
   } while( pwm_enable[0] == UNOPENED || pwm_enable[0] == OPEN_FAILED );
+
   // Attempting to lock everything
-  for( int fd : {pwm_enable[0], pwm_duty[0], pwm_period[0],
-                 pwm_enable[1], pwm_duty[1], pwm_period[1]} ){
+  for( int fd :
+       {pwm_enable[0], pwm_duty[0], pwm_period[0], pwm_enable[1], pwm_duty[1],
+   pwm_period[1]} ){
     int lock = flock( fd, LOCK_EX | LOCK_NB );
     if( lock ){
       close( pwm_enable[0] );
@@ -328,8 +337,8 @@ GPIO::InitPWM()
       close( pwm_enable[1] );
       close( pwm_duty[1] );
       close( pwm_period[1] );
-      pwm_enable[0]   = pwm_duty[0] = pwm_period[0] =
-        pwm_enable[1] = pwm_duty[1] = pwm_period[1] = UNOPENED;
+      pwm_enable[0] = pwm_duty[0] = pwm_period[0] = pwm_enable[1] =
+        pwm_duty[1] = pwm_period[1] = UNOPENED;
       throw std::runtime_error( "Failed to lock PWM files" );
     }
   }
@@ -378,15 +387,13 @@ GPIO::ClosePWM()
  * invoked.
  */
 void
-GPIO::SetPWM( const unsigned c,
-  const double               dc,
-  const double               f
-  )
+GPIO::SetPWM( const unsigned c, const double dc, const double f )
 {
   // Limiting range
   const float    frequency  = std::min( 1e5, f );
   const float    duty_cycle = std::min( 1.0, std::max( 0.0, dc ) );
-  const unsigned channel = std::min( unsigned(1), c );
+  const unsigned channel    = std::min( unsigned(1), c );
+
   // Time is in units of nano seconds
   const unsigned period = 1e9 / frequency;
   const unsigned duty   = period * duty_cycle;
@@ -410,6 +417,7 @@ GPIO::SetPWM( const unsigned c,
     write( pwm_duty[channel],   duty_str,   duty_len   );
     write( pwm_enable[channel], "1",        1          );
   }
+
   // Storing the PWM value for external reference.
   pwm_duty_value[channel] = duty_cycle;
 }
@@ -419,8 +427,7 @@ GPIO::SetPWM( const unsigned c,
  * @brief Reading out the duty cycle for a given channel.
  */
 float
-GPIO::GetPWM( const unsigned c
-  )
+GPIO::GetPWM( const unsigned c )
 {
   const unsigned channel = std::min( unsigned(1), c );
   return pwm_duty_value[channel];
@@ -468,6 +475,7 @@ GPIO::InitI2C()
 {
   char errmsg[1024];
   int  fd = open_with_lock( "/dev/i2c-1", O_RDWR );
+
   // connect to ADS1115 as i2c slave
   if( ioctl( fd, I2C_SLAVE, 0x48 ) == IO_FAILED ){
     sprintf( errmsg, "Error: Couldn't find i2c device on address [%d]!", 0x48 );
@@ -478,8 +486,7 @@ GPIO::InitI2C()
 
 
 void
-GPIO::SetADCRange( const int range
-  )
+GPIO::SetADCRange( const int range )
 {
   if( adc_range  != range ){
     adc_range = range;
@@ -489,8 +496,7 @@ GPIO::SetADCRange( const int range
 
 
 void
-GPIO::SetADCRate( const int rate
-  )
+GPIO::SetADCRate( const int rate )
 {
   if( rate != adc_rate ){
     adc_rate = rate;
@@ -506,26 +512,28 @@ GPIO::SetADCRate( const int rate
 void
 GPIO::PushADCSetting()
 {
-  const uint8_t channel = ( adc_channel & 0x3 ) | ( 0x1 << 2 );
-  const uint8_t range   = ( adc_range & 0x7 );
-  const uint8_t rate    = ( adc_rate  & 0x7 );
+  const uint8_t channel         = ( adc_channel & 0x3 ) | ( 0x1 << 2 );
+  const uint8_t range           = ( adc_range & 0x7 );
+  const uint8_t rate            = ( adc_rate  & 0x7 );
   uint8_t       write_buffer[3] = {
     1,// First register bit is always 1,
     // Configuration byte 1
     // Always  | MUX bits     | PGA bits    | MODE (always continuous)
     // 1       | x    x    x  | x   x   x   | 0
     ( 0x1 << 7 | channel << 4 |  range << 1 | 0x0 ),
+
     // Configuration byte 0
     // DR bits |  COM BITS (Leave as default)
     // x x x   | 0 0  0 1 1
-    ( rate << 5  | 0b00011 )
-  };
+    ( rate << 5  | 0b00011 )};
   uint8_t       read_buffer[2] = {0};
+
   // Write and wait for OK signal.
   if( write( gpio_adc, write_buffer, 3 ) != 3 ){
     throw std::runtime_error( "Error writing setting to i2C device" );
   }
   std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+
   // Resetting to read mode
   read_buffer[0] = 0;
   if( write( gpio_adc, read_buffer, 1 ) != 1 ){
@@ -537,6 +545,7 @@ GPIO::PushADCSetting()
 /**
  * @brief Reading out the I2C interface at the current channel as a 16bit
  * number.
+ *
  * Conversion is handled by the flushing loop.
  */
 int16_t
@@ -552,14 +561,14 @@ GPIO::ADCReadRaw()
 
 /**
  * @brief The main loop for flushing the readout results into the the buffer.
+ *
  * Notice that the i2C readout will always be a single channel so the loop is
  * responsible for iterating the readout channel. The loop is continuously run
  * until the i2d_flush is set to false (when exiting the program or
  * re-initializing the i2c interface.)
  */
 void
-GPIO::FlushLoop( std::atomic<bool>& i2d_flush
-  )
+GPIO::FlushLoop( std::atomic<bool>& i2d_flush )
 {
   while( i2c_flush == true ){
     if( gpio_adc >= NORMAL_PTR ){
@@ -569,12 +578,17 @@ GPIO::FlushLoop( std::atomic<bool>& i2d_flush
           PushADCSetting();
           const int16_t adc   = ADCReadRaw();
           const uint8_t range = adc_range & 0x7;
-          const float   conv    = range == ADS_RANGE_6V  ? 6144.0 / 32678.0 :
-            range == ADS_RANGE_4V  ? 4096.0 / 32678.0 :
-            range == ADS_RANGE_2V  ? 2048.0 / 32678.0 :
-            range == ADS_RANGE_1V  ? 1024.0 / 32678.0 :
-            range == ADS_RANGE_p5V ?  512.0 / 32678.0 :
-            256.0 / 32678.0;
+          const float   conv  = range == ADS_RANGE_6V  ?
+                                6144.0 / 32678.0 :
+                                range == ADS_RANGE_4V  ?
+                                4096.0 / 32678.0 :
+                                range == ADS_RANGE_2V  ?
+                                2048.0 / 32678.0 :
+                                range == ADS_RANGE_1V  ?
+                                1024.0 / 32678.0 :
+                                range == ADS_RANGE_p5V ?
+                                512.0 / 32678.0  :
+                                256.0 / 32678.0;
           i2c_flush_array[channel] = adc * conv;
           std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
         } catch( std::exception& e ){
@@ -626,8 +640,7 @@ GPIO::CloseI2CFlush()
  * given channel in mV.
  */
 float
-GPIO::ReadADC( const unsigned channel
-  ) const
+GPIO::ReadADC( const unsigned channel ) const
 {
   return i2c_flush_array[channel];
 }
@@ -637,8 +650,7 @@ GPIO::ReadADC( const unsigned channel
  * @brief Reference voltage (in mV) for the voltage readout conversion.
  */
 void
-GPIO::SetReferenceVoltage( const unsigned channel, const float val
-  )
+GPIO::SetReferenceVoltage( const unsigned channel, const float val )
 {
   reference_voltage[channel] = val;
 }
@@ -659,15 +671,16 @@ GPIO::SetReferenceVoltage( const unsigned channel, const float val
  * The return will a temperature in units of C
  */
 float
-GPIO::ReadNTCTemp( const unsigned channel
-  ) const
+GPIO::ReadNTCTemp( const unsigned channel ) const
 {
   // Standard values for NTC resistors used in circuit;
   static const float T_0 = 25+273.15;
   static const float R_0 = 10000;
   static const float B   = 3500;
+
   // Standard operation values for biasing circuit
   static const float R_ref = 10000;
+
   // Dynamic convertion
   const float V_total = reference_voltage[channel];
   const float v       = ReadADC( channel );
@@ -691,19 +704,21 @@ GPIO::ReadNTCTemp( const unsigned channel
  * The return will a temperature in units of C
  */
 float
-GPIO::ReadRTDTemp( const unsigned channel
-  ) const
+GPIO::ReadRTDTemp( const unsigned channel ) const
 {
   // Typical value of RTDs in circuit
   static const float R_0 = 10000;
   static const float T_0 = 273.15;
   static const float a   = 0.003916;
+
   // standard operation values for biasing circuit
   static const float R_ref = 10000;
+
   // Dynamic conversion
   const float V_total = reference_voltage[channel];
   const float v       = ReadADC( channel );
   const float R       = R_ref * v / ( V_total-v );
+
   // Temperature conversion is simply
   // R = R_0 (1 + a (T - T0))
   return T_0+( R-R_0 ) / ( R_0 * a )-273.15;
@@ -722,13 +737,13 @@ GPIO::ReadRTDTemp( const unsigned channel
  *******************************************************************************/
 GPIO::GPIO() :
   gpio_trigger( UNOPENED ),
-  gpio_light( UNOPENED ),
-  gpio_spare( UNOPENED ),
-  gpio_adc( UNOPENED ),
-  adc_range( ADS_RANGE_4V ),
-  adc_rate( ADS_RATE_250SPS ),
-  adc_channel( 0 ),
-  i2c_flush( false )
+  gpio_light  ( UNOPENED ),
+  gpio_spare  ( UNOPENED ),
+  gpio_adc    ( UNOPENED ),
+  adc_range   ( ADS_RANGE_4V ),
+  adc_rate    ( ADS_RATE_250SPS ),
+  adc_channel ( 0 ),
+  i2c_flush   ( false )
 {
   pwm_enable[0] = UNOPENED;
   pwm_duty[0]   = UNOPENED;
@@ -773,6 +788,7 @@ GPIO::Init()
     // For local testing, this start the I2C monitoring flush even if
     // Something failed, (The ADC readout will just be a random stream)
     InitI2CFlush();
+
     // Passing error message onto higher functions
     throw e;
   }
@@ -818,8 +834,7 @@ GPIO::~GPIO()
 bool
 GPIO::StatusGPIO() const
 {
-  return gpio_trigger >= NORMAL_PTR &&
-         gpio_light   >= NORMAL_PTR &&
+  return gpio_trigger >= NORMAL_PTR && gpio_light   >= NORMAL_PTR &&
          gpio_spare   >= NORMAL_PTR;
 }
 
@@ -840,12 +855,9 @@ GPIO::StatusADC() const
 bool
 GPIO::StatusPWM() const
 {
-  return pwm_enable[0] >= NORMAL_PTR &&
-         pwm_duty[0]   >= NORMAL_PTR &&
-         pwm_period[0] >= NORMAL_PTR &&
-         pwm_enable[1] >= NORMAL_PTR &&
-         pwm_duty[1]   >= NORMAL_PTR &&
-         pwm_period[1] >= NORMAL_PTR;
+  return pwm_enable[0] >= NORMAL_PTR && pwm_duty[0]   >= NORMAL_PTR &&
+         pwm_period[0] >= NORMAL_PTR && pwm_enable[1] >= NORMAL_PTR &&
+         pwm_duty[1]   >= NORMAL_PTR && pwm_period[1] >= NORMAL_PTR;
 }
 
 

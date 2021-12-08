@@ -38,32 +38,30 @@ DRSContainer::Init()
 {
   char str[256];
   char errmsg[2048];
-
   drs = std::make_unique<DRS>();
   if( drs->GetError( str, sizeof( str ) ) ){
     drs = nullptr;
     sprintf( errmsg, "Error created DRS instance: %s", str );
     throw std::runtime_error( errmsg );
   }
-
   if( !drs->GetNumberOfBoards() ){
     throw std::runtime_error( "No DRS boards found" );
   }
+
   // Only getting the first board for now.
   board = drs->GetBoard( 0 );
   board->Init();
-
   printf( "Found DRS%d board on USB, serial #%04d, firmware revision %5d\n",
-    board->GetDRSType(),
-    board->GetBoardSerialNumber(),
-    board->GetFirmwareVersion() );
+          board->GetDRSType(),
+          board->GetBoardSerialNumber(),
+          board->GetFirmwareVersion() );
 
   // 2 microsecond sleep to allow for settings to settle down
   usleep( 2 );
+
   // Running the various common settings required for the SiPM calibration
   // board->SetChannelConfig( 0, 8, 8 );// 1024 binning
   board->SetFrequency( 2.0, true );// Running at target 2GHz sample rate.
-
   // DO NOT ENABLE TRANSPARENT MODE!!!
   // board->SetTranspMode( 1 );
   // board->SetDominoMode( 0 );// Singe shot mode
@@ -74,13 +72,11 @@ DRSContainer::Init()
 
   // DO NOT ENABLE INTERNAL CLOCK CALIBRATION!!
   // board->EnableTcal( 1 );
-
   // By default setting to use the external trigger
   SetTrigger( 4,// Channel external trigger
-    0.05,// Trigger on 0.05 voltage
-    1,// Rising edge
-    0 );// 0 nanosecond delay by default.
-
+              0.05,// Trigger on 0.05 voltage
+              1,// Rising edge
+              0 );// 0 nanosecond delay by default.
   // Additional two microsecond sleep for configuration to get through.
   usleep( 2 );
 }
@@ -98,12 +94,8 @@ void
 DRSContainer::WaitReady()
 {
   CheckAvailable();
-
-  while( board->IsBusy() ){
-    usleep( 2 );
-  }
-
-  board->TransferWaves( 0, 8 );// Flush all waveforms into buffer.
+  while( board->IsBusy() ){usleep( 2 );
+  } board->TransferWaves( 0, 8 );// Flush all waveforms into buffer.
 }
 
 
@@ -118,15 +110,12 @@ DRSContainer::WaitReady()
  * display. The timing returned is in units of nanoseconds.
  */
 std::vector<float>
-DRSContainer::GetTimeArray( const unsigned channel
-  )
+DRSContainer::GetTimeArray( const unsigned channel )
 {
   static const unsigned len = 2048;
   float                 time_array[len];
-
   WaitReady();
   board->GetTime( 0, 2 * channel, board->GetTriggerCell( 0 ), time_array );
-
   return std::vector<float>( time_array, time_array+len );
 }
 
@@ -143,21 +132,18 @@ DRSContainer::GetTimeArray( const unsigned channel
  * appropriate trigger signal is sent.
  */
 std::vector<float>
-DRSContainer::GetWaveform( const unsigned channel
-  )
+DRSContainer::GetWaveform( const unsigned channel )
 {
   static const unsigned len = 2048;
   float                 waveform[len];
-
   WaitReady();
+
   // Notice that channel index 0-1 both correspond to the the physical
   // channel 1 input, and so on.
   int status = board->GetWave( 0, channel * 2, waveform );
-
   if( status ){
     throw std::runtime_error( "Error running DRSBoard::GetWave" );
   }
-
   return std::vector<float>( waveform, waveform+len );
 }
 
@@ -171,27 +157,32 @@ DRSContainer::GetWaveform( const unsigned channel
  * format and returned.
  */
 std::string
-DRSContainer::WaveformStr( const unsigned channel
-  )
+DRSContainer::WaveformStr( const unsigned channel )
 {
-  const auto     waveform   = GetWaveform( channel );
-  const unsigned length = std::min( (unsigned)board->GetChannelDepth(),
-    samples );
+  const auto     waveform = GetWaveform( channel );
+  const unsigned length   =
+    std::min((unsigned)board->GetChannelDepth(), samples );
   std::string ans( 4 * length, '\0' );
-
   for( unsigned i = 0; i < length; ++i ){
     // Converting to 16 bit with 0.1mV as a ADC value.
-    const int16_t raw = waveform[i] / 0.1;
+    const int16_t raw  = waveform[i] / 0.1;
     const int8_t  dig0 = ( raw >> 12 ) & 0xf;
     const int8_t  dig1 = ( raw >> 8 )  & 0xf;
     const int8_t  dig2 = ( raw >> 4 )  & 0xf;
     const int8_t  dig3 = raw & 0xf;
-    ans[4 * i+0] = dig0 <= 9 ? '0'+dig0 : 'a'+( dig0 % 10 );
-    ans[4 * i+1] = dig1 <= 9 ? '0'+dig1 : 'a'+( dig1 % 10 );
-    ans[4 * i+2] = dig2 <= 9 ? '0'+dig2 : 'a'+( dig2 % 10 );
-    ans[4 * i+3] = dig3 <= 9 ? '0'+dig3 : 'a'+( dig3 % 10 );
+    ans[4 * i+0] = dig0 <= 9 ?
+                   '0'+dig0 :
+                   'a'+( dig0 % 10 );
+    ans[4 * i+1] = dig1 <= 9 ?
+                   '0'+dig1 :
+                   'a'+( dig1 % 10 );
+    ans[4 * i+2] = dig2 <= 9 ?
+                   '0'+dig2 :
+                   'a'+( dig2 % 10 );
+    ans[4 * i+3] = dig3 <= 9 ?
+                   '0'+dig3 :
+                   'a'+( dig3 % 10 );
   }
-
   return ans;
 }
 
@@ -211,42 +202,35 @@ DRSContainer::WaveformStr( const unsigned channel
  */
 double
 DRSContainer::WaveformSum( const unsigned channel,
-  const unsigned                          _intstart,
-  const unsigned                          _intstop,
-  const unsigned                          _pedstart,
-  const unsigned                          _pedstop
-  )
+                           const unsigned _intstart,
+                           const unsigned _intstop,
+                           const unsigned _pedstart,
+                           const unsigned _pedstop )
 {
-  const auto     waveform   = GetWaveform( channel );
-  const unsigned maxlen = board->GetChannelDepth();
-  double         pedvalue       = 0;
+  const auto     waveform = GetWaveform( channel );
+  const unsigned maxlen   = board->GetChannelDepth();
+  double         pedvalue = 0;
 
   // Getting the pedestal value if required
   if( _pedstart != _pedstop ){
     const unsigned pedstart = std::max( unsigned(0), _pedstart );
     const unsigned pedstop  = std::min( maxlen, _pedstop );
-
     for( unsigned i = pedstart; i < pedstop; ++i ){
       pedvalue += waveform[i];
     }
-
     pedvalue /= (double)( pedstop-pedstart );
   }
 
   // Running the additional parsing.
-  const unsigned intstart = std::max( unsigned(0), _intstart );
-  const unsigned intstop  = std::min( maxlen, _intstop );
-
-  double       ans             = 0;
-  const double timeslice = 1.0 / GetRate();
-
+  const unsigned intstart  = std::max( unsigned(0), _intstart );
+  const unsigned intstop   = std::min( maxlen, _intstop );
+  double         ans       = 0;
+  const double   timeslice = 1.0 / GetRate();
   for( unsigned i = intstart; i < intstop; ++i ){
     ans += waveform[i];
   }
-
   ans -= pedvalue * ( intstop-intstart );
   ans *= -timeslice;// Negative to correct pulse direction
-
   return ans;
 }
 
@@ -259,20 +243,15 @@ DRSContainer::WaveformSum( const unsigned channel,
  * waveform summation will not use the timing information.
  */
 void
-DRSContainer::DumpBuffer( const unsigned channel
-  )
+DRSContainer::DumpBuffer( const unsigned channel )
 {
   static const std::string head = GREEN( "[DRSBUFFER]" );
-
-  char       print_line[256];// Display string;
-  const auto waveform   = GetWaveform( channel );
-  const auto time_array = GetTimeArray( channel );
-
-  const unsigned length = GetSamples();
-
+  char                     print_line[256];// Display string;
+  const auto               waveform   = GetWaveform( channel );
+  const auto               time_array = GetTimeArray( channel );
+  const unsigned           length     = GetSamples();
   sprintf( print_line, "%7s | Channel %d [mV]", "Time", channel );
   printmsg( head, print_line );
-
   for( unsigned i = 0; i < length; ++i ){
     sprintf( print_line, "%7.3lf | %7.2lf", time_array[i], waveform[i] );
     printmsg( head, print_line );
@@ -293,10 +272,9 @@ DRSContainer::DumpBuffer( const unsigned channel
  */
 void
 DRSContainer::SetTrigger( const unsigned channel,
-  const double                           level,
-  const unsigned                         direction,
-  const double                           delay
-  )
+                          const double   level,
+                          const unsigned direction,
+                          const double   delay )
 {
   CheckAvailable();
   board->EnableTrigger( 1, 0 );// Using hardware trigger
@@ -310,7 +288,6 @@ DRSContainer::SetTrigger( const unsigned channel,
     board->SetTriggerPolarity( direction );
     triggerdirection = direction;
   }
-
   triggerdelay = delay;
   board->SetTriggerDelayNs( delay );
 
@@ -366,8 +343,7 @@ DRSContainer::TriggerLevel()
  * automatically round to the closest available value.
  */
 void
-DRSContainer::SetRate( const double x
-  )
+DRSContainer::SetRate( const double x )
 {
   CheckAvailable();
   board->SetFrequency( x, true );
@@ -403,8 +379,7 @@ DRSContainer::GetSamples()
  * @brief Setting the number of values to store by default
  */
 void
-DRSContainer::SetSamples( const unsigned x
-  )
+DRSContainer::SetSamples( const unsigned x )
 {
   samples = x;
 }
@@ -480,10 +455,8 @@ DRSContainer::RunCalib()
   class DummyCallback : public DRSCallback
   {
 public:
-    virtual void Progress( int ){};
-    // Do nothing
+    virtual void Progress( int ){} // Do nothing
   };
-
   CheckAvailable();
 
   // Running the time calibration and voltage calibration each time the DRS is
@@ -491,25 +464,21 @@ public:
   DummyCallback _d;
   board->SetFrequency( 2.0, true );
   board->CalibrateTiming( &_d );
-
   board->SetRefclk( 0 );
   board->CalibrateVolt( &_d );
 
   // After running, we will need to reset the board trigger configurations
   // By default setting to use the external trigger
   SetTrigger( TriggerChannel(),// Channel external trigger
-    TriggerLevel(),// Trigger on 0.05 voltage
-    TriggerDirection(),// Rising edge
-    TriggerDelay() );// 0 nanosecond delay by default.
+              TriggerLevel(),// Trigger on 0.05 voltage
+              TriggerDirection(),// Rising edge
+              TriggerDelay() );// 0 nanosecond delay by default.
 }
 
 
 IMPLEMENT_SINGLETON( DRSContainer );
-
 DRSContainer::DRSContainer() :
-  board( nullptr )
-{}
-
+  board( nullptr ){}
 DRSContainer::~DRSContainer()
 {
   printf( "Deallocating the DRS controller\n" );
