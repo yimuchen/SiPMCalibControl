@@ -4,20 +4,21 @@
 
 @defgroup cli_design CLI Framework
 
-The command line interface is designe daround the python [`cmd.Cmd`][python-cmd]
-class: the `ctlcmd.cmdbase.controlterm` class inherits from the python base
-class, and expects a list of `ctlcmd.cmdbase.controlcmd` classes during
-construction, this allows for a simplified construction of commands of arbitrary
-execution complexity while having a reusable framework for common routines such
-as command argument parsing with [`argparse`][python-argparse].
+The command line interface is designe daround the python
+[`cmd.Cmd`][python-cmd] class: the `ctlcmd.cmdbase.controlterm` class inherits
+from the python base class, and expects a list of `ctlcmd.cmdbase.controlcmd`
+classes during construction, this allows for a simplified construction of
+commands of arbitrary execution complexity while having a reusable framework
+for common routines such as command argument parsing with
+[`argparse`][python-argparse].
 
 ## Framework overview
 
 In vanilla python, the [`cmd`][python-cmd] class implements command as a series
 of `do_<cmd>` function, with corresponding, `help_<cmd>` and `complete_<cmd>`
 function to manage help message generation and tag-autocomplete with GNU
-readline. The [`controlterm`][controlterm] constructs these methods according to
-the given list of [`controlcmd`][controlcmd] derived classes, with the
+readline. The [`controlterm`][controlterm] constructs these methods according
+to the given list of [`controlcmd`][controlcmd] derived classes, with the
 `control.do_<cmd>` method being mapped to the `<cmd>.do` method, and so on. The
 `controlterm` class is also responsible for handling the various hardware
 interface objects used for system control.
@@ -25,24 +26,27 @@ interface objects used for system control.
 The [`controlcmd`][controlcmd] class further breaks down the `do` method into
 common routines: first, the raw `line` string input is process via the
 `argparse.ArgumentParser` instance with additional processing performed by the
-overloaded `controlcmd.parse` methods. The argument argument is then passed over
-to the `run` method for actually running. As many commands for the system control
-will have similar/identical argument parsing processes, additional subclasses
-have been provided for the argument construction and argument parsing. To such
-processing will *always* be performed in the sequence of the class derivative
-sequence (order listed in the `__mro__` method)
+overloaded `controlcmd.parse` methods. The argument argument is then passed
+over to the `run` method for actually running. As many commands for the system
+control will have similar/identical argument parsing processes, additional
+subclasses have been provided for the argument construction and argument
+parsing. To such processing will *always* be performed in the sequence of the
+class derivative sequence (order listed in the `__mro__` method)
 
 ## Documentation guidelines
 
 For user-level command classes (classes that actually get passed into the
-construction of the master `controlterm` object), as the `__doc__` string of the
-command classes is used for both the command line help message and the generation
-of the user manual, developers should keep just a `@brief` documentation in the
-user-level command class's `__doc__` string, more detail documentation of how the
-command works should be kept in the dedicated documentation files, which can also
-give examples as to how the various command should be used. This is only true for
-the class level `__doc__` strings, however. All *method* `__doc__` string should
-be kept self contained within the class.
+construction of the master `controlterm` object), as the `__doc__` string of
+the command classes is used for both the command line help message and the
+generation of the user manual, developers should keep just a `@brief`
+documentation in the user-level command class's `__doc__` string, more detail
+documentation of how the command works should be kept in the dedicated
+documentation files, which can also give examples as to how the various command
+should be used. This is only true for the class level `__doc__` strings,
+however. All *method* `__doc__` string should be kept self contained within the
+class. In the same line of though, the help string for the command arguments
+should be kept short, and a URL should added to a argument group should the
+arguments require a more detailed documentation for advanced features.
 
 For non user-level command classes, we keep in the usual convention that
 documentation should be kept close to the implementation, to help with
@@ -50,8 +54,11 @@ bookkeeping during development, so use the typical doxygen tag directly in the
 class and method  `__doc__` strings.
 
 [python-cmd]: https://docs.python.org/3/library/cmd.html
-[python-argparse]: https://docs.python.org/3/library/argparse.html
+
+[python-argparse]:https://docs.python.org/3/library/argparse.html
+
 [controlterm]: @ref ctlcmd.cmdbase.controlterm
+
 [controlcmd]: @ref ctlcmd.cmdbase.controlcmd
 """
 import cmod.gcoder as gcoder
