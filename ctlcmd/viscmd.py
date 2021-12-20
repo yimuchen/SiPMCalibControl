@@ -522,7 +522,8 @@ class visualshowdet(visualmeta):
                              lines""")
 
   def parse(self, args):
-    args.monitor = True  # Forcing to be tru.
+    args.monitor = True  # Forcing to be true.
+    return args
 
   def run(self, args):
     self.printmsg("PRESS CTL+C to stop the command")
