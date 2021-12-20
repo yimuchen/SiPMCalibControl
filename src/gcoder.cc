@@ -529,7 +529,7 @@ GCoder::InMotion( float x, float y, float z )
     return true;
   }
 
-  if( check != 7 ){return true;}
+  if( check != 7 ){ return true; }
 
   if( MatchCoord( x, cx ) && MatchCoord( y, cy ) && MatchCoord( z, cz ) ){
     return false;
@@ -549,17 +549,21 @@ GCoder::InMotion( float x, float y, float z )
 void
 GCoder::MoveTo( float x, float y, float z, bool verbose )
 {
-  static constexpr float min_z_safety = 3;
+  static constexpr float min_z_safety = 0.5;
 
   if( z < min_z_safety && opz < min_z_safety ){
     MoveToRaw( opx, opy, min_z_safety, verbose );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ));
     MoveToRaw( x,   y,   min_z_safety, verbose  );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ));
     MoveToRaw( x,   y,   z,            verbose );
   } else if( opz < min_z_safety ){
     MoveToRaw( opx, opy, min_z_safety, verbose );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ));
     MoveToRaw( x,   y,   z,            verbose  );
   } else if( z < min_z_safety ){
     MoveToRaw( x, y, min_z_safety, verbose );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ));
     MoveToRaw( x, y, z,            verbose );
   } else {
     MoveToRaw( x, y, z, verbose );
