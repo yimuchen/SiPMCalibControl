@@ -228,29 +228,34 @@ class controlterm(cmd.Cmd):
 class controlcmd(object):
   """
   @ingroup cli_design
+
   @brief Base interface for command classes.
 
   @details The control command is the base interface for defining a command in
   the terminal class, the instance do, callhelp and complete functions
-  corresponds to the functions do_<cmd>, help_<cmd> and complete_<cmd> functions
-  in the vallina python cmd class. Here we will be using the argparse class by
-  default to call for the help and complete functions.
+  corresponds to the functions `do_<cmd>`, `help_<cmd>` and `complete_<cmd>`
+  functions in the vallina python cmd class. Here we will be using the argparse
+  class by default to call for the help and complete functions. To see how the
+  `do_<cmd>` method will be broken down, see the detailed documentation for the
+  `do` method of this class.
 
   In addition, the class will also contain a `LOG` instance which is used to
   prettify the output of the printerr methods. This should be overridden in all
   subsequent classes.
 
-  One big part of this class the the consistent construction of argument elements
-  and the parsing of elements. This is how the creation and parsing of the
-  arguments are performed:
+  One big part of this class the the consistent construction of argument
+  elements and the parsing of elements. This is how the creation and parsing of
+  the arguments are performed:
   - Arguments will be added in the inverse order listed in the `__mro__` method
     via the `add_args` method that meta-command classes and command classes
     should overload.
   - Arguments will be also be parsed in the order inversely listed in the
     `__mro__` method via the `parse` argument. Because of this, the input args
-    object in the `parse` argument in inherited classes should simply assume that
-    the `parse` of parent classes' has already been assumed, and should not
-    attempt to call the parent class's parse method.
+    object in the `parse` argument in inherited classes should simply assume
+    that the `parse` of parent classes' has already been assumed, and should
+    not attempt to call the parent class's parse method.
+
+
   """
   PARSE_ERROR = -1
   EXECUTE_ERROR = -2
@@ -310,11 +315,12 @@ class controlcmd(object):
 
   def parse_line(self, line):
     """
-    Parsing the arguments from the input line using the argparse. argument
-    parsing method. As this is a very standard method for parsing objects, this
-    part should not be over written. Additional parsing the the resulting
-    arguments (complicated parsing of default values... etc) should be handled by
-    the `parse` method.
+    @brief Parsing the arguments from the input line using the argparse method.
+
+    As this is a very standard method for parsing objects, this part should not
+    be over written. Additional parsing the the resulting arguments
+    (complicated parsing of default values... etc) should be handled by the
+    `parse` method.
     """
     try:
       args = self.parser.parse_args(shlex.split(line))
@@ -325,7 +331,7 @@ class controlcmd(object):
 
   def parse(self, args):
     """
-    Method that should be overwritten for additional argument parsing.
+    @brief Method that should be overwritten for additional argument parsing.
     """
     return args
 
@@ -387,17 +393,20 @@ class controlcmd(object):
 
   def callhelp(self):
     """
-    Printing the help message via the ArgumentParse in built functions.
+    @brief Printing the help message via the ArgumentParser in built functions.
     """
     self.parser.print_help(self.cmd.stdout)
 
   def complete(self, text, line, start_index, end_index):
     """
-    Auto completion of the functions. This function scans the options stored in
-    the parse class and returns a string of things to return.
+    @brief Auto completion of the functions.
+
+    @details This function scans the options stored in the parse class and
+    returns a string of things to return.
     - text is the word on this cursor is on (excluding tail)
     - line is the full input line string (including command)
-    - start_index is the starting index of the word the cursor is at in the line
+    - start_index is the starting index of the word the cursor is at in the
+      line
     - end_index is the position of the cursor in the line
     """
     cmdname = self.__class__.__name__.lower()
@@ -630,9 +639,25 @@ class savefilecmd(controlcmd):
 
   @details Command with the need to save a file. A standard method is provided
   adding the savefile options to the argparse instance, as well as additional
-  parsing and handling of the method. All function that wish to have their
-  default save location overridden should simple change the DEFAULT_SAVEFILE
-  static variable.
+  parsing of the file name and handling of the file opening methods. All
+  function that wish to have their default save location overridden should
+  simple change the DEFAULT_SAVEFILE static variable.
+
+  The standard data storage format consists of lines with 8 + N columns, with
+  the leading 8 columns being:
+
+  - `0` The time stamp (ms)
+  - `1` The detector id
+  - `2,3,4` The gantry coordinates of the data collection (mm)
+  - `5` The measured bias voltage (mV)
+  - `6` The measured SiPM temperature (C)
+  - `7` The measured pulser board temperature (C)
+
+  The remaining N columns are data, specific to the data collection routine of
+  interest.
+
+  For details on how the filename parsing is handled, see more documentation in
+  the `ctlcmd.cmdbase.savefilecmd.parse` method.
   """
   DEFAULT_SAVEFILE = 'SAVEFILE_<TIMESTAMP>'
 
@@ -641,14 +666,8 @@ class savefilecmd(controlcmd):
 
   def add_args(self):
     group = self.parser.add_argument_group(
-        "file saving options", """
-    Options for changing the save file format. Specialized data formats for
-    saving full waveforms, data is typically stored in the standard formats of:
-
-    "time detid x y z pwm sipm_temp pulser_temp data1 data2..."
-
-    Where datax is specificed in the command.
-    """)
+        "file saving options", """Options for changing the save file format.
+        For more details, see the official documentation.""")
     group.add_argument('-f',
                        '--savefile',
                        type=str,
@@ -669,10 +688,13 @@ class savefilecmd(controlcmd):
 
   def parse(self, args):
     """
+    @brief Modifying the filename placeholders, as well as opening the file to
+    a savefile attribute.
+
     Additional parsing for the filename argument. Here we will be replacing the
-    args.savefile argument with file descriptor that can be directly used by the
-    children classes for string writing. Additional parsing is performed on the
-    filename in accordance with what ever is placed in the angle braces.
+    args.savefile argument with file descriptor that can be directly used by
+    the children classes for string writing. Additional parsing is performed on
+    the filename in accordance with what ever is placed in the angle braces.
     """
     filename = args.savefile
 
@@ -767,8 +789,8 @@ class singlexycmd(controlcmd):
 
   @details This class will also provide the static variable to act as the flag
   for whether the target position should add the visual offset position or not
-  (say for visual alignment and lumi-alignment, we want to keep the command
-  similar for align at detector 1, while working at different physical
+  (say for visual alignment and luminosity alignment, we want to keep the
+  command similar for align at detector 1, while working at different physical
   coordinates.) The default offset for when there no valid calibration data is
   available is provided should be based on the gantry head design.
   """
@@ -1055,7 +1077,7 @@ class readoutcmd(controlcmd):
   """
   @ingroup cli_design
 
-  @details Commands that should have single readout models.
+  @brief Commands that should have single readout models.
 
   @details This typically assumes that the readout device (ADC/picoscope/drs4 or
   otherwise) has been properly set up with the correct range and settings, and
@@ -1081,9 +1103,8 @@ class readoutcmd(controlcmd):
     group.add_argument('--mode',
                        type=int,
                        choices=[e.value for e in readoutcmd.Mode],
-                       help="""
-                       Readout method to be used: 1:picoscope, 2:ADC, 3:DRS4,
-                      -1:Predefined model (simulated)""")
+                       help="""Readout method to be used: 1:picoscope, 2:ADC,
+                      3:DRS4, -1:Predefined model (simulated)""")
     group.add_argument('--channel',
                        type=int,
                        default=None,
