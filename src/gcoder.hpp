@@ -9,6 +9,7 @@
 
 class GCoder
 {
+public:
   static const float _max_x;
   static const float _max_y;
   static const float _max_z;
