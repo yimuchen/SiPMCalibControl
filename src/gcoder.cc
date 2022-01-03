@@ -204,9 +204,7 @@ GCoder::RunGcode( const std::string& gcode,
 
   if( attempt >= maxtry ){
     sprintf( msg,
-             "ACK string for command [%s] was not received after [%d] attempts!
-              The message could be dropped or there is something wrong with
-              the printer!",
+             "ACK string for command [%s] was not received after [%d] attempts! The message could be dropped or there is something wrong with the printer!",
              pstring.c_str(),
              maxtry );
     throw std::runtime_error( msg );
