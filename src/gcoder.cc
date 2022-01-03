@@ -351,7 +351,8 @@ GCoder::DisableStepper( bool x, bool y, bool z )
 /**
  * @brief Enabling the stepper motors.
  *
- * This should be used after the readout has been completed.
+ * This should be used after the readout has been completed to ereduce the
+ * changes of gantry position drifting.
  */
 void
 GCoder::EnableStepper( bool x, bool y, bool z )
@@ -580,7 +581,11 @@ GCoder::MatchCoord( double x, double y )
   return x == y;
 }
 
-
+/**
+ * @brief Construct a new GCoder::GCoder object
+ *
+ * Do nothing here, initialization should be handled by the Init method.
+ */
 GCoder::GCoder() :
   printer_IO( -1 ),
   opx       ( -1 ),
@@ -588,6 +593,12 @@ GCoder::GCoder() :
   opz       ( -1 )
 {}
 
+/**
+ * @brief Destructing the GCoder::GCoder object
+ *
+ * Intensionally adding a verbose system such that the user can debug issue
+ * during shutdown.
+ */
 GCoder::~GCoder()
 {
   printf( "Deallocating the gantry controls\n" );
