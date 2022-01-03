@@ -20,10 +20,9 @@ class exit(cmdbase.controlcmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
   def run(self, args):
-    if self.prompt_yn("""
-                      Exiting this will terminate the session and all calibration
-                      variables (results are still on disk), are you sure you
-                      want to exit?""",
+    if self.prompt_yn("""Exiting this will terminate the session and all
+                      calibration variables (results are still on disk), are you
+                      sure you want to exit?""",
                       default='no'):
       self.printmsg("Sending gantry home...")
       # Fast motion to somewhere close to home
