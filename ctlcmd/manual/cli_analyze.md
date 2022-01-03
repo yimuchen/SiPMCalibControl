@@ -1,6 +1,6 @@
 @defgroup cli0_analysis SiPM Analysis-Level commands
 
-@ingroup  cli
+@ingroup cli
 
 @brief Command typically used for single SiPM analysis level, assume nominal
 calibration processes.
@@ -12,7 +12,7 @@ discussed below. Before going into what individual command, note that all
 analysis-level commands listed here will have the common output format of an
 ASCII file with a various number of columns. The columns will represent the
 following (for more documentation of output formats see the [`savefilecmd`](@ref
- ctlcmd.cmdbase.savefilecmd) class)
+ctlcmd.cmdbase.savefilecmd) class)
 
 - `time`: The time stamp at which the line of data is collection. Time is
   measured relative to the initialization of the command.
@@ -44,11 +44,12 @@ The command will typically share the following same similar command arguments
 
 - Readout settings arguments
 
-  - `--mode [int]`:  Which readout system should be used for data collection.
+  - `--mode [int]`: Which readout system should be used for data collection.
     Currently, the following subsystems have been implemented. Notice that each
     subsystem has additional settings such as trigger, timing and voltage range
     that is not handled here. These should be properly set before running
     analysis level.
+
     - `1`: The screen-less Picoscope. For additional settings, see the "Picoscope
       related settings" section below.
     - `2`: Treating the ADC readout value as a photodetector readout. Notice that
@@ -57,22 +58,49 @@ The command will typically share the following same similar command arguments
       photodectector.
     - `3`: The DRS4 screen-less oscilloscope. For additional settings, see the
       "DRS related settings" section below.
+    - `-1`: Loading a predefined model, this is useful for the debugging analysis
+      sequences while not actually being attached to the system.
 
   - `--channel [int]`: The channel of the readout system to take for the data.
     Good practice to double-check that the readout system is connected to the
     channel of interest.
 
-  - `--samples [int]`: The number of waveforms to take before for the readout average.
+  - `--samples [int]`: The number of waveforms to take before for the readout
+    average.
 
-
+---
 
 @class ctlcmd.motioncmd.lowlightcollect
 
 @ingroup cli0_analysis
 
-@details This is a test
+@details Collecting the data at a fixed position and collecting the data as is a
+non-averaged way. This would be the command to use collect the spectral data (see
+the plot shown below)
 
+This class is based on the following meta-command classes: For details on how the
+arguments affects the command behavior follow the links.
 
+- [singlexycmd](@ref ctlcmd.cmdbase.singlexycmd): For specifying the horizontal
+  position at a single (x,y) position. The visual offset flag is set to `False`
+  for this command.
+- [readoutcmd](@ref ctlcmd.cmdbase.readoutcmd): For setting up the readout
+  specifications for data collection.
+- [savefilecmd](@ref ctlcmd.cmdbase.savefilecmd): For specifying the save file.
+  The default save file is now set to:
+  `lowlight_<BOARDTYPE>_<BOARDID>_<DETID>_<TIMESTAMP>.txt`.
+
+In addition to the command arguments defined in meta-command classes, additional
+options defined are:
+
+- `-z`: The gantry z value to perform the data collection.
+- `-p`, `--power`: PWM duty cycle for data collection, using current PWM settings
+  is not specified.
+
+The output of the command is typically used to generate an analysis level plot
+that looks like:
+
+---
 
 @class ctlcmd.motioncmd.halign
 
@@ -80,8 +108,19 @@ The command will typically share the following same similar command arguments
 
 @details This is a test
 
+This class is based on the following meta-command classes: For details on how the
+arguments affects the command behavior follow the links.
 
+- [hscanxycmd](@ref ctlcmd.cmdbase.hscancmd): For specifying the horizontal
+  position at a single (x,y) position. The visual offset flag is set to `False`
+  for this command.
+- [readoutcmd](@ref ctlcmd.cmdbase.readoutcmd): For setting up the readout
+  specifications for data collection.
+- [savefilecmd](@ref ctlcmd.cmdbase.savefilecmd): For specifying the save file.
+  The default save file is now set to:
+  `lowlight_<BOARDTYPE>_<BOARDID>_<DETID>_<TIMESTAMP>.txt`.
 
+---
 
 @class ctlcmd.motioncmd.zscan
 
@@ -89,7 +128,7 @@ The command will typically share the following same similar command arguments
 
 @details This is a test
 
-
+---
 
 @class ctlcmd.viscmd.visualhscan
 
@@ -97,6 +136,7 @@ The command will typically share the following same similar command arguments
 
 @details This is a test
 
+---
 
 @class ctlcmd.viscmd.visualcenterdet
 
@@ -104,11 +144,12 @@ The command will typically share the following same similar command arguments
 
 @details This is a test
 
-
-
+---
 
 @class ctlcmd.viscmd.visualmaxsharp
 
 @ingroup cli0_analysis
 
 @details This is a test
+
+---
