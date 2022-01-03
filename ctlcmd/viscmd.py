@@ -1,9 +1,8 @@
 """
+viscmd.py
 
-  viscmd.py
+Commands for interacting and using the visual system for positional calibration.
 
-  Commands for interacting and using the visual system for positional
-  calibration.
 """
 import ctlcmd.cmdbase as cmdbase
 import cmod.logger as log
@@ -27,14 +26,14 @@ class visualmeta(cmdbase.controlcmd):
                              '--monitor',
                              action='store_true',
                              help="""
-                             Whether or not to open a windw monitoring window (as
-                             this is working over SSH, this could be very
+                             Whether or not to open a window monitoring window
+                             (as this is working over SSH, this could be very
                              slow!!)""")
     self.parser.add_argument('--vwait',
                              type=float,
                              default=0.2,
                              help="""
-                             Time to wait between motion and image acquisiation
+                             Time to wait between motion and image acquisition
                              (seconds)""")
 
   def show_img(self, args, raw=False):
