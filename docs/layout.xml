@@ -32,6 +32,7 @@
     <!--briefdescription visible="yes"/-->
     <collaborationgraph visible="$COLLABORATION_GRAPH"/>
     <detaileddescription title=""/>
+    <inheritancegraph visible="$CLASS_GRAPH"/>
     <memberdecl>
       <nestedclasses visible="yes" title=""/>
       <publictypes title=""/>
@@ -79,7 +80,6 @@
       <properties title=""/>
       <events title=""/>
     </memberdef>
-    <inheritancegraph visible="$CLASS_GRAPH"/>
     <allmemberslink visible="yes"/>
     <includes visible="$SHOW_INCLUDE_FILES"/>
     <usedfiles visible="$SHOW_USED_FILES"/>
