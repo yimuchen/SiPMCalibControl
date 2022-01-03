@@ -1,10 +1,10 @@
 """
 
-  motioncmd.py
+motioncmd.py
 
-  COmmands related with controlling the gantry motion. Due to legacy reasons,
-  this will include the luminosity alignment commands, as well as the non-linear
-  scan command by moving in z.
+Commands related with controlling the gantry motion. Due to legacy reasons,
+this will include the luminosity alignment commands, as well as the non-linear
+scan command by moving in z.
 
 """
 import ctlcmd.cmdbase as cmdbase
@@ -54,10 +54,7 @@ class moveto(cmdbase.singlexycmd):
   def add_args(self):
     self.parser.add_argument('-z',
                              type=float,
-                             help="""
-                             Specifying the z coordinate explicitly [mm]. If
-                             none is given the current gantry position will be
-                             used instead""")
+                             help="Specifying the z coordinate explicitly [mm].")
 
   def parse(self, args):
     if not args.z: args.z = self.gcoder.opz
@@ -68,9 +65,7 @@ class moveto(cmdbase.singlexycmd):
 
 
 class getcoord(cmdbase.controlcmd):
-  """
-  Printing current gantry coordinates
-  """
+  """Printing current gantry coordinates"""
   LOG = log.GREEN('[GANTRY-COORD]')
 
   def __init__(self, cmd):
@@ -185,11 +180,8 @@ class sendhome(cmdbase.controlcmd):
 
 class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
   """
-  Running horizontal alignment procedure by luminosity readout v.s. x-y motion
-  scanning. Notice that when running with scope-like readout systems (with the
-  picoscope or DRS4), it assumes that the readout system has their readout
-  settings adjusted to suitable value: trigger/range/integration range... etc.
-  Make sure that is the case before running these commands.
+  @brief Running horizontal alignment procedure by luminosity readout vs and xy
+  grid scan motion.
   """
 
   DEFAULT_SAVEFILE = 'halign_<BOARDTYPE>_<BOARDID>_<DETID>_<SCANZ>_<TIMESTAMP>.txt'
@@ -238,7 +230,7 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
 
     # Performing fit
     p0 = (
-        max(lumi) * (args.scanz**2),  #
+        max(lumi) * ((args.scanz + 2)**2),  #
         np.mean(args.x),  #
         np.mean(args.y),  #
         args.scanz,  #
@@ -292,10 +284,8 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
         and fitval[2] < self.gcoder.max_y()):
       self.move_gantry(fitval[1], fitval[2], args.scanz, True)
     else:
-      self.printwarn("""
-      Fit position is out of gantry bounds, the gantry will not attempt to move
-      there
-      """)
+      self.printwarn("""Fit position is out of gantry bounds, the gantry will not
+      attempt to move there""")
 
   @staticmethod
   def model(xydata, N, x0, y0, z, p):
@@ -371,9 +361,9 @@ class zscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.readoutcmd,
 
 class lowlightcollect(cmdbase.singlexycmd, cmdbase.readoutcmd,
                       cmdbase.savefilecmd):
-  """@brief Collection of low light data at a single gantry position, collecting
-  data as fast as possible no waiting.
-  """
+  """@brief Collection of low light data at a single gantry position, data will
+  be collected without averaging."""
+
   DEFAULT_SAVEFILE = 'lowlight_<BOARDTYPE>_<BOARDID>_<DETID>_<TIMESTAMP>.txt'
   LOG = log.GREEN('[LUMI LOWLIGHT]')
 
@@ -381,6 +371,7 @@ class lowlightcollect(cmdbase.singlexycmd, cmdbase.readoutcmd,
     cmdbase.controlcmd.__init__(self, cmd)
 
   def add_args(self):
+    """@brief adding the additional arguments"""
     self.parser.add_argument('-z',
                              type=float,
                              default=300,
@@ -395,6 +386,12 @@ class lowlightcollect(cmdbase.singlexycmd, cmdbase.readoutcmd,
                              value if not specified""")
 
   def parse(self, args):
+    """
+    @details As the number of samples passed to the readoutcmd class is typically
+    very large for the readout settings. Here we split the samples into segments
+    of 1000 data collections as this will help to monitor and segment the
+    function in-case of user cutoff.
+    """
     if not args.power:
       args.power = self.gpio.pwm_duty(0)
     ## Modifying the sample argument to make monitoring simpler:
@@ -403,6 +400,13 @@ class lowlightcollect(cmdbase.singlexycmd, cmdbase.readoutcmd,
     return args
 
   def run(self, args):
+    """
+    @brief Running.
+
+    @details Operation of this command relatively straight forwards, simply run
+    the readout command multiple times with no averaging and write to a file in
+    standard format. Progress will be printed for every 1000 data collections.
+    """
     self.move_gantry(args.x, args.y, args.z, False)
     self.gpio.pwm(0, args.power, 1e5)
     for i in range(args.nparts):
