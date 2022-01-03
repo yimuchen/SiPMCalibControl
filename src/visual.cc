@@ -3,23 +3,76 @@
  * @author Yi-Mu Chen
  * @brief Implementation of the visual interface.
  *
- * The visual system will works as the following. A thread will be started
+ * @class Visual
+ * @ingroup hardware
+ * @brief Visual system interface class
+ *
+ * As the visual process has a long startup time, a thread will be started
  * whenever a visual system is declared, which will constantly flush the
- * contents
- * of the camera interface to a buffer, process the standardized image
- * processing
- * routine, and store the processed image and extracted variables, and repeat
- * until some termination code is received. This looped thread will be briefly
- * paused when the user request the image, to ensure the integrity of the
- * transferred data.
+ * contents of the camera interface to a buffer, process the standardized image
+ * processing routine, and store the processed image and extracted variables,
+ * and repeat until some termination code is received. This looped thread will
+ * be briefly paused when the user request the image, to ensure the integrity
+ * of the transferred data. The core of the image processing functions is
+ * photodetector finding: finding the optimal "dark rectangle" within the
+ * image, and calculated in the center of this rectange in terms of pixel
+ * coordinates.
  *
- * For the management of the interface communication and thread handling, see
- * the
- * Visual::*Thread functions.
+ * This will be the one interface functions that does not start use a singleton
+ * notation, as the system can potentially have more than 1 camera running
+ * similar algorithms.
  *
- * For the visual processing functions, see the `Visual::FindDetector` and
- * related
- * functions.
+ * ## Visual processing thread management.
+ *
+ * There are 3 data members in the Visual class used for managing the thread.
+ * - std::thread loop_thead: the thread object for handling the loop function
+ * - std::atomic<bool> run_loop: the thread-safe flag variable to indicate
+ *   whether the loop should continue.
+ * - std::mutex loop_mutex: Mutex lock required for data manipulation of the
+ *   image containers.
+ *
+ * The main loop will basically loop over the following:
+ * - Check if run_loop is true. Exit the loop if not.
+ * - Wait to lock the mutex.
+ * - Extract image and perform image processes
+ * - unlock the mutex.
+ * - Wait a fixed pause period.
+ *
+ * Under this model, the image extraction functions has windows in which it can
+ * choose to lock the mutex while it perform data extraction. The starting and
+ * stopping of the loop is also a simple check on the value of the `run_loop`
+ * variable.
+ *
+ * ## Visual processing algorithm for finding a photo detecting element
+ *
+ * The algorithm uses as much inbuilt OpenCV functions as possible to avoid
+ * being over taxing on the lowe power processing system the calibration stand
+ * is expected to run on. The algorithm is as follows:
+ *
+ * - Convert the image into a binary image by some grayscale threshold value.
+ * - Use the binary image to generate a contours of the high-contrast features
+ *   in the image.
+ * - For the found contours, the following filters is applied:
+ *   - The size (bounding box area), must be greater than some value (this
+ *     removes noise speckles).
+ *   - The ratio of the edges of the bounding box must be sufficiently similar
+ *     (the photo detecting element is expected to be square.)
+ *   - The internal area of the original image within the contour must be
+ *     sufficiently dark (as photodetecting elements are expected to be gray)
+ *   - The convex hull of the contour must be able to be approximated as a
+ *     rectangle.
+ * - The convex hull of the remaining contours will be used. The use of convex
+ *   hulls is to eliminate reflection artifacts that might appear on the
+ *   detector face.
+ * - The convex hull with the largest area will be assumed to be the detector
+ *   element of interest, then the following parameters will be determined and
+ *   stored in the VisualResults class:
+ *   - The average pixel position of the convex hull in (x,y)
+ *   - The pixel position of the convex hull after polygon approximation
+ *   - The sharpness measure of the surrounding image.
+ *
+ * Functions should beable to receive a cv::Mat object as the input, to allow
+ * for arbitrary levels of debugging and feature demonstration.
  */
 #include "visual.hpp"
 #include <opencv2/core/utils/logger.hpp>
@@ -35,6 +88,8 @@ static const cv::Scalar white( 255, 255, 255 );
 // Setting OPENCV into silent mode
 static const auto __dummy_settings = cv::utils::logging::setLogLevel(
   cv::utils::logging::LOG_LEVEL_SILENT );
+
+
 Visual::Visual() :
   cam      (),
   run_loop ( false )
@@ -67,8 +122,8 @@ Visual::Visual( const std::string& dev ) :
  *   algorithm will perform in realtime
  * - Reduce the buffer to 0. This ensures that the image received from the
  *   camera will be as close to real time as possible.
- * - Switch of any known image processing. This is so that image processing
- *   artifacts does not skew the image processing algorithms we use.
+ * - Switch **off** any known image processing. This is so that image
+ *   processing artifacts does not skew the image processing algorithms we use.
  *
  * A thread will be started as soon as the devices is known to be availabe.
  */
@@ -116,40 +171,21 @@ Visual::FrameHeight() const
 }
 
 
-/*******************************************************************************
+/********************************************************************************
  *
- * Facilities for interacting with the Visual processing thread.
+ * THREAD MANAGEMENT FUNCTIONS
  *
- * There are 3 data members in the Visual class used for managing the thread.
- *
- * - std::thread loop_thead: the thread object for handling the loop function
- * - std::atomic<bool> run_loop: the thread-safe flag variable to indicate
- *   whether the loop should continue.
- * - std::mutex loop_mutex: Mutex lock required for data manipulation of the
- *   image containers.
- *
- * The main loop will basically loop over the following:
- * - Check if run_loop is true. Exit the loop if not.
- * - Wait to lock the mutex.
- * - Extract image and perform image processes
- * - unlock the mutex.
- * - Wait a fixed pause period.
- *
- * Under this model, the image extraction functions has windows in which it can
- * choose to lock the mutex while it perform data extraction. The starting and
- * stopping of the loop is also simple.
- *
- ******************************************************************************/
+ *******************************************************************************/
+
+
 /**
  * @brief The method used for running the loop.
  *
  * The atomic object needs to be passed in as a argument to function properly.
- *
  * In between loop iterations, a fixed 5 millisecond paused is used to ensure
  * that other processes has a chance to extract image and processing results
- * when
- * requested. Notice that this pause must be faster than the camera refresh rate
- * to have a real-time like iamge presentation in the GUI program.
+ * when requested. This pause must be faster than the camera
+ * refresh rate to have a real-time like iamge presentation in the GUI program.
  */
 void
 Visual::RunMainLoop( std::atomic<bool>& run_loop )
@@ -168,11 +204,9 @@ Visual::RunMainLoop( std::atomic<bool>& run_loop )
                                      cam.isOpened() );
                             latest = FindDetector( image );
                             loop_mutex.unlock();
-                            while( time_end-time_start <
-                                   5e3 ){std::this_thread::sleep_for( st::milliseconds(
-                                                                        1 ) );
-                                         time_end =
-                                           get_time();
+                            while( time_end-time_start < 5e3 ){
+                              std::this_thread::sleep_for( st::milliseconds( 1 ) );
+                              time_end = get_time();
                             }}
 }
 
@@ -221,10 +255,10 @@ Visual::GetVisResult()
  * descriptive image which includes the processed contours.
  *
  * In the rare event that the frame is empty (either because the camera was
- * never
- * properly initialized, or that there was an issue with the image transfer
- * proces), a blank (all 0 value image) with the correct dimensions will be
- * returned.
+ * never properly initialized, or that there was an issue with the image
+ * transfer process), a blank (all 0 value image) with the correct dimensions
+ * will be returned to ensure that all subsequent functions will function
+ * nominally.
  */
 cv::Mat
 Visual::GetImage( const bool raw )
@@ -243,7 +277,7 @@ Visual::GetImage( const bool raw )
 
 
 /**
- * @brief saving the image to some path.
+ * @brief Saving the image to some path.
  */
 bool
 Visual::SaveImage( const std::string& path, bool raw )
@@ -254,11 +288,15 @@ Visual::SaveImage( const std::string& path, bool raw )
 }
 
 
+/**
+ * @brief Returning the image as a JPEG encoded string.
+ *
+ * This method is required by the GUI interface to allow for streaming of data
+ * via HTTP image requests.
+ */
 std::vector<uchar>
 Visual::GetImageBytes()
 {
-  // Returning the image generated from the detection algorithm as a byte
-  // sequence to be returned by a HTTP image request.
   std::vector<uchar> buf;// Storage required by opencv.
   const auto         img = GetImage( false );
   if( img.empty() ){
@@ -271,40 +309,12 @@ Visual::GetImageBytes()
 
 /********************************************************************************
  *
- * Visual processing algorithm for finding a photo detecting element
- *
- * The algorithm uses as much inbuilt OpenCV functions as possible to avoid
- * being over taxing on the lowe power processing system the calibration stand
- * is expected to run on. The algorithm is as follows:
- *
- * - Convert the image into a binary image by some grayscale threshold value.
- * - Use the binary image to generate a contours of the high-contrast features
- *   in the image.
- * - For the found contours, the following filters is applied:
- *   - The size (bounding box area), must be greater than some value (this
- *     removes noise speckles).
- *   - The ratio of the edges of the bounding box must be sufficiently similar
- *     (the photo detecting element is expected to be square.)
- *   - The internal area of the original image within the contour must be
- *     sufficiently dark (as photodetecting elements are expected to be gray)
- *   - The convex hull of the contour must be able to be approximated as a
- *     rectangle.
- * - The convex hull of the remaining contours will be used. The use of convex
- *   hulls is to eliminate reflection artifacts that might appear on the
- *   detector face.
- * - The convex hull with the largest area will be assumed to be the detector
- *   element of interest, then the following parameters will be determined and
- *   stored in the VisualResults class:
- *   - The average pixel position of the convex hull in (x,y)
- *   - The pixel position of the convex hull after polygon approximation
- *   - The sharpness measure of the surrounding image.
- *
- * Functions should beable to receive a cv::Mat object as the input, to allow
- * for arbitrary levels of debugging and feature demonstration.
+ * VISUAL PROCESSING ALGORITHM
  *
  *******************************************************************************/
+
 /**
- * @brief Default values of the algorithm
+ * @brief Default settings values of the algorithm
  *
  * Last determined 2021.05.31.
  */
@@ -323,6 +333,11 @@ Visual::InitVarDefault()
 /**
  * @brief Given image in cv::Mat format. Compute the visual algorithm results
  * and stored in a processed version of the image in the internal buffer.
+ *
+ * This handles the main control flow of:
+ * - Extracting the image.
+ * - Running the contouring algorithm
+ * - Morphing the results into the standard VisResult format.
  */
 Visual::VisResult
 Visual::FindDetector( const cv::Mat& img )
@@ -338,9 +353,7 @@ Visual::FindDetector( const cv::Mat& img )
   const auto& hulls    = contours.at( 0 );
   const auto  ans      = hulls.empty() ?
                          empty_return :
-                         MakeResult( img,
-                                     hulls.at(
-                                       0 ) );
+                         MakeResult( img, hulls.at( 0 ) );
   display = MakeDisplay( img, contours );
   return ans;
 }
@@ -350,10 +363,15 @@ Visual::FindDetector( const cv::Mat& img )
  * @brief Given an base image, find the contours and group them according to
  * the various selection criteria.
  *
- * The convex hull of all contours passing the selection criteria would be
- * sorted by size (bounding box area). All contours found other than those that
- * fail the size constrains will be returned, as they are useful for debugging
- * parameters.
+ * Storing outputs of the opencv contouring algorithm according to where they
+ * pass the selection:
+ * - If they fail the minimal size requirements, these contours are discarded
+ *   as these are typically imaging "speckles" that comes from image sensor
+ *   noise.
+ * - All other selection criteria (rectangular approximation, luminosity
+ *   requirements, size requirements... etc) should always be store, as failed
+ *   contours is a good indication for which parameters need to be tuned for
+ *   when the algorithm apparently fails.
  */
 std::vector<Visual::ContourList>
 Visual::FindContours( const cv::Mat& img ) const
@@ -396,11 +414,14 @@ Visual::FindContours( const cv::Mat& img ) const
 
 
 /**
- * @brief Given the original image in cv::Mat format, and the candidate
- * convexhull contour, compute all the information:
- * - The average position in pixels
- * - The sharpness measure (2nd and 4th order)
- * - The area of the hull
+ * @brief Given the original image in cv::Mat format, and the candidate convex
+ * contour, calculate the summary results.
+ *
+ * The summary results include:
+ * - The average position in pixels in the area covered by the contour.
+ * - The sharpness measure (2nd and 4th order), calculated in a bounding
+ *   rectangle twice the size of the original bounding rectangle.
+ * - The area (in pixels) of the convex hull
  * - The maximum distance fo two points in the contour
  * - The 8 coordinates of the corners after polygon approximation.
  */
@@ -428,8 +449,11 @@ Visual::MakeResult( const cv::Mat& img, const Visual::Contour_t& hull ) const
 
 /**
  * @brief Given the original image in cv::Mat format, and the sorted list of
- * countors found, display the processed image, with each different fail mode
- * displayed in a different color for debugging.
+ * countors found, generate a processed image with contours,
+ *
+ * Each different fail mode displayed in a different color for debugging simple
+ * debugging. The return is the processed image in a standard opencv::Mat data
+ * format.
  */
 cv::Mat
 Visual::MakeDisplay( const cv::Mat&                          img,
