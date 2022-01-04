@@ -108,7 +108,7 @@ that looks like:
 
 @details This is a test
 
-This class is based on the following meta-command classes: For details on how the
+This class is based on the following meta-command classes. For details on how the
 arguments affects the command behavior follow the links.
 
 - [hscanxycmd](@ref ctlcmd.cmdbase.hscancmd): For specifying the horizontal
@@ -120,13 +120,50 @@ arguments affects the command behavior follow the links.
   The default save file is now set to:
   `lowlight_<BOARDTYPE>_<BOARDID>_<DETID>_<TIMESTAMP>.txt`.
 
+In addition to the command arguments of the meta-classes listed above, there
+are two additional settings that can be used for this command:
+
+- `--overwrite`: As this command is used for alignment reasons, the results of
+  this command will be stored in cache according to the specified detector ID.
+  The same calibration routine can be run for the same detector elements if
+  requested, but will typically prompt the user whether the calibration results
+  of the latest run should overwrite the existing calibration results should it
+  exist. Using this flag will let the command directly overwrite the existing
+  calibration results without prompting the user for confirmation. This is
+  useful for running a command list script.
+- `--power`: Specifying the PWM duty cycle at which the calibration routine should
+  be run. If not specified, the command will simply use the current PWM settings.
+
+For details on the execution routine, see the detailed documentation of the
+`run` method.
+
 ---
 
 @class ctlcmd.motioncmd.zscan
 
 @ingroup cli0_analysis
 
-@details This is a test
+@details TThis class is based on the following meta-command classes. For
+details on how the arguments affects the command behavior follow the links.
+
+- [zscancmd](@ref ctlcmd.cmdbase.zscancmd): For specifying the list of z
+  scanning coordinates position at a single (x,y) position. The visual offset
+  flag is set to `False` for this command.
+- [readoutcmd](@ref ctlcmd.cmdbase.readoutcmd): For setting up the readout
+  specifications for data collection.
+- [savefilecmd](@ref ctlcmd.cmdbase.savefilecmd): For specifying the save file.
+  The default save file is now set to:
+  `zscan_<BOARDTYPE>_<BOARDID>_<DETID>_<TIMESTAMP>.txt`
+
+In addition to the command arguments of the meta-classes listed above, there
+is 1 additional setting that can be used for this command:
+
+- `--power`: a list of PWM duty cycle values that will be used for each z
+  coordinate value. If this is not specified, then the list will only include
+  the current PWM duty cycle value.
+
+For details on the execution routine, see the detailed documentation of the
+`run` method.
 
 ---
 
