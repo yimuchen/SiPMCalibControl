@@ -72,16 +72,16 @@
 #include <stdexcept>
 
 /**
- * @brief Opening a file with a lock to ensure the program is the only process
- * on the system that is using the path.
+ * @brief Opening a file with a lock to ensure the program is the only process on
+ * the system that is using the path.
  *
- * Mainly following the solution given here [1]. In the case that the file
+ * Mainly following the solution given [here][ref]. In the case that the file
  * descriptor cannot be opened or the lock instance cannot be generated, the
- * existing file descriptor will be closed and a exception will be raised.
- * Notice that the system lock will automatically be removed when the
- * corresponding file descriptor is closed.
+ * existing file descriptor will be closed and a exception will be raised. Notice
+ * that the system lock will automatically be removed when the corresponding file
+ * descriptor is closed.
  *
- * [1] https://stackoverflow.com/questions/1599459/optimal-lock-file-method
+ * [ref]: https://stackoverflow.com/questions/1599459/optimal-lock-file-method
  */
 static int
 open_with_lock( char*path, int mode )
@@ -93,9 +93,7 @@ open_with_lock( char*path, int mode )
     throw std::runtime_error( errmsg );
   }
 
-  // Attempting to exclusively lock the file so that this processes uniquely has
-  // write access to the GPIO interface.  The _lock will be non-zero if the
-  // processes cannot create the lock instance
+  // The _lock will be non-zero if the processes cannot create the lock instance
   int lock = flock( fd, LOCK_EX | LOCK_NB );
   if( lock ){
     close( fd );
