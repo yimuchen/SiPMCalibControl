@@ -1,0 +1,5 @@
+# Explicitly ignoring everything unless otherwise specified
+
+*
+!.gitignore 
+
