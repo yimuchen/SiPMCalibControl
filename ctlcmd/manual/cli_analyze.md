@@ -160,7 +160,23 @@ For details on the execution routine, see the detailed documentation of the
 
 @details Command designed for performing the SiPM response verses the input
 light intensity. The gantry is moved over a list of z values, with each z value
-potentially having a list of PWM duty cycles to scan over.
+potentially having a list of PWM duty cycles to scan over. This command is
+designed to provide test the nonlinear response of the SiPM when under extreme
+luminosity exposure (see the two plots below). The corresponding analysis
+script for plotting the data collected by this command is
+[`SiPM_FitNonLinear`][fitnl].
+
+[fitnl]: https://umdcms.github.io/SiPMCalib/group__SiPMCalc
+
+<div class="plot_example">
+<img src="image/zscan_raw.png"/><br/>
+  Example of the outputs of the raw data collected by the z scan command.
+</div>
+
+<div class="plot_example">
+<img src="image/zscan_processed.png"/><br/>
+  Example of the processed data showing the nonlinear response of the SiPM.
+</div>
 
 This class is based on the following meta-command classes. For
 details on how the arguments affects the command behavior follow the links.
