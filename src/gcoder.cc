@@ -458,26 +458,9 @@ GCoder::MoveToRaw( float x, float y, float z, bool verbose )
         opz;
 
   // Rounding to closest 0.1 (precision of gantry system)
-  opx = std::round( opx * 10 ) / 10;
-  opy = std::round( opy * 10 ) / 10;
-  opz = std::round( opz * 10 ) / 10;
-
-  // checking for boundary
-  if( opx < 0 || opx > max_x() || opy < 0 || opy > max_y() || opz < 0 ||
-      opz > max_z() ){
-    printwarn(
-      "Coordinates is outside of gantry limit! Moving the "
-      "destination back into reasonable limits." );
-    if( opx < 0 || opx > max_x() ){
-      opx = std::max( std::min( opx, max_x() ), 0.0f );
-    }
-    if( opy < 0 || opy > max_y() ){
-      opy = std::max( std::min( opy, max_y() ), 0.0f );
-    }
-    if( opz < 0 || opz > max_z() ){
-      opz = std::max( std::min( opz, max_z() ), 0.0f );
-    }
-  }
+  opx = ModifyTargetCoordinate( opx, max_x(), true );
+  opy = ModifyTargetCoordinate( opy, max_y(), true );
+  opz = ModifyTargetCoordinate( opz, max_z(), true );
 
   // Running the code
   sprintf( gcode, move_fmt, opx, opy, opz );
@@ -531,7 +514,12 @@ GCoder::InMotion( float x, float y, float z )
 
   if( check != 7 ){return true;}
 
-  if( MatchCoord( x, cx ) && MatchCoord( y, cy ) && MatchCoord( z, cz ) ){
+  // Supposedly the check matching cooridnate
+  const double tx = ModifyTargetCoordinate( x, max_x() );
+  const double ty = ModifyTargetCoordinate( y, max_y() );
+  const double tz = ModifyTargetCoordinate( z, max_z() );
+
+  if( MatchCoord( tx, cx ) && MatchCoord( ty, cy ) && MatchCoord( tz, cz ) ){
     return false;
   } else {
     return true;
@@ -553,13 +541,17 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
 
   if( z < min_z_safety && opz < min_z_safety ){
     MoveToRaw( opx, opy, min_z_safety, verbose );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     MoveToRaw( x,   y,   min_z_safety, verbose  );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     MoveToRaw( x,   y,   z,            verbose );
   } else if( opz < min_z_safety ){
     MoveToRaw( opx, opy, min_z_safety, verbose );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     MoveToRaw( x,   y,   z,            verbose  );
   } else if( z < min_z_safety ){
     MoveToRaw( x, y, min_z_safety, verbose );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     MoveToRaw( x, y, z,            verbose );
   } else {
     MoveToRaw( x, y, z, verbose );
@@ -578,6 +570,55 @@ GCoder::MatchCoord( double x, double y )
   x = std::round( x * 10 ) / 10;
   y = std::round( y * 10 ) / 10;
   return x == y;
+}
+
+
+/**
+ * @brief Modifying the orignal target cooridnate to somewhere that can be
+ * accessed by the gantry
+ *
+ * Original given some original coodinate value, we return a modified target
+ * cooridnate such that:
+ * - the return value is always larger than the minimum value 0.1
+ * - The return value is always smaller than the given maximum value.
+ * - The return value is rounded to the closest 0.1 decimal place.
+ *
+ * This ensure that given any input coordinate. the target coordinate will
+ * always be some value that the physically safe target for the gantry. If the
+ * target value is modified in any way other than simple rounding, then an
+ * error message will be displayed to ensure notify the user of these
+ * modifications.
+ */
+double
+GCoder::ModifyTargetCoordinate( const double original,
+                                const double max_value,
+                                const bool   verbose )
+{
+  char message[1024];
+  auto rnd = []( double x ){ return std::round( x * 10 ) / 10;};
+
+  double ans = rnd( original ); // rounding to closest
+  if( ans < 0.1 ){
+    if( verbose ){
+      sprintf( message,
+               "Target cooridnate values [%.1lf] is below the lower limit 0.1. " "Modifying the target motion cooridnate to 0.1 to avoid damage to the system",
+               ans );
+      printwarn( message );
+    }
+    return 0.1;
+  } else if( ans > max_value ){
+    if( verbose ){
+      sprintf( message,
+               "Target cooridnate values [%.1lf] is above upper limit [%.1lf]. " "Modifying the target motion cooridnate to [%.1lf] to avoid damage to the system",
+               ans,
+               max_value,
+               max_value );
+      printwarn( message );
+    }
+    return rnd( max_value );
+  } else {
+    return ans;
+  }
 }
 
 

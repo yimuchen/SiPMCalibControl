@@ -45,7 +45,10 @@ public:
                   const bool verbose = false );
 
   // Floating point comparison.
-  static bool MatchCoord( double x, double y );
+  static bool   MatchCoord( double x, double y );
+  static double ModifyTargetCoordinate( double       orig,
+                                        const double max,
+                                        const bool   verbose = false );
 
 public:
   int         printer_IO;
