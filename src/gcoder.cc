@@ -544,20 +544,24 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
 
   if( z < min_z_safety && opz < min_z_safety ){
     MoveToRaw( opx, opy, min_z_safety, verbose );
-    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     MoveToRaw( x,   y,   min_z_safety, verbose  );
-    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     MoveToRaw( x,   y,   z,            verbose );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
   } else if( opz < min_z_safety ){
     MoveToRaw( opx, opy, min_z_safety, verbose );
-    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     MoveToRaw( x,   y,   z,            verbose  );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
   } else if( z < min_z_safety ){
     MoveToRaw( x, y, min_z_safety, verbose );
-    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     MoveToRaw( x, y, z,            verbose );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
   } else {
     MoveToRaw( x, y, z, verbose );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
   }
 }
 
