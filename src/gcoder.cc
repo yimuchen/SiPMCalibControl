@@ -494,16 +494,17 @@ GCoder::MoveToRaw( float x, float y, float z, bool verbose )
 bool
 GCoder::InMotion( float x, float y, float z )
 {
-  float temp;// feed position of extruder.
-  int   check;
+  std::string checkmsg;
+  float       a, b, c, temp;// feed position of extruder.
+  int         check;
   try {
-    const std::string checkmsg = RunGcode( "M114\n" );
-    check = sscanf(
+    checkmsg = RunGcode( "M114\n" );
+    check    = sscanf(
       checkmsg.c_str(),
       "X:%f Y:%f Z:%f E:%f Count X:%f Y:%f Z:%f",
-      &opx,
-      &opy,
-      &opz,
+      &a,
+      &b,
+      &c,
       &temp,
       &cx,
       &cy,
@@ -512,7 +513,9 @@ GCoder::InMotion( float x, float y, float z )
     return true;
   }
 
-  if( check != 7 ){return true;}
+  if( check != 7 ){
+    return true;
+  }
 
   // Supposedly the check matching cooridnate
   const double tx = ModifyTargetCoordinate( x, max_x() );
