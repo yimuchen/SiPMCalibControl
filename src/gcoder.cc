@@ -494,16 +494,17 @@ GCoder::MoveToRaw( float x, float y, float z, bool verbose )
 bool
 GCoder::InMotion( float x, float y, float z )
 {
-  float temp;// feed position of extruder.
-  int   check;
+  std::string checkmsg;
+  float       a, b, c, temp;// feed position of extruder.
+  int         check;
   try {
-    const std::string checkmsg = RunGcode( "M114\n" );
-    check = sscanf(
+    checkmsg = RunGcode( "M114\n" );
+    check    = sscanf(
       checkmsg.c_str(),
       "X:%f Y:%f Z:%f E:%f Count X:%f Y:%f Z:%f",
-      &opx,
-      &opy,
-      &opz,
+      &a,
+      &b,
+      &c,
       &temp,
       &cx,
       &cy,
@@ -512,7 +513,9 @@ GCoder::InMotion( float x, float y, float z )
     return true;
   }
 
-  if( check != 7 ){return true;}
+  if( check != 7 ){
+    return true;
+  }
 
   // Supposedly the check matching cooridnate
   const double tx = ModifyTargetCoordinate( x, max_x() );
@@ -541,20 +544,24 @@ GCoder::MoveTo( float x, float y, float z, bool verbose )
 
   if( z < min_z_safety && opz < min_z_safety ){
     MoveToRaw( opx, opy, min_z_safety, verbose );
-    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     MoveToRaw( x,   y,   min_z_safety, verbose  );
-    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     MoveToRaw( x,   y,   z,            verbose );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
   } else if( opz < min_z_safety ){
     MoveToRaw( opx, opy, min_z_safety, verbose );
-    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     MoveToRaw( x,   y,   z,            verbose  );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
   } else if( z < min_z_safety ){
     MoveToRaw( x, y, min_z_safety, verbose );
-    std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     MoveToRaw( x, y, z,            verbose );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
   } else {
     MoveToRaw( x, y, z, verbose );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
   }
 }
 
