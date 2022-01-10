@@ -173,7 +173,7 @@ class drsrun(cmdbase.savefilecmd):
 
       tstart = time.time()
       while not self.drs.is_ready():
-        self.check_handle(args)
+        self.check_handle()
         try:  ## For stand alone runs with external trigger
           self.gpio.pulse(10, 100)
         except:

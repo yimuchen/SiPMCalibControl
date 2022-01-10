@@ -36,7 +36,7 @@ class pulse(cmdbase.controlcmd):
   def run(self, args):
     # Splitting into 1000 chunks
     for i in range(args.n // 100):
-      self.check_handle(args)
+      self.check_handle()
       self.gpio.pulse(100, args.wait)
 
 
@@ -123,7 +123,7 @@ class showadc(cmdbase.controlcmd):
     start_time = time.time()
     end_time = time.time()
     while (end_time - start_time) < args.time:
-      self.check_handle(args)
+      self.check_handle()
       self.update('{0} | {1} | {2} | {3}'.format(
           'LED TEMP:{0:5.2f}C ({1:5.1f}mV)'.format(self.gpio.ntc_read(0),
                                                    self.gpio.adc_read(0)),
