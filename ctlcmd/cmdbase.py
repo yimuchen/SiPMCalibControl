@@ -1,23 +1,23 @@
 """
 @file cmdbase.py
 
-
 @defgroup cli_design CLI Framework
 
-The command line interface is designe daround the python [`cmd.Cmd`][python-cmd]
-class: the `ctlcmd.cmdbase.controlterm` class inherits from the python base
-class, and expects a list of `ctlcmd.cmdbase.controlcmd` classes during
-construction, this allows for a simplified construction of commands of arbitrary
-execution complexity while having a reusable framework for common routines such
-as command argument parsing with [`argparse`][python-argparse].
+The command line interface is designe daround the python
+[`cmd.Cmd`][python-cmd] class: the `ctlcmd.cmdbase.controlterm` class inherits
+from the python base class, and expects a list of `ctlcmd.cmdbase.controlcmd`
+classes during construction, this allows for a simplified construction of
+commands of arbitrary execution complexity while having a reusable framework
+for common routines such as command argument parsing with
+[`argparse`][python-argparse].
 
 ## Framework overview
 
 In vanilla python, the [`cmd`][python-cmd] class implements command as a series
 of `do_<cmd>` function, with corresponding, `help_<cmd>` and `complete_<cmd>`
 function to manage help message generation and tag-autocomplete with GNU
-readline. The [`controlterm`][controlterm] constructs these methods according to
-the given list of [`controlcmd`][controlcmd] derived classes, with the
+readline. The [`controlterm`][controlterm] constructs these methods according
+to the given list of [`controlcmd`][controlcmd] derived classes, with the
 `control.do_<cmd>` method being mapped to the `<cmd>.do` method, and so on. The
 `controlterm` class is also responsible for handling the various hardware
 interface objects used for system control.
@@ -25,24 +25,27 @@ interface objects used for system control.
 The [`controlcmd`][controlcmd] class further breaks down the `do` method into
 common routines: first, the raw `line` string input is process via the
 `argparse.ArgumentParser` instance with additional processing performed by the
-overloaded `controlcmd.parse` methods. The argument argument is then passed over
-to the `run` method for actually running. As many commands for the system control
-will have similar/identical argument parsing processes, additional subclasses
-have been provided for the argument construction and argument parsing. To such
-processing will *always* be performed in the sequence of the class derivative
-sequence (order listed in the `__mro__` method)
+overloaded `controlcmd.parse` methods. The argument argument is then passed
+over to the `run` method for actually running. As many commands for the system
+control will have similar/identical argument parsing processes, additional
+subclasses have been provided for the argument construction and argument
+parsing. To such processing will *always* be performed in the sequence of the
+class derivative sequence (order listed in the `__mro__` method)
 
 ## Documentation guidelines
 
 For user-level command classes (classes that actually get passed into the
-construction of the master `controlterm` object), as the `__doc__` string of the
-command classes is used for both the command line help message and the generation
-of the user manual, developers should keep just a `@brief` documentation in the
-user-level command class's `__doc__` string, more detail documentation of how the
-command works should be kept in the dedicated documentation files, which can also
-give examples as to how the various command should be used. This is only true for
-the class level `__doc__` strings, however. All *method* `__doc__` string should
-be kept self contained within the class.
+construction of the master `controlterm` object), as the `__doc__` string of
+the command classes is used for both the command line help message and the
+generation of the user manual, developers should keep just a `@brief`
+documentation in the user-level command class's `__doc__` string, more detail
+documentation of how the command works should be kept in the dedicated
+documentation files, which can also give examples as to how the various command
+should be used. This is only true for the class level `__doc__` strings,
+however. All *method* `__doc__` string should be kept self contained within the
+class. In the same line of though, the help string for the command arguments
+should be kept short, and a URL should added to a argument group should the
+arguments require a more detailed documentation for advanced features.
 
 For non user-level command classes, we keep in the usual convention that
 documentation should be kept close to the implementation, to help with
@@ -50,8 +53,11 @@ bookkeeping during development, so use the typical doxygen tag directly in the
 class and method  `__doc__` strings.
 
 [python-cmd]: https://docs.python.org/3/library/cmd.html
-[python-argparse]: https://docs.python.org/3/library/argparse.html
+
+[python-argparse]:https://docs.python.org/3/library/argparse.html
+
 [controlterm]: @ref ctlcmd.cmdbase.controlterm
+
 [controlcmd]: @ref ctlcmd.cmdbase.controlcmd
 """
 import cmod.gcoder as gcoder
@@ -103,14 +109,14 @@ class controlterm(cmd.Cmd):
     For the sake of declutering the interface, documentations of the commands in
     the interface will be kept brief. Go to the official operator manual if you
     are unsure which command/options you should used for you data collection needs:
-    https://umdcms.github.io/SiPMCalibControl/index.html/group__cli.html
+    https://umdcms.github.io/SiPMCalibControl/group__cli.html
     """
 
   doc_header = """
     For the sake of declutering the interface, documentations of the commands in
     the interface will be kept brief. Go to the official operator manual if you
     are unsure which command/options you should used for you data collection needs:
-    https://umdcms.github.io/SiPMCalibControl/index.html/group__cli.html
+    https://umdcms.github.io/SiPMCalibControl/group__cli.html
 
     Below is a list of commands available to the be used. For the detailed
     arguments available for each command, type "help <cmd>".
@@ -221,17 +227,16 @@ class controlterm(cmd.Cmd):
 class controlcmd(object):
   """
   @ingroup cli_design
+
   @brief Base interface for command classes.
 
   @details The control command is the base interface for defining a command in
   the terminal class, the instance do, callhelp and complete functions
-  corresponds to the functions do_<cmd>, help_<cmd> and complete_<cmd> functions
-  in the vallina python cmd class. Here we will be using the argparse class by
-  default to call for the help and complete functions.
-
-  In addition, the class will also contain a `LOG` instance which is used to
-  prettify the output of the printerr methods. This should be overridden in all
-  subsequent classes.
+  corresponds to the functions `do_<cmd>`, `help_<cmd>` and `complete_<cmd>`
+  functions in the vallina python cmd class. Here we will be using the argparse
+  class by default to call for the help and complete functions. To see how the
+  `do_<cmd>` method will be broken down, see the detailed documentation for the
+  `do` method of this class.
 
   One big part of this class the the consistent construction of argument elements
   and the parsing of elements. This is how the creation and parsing of the
@@ -244,6 +249,17 @@ class controlcmd(object):
     object in the `parse` argument in inherited classes should simply assume that
     the `parse` of parent classes' has already been assumed, and should not
     attempt to call the parent class's parse method.
+
+  The `do_cmd` method of the parent cmd instance will be directed to the do
+  method of this class, which handles the usual parsing/execution/clean-up flow,
+  the method that should be overloaded by the subsequent children classes to
+  define the execution routine is now `run`.
+
+  In addition, the class will also contain a `LOG` instance which is used to
+  prettify the output of the printerr methods. This should be overridden in all
+  subsequent classes that want to use the display functions. The function also
+  provides a higher level abstraction to help with common on-screen progress
+  display methods, to help reduce user code verbosity.
   """
   PARSE_ERROR = -1
   EXECUTE_ERROR = -2
@@ -255,11 +271,14 @@ class controlcmd(object):
 
   def __init__(self, cmdsession):
     """
-    Initializer declares an argument parser class with the class name as the
-    program name and the class doc string as the description string. This
-    greatly reduces the verbosity of writing custom commands.
-    Each command will have accession to the cmd session, and by extension,
-    every interface object the could potentially be used.
+    @brief Initializing the parser class and creating a reference to the control
+    instances.
+
+    @details The argument parser class is initialized with the class name as the
+    program name and the class doc string as the description string. This greatly
+    reduces the verbosity of writing custom commands. Each command will have
+    accession to the cmd session, and by extension, every interface object the
+    could potentially be used.
     """
     self.parser = argparse.ArgumentParser(
         prog=self.__class__.__name__.lower(),
@@ -281,9 +300,11 @@ class controlcmd(object):
 
   def __run_mro_method(self, method, args=None):
     """
-    Running over the the list of parent classes in inverted __mro__ order,
-    extracting which everclass has an explicitly defined method, and running the
-    method with the provided arguments.
+    @brief Running some method in inverted __mro__ order,
+
+    @details Notice that the method needs to be explcitly defined for the class
+    to be ran, as this avoids doubling running the same methods of child classes
+    without new method definition.
     """
     for t in reversed(type(self).__mro__):
       if not hasattr(t, method): continue
@@ -296,18 +317,21 @@ class controlcmd(object):
 
   def add_args(self):
     """
-    Method to be overridden for adding additional argument to the containing
-    `parser` object.
+    @brief Adding arguments to the command.
+
+    @details Method to be overridden for adding additional argument to the
+    containing `parser` object. This can be added at any level of subsequently
+    defined command classes.
     """
     pass
 
   def parse_line(self, line):
     """
-    Parsing the arguments from the input line using the argparse. argument
-    parsing method. As this is a very standard method for parsing objects, this
-    part should not be over written. Additional parsing the the resulting
-    arguments (complicated parsing of default values... etc) should be handled by
-    the `parse` method.
+    @brief Parsing the arguments from the input line using the argparse method.
+
+    As this is a very standard method for parsing objects, this part should not
+    be overwritten. Additional parsing the the resulting arguments (complicated
+    parsing of default values... etc) should be handled by the `parse` method.
     """
     try:
       args = self.parser.parse_args(shlex.split(line))
@@ -316,28 +340,11 @@ class controlcmd(object):
       self.printerr(str(err))
       raise Exception('Cannot parse input')
 
-  def parse(self, args):
-    """
-    Method that should be overwritten for additional argument parsing.
-    """
-    return args
-
-  def run(self, args):
-    """
-    Functions that require command specific definitions, should be overwritten in
-    the descendent classes
-    """
-    pass
-
-  def post_run(self):
-    """
-    Routines to run after the run argument is called.
-    """
-    log.clear_update()
-
   def do(self, line):
     """
-    Execution of the commands is now split up into following steps:
+    @brief Method called by the parent controlterm class.
+
+    @details Execution of the commands is now split up into following steps:
 
     - Parsing the command line using the standard argparse library
     - Results of the parsing will passed the run method (to be overloaded)
@@ -378,16 +385,42 @@ class controlcmd(object):
 
     return return_value
 
+  def parse(self, args):
+    """
+    @brief Method that should be overwritten for additional argument parsing.
+
+    @details Notice that the return of this method must be the augmented argument
+    container instance.
+    """
+    return args
+
+  def run(self, args):
+    """
+    @brief Method of execution to be overloaded.
+
+    @details Functions that require command specific definitions, should be
+    overwritten in the descendent classes
+    """
+    pass
+
+  def post_run(self):
+    """
+    Routines to run after the run argument is called.
+    """
+    log.clear_update()
+
   def callhelp(self):
     """
-    Printing the help message via the ArgumentParse in built functions.
+    @brief Printing the help message via the ArgumentParser in built functions.
     """
     self.parser.print_help(self.cmd.stdout)
 
   def complete(self, text, line, start_index, end_index):
     """
-    Auto completion of the functions. This function scans the options stored in
-    the parse class and returns a string of things to return.
+    @brief Auto completion of the functions.
+
+    @details This function scans the options stored in the parse class and
+    returns a string of things to return.
     - text is the word on this cursor is on (excluding tail)
     - line is the full input line string (including command)
     - start_index is the starting index of the word the cursor is at in the line
@@ -417,12 +450,6 @@ class controlcmd(object):
     else:
       return optwithtext()
 
-  """
-
-    MESSAGING HELPER FUNCTIONS
-
-  """
-
   def update(self, text):
     """Printing an update message using the static 'LOG' variable."""
     log.update(self.LOG, controlterm.simplify_string(text))
@@ -444,10 +471,11 @@ class controlcmd(object):
 
   def print_tracestack(self, err):
     """
-    Helper function for a prettier trackstack printout. The file and error lines
-    are highlighted in read and yellow, and compressed down to a single line to
-    make the traceback more compact while still being readable and useful for
-    debugging.
+    @brief Better trackstack printing function.
+
+    @details The file and error lines are highlighted in read and yellow, and
+    compressed down to a single line to make the traceback more compact while
+    still being readable and useful for debugging.
     """
     exc_msg = traceback.format_exc()
     exc_msg = exc_msg.splitlines()
@@ -482,11 +510,13 @@ class controlcmd(object):
                       temperature=None,
                       display_data={}):
     """
-    Function for displaying a progress update for the data. The standard sequence
-    would be (given the input variables)
-    - progress: A two long iterable construct, indicating the number of
-      iterations ran and the expected number of total iteration. A percent value
-      will also be displayed for at a glance monitoring.
+    @brief Standard progress report line.
+
+    @details Function for displaying a progress update for the data. The standard
+    sequence would be (given the input variables)
+    - progress: A 2-long iterable construct, indicating the number of iterations
+      ran and the expected number of total iteration. A percent value will also
+      be displayed for at-a-glance monitoring.
     - coordinates: If set to true, add columns for gantry coordinates
     - temperature: If set to true, add columns for temperature sensors
     - display_data: the key is used to display the data, and the values should be
@@ -534,8 +564,10 @@ class controlcmd(object):
 
   def check_handle(self):
     """
-    Checking the status of the signal handle, closing files and raising an
-    exception if a termination signal was ever set by the user.
+    @brief Helper function for handling signals.
+
+    Checking the status of the signal handle, raising an exception if a
+    termination signal was ever set by the user.
     """
     if self.sighandle.terminate:
       self.printmsg('TERMINATION SIGNAL RECIEVED, EXITING COMMAND')
@@ -543,11 +575,13 @@ class controlcmd(object):
 
   def move_gantry(self, x, y, z, verbose):
     """
-    Wrapper for gantry motion command, suppresses the exception raised for in
-    case that the gantry isn't connected so that one can test with pre-defined
-    models. Notice that the stepper motor disable will not be handled here, as it
-    should only be disabled for readout. See the readoutcmd class to see how the
-    readout is handled.
+    @brief Wrapper for gantry motion to be called by children method.
+
+    @details Suppresses the exception raised for in case that the gantry isn't
+    connected so that one can test with pre-defined models. Notice that the
+    stepper motor disable will not be handled here, as it should only be disabled
+    for readout. See the readoutcmd class to see how the readout handles the
+    motor disabling routine.
     """
     try:
       # Try to move the gantry. Even if it fails there will be fail safes
@@ -568,14 +602,15 @@ class controlcmd(object):
 
   def prompt_yn(self, question, default='no'):
     """
-    Ask a yes/no question and prompt a question to the user and return their
-    answer.
+    @brief Ask a yes/no question and prompt a question to the user and return
+    their answer.
 
-    'question' is a string that is presented to the user. 'default' is the
-    presumed answer if the user just hits \<Enter\>. It must be 'yes' (the
-    default), 'no' or None (meaning an answer is required of the user).
+    @details The input 'question' is a string that is presented to the user.
+    'default' is the presumed answer if the user just hits \<Enter\>. It must be
+    'yes' (the default), 'no' or None (meaning an answer is required of the
+    user).
 
-    The 'answer' return value is True for 'yes' or False for 'no'.
+    The return value is True for 'yes' or False for 'no'.
     """
     valid = {'yes': True, 'ye': True, 'y': True, 'no': False, 'n': False}
     try:
@@ -608,9 +643,9 @@ class controlcmd(object):
         log.printerr(
             'Please respond with \'yes\' or \'no\' (or \'y\' or \'n\').\n')
 
-  # Helper function for globbing
   @staticmethod
   def globcomp(text):
+    """Helper function for getting globbed files for autocompletion"""
     globlist = glob.glob(text + "*")
     globlist = [file + '/' if os.path.isdir(file) else file for file in globlist]
     return globlist
@@ -624,9 +659,30 @@ class savefilecmd(controlcmd):
 
   @details Command with the need to save a file. A standard method is provided
   adding the savefile options to the argparse instance, as well as additional
-  parsing and handling of the method. All function that wish to have their
-  default save location overridden should simple change the DEFAULT_SAVEFILE
-  static variable.
+  parsing of the file name and handling of the file opening methods. All function
+  that wish to have their default save location overridden should simple change
+  the DEFAULT_SAVEFILE static variable.
+
+  The standard data storage format consists of lines with 8 + N columns, with the
+  leading 8 columns being:
+
+  - `0` The time stamp (ms)
+  - `1` The detector id
+  - `2,3,4` The gantry coordinates of the data collection (mm)
+  - `5` The measured bias voltage (mV)
+  - `6` The measured SiPM temperature (C)
+  - `7` The measured pulser board temperature (C)
+
+  The remaining N columns are data, specific to the data collection routine of
+  interest.
+
+  The save file string can also include placeholder strings to have the filename
+  automatically be modified according other input arguments and/or the state of
+  the system. This allows the same command to be used for different
+  configurations while still have the results be saved in distinct files.
+  Placeholders will be specified in the angle braced. For the full list of
+  special placeholders, as well as how the file parsing is handled, see the
+  detailed documentation in the `ctlcmd.cmdbase.savefilecmd.parse` method.
   """
   DEFAULT_SAVEFILE = 'SAVEFILE_<TIMESTAMP>'
 
@@ -635,38 +691,41 @@ class savefilecmd(controlcmd):
 
   def add_args(self):
     group = self.parser.add_argument_group(
-        "file saving options", """
-    Options for changing the save file format. Specialized data formats for
-    saving full waveforms, data is typically stored in the standard formats of:
-
-    "time detid x y z pwm sipm_temp pulser_temp data1 data2..."
-
-    Where datax is specificed in the command.
-    """)
+        "file saving options", """Options for changing the save file format.
+        For more details, see the official documentation.""")
     group.add_argument('-f',
                        '--savefile',
                        type=str,
                        default=self.DEFAULT_SAVEFILE,
-                       help="""
-                       Writing results to file. The filename can be specified
-                       using <ARG> to indicate placeholders to be used by
-                       argument values. Additional place holders that can be
-                       added include:
-                       - <TIMESTAMP> can be used for a string representing the
-                         current time.
-                       - <BOARDID> can be used for board id string
-                       - <BOARDTYPE> can be used for the board type string (like
-                         T3, TBMOCK...etc).\n default=%(default)s""")
+                       help="""File path to save (placeholders in angle braces).
+                       default=%(default)s""")
     group.add_argument('--wipefile',
                        action='store_true',
                        help='Wipe existing content in output file')
 
   def parse(self, args):
     """
-    Additional parsing for the filename argument. Here we will be replacing the
-    args.savefile argument with file descriptor that can be directly used by the
-    children classes for string writing. Additional parsing is performed on the
-    filename in accordance with what ever is placed in the angle braces.
+    @brief Modifying the filename placeholders, as well as changing the savefile
+    attribute of the args object to the file handler.
+
+    @details First is the parsing of the file name to take care of placeholder
+    strings. Placeholder strings will always be in the format "<MYPLACEHOLDER>".
+    We then scan the `args` input for an argument with the name "MYPLACEHOLDER",
+    the "<MYPLACEHOLDER>" string is then substituted with the string
+    "MYPLACEHOLDER{s}", where `{s}` is the string representation of the input
+    value.
+
+    For example, if the have the the argument `--myarg` with the user input 12.3,
+    then the place holder string `<myarg>` will be substituted to be "myarg12.3".
+
+    In addition to argument values, 3 special placeholder strings are also
+    available to help with file generation:
+    - `<TIMESTAMP>`: Substituted for the current time in `%Y%m%d_%H%M%S` format.
+    - `<BOARDID>` and `<BOARDTYPE>`: substitute for the current board type and ID
+      string (see calibration with a board for more information).
+
+    To ensure the filename sanity, after all place holder arguments are
+    completed. we will substitute all '.' characters into 'p' characters.
     """
     filename = args.savefile
 
@@ -702,24 +761,18 @@ class savefilecmd(controlcmd):
                           filename,
                           flags=re.IGNORECASE)
 
-    # Opening the file using the remote file handle as an internal method to help
-    # reduce verbosity.
-    self.savefile = self.opensavefile(filename, args.wipefile)
-    return args
-
-  def opensavefile(self, filename, wipefile):
-    """
-    Function for opening the save file. Here we also add a flag in the parent cmd
-    session, so all subsystems can see which file is currently being written to.
-    """
-    mode = 'w' if wipefile else 'a'
-    f = open(filename, mode)
+    # Opening the file.
+    self.savefile = open(filename, 'w' if args.wipefile else 'a')
     self.cmd.opfile = filename
-    return f
+    return args
 
   def post_run(self):
     """
-    Close a save file with a standard message for the verbosity of run files.
+    @brief Additional steps to run before the completing the command.
+
+    @details As this modifies files on the system, we will always print a verbose
+    message to notify the user of where the save file is. This function also
+    handles that the save files are closed nominally.
     """
     self.printmsg(f"Saving results to file [{self.savefile.name}]")
     self.savefile.flush()
@@ -728,9 +781,12 @@ class savefilecmd(controlcmd):
 
   def write_standard_line(self, data, det_id=-100, time=0.0):
     """
-    This will be the standard format of saving data in space separated columns:
-    - Timestamp
-    - detID
+    @brief Standard function for generating a data file in a standard format.
+
+    @details This will be the standard format of saving data in space separated
+    columns:
+    - Timestamp (command specified)
+    - detID (command specified)
     - gantry x, y, z
     - Voltage readouts: LED bias, LED temp (C) sipm temp (C) readouts
     - The readout data: an arbitrarily long iterable container of floats.
@@ -759,12 +815,25 @@ class singlexycmd(controlcmd):
 
   @brief Commands that require the motion around a single x-y position.
 
-  @details This class will also provide the static variable to act as the flag
-  for whether the target position should add the visual offset position or not
-  (say for visual alignment and lumi-alignment, we want to keep the command
-  similar for align at detector 1, while working at different physical
-  coordinates.) The default offset for when there no valid calibration data is
-  available is provided should be based on the gantry head design.
+  @details Commands derived from this class can have x-y coordinates specified
+  via 2 methods:
+  - Raw x,y values (via the `-x`, and `-y` values) If this is the case, no
+    additional parsing is performed.
+  - Specifying a detector ID that is specified in the loaded board layout
+    (assuming it exists). In this case the board will look up the coordinates in
+    the following sequence:
+    - If the `VISUAL_OFFSET` flag is set to `False`, we first look if a
+      luminosity alignment exists for the specified detector, and use that
+      coordinate if it does, if not, then see if a visual alignment exists and
+      add the visual/lumi horizontal offset. If neither exists, simply load the
+      original uncalibrated coordinates specified in the original board layout.
+    - If the `VISUAL_OFFSET` flag is set to `True`, then the look up sequence is
+      swapped to first find the visual alignment coordinates, then some
+      luminosity alignment coordinates, then the default coordinates (the
+      addition of the visual/lumi offset value is also swapped.)
+
+  For more details on how the parsing is handled, see that method documentation
+  of the `ctlcmd.cmdbase.singlexycmd.parse` method.
   """
   VISUAL_OFFSET = False
   DEFAULT_XOFFSET = -35
@@ -775,32 +844,27 @@ class singlexycmd(controlcmd):
 
   def add_args(self):
     group = self.parser.add_argument_group(
-        "horizontal position", """
-        Options for specifiying the operation postion in the x-y coordinates.
-    """)
+        "horizontal position", """Options for specifying the operation postion in
+        the x-y coordinates.""")
     group.add_argument('-x',
                        type=float,
-                       help="""
-                       Specifying the x coordinate explicitly [mm]. If none is
-                       given the current gantry position will be used instead""")
+                       help="Specifying the x coordinate explicitly [mm].")
     group.add_argument('-y',
                        type=float,
-                       help="""
-                       Specifying the y coordinate explicitly [mm]. If none is
-                       given the current gantry' position will be used.""")
+                       help="Specifying the y coordinate explicitly [mm].")
     group.add_argument('-c',
                        '--detid',
                        type=str,
-                       help="""
-                       Specify x-y coordinates via det id, input negative value
-                       to indicate that the det is a calibration one (so you can
-                       still specify coordinates with it)""")
+                       help="""Specify x-y coordinates via det id""")
 
   def parse(self, args):
     """
-    Additional Parsing the x-y position arguments. If the detector is not
-    specified, then we are using the directly using the provided x/y coordinates
-    or the override with the current position.
+    @brief Modifying the args.x args.y and args.detid values.
+
+    @details If the detector is not specified, then we are using the directly
+    using the provided x/y coordinates or the override with the current position.
+    The detector ID, in this case, will alway be assigned to -100 (default
+    calibration detector ID)
 
     If the detector is specified: We check if the detector exists in the current
     detector list. If not an exception is raised. If yes then we attempt to look
@@ -812,13 +876,16 @@ class singlexycmd(controlcmd):
 
     If the visual offset flag is True, then the look up sequence will be:
     - Direct visual calibrated coordinates.
-    - Lumi cooridnates with visual offset added
-    - Original coorindates with visual offset added
-    If the visul offset flag is set to false, then the look up sequence will be:
-    - Lumi-calibrated coordinates.
+    - Luminosity aligned cooridnates with visual offset added
+    - Original coordinates with visual offset added
+
+    If the visual offset flag is set to false, then the look up sequence will be:
+    - Luminosity aligned alibrated coordinates.
     - Visual calibrated cooridnates with visual offset subtracted.
     - The original cooridnates.
 
+    After parsing the return `args` object will always have `args.x`, `args.y`
+    and `args.detid` attributes properly assigned.
     """
     if args.detid == None:  # Early exits if the detector ID is not used
       args.detid = -100
@@ -869,11 +936,14 @@ class singlexycmd(controlcmd):
 
   def find_xyoffset(self, currentz):
     """
-    Finding x-y offset between the luminosity and visual alignment based the
-    existing calibration. This function will loop over all calibration detectors,
-    and finding if there are any detector that has both a lumi-calibrated
-    coordinates, and visual-calibrated coordinates, and create the offset based
-    on the two measurement. If none are found, a default value will be used.
+    @brief Determining the luminosity/visual alignment offset values.
+
+    @details First we loop over all calibration detectors, and finding if there
+    are any detector that has both a luminosity calibrated coordinates, and
+    visual calibrated coordinates, and create the offset based on the two
+    measurement. If multiple are found, then the "first" calibration detector
+    (the one first calibrated) is used. If no calibration detectors are found, a
+    default value will be used.
     """
     if not any(self.board.calib_dets()):
       return self.DEFAULT_XOFFSET, self.DEFAULT_YOFFSET
@@ -902,6 +972,8 @@ class singlexycmd(controlcmd):
 
   @staticmethod
   def find_closest_z(my_map, current_z):
+    """@brief simple static function for comparing finding detector with the
+    closest z value."""
     return min(my_map.keys(), key=lambda x: abs(float(x) - float(current_z)))
 
 
@@ -912,8 +984,11 @@ class hscancmd(singlexycmd):
   @brief Commands that expand the operations around a (x,y) point to a small grid
   for alignment purposes.
 
-  @details This classes uses the static variables to designate the grid range and
-  mesh finess.
+  @details The range and distance arguments specify the size and the density of
+  the grid, notice that the range is the distance from the specified center
+  point, and will be rounded up to a multiple of the distance argument. Static
+  variables can be used to specify the default values. In addition to the grid
+  options, there is also the option to specify the z coordinate to run the scan.
   """
   HSCAN_ZVALUE = 20
   HSCAN_RANGE = 5
@@ -923,35 +998,35 @@ class hscancmd(singlexycmd):
     controlcmd.__init__(self, cmd)
 
   def add_args(self):
-    group = self.parser.add_argument_group("options for setting up x-y grid")
+    group = self.parser.add_argument_group(
+        "grid options", "options for setting up x-y grid scanning coordinates")
     group.add_argument('-z',
                        '--scanz',
                        type=float,
                        default=self.HSCAN_ZVALUE,
-                       help="""
-                       Height to perform horizontal scan [mm] (default:
+                       help="""Height to perform horizontal scan [mm] (default:
                        %(default)f[mm]).""")
     group.add_argument('-r',
                        '--range',
                        type=float,
                        default=self.HSCAN_RANGE,
-                       help="""
-                       Range to perform x-y scanning from central position [mm]
-                       (default=%(default)f)""")
+                       help="""Range to perform x-y scanning from central
+                       position [mm] (default: %(default)f)""")
     group.add_argument('-d',
                        '--distance',
                        type=float,
                        default=self.HSCAN_SEPARATION,
-                       help="""
-                       Horizontal sampling distance [mm]
-                       (default=%(default)f)""")
+                       help="""Horizontal sampling distance [mm] (default:
+                       %(default)f)""")
 
   def parse(self, args):
     """
-    After parsing the arguments, the args.x and arg.y arguments will be expanded
-    out into the list of x,y coordinates to be looped overs. In case the
-    operation requests that the grid cooridnates be larger than the physical
-    range, the range will be reduced to avoid gantry damage.
+    @brief Additional parsing to perform.
+
+    @details After parsing the arguments, the args.x and arg.y arguments will be
+    expanded out into a (numpy) list of x,y coordinates to be looped overs. In
+    case the operation requests that the grid cooridnates be larger than the
+    physical range, the range will be reduced to avoid gantry damage.
     """
     max_x = gcoder.GCoder.max_x()
     max_y = gcoder.GCoder.max_y()
@@ -983,9 +1058,11 @@ class zscancmd(controlcmd):
 
   @brief  Commands that will scan over a range of z positions.
 
-  @details As string parsing is used for abbreviate lists, the default zscan
-  values should be provided using syntax corrected string rather a list of
-  numbers.
+  @details A specifyling long list of numbers is excessively versbose and prone
+  to mistakes, this function allows for the generation of list using the notation
+  [start stop (seperation)] notation, the string will be expected out as into a
+  list of numbers that exludes the stop position. In case the seperation argument
+  is omitted, the value 1 for the separation is assumed.
   """
   ZSCAN_ZLIST = "[10 51 1]"
 
@@ -999,16 +1076,19 @@ class zscancmd(controlcmd):
                        type=str,
                        nargs='+',
                        default=self.ZSCAN_ZLIST,
-                       help="""
-                       List of z coordinate to perform scanning. One can add a
-                       list of number by the notation "[start_z end_z sepration]"
-                       """)
+                       help="""List of z coordinate to perform scanning. Lists of
+                       number by the notation '[start_z end_z sepration]'""")
 
   def parse(self, args):
     """
-    Regular expression is used to find the sets of numbers in square braces, the
-    numbers in the square braces is then used to expand out into a list of
-    floating points similar to the range command.
+    @brief Expanding out the string arugment of zlist into a list of numbers.
+
+    @details egular expression is used to find the sets of numbers in square
+    braces, the numbers in the square braces is then used to expand out into a
+    list of floating points similar to the range/numpy.linspace methods.
+
+    If the first 2 elements in the z list is in accending (decending) order, then
+    the entire list is sorted into accending (decending) order.
     """
     args.zlist = " ".join(args.zlist)
     braces = re.findall(r'\[(.*?)\]', args.zlist)
@@ -1049,13 +1129,26 @@ class readoutcmd(controlcmd):
   """
   @ingroup cli_design
 
-  @details Commands that should have single readout models.
+  @brief Commands that should have a single readout mode.
 
   @details This typically assumes that the readout device (ADC/picoscope/drs4 or
   otherwise) has been properly set up with the correct range and settings, and
   this class will provide the new "self.readout" method to subsequent commands
   such that the the return can be a singular number representing the readout
   value of triggers.
+
+  Modifications to the readout includes:
+  - The integration window: specified in terms of the ADC timing bin indices. If
+    both are left to be 0, then the entire timing range is used.
+  - The windows used to determine pedestal subtraction: specified in terms of ADC
+    timing bin indices. If both are left to be 0, the no pedestal subtraction is
+    performed.
+  - The number of waveforms to perform data collection. Notice that depending on
+    the data collection routine of interest, the samples specified will either be
+    stored as is, or be the number of samples used for averaging. In the case of
+    scope like readouts, averaged values will have the uncertainty divided by the
+    square root of the number of waveforms used (to account for intrinsice
+    Poisson uncertainties)
   """
   class Mode(enum.IntEnum):
     MODE_PICO = 1
@@ -1068,16 +1161,13 @@ class readoutcmd(controlcmd):
 
   def add_args(self):
     group = self.parser.add_argument_group(
-        "Readout", """
-        Arguments for changing the behaviour of readout without directly
-        interacting with the readout interfaces.
-        """)
+        "Readout", """Arguments for changing the behaviour of readout without
+        directly interacting with the readout interfaces.""")
     group.add_argument('--mode',
                        type=int,
                        choices=[e.value for e in readoutcmd.Mode],
-                       help="""
-                       Readout method to be used: 1:picoscope, 2:ADC, 3:DRS4,
-                      -1:Predefined model (simulated)""")
+                       help="""Readout method to be used: 1:picoscope, 2:ADC,
+                      3:DRS4, -1:Predefined model (simulated)""")
     group.add_argument('--channel',
                        type=int,
                        default=None,
@@ -1085,39 +1175,30 @@ class readoutcmd(controlcmd):
     group.add_argument('--samples',
                        type=int,
                        default=5000,
-                       help="""
-                       Number of readout samples to take the average for
+                       help="""Number of readout samples to take for the
                        luminosity measurement (default=%(default)d)""")
     group.add_argument('--intstart',
                        type=int,
                        default=0,
-                       help="""
-                       Time slice to start integration for scope-like readouts
-                       (DRS4/Picoscope). Leave 0 to intergrate over full
-                       range""")
+                       help="""Time slice to start integration for scope-like
+                       readouts (DRS4/Picoscope).""")
     group.add_argument('--intstop',
                        type=int,
                        default=0,
-                       help="""
-                       Time slice to stop integration for scope-like readouts
-                       (DRS4/Picoscope). Leave 0 to intergrate over full
-                       range""")
+                       help="""Time slice to stop integration for scope-like
+                       readouts (DRS4/Picoscope).""")
     group.add_argument('--pedstart',
                        type=int,
                        default=0,
-                       help="""
-                       Time slice to start integration to obtain value for
-                       pedestal subtraction for scope-like readouts
-                       (DRS4/Picoscope). Leave 0 to ignore pedestal
-                       subtraction""")
+                       help="""Time slice to start integration to obtain value
+                       for pedestal subtraction for scope-like readouts
+                       (DRS4/Picoscope).""")
     group.add_argument('--pedstop',
                        type=int,
                        default=0,
-                       help="""
-                       Time slice to start integration to obtain value for
-                       pedestal subtraction for scope-like readouts
-                       (DRS4/Picoscope). Leave 0 to ignore pedestal
-                       subtraction""")
+                       help="""Time slice to start integration to obtain value
+                       for pedestal subtraction for scope-like readouts
+                       (DRS4/Picoscope).""")
 
     ## Additional initialization done here:
     from cmod.readoutmodel import SiPMModel, DiodeModel
@@ -1126,8 +1207,9 @@ class readoutcmd(controlcmd):
 
   def parse(self, args):
     """
-    Parsing the readout option. Basing the "default" arguments on additional
-    inputs that may exist in the command input:
+    @brief Checks to make sure the inputs values are sane.
+
+    @details Additional checks include:
     - If the channel is not specified, then the channel will be assumed to be the
       channel associated with the detector ID (if applicable). Otherwise the
       channel defaults to 0.
@@ -1174,18 +1256,19 @@ class readoutcmd(controlcmd):
     else:
       if (args.intstart > 0 or args.intstop or args.pedstart > 0
           or args.pedstop > 0):
-        self.printwarn("""
-          Integration is not supported for this readout mode, integration
-          settings will be ignored.
-        """)
+        self.printwarn("""Integration is not supported for this readout mode,
+          integration settings will be ignored.""")
 
     return args
 
   def readout(self, args, average=True):
     """
-    Abstracting the readout method for child classes, the input should be the
-    parsed arguments along with a flag of whether the return should be some
-    averaged value with STD or some the full list.
+    @brief Perfroming a readout routine with the specified arguments.
+
+    @details Abstracting the readout method for child classes. The `average` flag
+    will be used to indicate whether the list return value should be the list of
+    readout values of length (args.samples) or be a 2-tuple indicating the
+    avearge and (reduced) standard deviation of the raw list.
     """
     readout_list = []
     try:  # Stopping the stepper motors for cleaner readout
@@ -1218,9 +1301,11 @@ class readoutcmd(controlcmd):
 
   def read_adc(self, args):
     """
-    Getting the averaged readout from the ADC. Here we provide a random sleep
-    between adc_read call to avoid any aliasing with either the readout rate or
-    the slow varying fluctuations in our DC systems.
+    @brief Implementation for reading out the ADC
+
+    @details Aside from the interfact functions available in the GPIO module, we
+    inset a random sleep between adc_read call to avoid any aliasing with either
+    the readout rate or the slow varying fluctuations in our DC systems.
     """
     val = []
     for _ in range(args.samples):
@@ -1231,9 +1316,11 @@ class readoutcmd(controlcmd):
 
   def read_pico(self, args):
     """
-    Averaged readout of the picoscope. Here we always set the blocksize to be
-    1000 captures. This function will continuously fire the trigger system until
-    a single rapidblock has been completed.
+    @brief Implementation for reading out the Picoscope
+
+    @details Averaged readout of the picoscope. Here we always set the blocksize
+    to be 1000 captures. This function will continuously fire the trigger system
+    until a single rapidblock has been completed.
     """
     Nblock = 1000
     val = []
@@ -1251,16 +1338,16 @@ class readoutcmd(controlcmd):
 
   def read_drs(self, args):
     """
-    Average the readout results from the DRS4. Here we will contiously fire the
-    trigger until collections have been completed.
+    @brief Implementation for reading out the DRS4
+
+    @details As the DRS 4 will always effectively be in single shot mode, here we
+    will contiously fire the trigger until collections have been completed.
     """
     val = []
     for _ in range(args.samples):
       self.drs.startcollect()
       while not self.drs.is_ready():
         self._fire_trigger()
-      # Decent settings for drs delay 550 and 2.0 GHz sample rate.
-      # Try to change programatically.
       val.append(
           self.drs.waveformsum(args.channel, args.intstart, args.intstop,
                                args.pedstart, args.pedstop))
@@ -1285,7 +1372,7 @@ class readoutcmd(controlcmd):
     elif args.mode == readoutcmd.Mode.MODE_DRS:
       return True
     elif args.mode == readoutcmd.Mode.MODE_ADC:
-      return True
+      return False
     else:  # For mock readouts
       if args.channel >= 0:
         return True
@@ -1296,8 +1383,9 @@ class readoutcmd(controlcmd):
 
   def read_model(self, args):
     """
-    Generating a fake readout from a predefined model. THe location is extracted
-    from the current gantry position
+    Generating a fake readout from a predefined model. The location is extracted
+    from the current gantry position and the relative coordinates is loaded from
+    the board information.
     """
     x = self.gcoder.opx
     y = self.gcoder.opy

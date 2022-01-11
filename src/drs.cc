@@ -3,19 +3,23 @@
  * @author Yi-Mu Chen
  * @brief A high level interface for the DRS4 serializer.
  *
+ * @class DRSContainer
+ * @ingroup hardware
+ * @brief Handling interfacing between the DRS readout system.
+ *
  * Here we provide a simpler interface to interface to initialize the DRS4
  * oscilloscope with the default settings required for SiPM data collection, as
  * well as abstraction for the typical actions of pulse-like waveform
  * aquisition and waveform summing, and status report. This is basically a
- * stripped down and specialized method found in the DRS4 reference program[1]
- * that serves as the main reference of this file.
+ * stripped down and specialized method found in the DRS4 [reference
+ * program][ref] that serves as the main reference of this file.
  *
  * The collection will always be in single-shot mode, with no exposure the
  * methods required to this setting. Notice that the DRS4 will not have a
  * timeout for single shot mode once collection is requested, so the user will
  * be responsible for making sure that the appropriate trigger is provided.
  *
- * [1] https://www.psi.ch/en/drs/software-download
+ * [ref]: https://www.psi.ch/en/drs/software-download
  */
 #include "drs.hpp"
 #include "logger.hpp"

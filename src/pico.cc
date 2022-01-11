@@ -3,10 +3,14 @@
  * @author Yi-Mu Chen
  * @brief Interface for picotech-PICOSCOPE used for SiPM data collection.
  *
+ * @class PicoUnit
+ * @ingroup hardware
+ * @brief Interface for the picotech PICOSCOPE for data collection
+ *
  * Here we are specializing the PICOSCOPE to the specific model used at UMD
  * (PS5234), and the operations needed for collecting SiPM/pulse-like data. The
  * main reference program used making this interface class can be found in the
- * official picotech Github repository [1].
+ * official picotech [Github repository][pico-github].
  *
  * A big chuck of the PICO scope interface revolves round hte collection of
  * "rapidblocks", sets waveforms collected over multiple triggers, which speeds
@@ -14,7 +18,10 @@
  * classes in the PicoUnit class is creating machine side memory space to
  * receive the larger data blocks from the picscope unit.
  *
- * [1] https://github.com/picotech/picosdk-c-examples
+ * Notice that the timing spacing is explicitly initialized to be the smallest
+ * time interval available (2ns) and explicitly hidden from the user.
+ *
+ * [pico-github]: https://github.com/picotech/picosdk-c-examples
  */
 
 #include "logger.hpp"
@@ -32,6 +39,14 @@ static const float inputRanges[PS5000_MAX_RANGES] = {
   10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000 };
 
 
+/**
+ * @brief Initializing the Picoscope interface
+ *
+ * Currently there is no what to specify the which device is being used by the
+ * underlying driver. On the python level, there are ways to not initialize the
+ * device based on the device path given, but that is currently the only method
+ * to "change" the working device should such a requirement be needed.
+ */
 void
 PicoUnit::Init()
 {
@@ -60,6 +75,10 @@ PicoUnit::Init()
 }
 
 
+/**
+ * @{
+ * @brief Abstraction for voltage range and voltage range settings
+ */
 int
 PicoUnit::VoltageRangeMin() const
 {
@@ -95,6 +114,31 @@ PicoUnit::SetVoltageRange( const int16_t channel, const int newrange )
 }
 
 
+/** @} */
+
+/**
+ * @brief Trigger settings
+ *
+ * The channel, direction, analog trigger level (if applicable) , and delay
+ * time, and the maximum trigger wait time needs to be all be provided.
+ *
+ * A few comments on the input:
+ * - Despite only having 2 data channels, the external trigger channel is
+ *   placed on channel "4". This is for compatibility with similar models in
+ *   the picoscope product line.
+ * - The ADC level input in this functions is in values of mV. It will
+ *   automatically be translated to ADC values in this function.
+ * - The trigger delay is units of 10 time steps (so 20ns in the default
+ *   settings of the calibration system) As this is a very coarse settings that
+ *   is difficult to reflect, no conversion will be provided for the delay
+ *   settings.
+ *
+ * @param channel
+ * @param direction
+ * @param level
+ * @param newdelay
+ * @param maxwait
+ */
 void
 PicoUnit::SetTrigger( const int16_t  channel,
                       const int16_t  direction,
@@ -109,14 +153,12 @@ PicoUnit::SetTrigger( const int16_t  channel,
                                   / inputRanges[range[channel]];
   char errormessage[1024];
 
-  // Always setting up such that it waits for a rising external trigger
   auto status = ps5000SetSimpleTrigger( device,
                                         enable,
                                         (PS5000_CHANNEL)channel,
                                         leveladc,
                                         (THRESHOLD_DIRECTION)direction,
-                                        newdelay,// delay is in units of 10
-                                                 // timeintervals
+                                        newdelay,
                                         maxwait );
   if( status != PICO_OK ){
     sprintf( errormessage,
@@ -207,9 +249,8 @@ PicoUnit::SetBlockNums( unsigned ncaps, unsigned post, unsigned pre )
  * @brief Starting rapidblock collection.
  *
  * The function will exit as soon as the rapidblock is setup. The users can
- * check
- * whether rapid block collection has completed (ready to have picoscope memory
- * be flushed to device) using the IsReady method.
+ * check whether rapid block collection has completed (ready to have picoscope
+ * memory be flushed to device) using the IsReady method.
  */
 void
 PicoUnit::StartRapidBlock()
@@ -235,10 +276,10 @@ PicoUnit::StartRapidBlock()
 
 
 /**
- * @brief Check if rapidblock collection has completed. If yes, flush the data
- * in
- * the picoscope internal memory to device and return true. Simple return false
- * otherwise.
+ * @brief Check if rapidblock collection has completed.
+ *
+ * If yes, flush the data in the picoscope internal memory to device and return
+ * true. Simple return false otherwise.
  */
 bool
 PicoUnit::IsReady()
@@ -319,9 +360,11 @@ PicoUnit::GetBuffer( const int      channel,
 
 /**
  * @brief Converting the ADC value to millivolts according to the current range
- * settings of a certain channel. Notice that the ADC value should be passed
- * into this function as obtained from the GetBuffer method, even if the last 8
- * bits of the GetBuffer method is effectively redundent.
+ * settings of a certain channel.
+ *
+ * Notice that the ADC value should be passed into this function as obtained
+ * from the GetBuffer method, even if the last 8 bits of the GetBuffer method
+ * is effectively redundent.
  */
 float
 PicoUnit::adc2mv( int16_t channel, int16_t adc ) const
@@ -331,8 +374,9 @@ PicoUnit::adc2mv( int16_t channel, int16_t adc ) const
 
 
 /**
- * @brief Printing the first 6 captures waveforms in a table on the screen. Very
- * verbose method for debugging purposes.
+ * @brief Printing the first 6 captures waveforms in a table on the screen.
+ *
+ * Very verbose method for debugging purposes.
  */
 void
 PicoUnit::DumpBuffer() const
