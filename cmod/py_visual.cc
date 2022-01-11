@@ -8,17 +8,17 @@ PYBIND11_MODULE( visual, m )
   .def( pybind11::init<>() )
   .def( pybind11::init<const std::string&>() )
   .def( "init_dev",      &Visual::init_dev     )
-  .def( "FrameWidth",    &Visual::FrameWidth   )
-  .def( "FrameHeight",   &Visual::FrameHeight  )
+  .def( "frame_width",    &Visual::FrameWidth   )
+  .def( "frame_height",   &Visual::FrameHeight  )
   .def( "get_latest",    &Visual::GetVisResult )
-  .def( "SaveImage",     &Visual::SaveImage    )
-  .def( "GetImageBytes", []( Visual& vis ){
+  .def( "save_image",     &Visual::SaveImage    )
+  .def( "get_image_bytes", []( Visual& vis ){
     // Inline conversion to python bytes
     const auto cbytes = vis.GetImageBytes();
     std::string sbytes( cbytes.begin(), cbytes.end() );
     return pybind11::bytes( sbytes );
   } )
-  .def( "GetImage", []( Visual& vis, const bool raw ){
+  .def( "get_image", []( Visual& vis, const bool raw ){
     // Inline conversion of cv::Mat to numpy arrays
     cv::Mat img = vis.GetImage( raw );
     return pybind11::array_t<unsigned char>(

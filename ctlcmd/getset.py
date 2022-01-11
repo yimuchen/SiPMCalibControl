@@ -361,7 +361,7 @@ class promptaction(cmdbase.controlcmd):
 
     input_text = ''
     while input_text != args.string[0]:
-      self.check_handle(args)
+      self.check_handle()
       self.printmsg(log.GREEN(f'    TYPE [{args.string[0]}] to continue...'))
       input_text = self.cmd.stdin.readline().strip()
 
@@ -406,7 +406,7 @@ class wait(cmdbase.controlcmd):
     start_time = time.time_ns()
     current_time = start_time
     while (current_time - start_time) / 1e9 < args.time:
-      self.check_handle(args)
+      self.check_handle()
       time.sleep(0.1)
       current_time = time.time_ns()
 
@@ -461,7 +461,7 @@ class runfile(cmdbase.controlcmd):
     with open(args.file) as f:
       for line in f.readlines():
         line = line.strip()
-        self.check_handle(args)
+        self.check_handle()
         self.printmsg(line)
         status = self.cmd.onecmd(line)
         if status != cmdbase.controlcmd.EXIT_SUCCESS:

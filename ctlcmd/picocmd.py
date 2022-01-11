@@ -146,7 +146,7 @@ class picorunblock(cmdbase.savefilecmd):
       self.pico.startrapidblocks()
 
       while not self.pico.isready():
-        self.check_handle(args)
+        self.check_handle()
         if self.gpio.gpio_status():
           self.gpio.pulse(int(self.pico.ncaptures / 10), 100)
 

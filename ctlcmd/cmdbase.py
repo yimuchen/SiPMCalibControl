@@ -562,7 +562,7 @@ class controlcmd(object):
 
     self.update(message_string)
 
-  def check_handle(self, args):
+  def check_handle(self):
     """
     @brief Helper function for handling signals.
 
@@ -588,6 +588,7 @@ class controlcmd(object):
       # in other classes
       self.gcoder.moveto(x, y, z, verbose)
       while self.gcoder.in_motion(x, y, z):
+        self.check_handle() # Allowing for interuption
         time.sleep(0.01)  ## Updating position in 0.01 second increments
     except Exception as e:
       # Setting internal coordinates to the designated position anyway.

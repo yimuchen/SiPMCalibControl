@@ -229,7 +229,7 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
 
     ## Running over mesh.
     for idx, (xval, yval) in enumerate(zip(args.x, args.y)):
-      self.check_handle(args)
+      self.check_handle()
       self.move_gantry(xval, yval, args.scanz, False)
       lumival, uncval = self.readout(args, average=True)
       self.update_progress(progress=(idx + 1, total),
@@ -348,7 +348,7 @@ class zscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.readoutcmd,
     for idx, z in enumerate(args.zlist):
       self.move_gantry(args.x, args.y, z, False)
       for power in args.power:
-        self.check_handle(args)
+        self.check_handle()
 
         self.gpio.pwm(0, power, 1e5)  # Maximum PWM frequency
 
@@ -428,7 +428,7 @@ class lowlightcollect(cmdbase.singlexycmd, cmdbase.readoutcmd,
     self.move_gantry(args.x, args.y, args.z, False)
     self.gpio.pwm(0, args.power, 1e5)
     for i in range(args.nparts):
-      self.check_handle(args)
+      self.check_handle()
       readout = self.readout(args, average=False)
       self.write_standard_line(readout, det_id=args.detid)
       self.update_progress(progress=(i + 1, args.nparts),
@@ -477,7 +477,7 @@ class timescan(cmdbase.readoutcmd, cmdbase.savefilecmd):
     pwmindex = 0
 
     for i in range(args.nslice):
-      self.check_handle(args)
+      self.check_handle()
       if (i % args.pwmslices == 0):
         self.gpio.pwm(0, args.testpwm[pwmindex], 1e5)
         pwmindex = (pwmindex + 1) % len(args.testpwm)

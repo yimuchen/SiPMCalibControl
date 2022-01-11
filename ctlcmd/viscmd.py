@@ -147,7 +147,7 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
 
     ## Running over mesh.
     for idx, (xval, yval) in enumerate(zip(args.x, args.y)):
-      self.check_handle(args)
+      self.check_handle()
       self.move_gantry(xval, yval, args.scanz, False)
       time.sleep(args.vwait)
 
@@ -370,7 +370,7 @@ class visualmaxsharp(cmdbase.singlexycmd, cmdbase.zscancmd, visualmeta):
     laplace = []
 
     for z in args.zlist:
-      self.check_handle(args)
+      self.check_handle()
       self.move_gantry(args.x, args.y, z, False)
       time.sleep(args.vwait)
 
@@ -480,7 +480,7 @@ class visualzscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.savefilecmd,
   def run(self, args):
     for idx, z in enumerate(args.zlist):
       # Checking termination signal
-      self.check_handle(args)
+      self.check_handle()
       self.move_gantry(args.x, args.y, z, False)
       time.sleep(args.wait)
 
@@ -521,7 +521,8 @@ class visualshowdet(visualmeta):
                              lines""")
 
   def parse(self, args):
-    args.monitor = True  # Forcing to be tru.
+    args.monitor = True  # Forcing to be true.
+    return args
 
   def run(self, args):
     self.printmsg("PRESS CTL+C to stop the command")
@@ -532,7 +533,7 @@ class visualshowdet(visualmeta):
     self.printmsg(log.CYAN("Candidate contour (not largest)"))
     while True:
       try:
-        self.check_handle(args)
+        self.check_handle()
       except:
         break
 
