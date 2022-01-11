@@ -26,6 +26,8 @@ jobs:
       run: |
         sudo mkdir -p docs/html/customjs
         sudo cp docs/customjs/* docs/html/customjs
+        sudo mkdir -p docs/html/image
+        sudo cp docs/image/* docs/html/image
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3

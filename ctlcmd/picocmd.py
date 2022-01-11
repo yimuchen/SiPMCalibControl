@@ -163,8 +163,8 @@ class picorunblock(cmdbase.savefilecmd):
 
 
 class picorange(cmdbase.controlcmd):
-  """@brief Automatically setting the voltage range of the picoscope based on a few set
-  waveforms of data."""
+  """@brief Automatically setting the voltage range of the picoscope based on a
+  few set waveforms of data."""
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 

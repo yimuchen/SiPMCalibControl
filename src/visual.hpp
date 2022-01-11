@@ -5,15 +5,10 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 
-// #include <pybind11/numpy.h>
 #include <atomic>
 #include <memory>
 #include <thread>
 
-/**
- * @brief This will be the one class that we will note be declaring as a
- * singleton instance, as we will potentially be using more than 1 camera.
- */
 class Visual
 {
 public:

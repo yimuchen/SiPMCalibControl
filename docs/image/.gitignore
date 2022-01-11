@@ -1,0 +1,7 @@
+# Explicitly ignoring everything unless otherwise specified
+
+*
+!.gitignore
+
+!zscan_processed.png
+!zscan_raw.png
