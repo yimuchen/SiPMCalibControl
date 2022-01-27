@@ -588,7 +588,7 @@ class controlcmd(object):
       # in other classes
       self.gcoder.moveto(x, y, z, verbose)
       while self.gcoder.in_motion(x, y, z):
-        self.check_handle() # Allowing for interuption
+        self.check_handle()  # Allowing for interuption
         time.sleep(0.01)  ## Updating position in 0.01 second increments
     except Exception as e:
       # Setting internal coordinates to the designated position anyway.
@@ -1137,18 +1137,23 @@ class readoutcmd(controlcmd):
   such that the the return can be a singular number representing the readout
   value of triggers.
 
-  Modifications to the readout includes:
-  - The integration window: specified in terms of the ADC timing bin indices. If
+  Modifications to the readout includes: - The integration window: specified in
+  terms of the ADC timing bin indices. If
     both are left to be 0, then the entire timing range is used.
-  - The windows used to determine pedestal subtraction: specified in terms of ADC
-    timing bin indices. If both are left to be 0, the no pedestal subtraction is
-    performed.
+  - The windows used to determine pedestal subtraction: specified in terms of
+    ADC timing bin indices. If both are left to be 0, the no pedestal
+    subtraction is performed.
   - The number of waveforms to perform data collection. Notice that depending on
-    the data collection routine of interest, the samples specified will either be
-    stored as is, or be the number of samples used for averaging. In the case of
-    scope like readouts, averaged values will have the uncertainty divided by the
-    square root of the number of waveforms used (to account for intrinsice
+    the data collection routine of interest, the samples specified will either
+    be stored as is, or be the number of samples used for averaging. In the case
+    of scope like readouts, averaged values will have the uncertainty divided by
+    the square root of the number of waveforms used (to account for intrinsice
     Poisson uncertainties)
+
+  In addition to the readout modifications, there is the option to pause the
+  system before taking the data, this allows either for the system to physically
+  settle to a stable/clean state, or act as a artificial throttle to the
+  throughput for scheduling reasons.
   """
   class Mode(enum.IntEnum):
     MODE_PICO = 1
@@ -1163,6 +1168,10 @@ class readoutcmd(controlcmd):
     group = self.parser.add_argument_group(
         "Readout", """Arguments for changing the behaviour of readout without
         directly interacting with the readout interfaces.""")
+    group.add_argument('--pause',
+                       type=float,
+                       default=0,
+                       help="""Time to pause the system before readout [sec]""")
     group.add_argument('--mode',
                        type=int,
                        choices=[e.value for e in readoutcmd.Mode],
@@ -1265,11 +1274,20 @@ class readoutcmd(controlcmd):
     """
     @brief Perfroming a readout routine with the specified arguments.
 
-    @details Abstracting the readout method for child classes. The `average` flag
-    will be used to indicate whether the list return value should be the list of
-    readout values of length (args.samples) or be a 2-tuple indicating the
-    avearge and (reduced) standard deviation of the raw list.
+    @details Abstracting the readout method for child classes. The `average`
+    flag will be used to indicate whether the list return value should be the
+    list of readout values of length (args.samples) or be a 2-tuple indicating
+    the avearge and (reduced) standard deviation of the raw list.
+
+    For pausing the system we will be splitting the wait into 0.1 second
+    interval to allow for the system to detect interuption signals to halt the
+    system even during the wait period.
     """
+    time_now = time.time()
+    while time.time() - time_now < args.pause:
+      self.check_handle()
+      time.sleep(0.1)
+
     readout_list = []
     try:  # Stopping the stepper motors for cleaner readout
       self.gcoder.disablestepper(False, False, True)
