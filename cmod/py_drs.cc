@@ -6,9 +6,7 @@ PYBIND11_MODULE( drs, m )
   pybind11::class_<DRSContainer>( m, "DRS" )
 
   // Special singleton syntax, do *NOT* define the __init__ method
-  .def( "instance",
-        &DRSContainer::instance,
-        pybind11::return_value_policy::reference )
+  SINGLETON_PYBIND(DRSContainer)
   .def( "init",              &DRSContainer::Init )
   .def( "timeslice",         &DRSContainer::GetTimeArray )
   .def( "startcollect",      &DRSContainer::StartCollect )

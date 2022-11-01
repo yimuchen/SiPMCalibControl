@@ -60,6 +60,8 @@ public:
   cv::Mat                  MakeDisplay( const cv::Mat&,
                                         const std::vector<ContourList>& ) const;
 
+  std::string DeviceName() const;
+
 private:
   cv::VideoCapture cam;
   cv::Mat          image;

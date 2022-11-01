@@ -62,11 +62,11 @@ class and method  `__doc__` strings.
 """
 import cmod.gcoder as gcoder
 import cmod.board as board
-import cmod.logger as log
 import cmod.gpio as gpio
 import cmod.visual as visual
 import cmod.pico as pico
 import cmod.drs as drs
+import cmod.fmt as fmt
 import cmod.actionlist as actionlist
 import cmod.sighandle as sig
 import numpy as np
@@ -82,6 +82,7 @@ import traceback
 import shlex
 import select
 import enum
+import logging
 
 
 class controlterm(cmd.Cmd):
@@ -151,6 +152,13 @@ class controlterm(cmd.Cmd):
     self.sighandle = sig.SigHandle()
     self.sighandle.release()
 
+    # Creating logging instances for command line parsing
+    self.cmdlog = logging.getLogger("cmdline")
+    self.cmdlog.setLevel(logging.NOTSET)
+
+    self.devlog = logging.getLogger("devlog")
+    self.devlog.setLevel(logging.NOTSET)
+
     for com in cmdlist:
       comname = com.__name__.lower()
       dofunc = 'do_' + comname
@@ -174,6 +182,18 @@ class controlterm(cmd.Cmd):
     self.last_cmd_stop = None  # End time of the last command
     self.opfile = ''
 
+    self.init_log_format()
+
+  def __del__(self):
+    """
+    Closing device instances to ensure these are release before other python
+    closing book keeping routines.
+    """
+    self.gcoder = gcoder.GCoder.close_instance()
+    self.pico = pico.PicoUnit.close_instance()
+    self.gpio = gpio.GPIO.close_instance()
+    self.drs = drs.DRS.close_instance()
+
   def precmd(self, line):
     """
     @brief routines to run just before executing a command.
@@ -196,7 +216,6 @@ class controlterm(cmd.Cmd):
     signal for whether the command session should be terminated, we cannot
     directly pass the command execution status to the base class.
     """
-    log.printmsg("")
     self.last_cmd_status = stop
     self.last_cmd_stop = datetime.datetime.now()
     if stop == controlcmd.TERMINATE_SESSION:
@@ -211,17 +230,29 @@ class controlterm(cmd.Cmd):
 
   def emptyline(self):
     """
-    @brief Overide behavior for empty line inputs: don't do anything.
+    @brief Override behavior for empty line inputs: don't do anything.
     """
     pass
 
-  @staticmethod
-  def simplify_string(text):
+  def init_log_format(self):
     """
-    Simplifying multiline text in python to a single line text in python, which
-    also removes the additional whitespaces at the beginning of lines
+    Setting up the logging instances. We add a custom level for python level
+    trace-stack logging. Taken from the solution here:
+    https://stackoverflow.com/a/35804945/16223844
     """
-    return ' '.join(text.split())
+    trace_num = logging.INFO + 5
+    logging.addLevelName(trace_num, 'TRACE')
+    setattr(logging, 'TRACE', trace_num)
+
+    cmd_shandler = logging.StreamHandler()
+    cmd_shandler.setLevel(logging.DEBUG)
+    cmd_shandler.setFormatter(fmt.CmdStreamFormatter())
+    self.cmdlog.addHandler(cmd_shandler)
+
+    dev_shandler = logging.StreamHandler()
+    dev_shandler.setLevel(logging.DEBUG)
+    dev_shandler.setFormatter(fmt.DeviceStreamFormatter())
+    self.devlog.addHandler(dev_shandler)
 
 
 class controlcmd(object):
@@ -233,7 +264,7 @@ class controlcmd(object):
   @details The control command is the base interface for defining a command in
   the terminal class, the instance do, callhelp and complete functions
   corresponds to the functions `do_<cmd>`, `help_<cmd>` and `complete_<cmd>`
-  functions in the vallina python cmd class. Here we will be using the argparse
+  functions in the vanilla python cmd class. Here we will be using the argparse
   class by default to call for the help and complete functions. To see how the
   `do_<cmd>` method will be broken down, see the detailed documentation for the
   `do` method of this class.
@@ -254,12 +285,6 @@ class controlcmd(object):
   method of this class, which handles the usual parsing/execution/clean-up flow,
   the method that should be overloaded by the subsequent children classes to
   define the execution routine is now `run`.
-
-  In addition, the class will also contain a `LOG` instance which is used to
-  prettify the output of the printerr methods. This should be overridden in all
-  subsequent classes that want to use the display functions. The function also
-  provides a higher level abstraction to help with common on-screen progress
-  display methods, to help reduce user code verbosity.
   """
   PARSE_ERROR = -1
   EXECUTE_ERROR = -2
@@ -267,7 +292,9 @@ class controlcmd(object):
   TERMINATE_SESSION = 1
   TERMINATE_CMD = 2
 
-  LOG = "DUMMY"
+  @property
+  def classname(self):
+    return self.__class__.__name__.lower()
 
   def __init__(self, cmdsession):
     """
@@ -281,28 +308,30 @@ class controlcmd(object):
     could potentially be used.
     """
     self.parser = argparse.ArgumentParser(
-        prog=self.__class__.__name__.lower(),
+        prog=self.classname,
         description=self.__class__.__doc__.replace('@brief', ''),
         add_help=False)
     self.cmd = cmdsession  # Reference to the master object.
 
-    ## Reference to control objects for all commands
-    self.gcoder = cmdsession.gcoder
-    self.board = cmdsession.board
-    self.visual = cmdsession.visual
-    self.pico = cmdsession.pico
-    self.drs = cmdsession.drs
-    self.gpio = cmdsession.gpio
-    self.action = cmdsession.action
-    self.sighandle = cmdsession.sighandle
+    # Getting reference to session objects for simpler shorthand
+    for embedded_obj in [
+        # Logging objects
+        'devlog', 'cmdlog',
+        # Control objects ,
+        'gcoder', 'visual', 'pico', 'drs', 'gpio',
+        # Session management
+        'board', 'action', 'sighandle',
+    ]:
+      setattr(self, embedded_obj, getattr(cmdsession, embedded_obj))
 
+    # Running the add arguments methods.
     self.__run_mro_method('add_args')
 
   def __run_mro_method(self, method, args=None):
     """
     @brief Running some method in inverted __mro__ order,
 
-    @details Notice that the method needs to be explcitly defined for the class
+    @details Notice that the method needs to be explicitly defined for the class
     to be ran, as this avoids doubling running the same methods of child classes
     without new method definition.
     """
@@ -407,7 +436,7 @@ class controlcmd(object):
     """
     Routines to run after the run argument is called.
     """
-    log.clear_update()
+    pass
 
   def callhelp(self):
     """
@@ -445,29 +474,26 @@ class controlcmd(object):
         return optwithtext()
       return [
           'Input type: ' + str(action.type),
-          'Help: ' + controlterm.simplify_string(action.help)
+          'Help: ' + fmt.oneline_string(action.help)
       ]
     else:
       return optwithtext()
 
-  def update(self, text):
-    """Printing an update message using the static 'LOG' variable."""
-    log.update(self.LOG, controlterm.simplify_string(text))
+  @property
+  def log_kwargs(self):
+    return {'extra': {'cmdline': self.classname}}
 
   def printmsg(self, text):
-    """Printing a newline message using the static LOG' variable."""
-    log.clear_update()
-    log.printmsg(self.LOG, controlterm.simplify_string(text))
+    """Printing a newline message using the custom LOG variable."""
+    self.cmdlog.info(text, **self.log_kwargs)
 
   def printerr(self, text):
     """Printing a error message with a standard red "ERROR" header."""
-    log.clear_update()
-    log.printerr(controlterm.simplify_string(text))
+    self.cmdlog.error(text, **self.log_kwargs)
 
   def printwarn(self, text):
     """Printing a warning message with a standard yellow "WARNING" header."""
-    log.clear_update()
-    log.printwarn(controlterm.simplify_string(text))
+    self.cmdlog.warning(text, **self.log_kwargs)
 
   def print_tracestack(self, err):
     """
@@ -496,13 +522,13 @@ class controlcmd(object):
       content = exc_msg[idx + 1].strip()
 
       stackline = ''
-      stackline += log.RED('{0:4d} | '.format(line))
-      stackline += log.YELLOW('{0} | '.format(file))
+      stackline += fmt.RED(f'{line:4d} | ')
+      stackline += fmt.YELLOW('{0} | '.format(file))
       stackline += content
-      log.printmsg(stackline)
+      self.cmdlog.log(logging.TRACE, stackline, **self.log_kwargs)
 
     # Printing the original error message
-    self.printerr(str(err))
+    self.cmdlog.log(logging.TRACE, str(err), **self.log_kwargs)
 
   def update_progress(self,
                       progress=None,
@@ -560,7 +586,7 @@ class controlcmd(object):
       msg = '{key}: [{list}]'.format(key=key, list=list_str)
       message_string = append_msg(message_string, msg)
 
-    self.update(message_string)
+    return message_string
 
   def check_handle(self):
     """
@@ -626,11 +652,11 @@ class controlcmd(object):
     # Special case of wrapped input
     if (self.cmd.use_rawinput == False or  #
         self.cmd.stdin != sys.stdin or self.cmd.stdout != sys.stdout):
-      log.printmsg('wrapped I/O detected, assuming default answer:', default)
+      self.printmsg(f'Wrapped I/O detected, assuming default answer: {default}')
       return valid[default]
 
     while True:
-      log.printmsg(controlterm.simplify_string(question + prompt_str))
+      self.printmsg(question + prompt_str)
       if self.cmd.use_rawinput:
         choice = input()
       else:
@@ -640,8 +666,7 @@ class controlcmd(object):
       elif choice in valid:
         return valid[choice]
       else:
-        log.printerr(
-            'Please respond with \'yes\' or \'no\' (or \'y\' or \'n\').\n')
+        self.printerr("Please respond with 'yes' or 'no' (or 'y' or 'n').")
 
   @staticmethod
   def globcomp(text):
@@ -894,10 +919,10 @@ class singlexycmd(controlcmd):
       return args
 
     if args.x or args.y:
-      raise Exception('You can either specify det-id or x y, not both')
+      raise ValueError('You can either specify det-id or x y, not both')
 
     if not args.detid in self.board.dets():
-      raise Exception('Det id was not specified in board type')
+      raise ValueError('Det id was not specified in board type')
 
     current_z = args.z if hasattr(args, 'z') and args.z else \
                  min(args.zlist) if hasattr(args, 'zlist') else \
@@ -972,8 +997,10 @@ class singlexycmd(controlcmd):
 
   @staticmethod
   def find_closest_z(my_map, current_z):
-    """@brief simple static function for comparing finding detector with the
-    closest z value."""
+    """
+    @brief simple static function for comparing finding detector with the
+    closest z value.
+    """
     return min(my_map.keys(), key=lambda x: abs(float(x) - float(current_z)))
 
 
@@ -1033,9 +1060,9 @@ class hscancmd(singlexycmd):
 
     if (args.x - args.range < 0 or args.x + args.range > max_x
         or args.y - args.range < 0 or args.y + args.range > max_y):
-      log.printwarn("""
-        The arguments placed will put the gantry past its limits, the command
-        will used modified input parameters""")
+      self.printwarn("""
+                     The arguments placed will put the gantry past its limits,
+                     the command will used modified input parameters""")
 
     xmin = max([args.x - args.range, 0])
     xmax = min([args.x + args.range, max_x])
@@ -1242,19 +1269,20 @@ class readoutcmd(controlcmd):
       if hasattr(args, 'detid') and str(args.detid) in self.board.dets():
         args.mode = self.board.get_det(str(args.detid)).mode
       else:
-        raise Exception("Readout mode needs to be specified")
+        raise ValueError('Readout mode needs to be specified')
 
     ## Double checking the readout channel is sensible
     if args.mode == readoutcmd.Mode.MODE_PICO:
       if int(args.channel) < 0 or int(args.channel) > 1:
-        raise Exception(
+        raise ValueError(
             f'Channel for PICOSCOPE can only be 0 or 1 (got {args.channel})')
     elif args.mode == readoutcmd.Mode.MODE_ADC:
       if int(args.channel) < 0 or int(args.channel) > 3:
-        raise Exception(f'Channel for ADC can only be 0--3 (got {args.channel})')
+        raise ValueError(
+            f'Channel for ADC can only be 0--3 (got {args.channel})')
     elif args.mode == readoutcmd.Mode.MODE_DRS:
       if int(args.channel) < 0 or int(args.channel) > 3:
-        raise Exception(
+        raise ValueError(
             f'Channel for DRS4 can only be 0--4 (got {args.channel})')
 
     ## Checking the integration settings

@@ -4,7 +4,7 @@
 PYBIND11_MODULE( gpio, m )
 {
   pybind11::class_<GPIO>( m, "GPIO"  )
-  .def( "instance", &GPIO::instance, pybind11::return_value_policy::reference  )
+  SINGLETON_PYBIND(GPIO)
   .def( "init",        &GPIO::Init                )
   .def( "pulse",       &GPIO::Pulse               )
   .def( "light_on",    &GPIO::LightsOn            )

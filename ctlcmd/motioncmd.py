@@ -8,7 +8,6 @@ scan command by moving in z.
 
 """
 import ctlcmd.cmdbase as cmdbase
-import cmod.logger as log
 import numpy as np
 from scipy.optimize import curve_fit
 import time
@@ -35,14 +34,14 @@ class rungcode(cmdbase.controlcmd):
     @brief Running the gcode command
 
     @details While the wait time is set to 10000 seconds, this is not
-    representative of a true wait time, as commmands can return the 'ok' signal
-    as soons as the internal state of the printer is modified, rather than when
+    representative of a true wait time, as commands can return the 'ok' signal
+    as soon as the internal state of the printer is modified, rather than when
     the command actually finishes execution.
     """
-    retstr = self.gcoder.run_gcode(args.cmd, 0, int(1e5), True)
+    retstr = self.gcoder.run_gcode(args.cmd, 0, int(1e5))
     retstr = retstr.split('\necho:')
     for line in retstr:
-      log.printmsg(log.GREEN('[PRINTER]'), line)
+      self.printmsg(line, extra={'device': 'Printer'})
 
 
 class moveto(cmdbase.singlexycmd):
@@ -63,13 +62,11 @@ class moveto(cmdbase.singlexycmd):
     return args
 
   def run(self, args):
-    self.move_gantry(args.x, args.y, args.z, True)
+    self.move_gantry(args.x, args.y, args.z)
 
 
 class getcoord(cmdbase.controlcmd):
   """Printing current gantry coordinates"""
-  LOG = log.GREEN('[GANTRY-COORD]')
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -184,7 +181,6 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
   """
 
   DEFAULT_SAVEFILE = 'halign_<BOARDTYPE>_<BOARDID>_<DETID>_<SCANZ>_<TIMESTAMP>.txt'
-  LOG = log.GREEN('[LUMI ALIGN]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -314,7 +310,6 @@ class zscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.readoutcmd,
   """
 
   DEFAULT_SAVEFILE = 'zscan_<BOARDTYPE>_<BOARDID>_<DETID>_<TIMESTAMP>.txt'
-  LOG = log.GREEN('[LUMI ZSCAN]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -385,7 +380,6 @@ class lowlightcollect(cmdbase.singlexycmd, cmdbase.readoutcmd,
   be collected without averaging."""
 
   DEFAULT_SAVEFILE = 'lowlight_<BOARDTYPE>_<BOARDID>_<DETID>_<TIMESTAMP>.txt'
-  LOG = log.GREEN('[LUMI LOWLIGHT]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -442,7 +436,6 @@ class timescan(cmdbase.readoutcmd, cmdbase.savefilecmd):
   Generate a log of the readout in terms relative to time.
   """
   DEFAULT_SAVEFILE = 'tscan_<TIMESTAMP>.txt'
-  LOG = log.GREEN('[TIMESCAN]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)

@@ -70,6 +70,11 @@ if( EXISTS "external/picoscope" )
   set(PICOSCOPE_LIB     "ps5000")
 endif()
 
+# The python logging pass thorugh as a separate library
+add_library(c_logger SHARED src/logger.cc)
+target_include_directories(c_logger PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_link_libraries(c_logger PRIVATE ${PYTHON_LIBRARIES})
+
 ## Libraries are supposed to be python modules
 function(make_control_library libname source )
   add_library(c_${libname} SHARED ${source})
@@ -78,10 +83,6 @@ function(make_control_library libname source )
   target_include_directories(${libname} PRIVATE "src/" )
   target_link_libraries(${libname} PRIVATE c_${libname})
 endfunction()
-
-make_control_library( logger src/logger.cc )
-target_link_libraries(c_logger PRIVATE readline )
-# target_link_libraries(logger PUBLIC readline)
 
 # Making the various interface classes
 if( DRS_DEFINES )
@@ -95,14 +96,14 @@ if( PICOSCOPE_LIB )
   make_control_library( pico src/pico.cc )
   target_include_directories(c_pico PRIVATE ${PICOSCOPE_INCDIR})
   target_link_directories(c_pico PRIVATE ${PICOSCOPE_LIBDIR})
-  target_link_libraries(c_pico PRIVATE logger ${PICOSCOPE_LIB})
+  target_link_libraries(c_pico PRIVATE c_logger ${PICOSCOPE_LIB})
 endif()
 
 make_control_library(gcoder src/gcoder.cc )
 target_link_libraries(gcoder PRIVATE c_logger)
 
 make_control_library(gpio src/gpio.cc)
-target_link_libraries(gpio PRIVATE Threads::Threads)
+target_link_libraries(gpio PRIVATE c_logger Threads::Threads)
 
 make_control_library( visual src/visual.cc)
 target_link_libraries( c_visual PRIVATE  c_logger

@@ -14,8 +14,8 @@
  * and repeat until some termination code is received. This looped thread will
  * be briefly paused when the user request the image, to ensure the integrity
  * of the transferred data. The core of the image processing functions is
- * photodetector finding: finding the optimal "dark rectangle" within the
- * image, and calculated in the center of this rectange in terms of pixel
+ * photo-detector finding: finding the optimal "dark rectangle" within the
+ * image, and calculated in the center of this rectangle in terms of pixel
  * coordinates.
  *
  * This will be the one interface functions that does not start use a singleton
@@ -58,7 +58,7 @@
  *   - The ratio of the edges of the bounding box must be sufficiently similar
  *     (the photo detecting element is expected to be square.)
  *   - The internal area of the original image within the contour must be
- *     sufficiently dark (as photodetecting elements are expected to be gray)
+ *     sufficiently dark (as photo-detecting elements are expected to be gray)
  *   - The convex hull of the contour must be able to be approximated as a
  *     rectangle.
  * - The convex hull of the remaining contours will be used. The use of convex
@@ -74,6 +74,7 @@
  * Functions should beable to receive a cv::Mat object as the input, to allow
  * for arbitrary levels of debugging and feature demonstration.
  */
+#include "logger.hpp"
 #include "visual.hpp"
 #include <opencv2/core/utils/logger.hpp>
 
@@ -89,6 +90,7 @@ static const cv::Scalar white( 255, 255, 255 );
 static const auto __dummy_settings = cv::utils::logging::setLogLevel(
   cv::utils::logging::LOG_LEVEL_SILENT );
 
+// Python logging options
 
 Visual::Visual() :
   cam      (),
@@ -108,6 +110,12 @@ Visual::Visual( const std::string& dev ) :
   StartLoopThread();
 }
 
+std::string
+Visual::DeviceName() const
+{
+  return "Visual@" + dev_path;
+}
+
 
 /**
  * @brief Starting the visual instance at the some device path.
@@ -125,7 +133,7 @@ Visual::Visual( const std::string& dev ) :
  * - Switch **off** any known image processing. This is so that image
  *   processing artifacts does not skew the image processing algorithms we use.
  *
- * A thread will be started as soon as the devices is known to be availabe.
+ * A thread will be started as soon as the devices is known to be available.
  */
 void
 Visual::init_dev( const std::string& dev )
@@ -135,25 +143,25 @@ Visual::init_dev( const std::string& dev )
   cam.release();
   cam.open( dev_path );
   if( !cam.isOpened() ){// check if we succeeded
-    throw std::runtime_error( "Cannot open webcam" );
+    throw device_exception( DeviceName(), "Cannot open webcam" );
   }
 
   // Additional camera settings
   cam.set( cv::CAP_PROP_FRAME_WIDTH,  1280 );
   cam.set( cv::CAP_PROP_FRAME_HEIGHT, 1024 );
   cam.set( cv::CAP_PROP_BUFFERSIZE,   1 );// Reducing buffer for fast capture
-  cam.set( cv::CAP_PROP_SHARPNESS,    0 );// disable postprocess sharpening.
+  cam.set( cv::CAP_PROP_SHARPNESS,    0 );// disable post-process sharpening.
   StartLoopThread();
 }
 
 
 Visual::~Visual()
 {
-  printf( "Ending the visual thread\n" );
+  printdebug( DeviceName(), "Ending the visual thread" );
   EndLoopThread();
-  printf( "Closing visual system interfaces\n" );
+  printdebug( DeviceName(), "Closing visual system interfaces" );
   cam.release();
-  printf( "Visual interface closed\n" );
+  printdebug( DeviceName(), "Visual interface closed" );
 }
 
 
@@ -195,19 +203,23 @@ Visual::RunMainLoop( std::atomic<bool>& run_loop )
                     return st::duration_cast<st::microseconds>(
                       st::high_resolution_clock::now().time_since_epoch()).count();
                   };
-  while( run_loop == true ){const size_t time_start = get_time();
-                            size_t       time_end   = get_time();
-                            loop_mutex.lock();
-                            do {
-                              cam >> image;
-                            } while( ( image.empty() || image.cols == 0 ) &&
-                                     cam.isOpened() );
-                            latest = FindDetector( image );
-                            loop_mutex.unlock();
-                            while( time_end-time_start < 5e3 ){
-                              std::this_thread::sleep_for( st::milliseconds( 1 ) );
-                              time_end = get_time();
-                            }}
+  while( run_loop == true ){
+    const size_t time_start = get_time();
+    size_t       time_end   = get_time();
+    loop_mutex.lock();
+
+    do{
+      cam >> image;
+    } while( ( image.empty() || image.cols == 0 ) && cam.isOpened() );
+
+    latest = FindDetector( image );
+    loop_mutex.unlock();
+
+    while( time_end-time_start < 5e3 ){
+      std::this_thread::sleep_for( st::milliseconds( 1 ) );
+      time_end = get_time();
+    }
+  }
 }
 
 
@@ -300,7 +312,7 @@ Visual::GetImageBytes()
   std::vector<uchar> buf;// Storage required by opencv.
   const auto         img = GetImage( false );
   if( img.empty() ){
-    throw std::runtime_error( "Image empty" );
+    throw device_exception( DeviceName(), "Image empty" );
   }
   cv::imencode( ".jpg", img, buf );
   return buf;
@@ -449,7 +461,7 @@ Visual::MakeResult( const cv::Mat& img, const Visual::Contour_t& hull ) const
 
 /**
  * @brief Given the original image in cv::Mat format, and the sorted list of
- * countors found, generate a processed image with contours,
+ * contours found, generate a processed image with contours.
  *
  * Each different fail mode displayed in a different color for debugging simple
  * debugging. The return is the processed image in a standard opencv::Mat data
@@ -489,9 +501,7 @@ Visual::MakeDisplay( const cv::Mat&                          img,
     const double y   = res.y;
     const double s2  = res.sharpness_m2;
     const double s4  = res.sharpness_m4;
-    sprintf( msg, "x:%.1lf y:%.1lf",                   x, y ), sprintf( msg,
-                                                                        "x:%.1lf y:%.1lf s2:%.2lf s4:%.2lf", x, y, s2,
-                                                                        s4 ),
+    sprintf( msg, "x:%.1lf y:%.1lf s2:%.2lf s4:%.2lf", x, y, s2, s4 );
     cv::drawContours( ret, contlist.at( 0 ), 0, red, 3 );
     cv::circle( ret, cv::Point( x, y ), 3, red, cv::FILLED );
     PlotText( msg, cv::Point( 20, 20 ), red );
@@ -500,7 +510,7 @@ Visual::MakeDisplay( const cv::Mat&                          img,
 
 
 /**
- * @brief The thresholding and contouring algorithm.
+ * @brief The threshold-and-contour algorithm.
  *
  * An extra blur is applied to the gray-scaled image to avoid noise speckles
  * from affecting the sharpness measure.
@@ -612,7 +622,7 @@ Visual::GetContourMaxMeasure( const Contour_t& x ) const
  * compute the sharpness measure.
  *
  * The sharpness measure is defined by taking the gray-scaled image apply a
- * small blur, then compute the laplace transfromed image. Then taking the
+ * small blur, then compute the laplace transformed image. Then taking the
  * standard deviation (2nd order variance) and Kurtosis measure (4th order
  * variance) of the transformed image.
  */
@@ -628,8 +638,9 @@ Visual::sharpness( const cv::Mat& img, const cv::Rect& crop ) const
   // Convert original image to gray scale
   cv::cvtColor( img, bimg, cv::COLOR_BGR2GRAY );
 
-  // Getting green channel image image converting to gray scale cv::split( img,
-  // cimg ); cimg[1].convertTo( fimg, CV_32FC1 );
+  // Getting green channel image image converting to gray scale
+  // cv::split( img, // cimg );
+  // cimg[1].convertTo( fimg, CV_32FC1 );
   // Creating the crops
   if( crop.width == 0 || crop.height == 0 ){
     return std::pair<double, double>( 0, 0 );

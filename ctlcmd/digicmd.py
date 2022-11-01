@@ -6,7 +6,6 @@
 
 """
 import ctlcmd.cmdbase as cmdbase
-import cmod.logger as log
 import time
 
 
@@ -17,8 +16,6 @@ class pulse(cmdbase.controlcmd):
 
   @details this is some test
   """
-
-  LOG = log.GREEN('[PULSE]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -101,8 +98,6 @@ class showadc(cmdbase.controlcmd):
   """
   Printing the ADC values that are stored in memory
   """
-
-  LOG = log.GREEN("[SHOWADC]")
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)

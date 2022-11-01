@@ -5,8 +5,8 @@ Commands for interacting and using the visual system for positional calibration.
 
 """
 import ctlcmd.cmdbase as cmdbase
-import cmod.logger as log
 import cmod.visual as vis
+import cmod.fmt as fmt
 import numpy as np
 from scipy.optimize import curve_fit
 import time
@@ -27,7 +27,7 @@ class visualmeta(cmdbase.controlcmd):
                              action='store_true',
                              help="""
                              Whether or not to open a window monitoring window
-                             (as this is working over SSH, this could be very
+                             (if you are working over SSH, this could be very
                              slow!!)""")
     self.parser.add_argument('--vwait',
                              type=float,
@@ -117,7 +117,6 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
   """
 
   DEFAULT_SAVEFILE = 'vhscan_<BOARDTYPE>_<BOARDID>_<DETID>_<SCANZ>_<TIMESTAMP>.txt'
-  LOG = log.GREEN('[VIS HSCAN]')
   HSCAN_ZVALUE = 20
   HSCAN_RANGE = 3
   HSCAN_SEPRATION = 0.5
@@ -193,9 +192,8 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
       self.board.add_visM(detid, self.gcoder.opz,
                           [[fitx[0], fitx[1]], [fity[0], fity[1]]])
     elif self.board.visM_hasz(detid, self.gcoder.opz):
-      if self.prompt_yn(
-          """
-          Tranformation equation for z={args.scanz:.1f} already exists,
+      if self.prompt_yn(f"""
+          Transformation equation for z={args.scanz:.1f} already exists,
           overwrite?""", 'no'):
         self.board.add_visM(detid, self.gcoder.opz,
                             [[fitx[0], fitx[1]], [fity[0], fity[1]]])
@@ -222,8 +220,6 @@ class visualcenterdet(cmdbase.singlexycmd, visualmeta):
   - That a working visual-gantry transformation has already been constructed.
   """
   VISUAL_OFFSET = True
-
-  LOG = log.GREEN('[VIS ALIGN]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -352,7 +348,6 @@ class visualmaxsharp(cmdbase.singlexycmd, cmdbase.zscancmd, visualmeta):
   """
   The user is required to input the z points to scan for maximum sharpness.
   """
-  LOG = log.GREEN('[VISMAXSHARP]')
   VISUAL_OFFSET = True
 
   def __init__(self, cmd):
@@ -469,7 +464,6 @@ class visualzscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.savefilecmd,
   """
   VISUAL_OFFSET = True
   DEFAULT_SAVEFILE = 'vscan_<DETID>_<TIMESTAMP>.txt'
-  LOG = log.GREEN('[VISZSCAN]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -507,8 +501,6 @@ class visualzscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.savefilecmd,
 
 class visualshowdet(visualmeta):
   """@brief Display of detector position, until termination signal is obtained."""
-  LOG = log.GREEN('[SHOW DETECTOR]')
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -528,9 +520,9 @@ class visualshowdet(visualmeta):
     self.printmsg("PRESS CTL+C to stop the command")
     self.printmsg("Legend")
     self.printmsg("Failed contor ratio requirement")
-    self.printmsg(log.GREEN("Failed area luminosity requirement"))
-    self.printmsg(log.YELLOW("Failed rectangular approximation"))
-    self.printmsg(log.CYAN("Candidate contour (not largest)"))
+    self.printmsg(fmt.GREEN("Failed area luminosity requirement"))
+    self.printmsg(fmt.YELLOW("Failed rectangular approximation"))
+    self.printmsg(fmt.CYAN("Candidate contour (not largest)"))
     while True:
       try:
         self.check_handle()

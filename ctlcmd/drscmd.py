@@ -1,5 +1,4 @@
 import ctlcmd.cmdbase as cmdbase
-import cmod.logger as log
 import time
 #import ctypes
 
@@ -81,8 +80,6 @@ class drscalib(cmdbase.controlcmd):
   """This function will confirm with the user where or not the DRS is in the
   correct configuration before continuing.
   """
-  LOG = log.GREEN('[DRSCALIB]')
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -100,7 +97,6 @@ class drscalib(cmdbase.controlcmd):
 class drsrun(cmdbase.savefilecmd):
   """@brief Running the DRS stand alone waveform extraction"""
 
-  LOG = log.GREEN('[DRS]')
   DEFAULT_SAVEFILE = 'drsrun_<TIMESTAMP>.txt'
 
   def __init__(self, cmd):

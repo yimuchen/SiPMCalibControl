@@ -55,6 +55,7 @@
  *
  */
 #include "gpio.hpp"
+#include "logger.hpp"
 
 #include <cmath>
 #include <fcntl.h>
@@ -71,6 +72,8 @@
 #include <queue>
 #include <stdexcept>
 
+static const std::string DeviceName = "GPIO";
+
 /**
  * @brief Opening a file with a lock to ensure the program is the only process on
  * the system that is using the path.
@@ -84,13 +87,13 @@
  * [ref]: https://stackoverflow.com/questions/1599459/optimal-lock-file-method
  */
 static int
-open_with_lock( char*path, int mode )
+open_with_lock( const char* path, int mode )
 {
   char errmsg[1024];
   int  fd = open( path, mode );
   if( fd == GPIO::OPEN_FAILED ){
     sprintf( errmsg, "Failed to open path [%s]", path );
-    throw std::runtime_error( errmsg );
+    throw device_exception( DeviceName, errmsg );
   }
 
   // The _lock will be non-zero if the processes cannot create the lock instance
@@ -99,7 +102,7 @@ open_with_lock( char*path, int mode )
     close( fd );
     fd = -1;
     sprintf( errmsg, "Failed to lock path [%s]", path );
-    throw std::runtime_error( errmsg );
+    throw device_exception( DeviceName, errmsg );
   }
   return fd;
 }
@@ -156,7 +159,7 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
                       3 );
   if( status == IO_FAILED ){
     sprintf( errmsg, "Failed to set gpio [%d] direction!", pin );
-    throw std::runtime_error( errmsg );
+    throw device_exception( DeviceName, errmsg );
   }
   close( fd );
 
@@ -182,7 +185,7 @@ GPIO::GPIORead( const int fd )
 {
   char value_str[3];
   if( read( fd, value_str, 3 ) == IO_FAILED ){
-    throw std::runtime_error( "Failed to read gpio value!" );
+    throw device_exception( DeviceName, "Failed to read gpio value!" );
   }
   return atoi( value_str );
 }
@@ -202,7 +205,7 @@ GPIO::GPIOWrite( const int fd, const unsigned val )
              "0" :
              "1",
              1 ) == IO_FAILED ){
-    throw std::runtime_error( "Failed to write gpio value!" );
+    throw device_exception( DeviceName, "Failed to write gpio value!" );
   }
 }
 
@@ -237,7 +240,8 @@ void
 GPIO::Pulse( const unsigned n, const unsigned wait ) const
 {
   if( gpio_trigger == OPEN_FAILED ){
-    throw std::runtime_error( "GPIO for trigger pin is not initialized" );
+    throw device_exception( DeviceName,
+                            "GPIO for trigger pin is not initialized" );
   }
   for( unsigned i = 0; i < n; ++i ){
     GPIOWrite( gpio_trigger, HI );
@@ -256,7 +260,8 @@ void
 GPIO::LightsOn() const
 {
   if( gpio_light == OPEN_FAILED ){
-    throw std::runtime_error( "GPIO for light pin is not initialized" );
+    throw device_exception( DeviceName,
+                            "GPIO for light pin is not initialized" );
   }
   GPIOWrite( gpio_light, HI );
 }
@@ -266,7 +271,8 @@ void
 GPIO::LightsOff() const
 {
   if( gpio_light == OPEN_FAILED ){
-    throw std::runtime_error( "GPIO for light pin is not initialized" );
+    throw device_exception( DeviceName,
+                            "GPIO for light pin is not initialized" );
   }
   GPIOWrite( gpio_light, LOW );
 }
@@ -283,7 +289,8 @@ void
 GPIO::SpareOn() const
 {
   if( gpio_spare == OPEN_FAILED ){
-    throw std::runtime_error( "GPIO for spare pin is not initialized" );
+    throw device_exception( DeviceName,
+                            "GPIO for spare pin is not initialized" );
   }
   GPIOWrite( gpio_spare, HI );
 }
@@ -293,7 +300,8 @@ void
 GPIO::SpareOff() const
 {
   if( gpio_spare == OPEN_FAILED ){
-    throw std::runtime_error( "GPIO for spare pin is not initialized" );
+    throw device_exception( DeviceName,
+                            "GPIO for spare pin is not initialized" );
   }
   GPIOWrite( gpio_spare, LOW );
 }
@@ -365,7 +373,7 @@ GPIO::InitPWM()
       close( pwm_period[1] );
       pwm_enable[0] = pwm_duty[0] = pwm_period[0] = pwm_enable[1] =
         pwm_duty[1] = pwm_period[1] = UNOPENED;
-      throw std::runtime_error( "Failed to lock PWM files" );
+      throw device_exception( DeviceName, "Failed to lock PWM files" );
     }
   }
 }
@@ -389,7 +397,7 @@ GPIO::ClosePWM()
     int fd = open( errmsg, O_WRONLY );
     if( fd == OPEN_FAILED ){
       sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip0/unexport" );
-      throw std::runtime_error( errmsg );
+      throw device_exception( DeviceName, errmsg );
     }
     write( fd, "0", 1 );
     write( fd, "1", 1 );
@@ -430,7 +438,7 @@ GPIO::SetPWM( const unsigned c, const double dc, const double f )
   unsigned       period_len = sprintf( period_str,  "%u", period );
   if( pwm_enable[channel] == OPEN_FAILED ){
     sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip%u settings", c );
-    throw std::runtime_error( errmsg );
+    throw device_exception( DeviceName,  errmsg );
   } else if( pwm_enable[channel] == UNOPENED ){
     if( channel == 0 ){
       i2c_flush_array[2] = duty_cycle * 5000.0;
@@ -501,7 +509,7 @@ GPIO::InitI2C()
   // connect to ADS1115 as i2c slave
   if( ioctl( fd, I2C_SLAVE, 0x48 ) == IO_FAILED ){
     sprintf( errmsg, "Error: Couldn't find i2c device on address [%d]!", 0x48 );
-    throw std::runtime_error( errmsg );
+    throw device_exception( DeviceName, errmsg );
   }
   return fd;
 }
@@ -557,14 +565,15 @@ GPIO::PushADCSetting()
 
   // Write and wait for OK signal.
   if( write( gpio_adc, write_buffer, 3 ) != 3 ){
-    throw std::runtime_error( "Error writing setting to i2C device" );
+    throw device_exception( DeviceName, "Error writing setting to i2C device" );
   }
   std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
   // Resetting to read mode
   read_buffer[0] = 0;
   if( write( gpio_adc, read_buffer, 1 ) != 1 ){
-    throw std::runtime_error( "Error setting to i2C device to read mode" );
+    throw device_exception( DeviceName,
+                            "Error setting to i2C device to read mode" );
   }
 }
 
@@ -798,13 +807,14 @@ GPIO::GPIO() :
   pwm_duty_value[1] = 0.5;
 }
 
+
 /**
  * @brief Interface initialization
  *
  * The continuous readout system of the ADC interface will need to exists
  * regardless of whether a real i2C interface is present, so additional
- * excpetion handling needs to be done on C++ level before rethrowing the
- * excpetion (In the case that the i2c interface is not "real", the continuous
+ * exception handling needs to be done on C++ level before rethrowing the
+ * exception (In the case that the i2c interface is not "real", the continuous
  * readout is simply the a continuous steam of what ever the current set value
  * for the PWM duty cycle is)
  */
@@ -843,28 +853,28 @@ GPIO::Init()
 GPIO::~GPIO()
 {
   // Turning off LED light when the process has ended.
-  printf( "Closing GPIO pins for the light\n" );
+  printdebug( DeviceName, "Closing GPIO pins for the light" );
   if( gpio_light >= NORMAL_PTR ){
     LightsOff();
     close( gpio_light );
     CloseGPIO( light_pin );
   }
 
-  printf( "Closing GPIO pins for the trigger\n" );
+  printdebug( DeviceName, "Closing GPIO pins for the trigger" );
   if( gpio_trigger >= NORMAL_PTR ){
     close( gpio_trigger );
     CloseGPIO( trigger_pin );
   }
 
-  printf( "Closing GPIo pins for the PWM\n" );
+  printdebug( DeviceName, "Closing GPIo pins for the PWM" );
   ClosePWM();
 
-  printf( "Closing the I2C interface\n" );
+  printdebug( DeviceName, "Closing the I2C interface\n" );
   CloseI2CFlush();// Closing the flush interface regardless
   if( gpio_adc >= NORMAL_PTR ){
     close( gpio_adc );
   }
-  printf( "All GPIO successfully shutdown\n" );
+  printdebug( DeviceName, "All GPIO successfully shutdown\n" );
 }
 
 
@@ -875,7 +885,7 @@ GPIO::~GPIO()
 bool
 GPIO::StatusGPIO() const
 {
-  return gpio_trigger >= NORMAL_PTR && gpio_light   >= NORMAL_PTR &&
+  return gpio_trigger >= NORMAL_PTR && gpio_light >= NORMAL_PTR &&
          gpio_spare   >= NORMAL_PTR;
 }
 

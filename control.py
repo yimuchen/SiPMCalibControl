@@ -6,13 +6,15 @@ import ctlcmd.digicmd as digicmd
 import ctlcmd.viscmd as viscmd
 import ctlcmd.picocmd as picocmd
 import ctlcmd.drscmd as drscmd
-import cmod.logger as logger
+import cmod.fmt as fmt
+import logging
 import copy
 import sys
 import traceback
 import re
 
 if __name__ == '__main__':
+  logging.root.setLevel(logging.DEBUG)  # Setting the base log level
   cmd = cmdbase.controlterm([
       motioncmd.rungcode,  #
       motioncmd.moveto,  #
@@ -88,16 +90,18 @@ if __name__ == '__main__':
     prog_parser.print_help()
     sys.exit(0)
 
+  setup = {'extra': {'cmdline': 'setup'}}
   try:
-    print("Running set command")
+    cmd.cmdlog.info("Running set command", **setup)
     cmd.set.run(args)
-    print("Starting GPIO")
+    cmd.cmdlog.info("Starting GPIO", **setup)
     cmd.gpio.init()
-  except Exception as err:
-    logger.printerr(str(err))
-    logger.printwarn(
-        'There was error in the setup process, program will '
-        'continue but will most likely misbehave! Use at your own risk!')
+  except RuntimeError as err:
+    cmd.devlog.error(str(err), **setup)
+    cmd.cmdlog.warning(
+        fmt.oneline_string("""There was error in the setup process, program
+                           will continue but will most likely misbehave! Use at
+                           your own risk!"""), **setup)
 
   cmd.cmdloop()
-  print('Exiting out of loop')
+  #print('Exiting out of loop')
