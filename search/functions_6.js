@@ -23,6 +23,5 @@ var searchData=
   ['globcomp_20',['globcomp',['../classctlcmd_1_1cmdbase_1_1controlcmd.html#ab88498f5e8890878c8af961c2f975e3b',1,'ctlcmd::cmdbase::controlcmd']]],
   ['gpio_21',['GPIO',['../classGPIO.html#ab443a641cef81b1a9ec0211c5aa9c1ac',1,'GPIO']]],
   ['gpioread_22',['GPIORead',['../classGPIO.html#a0cc048d46544bc9be95f22bb7f670a12',1,'GPIO']]],
-  ['gpiowrite_23',['GPIOWrite',['../classGPIO.html#a960201daa506963d5764ce64a0542441',1,'GPIO']]],
-  ['green_24',['GREEN',['../group__Logger.html#ga7d4623129191ee18cef0cb95a4e3009d',1,'GREEN(const std::string &amp;str):&#160;logger.cc'],['../group__Logger.html#ga7d4623129191ee18cef0cb95a4e3009d',1,'GREEN(const std::string &amp;):&#160;logger.cc']]]
+  ['gpiowrite_23',['GPIOWrite',['../classGPIO.html#a960201daa506963d5764ce64a0542441',1,'GPIO']]]
 ];

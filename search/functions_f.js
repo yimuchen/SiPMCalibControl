@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['voltagerangemax_0',['VoltageRangeMax',['../classPicoUnit.html#a6f92d2256d04dca26fe9178fdc67bd11',1,'PicoUnit']]],
-  ['voltagerangemin_1',['VoltageRangeMin',['../classPicoUnit.html#a98240d3d0f2ec02446c72768df0a56ad',1,'PicoUnit']]]
+  ['update_5fprogress_0',['update_progress',['../classctlcmd_1_1cmdbase_1_1controlcmd.html#a96cd82f992430453f9291cd020cbd67e',1,'ctlcmd::cmdbase::controlcmd']]]
 ];
