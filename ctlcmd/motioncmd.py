@@ -209,7 +209,7 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
     """
     @details The command routine is as followed:
     - Given the list of parsed coordinates in the arguments, we loop over the
-      cooridnates and take a luminosity measurement at each of the coordinate.
+      coordinates and take a luminosity measurement at each of the coordinate.
       Results are aggregated into a and array, and a measurement result is
       listed for each measurement performed in the output save file.
     - The results is fitted to the inverse square model, the initial fit
@@ -224,15 +224,12 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
     total = len(args.x)
 
     ## Running over mesh.
-    for idx, (xval, yval) in enumerate(zip(args.x, args.y)):
+    for xval, yval in self.start_pbar(zip(args.x, args.y)):
       self.check_handle()
-      self.move_gantry(xval, yval, args.scanz, False)
+      self.move_gantry(xval, yval, args.scanz)
       lumival, uncval = self.readout(args, average=True)
-      self.update_progress(progress=(idx + 1, total),
-                           coordinates=True,
-                           temperature=True,
-                           display_data={'Lumi': (lumival, uncval)})
       self.write_standard_line((lumival, uncval), det_id=args.detid)
+      self.pbar_data(Lumi=f'{lumival:.2f}+-{uncval:.2f}')
       lumi.append(abs(lumival))
       unc.append(uncval)
 
@@ -257,12 +254,12 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
       self.move_gantry(args.x, args.y, args.scanz, False)
       raise err
 
-    self.printmsg('Best x:{0:.2f}+-{1:.3f}'.format(fitval[1],
-                                                   np.sqrt(fitcovar[1][1])))
-    self.printmsg('Best y:{0:.2f}+-{1:.3f}'.format(fitval[2],
-                                                   np.sqrt(fitcovar[2][2])))
-    self.printmsg('Fit  z:{0:.2f}+-{1:.3f}'.format(fitval[3],
-                                                   np.sqrt(fitcovar[3][3])))
+    def meas_str(v, u):
+      return f'{v:.1f}+-{u:.2f}'
+
+    self.printmsg(f'Best x:' + meas_str(fitval[1], np.sqrt(fitcovar[1][1])))
+    self.printmsg(f'Best y:' + meas_str(fitval[2], np.sqrt(fitcovar[2][2])))
+    self.printmsg(f'Fit  z:' + meas_str(fitval[3], np.sqrt(fitcovar[3][3])))
 
     detid = str(args.detid)  ## Ensuring string convention in using this
     ## Generating calibration det id if using det coordinates
@@ -340,38 +337,36 @@ class zscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.readoutcmd,
     lumi = []
     unc = []
 
-    for idx, z in enumerate(args.zlist):
+    # Ordering is important! Grouping z values together as the bottle neck is in
+    # motion speed
+    for z, power in self.start_pbar(
+        [(z, p) for z in args.zlist for p in args.power]):
+      self.check_handle()
       self.move_gantry(args.x, args.y, z, False)
-      for power in args.power:
-        self.check_handle()
+      self.gpio.pwm(0, power, 1e5)  # Maximum PWM frequency
 
-        self.gpio.pwm(0, power, 1e5)  # Maximum PWM frequency
-
-        lumival = 0
-        uncval = 0
-        while 1:
-          lumival, uncval = self.readout(args, average=True)
-          if args.mode == cmdbase.readoutcmd.Mode.MODE_PICO:
-            wmax = self.pico.waveformmax(args.channel)
-            current_range = self.pico.rangeA() if args.channel == 0 \
-                            else self.pico.rangeB()
-            if wmax < 100 and current_range > self.pico.rangemin():
-              self.pico.setrange(args.channel, current_range - 1)
-            elif wmax > 200 and current_range < self.pico.rangemax():
-              self.pico.setrange(args.channel, current_range + 1)
-            else:
-              break
+      lumival = 0
+      uncval = 0
+      while 1:
+        lumival, uncval = self.readout(args, average=True)
+        if args.mode == cmdbase.readoutcmd.Mode.MODE_PICO:
+          wmax = self.pico.waveformmax(args.channel)
+          current_range = self.pico.rangeA() if args.channel == 0 \
+                          else self.pico.rangeB()
+          if wmax < 100 and current_range > self.pico.rangemin():
+            self.pico.setrange(args.channel, current_range - 1)
+          elif wmax > 200 and current_range < self.pico.rangemax():
+            self.pico.setrange(args.channel, current_range + 1)
           else:
             break
+        else:
+          break
 
-        lumi.append(lumival)
-        unc.append(uncval)
+      lumi.append(lumival)
+      unc.append(uncval)
 
-        self.write_standard_line((lumival, uncval), det_id=args.detid)
-        self.update_progress(progress=(idx + 1, len(args.zlist)),
-                             temperature=True,
-                             coordinates=True,
-                             display_data={'Lumi': (lumival, uncval)})
+      self.write_standard_line((lumival, uncval), det_id=args.detid)
+      self.pbar_data(Lumi=f'{lumival:.2f}+-{uncval:.2f}')
 
 
 class lowlightcollect(cmdbase.singlexycmd, cmdbase.readoutcmd,
@@ -421,14 +416,11 @@ class lowlightcollect(cmdbase.singlexycmd, cmdbase.readoutcmd,
     """
     self.move_gantry(args.x, args.y, args.z, False)
     self.gpio.pwm(0, args.power, 1e5)
-    for i in range(args.nparts):
+    for _ in self.start_pbar(range(args.nparts)):
       self.check_handle()
       readout = self.readout(args, average=False)
       self.write_standard_line(readout, det_id=args.detid)
-      self.update_progress(progress=(i + 1, args.nparts),
-                           temperature=True,
-                           coordinates=True,
-                           display_data={'Lumi': (readout[-1], readout[-2])})
+      self.pbar_data(Lumi=f'{readout[-1]:.2}')
 
 
 class timescan(cmdbase.readoutcmd, cmdbase.savefilecmd):
@@ -469,9 +461,9 @@ class timescan(cmdbase.readoutcmd, cmdbase.savefilecmd):
     start_time = time.time_ns()
     pwmindex = 0
 
-    for i in range(args.nslice):
+    for it in self.start_pbar(args.nslice):
       self.check_handle()
-      if (i % args.pwmslices == 0):
+      if (it % args.pwmslices == 0):
         self.gpio.pwm(0, args.testpwm[pwmindex], 1e5)
         pwmindex = (pwmindex + 1) % len(args.testpwm)
 
@@ -483,11 +475,6 @@ class timescan(cmdbase.readoutcmd, cmdbase.savefilecmd):
       self.write_standard_line((lumival, uncval, s2, s4),
                                det_id=-100,
                                time=timestamp)
-      self.update_progress(progress=(i + 1, args.nslice),
-                           coordinates=True,
-                           temperature=True,
-                           display_data={
-                               'luminosity': [lumival, uncval],
-                               'sharpness': [s2, s4]
-                           })
+      self.pbar_data(Lumi=f'{lumival:.2f}+-{uncval:.2f}',
+                     Sharp=f'({s2:.1f}, {s4:.1f})')
       time.sleep(args.interval)

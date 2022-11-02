@@ -29,16 +29,11 @@
  *
  * @{
  */
-extern std::string GREEN( const std::string& );
-extern std::string RED( const std::string& );
-extern std::string YELLOW( const std::string& );
-extern std::string CYAN( const std::string& );
-
-extern void printdebug( const std::string& header,
+extern void printdebug( const std::string& device,
                         const std::string& x );
-extern void printmsg( const std::string&  header,
+extern void printmsg( const std::string&  device,
                       const std::string & x );
-extern void printwarn( const std::string& header,
+extern void printwarn( const std::string& device,
                        const std::string& x );
 extern std::runtime_error device_exception( const std::string& device,
                                             const std::string& x  );

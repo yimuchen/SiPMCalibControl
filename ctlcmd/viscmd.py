@@ -145,7 +145,7 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
     reco_y = []
 
     ## Running over mesh.
-    for idx, (xval, yval) in enumerate(zip(args.x, args.y)):
+    for xval, yval in self.start_pbar(zip(args.x, args.y)):
       self.check_handle()
       self.move_gantry(xval, yval, args.scanz, False)
       time.sleep(args.vwait)
@@ -159,28 +159,24 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
         reco_x.append(center.x)
         reco_y.append(center.y)
 
-      self.update_progress(progress=(idx, len(args.x)),
-                           temperature=True,
-                           coodinates=True,
-                           display_data={
-                               'center': (center.x, center.y),
-                               'sharp': (center.s2, center.s4)
-                           })
       self.write_standard_line((center.x, center.y), det_id=args.detid)
+      self.pbar_data(center=f'({center.x:.0f}, {center.y:.0f})',
+                     sharp=f'({center.s2:1f}, {center.s4:.1f})')
 
     fitx, covar_x = curve_fit(visualhscan.model, np.vstack((gantry_x, gantry_y)),
                               reco_x)
     fity, covar_y = curve_fit(visualhscan.model, np.vstack((gantry_x, gantry_y)),
                               reco_y)
 
-    self.printmsg( 'Transformation for CamX ' \
-          '= ({0:.2f}+-{1:.3f})x + ({2:.2f}+-{3:.2f})y'.format(
-              fitx[0], np.sqrt(covar_x[0][0]),
-              fitx[1], np.sqrt(covar_x[1][1])  ) )
-    self.printmsg( 'Transformation for CamY ' \
-          '= ({0:.2f}+-{1:.3f})x + ({2:.2f}+-{3:.2f})y'.format(
-              fity[0], np.sqrt(covar_y[0][0]),
-              fity[1], np.sqrt(covar_y[1][1])  ) )
+    def meas_str(v, unc):
+      return f'{v:.2f}+-{unc:.3f}'
+
+    xx = meas_str(fitx[0], np.sqrt(covar_x[0][0]))
+    xy = meas_str(fitx[1], np.sqrt(covar_x[1][1]))
+    yx = meas_str(fity[0], np.sqrt(covar_y[0][0]))
+    yy = meas_str(fity[1], np.sqrt(covar_y[1][1]))
+    self.printmsg(f'Transformation for CamX = ({xx})x + ({xy})y')
+    self.printmsg(f'Transformation for CamY = ({yx})x + ({yy})y')
 
     ## Generating calibration det id if using det coordinates
     detid = str(args.detid)
@@ -192,7 +188,8 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
       self.board.add_visM(detid, self.gcoder.opz,
                           [[fitx[0], fitx[1]], [fity[0], fity[1]]])
     elif self.board.visM_hasz(detid, self.gcoder.opz):
-      if self.prompt_yn(f"""
+      if self.prompt_yn(
+          f"""
           Transformation equation for z={args.scanz:.1f} already exists,
           overwrite?""", 'no'):
         self.board.add_visM(detid, self.gcoder.opz,
@@ -472,7 +469,7 @@ class visualzscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.savefilecmd,
     pass
 
   def run(self, args):
-    for idx, z in enumerate(args.zlist):
+    for z in self.start_pbar(args.zlist):
       # Checking termination signal
       self.check_handle()
       self.move_gantry(args.x, args.y, z, False)
@@ -486,17 +483,12 @@ class visualzscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.savefilecmd,
       reco_a.append(center.area)
       reco_d.append(center.maxmeas)
 
-      self.update_progress(progress=(idx, len(args.zlen)),
-                           temperature=True,
-                           coordinates=True,
-                           display_data={
-                               'sharpness': (center.s2, center.s4),
-                               'reco': (center.x, center.y),
-                               'measure': (center.area, center.maxmeas)
-                           })
       self.write_standard_line(
           (laplace[-1], center.x, center.y, center.area, center.maxmeas),
           det_id=args.detid)
+      self.pbar_data(sharpness=f'({center.s2:.1f}, {center.s4:.1f})',
+                     reco=f'({center.x:.0f}, {center.y:.0f})',
+                     measure=f'({center.area:.0f}, {center.maxmeas:.0f})')
 
 
 class visualshowdet(visualmeta):

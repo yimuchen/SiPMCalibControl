@@ -90,18 +90,18 @@ if __name__ == '__main__':
     prog_parser.print_help()
     sys.exit(0)
 
-  setup = {'extra': {'cmdline': 'setup'}}
+  logger = logging.getLogger("SiPMCalibCMD.setup")
   try:
-    cmd.cmdlog.info("Running set command", **setup)
+    logger.info("Running set command")
     cmd.set.run(args)
-    cmd.cmdlog.info("Starting GPIO", **setup)
+    logger.info("Starting GPIO")
     cmd.gpio.init()
   except RuntimeError as err:
-    cmd.devlog.error(str(err), **setup)
-    cmd.cmdlog.warning(
+    logger.error(str(err))
+    logger.warning(
         fmt.oneline_string("""There was error in the setup process, program
                            will continue but will most likely misbehave! Use at
-                           your own risk!"""), **setup)
+                           your own risk!"""))
 
   cmd.cmdloop()
   #print('Exiting out of loop')

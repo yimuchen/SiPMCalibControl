@@ -18,12 +18,7 @@ static const int ERROR    = 40;
 static const int CRITICAL = 50;
 
 // Static objects used for logging.
-static PyObject* logging_lib  = PyImport_ImportModuleNoBlock( "logging" );
-static PyObject* logging_name = Py_BuildValue( "s", "devlog" );
-static PyObject* logging_obj  = PyObject_CallMethod( logging_lib,
-                                                     "getLogger",
-                                                     "O",
-                                                     logging_name );
+static PyObject* logging_lib = PyImport_ImportModuleNoBlock( "logging" );
 
 /**
  * @brief Wrapping the python.logging modules call into a C function.
@@ -35,7 +30,9 @@ static PyObject* logging_obj  = PyObject_CallMethod( logging_lib,
  * @param message The message string
  */
 static void
-logger_wrapped( int level, const char* message )
+logger_wrapped( const std::string& device,
+                int                level,
+                const std::string& message )
 {
   // Log Accordingly
   const char* logging_level = level == DEBUG ?
@@ -49,16 +46,15 @@ logger_wrapped( int level, const char* message )
                               level == CRITICAL ?
                               "critical" :
                               "";
-  PyObject* logging_str    = Py_BuildValue( "s", message ); // Build the Logger Object
+  PyObject* logging_name = Py_BuildValue( "s",
+                                          ( "SiPMCalibCMD."+device ).c_str()  );
+  PyObject* logging_obj = PyObject_CallMethod( logging_lib,
+                                               "getLogger",
+                                               "O",
+                                               logging_name );
+  PyObject* logging_str = Py_BuildValue( "s", message.c_str() );    // Build the Logger Object
   PyObject_CallMethod( logging_obj, logging_level, "O", logging_str );
   Py_DECREF( logging_str );
-}
-
-
-static std::string
-device_format( const std::string& device, const std::string & message )
-{
-  return "[["+device+"]] "+message;
 }
 
 
@@ -69,7 +65,7 @@ device_format( const std::string& device, const std::string & message )
 void
 printdebug( const std::string& dev, const std::string& msg )
 {
-  logger_wrapped( DEBUG, device_format( dev, msg ).c_str() );
+  logger_wrapped( dev, DEBUG, msg );
 }
 
 
@@ -80,7 +76,7 @@ printdebug( const std::string& dev, const std::string& msg )
 void
 printmsg( const std::string& dev, const std::string& msg )
 {
-  logger_wrapped( INFO, device_format( dev, msg ).c_str() );
+  logger_wrapped( dev, INFO, msg );
 }
 
 
@@ -91,12 +87,12 @@ printmsg( const std::string& dev, const std::string& msg )
 void
 printwarn( const std::string& dev, const std::string& msg )
 {
-  logger_wrapped( WARNING, device_format( dev, msg ).c_str() );
+  logger_wrapped( dev, WARNING, msg );
 }
 
 
 std::runtime_error
 device_exception( const std::string& dev, const std::string& msg )
 {
-  return std::runtime_error( device_format( dev, msg ) );
+  return std::runtime_error( msg );
 }

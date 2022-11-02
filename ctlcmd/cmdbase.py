@@ -83,6 +83,7 @@ import shlex
 import select
 import enum
 import logging
+import tqdm
 
 
 class controlterm(cmd.Cmd):
@@ -128,6 +129,7 @@ class controlterm(cmd.Cmd):
 
   prompt = 'SiPMCalib> '
   last_status = None
+  logname = 'SiPMCalibCMD'
 
   def __init__(self, cmdlist, **base_kwargs):
     """
@@ -153,11 +155,8 @@ class controlterm(cmd.Cmd):
     self.sighandle.release()
 
     # Creating logging instances for command line parsing
-    self.cmdlog = logging.getLogger("cmdline")
+    self.cmdlog = logging.getLogger(self.logname)
     self.cmdlog.setLevel(logging.NOTSET)
-
-    self.devlog = logging.getLogger("devlog")
-    self.devlog.setLevel(logging.NOTSET)
 
     for com in cmdlist:
       comname = com.__name__.lower()
@@ -249,10 +248,8 @@ class controlterm(cmd.Cmd):
     cmd_shandler.setFormatter(fmt.CmdStreamFormatter())
     self.cmdlog.addHandler(cmd_shandler)
 
-    dev_shandler = logging.StreamHandler()
-    dev_shandler.setLevel(logging.DEBUG)
-    dev_shandler.setFormatter(fmt.DeviceStreamFormatter())
-    self.devlog.addHandler(dev_shandler)
+  def devlog(self, devname):
+    return logging.getLogger(self.logname + '.' + devname)
 
 
 class controlcmd(object):
@@ -292,6 +289,8 @@ class controlcmd(object):
   TERMINATE_SESSION = 1
   TERMINATE_CMD = 2
 
+  _PROGRESS_BAR_CONSTRUCTOR_ = tqdm.tqdm
+
   @property
   def classname(self):
     return self.__class__.__name__.lower()
@@ -312,11 +311,12 @@ class controlcmd(object):
         description=self.__class__.__doc__.replace('@brief', ''),
         add_help=False)
     self.cmd = cmdsession  # Reference to the master object.
+    self.pbar = None
 
     # Getting reference to session objects for simpler shorthand
     for embedded_obj in [
         # Logging objects
-        'devlog', 'cmdlog',
+        'cmdlog', 'devlog',
         # Control objects ,
         'gcoder', 'visual', 'pico', 'drs', 'gpio',
         # Session management
@@ -362,12 +362,19 @@ class controlcmd(object):
     be overwritten. Additional parsing the the resulting arguments (complicated
     parsing of default values... etc) should be handled by the `parse` method.
     """
+    args, argv = self.parser.parse_known_args(shlex.split(line))
+    if argv:  # In-built parser error for unrecognized error
+      raise ValueError('Unrecognized inputs: ' + ' '.join(argv))
+
+    # Try additional parsing defined by sub-classes
     try:
-      args = self.parser.parse_args(shlex.split(line))
       return self.__run_mro_method('parse', args)
-    except SystemExit as err:
-      self.printerr(str(err))
-      raise Exception('Cannot parse input')
+    except Exception as err:
+      raise ValueError(f"""
+                       Additional parsing failed. Check available options and
+                       their configurations by running "help {self.classname}"
+                       <br>Original message: {fmt.YELLOW(str(err))}
+                       """)
 
   def do(self, line):
     """
@@ -388,7 +395,10 @@ class controlcmd(object):
     try:
       args = self.parse_line(line)
     except Exception as err:
-      self.print_tracestack(err)
+      if str(err).startswith('Unrecognized inputs:'):
+        self.printerr(str(err) + '<br>' + self.parser.format_usage())
+      else:
+        self.printtrace(err)
       return controlcmd.PARSE_ERROR
 
     return_value = controlcmd.EXIT_SUCCESS
@@ -399,17 +409,17 @@ class controlcmd(object):
       if x == controlcmd.TERMINATE_SESSION:
         return_value = x
     except InterruptedError as err:
-      self.print_tracestack(err)
+      self.printtrace(err)
       return_value = controlcmd.TERMINATE_CMD
     except Exception as err:
-      self.print_tracestack(err)
+      self.printtrace(err)
       return_value = controlcmd.EXECUTE_ERROR
     self.sighandle.release()
 
     try:
       self.__run_mro_method('post_run')
     except Exception as err:
-      self.print_tracestack(err)
+      self.printtrace(err)
       return_value = controlcmd.EXECUTE_ERROR
 
     return return_value
@@ -455,7 +465,7 @@ class controlcmd(object):
     - start_index is the starting index of the word the cursor is at in the line
     - end_index is the position of the cursor in the line
     """
-    cmdname = self.__class__.__name__.lower()
+    cmdname = self.classname
     textargs = line[len(cmdname):start_index].strip().split()
     prevtext = textargs[-1] if len(textargs) else ''
     options = [opt for x in self.parser._actions for opt in x.option_strings]
@@ -479,23 +489,19 @@ class controlcmd(object):
     else:
       return optwithtext()
 
-  @property
-  def log_kwargs(self):
-    return {'extra': {'cmdline': self.classname}}
-
   def printmsg(self, text):
     """Printing a newline message using the custom LOG variable."""
-    self.cmdlog.info(text, **self.log_kwargs)
+    self.devlog(self.classname).info(text)
 
   def printerr(self, text):
     """Printing a error message with a standard red "ERROR" header."""
-    self.cmdlog.error(text, **self.log_kwargs)
+    self.devlog(self.classname).error(text)
 
   def printwarn(self, text):
     """Printing a warning message with a standard yellow "WARNING" header."""
-    self.cmdlog.warning(text, **self.log_kwargs)
+    self.devlog(self.classname).warning(text)
 
-  def print_tracestack(self, err):
+  def printtrace(self, err):
     """
     @brief Better trackstack printing function.
 
@@ -503,90 +509,43 @@ class controlcmd(object):
     compressed down to a single line to make the traceback more compact while
     still being readable and useful for debugging.
     """
-    exc_msg = traceback.format_exc()
-    exc_msg = exc_msg.splitlines()
-    exc_msg = exc_msg[1:-1]  ## Remove traceback and error line.
-    for idx in range(0, len(exc_msg), 2):
-      file = re.findall(r'\"[A-Za-z0-9\/\.]+\"', exc_msg[idx])
-      if len(file):  # For non-conventional error messages
-        file = file[0].strip().replace('"', '')
-      else:
-        continue
-
-      line = re.findall(r'line\s[0-9]+', exc_msg[idx])
-      if len(line):  # For non-conventional error messages
-        line = [int(s) for s in line[0].split() if s.isdigit()][0]
-      else:
-        continue
-
-      content = exc_msg[idx + 1].strip()
-
-      stackline = ''
-      stackline += fmt.RED(f'{line:4d} | ')
-      stackline += fmt.YELLOW('{0} | '.format(file))
-      stackline += content
-      self.cmdlog.log(logging.TRACE, stackline, **self.log_kwargs)
+    self.devlog(self.classname).log(logging.TRACE, traceback.format_exc())
 
     # Printing the original error message
-    self.cmdlog.log(logging.TRACE, str(err), **self.log_kwargs)
+    self.printerr(str(err))
 
-  def update_progress(self,
-                      progress=None,
-                      coordinates=None,
-                      temperature=None,
-                      display_data={}):
+  def start_pbar(self, *args, **kwargs):
+    kwargs.setdefault('desc', fmt.GREEN(f'[{self.classname}]'))
+    kwargs.setdefault('unit', 'steps')
+    if self.pbar is not None:
+      self.pbar.close()
+    self.pbar = self._PROGRESS_BAR_CONSTRUCTOR_(*args, **kwargs)
+    self.pbar_data() # Empty data for the first start
+    return self.pbar
+
+  def pbar_data(self, **kwargs):
     """
-    @brief Standard progress report line.
+    @brief Making progress information dictionary.
 
-    @details Function for displaying a progress update for the data. The standard
+    @details Function for displaying a progress description information to tqdm progress bar.
     sequence would be (given the input variables)
-    - progress: A 2-long iterable construct, indicating the number of iterations
-      ran and the expected number of total iteration. A percent value will also
-      be displayed for at-a-glance monitoring.
-    - coordinates: If set to true, add columns for gantry coordinates
-    - temperature: If set to true, add columns for temperature sensors
     - display_data: the key is used to display the data, and the values should be
       a list of floats corresponding to the data to be displayed. Data will be
       truncated to the 2nd decimal place, so scale data accordingly.
     """
-    message_string = ''
-
-    def append_msg(x, msg):
-      if x != '':
-        return x + ' | ' + msg
-      else:
-        return msg
-
-    # Making the various progress string.
-    if progress:
-      done = progress[0]
-      total = progress[1]
-      width = len(str(total))
-      per = done / total * 100.0
-      pstr = '[{done:{width}d}/{total:{width}d}][{per:5.1f}%]'.format(
-          done=done, total=total, width=width, per=per)
-      message_string = append_msg(message_string, pstr)
-
-    if coordinates:
-      cstr = 'Gantry@({x:5.1f},{y:5.1f},{z:5.1f})'.format(x=self.gcoder.opx,
-                                                          y=self.gcoder.opy,
-                                                          z=self.gcoder.opz)
-      message_string = append_msg(message_string, cstr)
-
-    if temperature:
-      tstr = 'bias:{bias:5.1f}mV pulser:{pt:.2f}C SiPM:{st:.2f}C'.format(
-          bias=self.gpio.adc_read(2),
-          pt=self.gpio.ntc_read(0),
-          st=self.gpio.rtd_read(1))
-      message_string = append_msg(message_string, tstr)
-
-    for key, vals in display_data.items():
-      list_str = ['{0:.2f}'.format(x) for x in vals]
-      list_str = ' '.join(list_str)
-      msg = '{key}: [{list}]'.format(key=key, list=list_str)
-      message_string = append_msg(message_string, msg)
-
-    return message_string
+    self.pbar.set_postfix({
+        'Gantry':
+        '({x:0.1f},{y:0.1f},{z:0.1f})'.format(x=self.gcoder.opx,
+                                              y=self.gcoder.opy,
+                                              z=self.gcoder.opz),
+        'LV':
+        f'{self.gpio.adc_read(2)/1000:5.3f}V',
+        'PT':
+        f'{self.gpio.ntc_read(0):4.1f}C',
+        'ST':
+        f'{self.gpio.rtd_read(1):4.1f}C',
+        **kwargs
+    })
 
   def check_handle(self):
     """

@@ -9,6 +9,8 @@ logging.
 """
 import logging
 import re
+import copy
+import traceback
 
 
 def make_color_text(message: str, colorcode: int) -> str:
@@ -42,44 +44,54 @@ def oneline_string(text):
 
 # Custom output formatter
 class CmdStreamFormatter(logging.Formatter):
-  default_format = '\033[1;32m[{cmdline:s}]\033[0m' + " {message:s}"
-
-  format_lookup = {
-      logging.ERROR: RED("[ERROR  ]") + default_format,
-      logging.WARNING: YELLOW("[WARNING]") + default_format,
-  }
+  default_format = '\033[1;32m[{name:s}]\033[0m' + " {message:s}"
 
   def __init__(self):
+    super().__init__(self.default_format, style='{')
     pass
 
   def format(self, record):
+    format_lookup = {
+        logging.ERROR: RED("[ERROR  ]") + self.default_format,
+        logging.WARNING: YELLOW("[WARNING]") + self.default_format,
+        logging.TRACE: YELLOW("[TRACE  ]") + self.default_format
+    }
     # Replace the original format with one customized by logging level
-    fmt_str = self.format_lookup.get(record.levelno, self.default_format)
-    fmt = logging.Formatter(fmt_str, style='{')
-    record.msg = oneline_string(record.msg)
-    return fmt.format(record)
+    fmt_str = format_lookup.get(record.levelno, self.default_format)
 
+    # Additional parsing of the record message for trace back.
+    if record.levelno == logging.TRACE:
+      record.msg = self.format_traceback(record.msg)
 
-class DeviceStreamFormatter(logging.Formatter):
-  default_format = '\033[1;32m[{device:s}]\033[0m' + " {message:s}"
+    # Common formatting
+    record.name = '.'.join(record.name.split('.')[1:])  # removing the leading
+    record.msg = oneline_string(record.msg)  # Reducing message new lines
+    header_len = len(record.name) + 12  if record.levelno in format_lookup else \
+                 len(record.name) + 3   # Length of header
+    record.msg = record.msg.replace('<br>', '\n' + ' ' * header_len)
 
-  format_lookup = {
-      logging.ERROR: RED("[ERROR  ]") + default_format,
-      logging.WARNING: YELLOW("[WARNING]") + default_format,
-  }
+    formatter = logging.Formatter(fmt_str, style='{')
+    return formatter.format(record)
 
-  def __init__(self):
-    pass
+  @staticmethod
+  def format_traceback(traceback_str):
+    exc_msg = traceback.format_exc()
+    exc_msg = exc_msg.splitlines()
+    exc_msg = exc_msg[1:-1]  ## Remove traceback and error line.
+    lines = []
+    for idx in range(0, len(exc_msg), 2):
+      file = re.findall(r'\"[A-Za-z0-9\/\.]+\"', exc_msg[idx])
+      if len(file):  # For non-conventional error messages
+        file = file[0].strip().replace('"', '')
+      else:
+        continue
 
-  def format(self, record):
-    # Replace the original format with one customized by logging level
-    fmt_str = self.format_lookup.get(record.levelno, self.default_format)
-    fmt = logging.Formatter(fmt_str, style='{')
-    if hasattr(record, 'device'):
-      return fmt.format(record)
-    else:
-      m = re.match(r'\[\[(.*)\]\](.*)', record.msg)
-      if m is not None:
-        record.device = m.group(1)
-        record.msg = m.group(2)
-      return fmt.format(record)
+      lno = re.findall(r'line\s[0-9]+', exc_msg[idx])
+      if len(lno):  # For non-conventional error messages
+        lno = [int(s) for s in lno[0].split() if s.isdigit()][0]
+      else:
+        continue
+
+      content = exc_msg[idx + 1].strip()
+      lines.append(CYAN(f'{lno:4d}L|') + YELLOW(f'{file}| ') + content)
+    return '<br>'.join(lines)
