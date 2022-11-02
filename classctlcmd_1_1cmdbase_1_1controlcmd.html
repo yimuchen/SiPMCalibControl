@@ -93,6 +93,7 @@ $(function() {
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classctlcmd_1_1cmdbase_1_1controlcmd-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ctlcmd.cmdbase.controlcmd Class Reference<div class="ingroups"><a class="el" href="group__cli__design.html">CLI Framework</a></div></div></div>
 </div><!--header-->
@@ -178,9 +179,6 @@ def&#160;</td><td class="memItemRight" valign="bottom"><b>callhelp</b> (self)</t
 <tr class="memitem:adc49fde743da1a77480af0041e84b319"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlcmd.html#adc49fde743da1a77480af0041e84b319">complete</a> (self, text, line, start_index, end_index)</td></tr>
 <tr class="memdesc:adc49fde743da1a77480af0041e84b319"><td class="mdescLeft">&#160;</td><td class="mdescRight">Auto completion of the functions.  <a href="classctlcmd_1_1cmdbase_1_1controlcmd.html#adc49fde743da1a77480af0041e84b319">More...</a><br /></td></tr>
 <tr class="separator:adc49fde743da1a77480af0041e84b319"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a333bf4db22f47e072e289338d5b11926"><td class="memItemLeft" align="right" valign="top"><a id="a333bf4db22f47e072e289338d5b11926" name="a333bf4db22f47e072e289338d5b11926"></a>
-def&#160;</td><td class="memItemRight" valign="bottom"><b>log_kwargs</b> (self)</td></tr>
-<tr class="separator:a333bf4db22f47e072e289338d5b11926"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2053fe6e0fe869132c6b3cb43b2bff14"><td class="memItemLeft" align="right" valign="top"><a id="a2053fe6e0fe869132c6b3cb43b2bff14" name="a2053fe6e0fe869132c6b3cb43b2bff14"></a>
 def&#160;</td><td class="memItemRight" valign="bottom"><b>printmsg</b> (self, text)</td></tr>
 <tr class="memdesc:a2053fe6e0fe869132c6b3cb43b2bff14"><td class="mdescLeft">&#160;</td><td class="mdescRight">Printing a newline message using the custom LOG variable. <br /></td></tr>
@@ -193,12 +191,15 @@ def&#160;</td><td class="memItemRight" valign="bottom"><b>printerr</b> (self, te
 def&#160;</td><td class="memItemRight" valign="bottom"><b>printwarn</b> (self, text)</td></tr>
 <tr class="memdesc:a6de51a70f8de040a9d67665b579ba638"><td class="mdescLeft">&#160;</td><td class="mdescRight">Printing a warning message with a standard yellow "WARNING" header. <br /></td></tr>
 <tr class="separator:a6de51a70f8de040a9d67665b579ba638"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab8445d822d8bb3c5c8f0a3db925404eb"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlcmd.html#ab8445d822d8bb3c5c8f0a3db925404eb">print_tracestack</a> (self, err)</td></tr>
-<tr class="memdesc:ab8445d822d8bb3c5c8f0a3db925404eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Better trackstack printing function.  <a href="classctlcmd_1_1cmdbase_1_1controlcmd.html#ab8445d822d8bb3c5c8f0a3db925404eb">More...</a><br /></td></tr>
-<tr class="separator:ab8445d822d8bb3c5c8f0a3db925404eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a96cd82f992430453f9291cd020cbd67e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlcmd.html#a96cd82f992430453f9291cd020cbd67e">update_progress</a> (self, progress=None, coordinates=None, temperature=None, display_data={})</td></tr>
-<tr class="memdesc:a96cd82f992430453f9291cd020cbd67e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Standard progress report line.  <a href="classctlcmd_1_1cmdbase_1_1controlcmd.html#a96cd82f992430453f9291cd020cbd67e">More...</a><br /></td></tr>
-<tr class="separator:a96cd82f992430453f9291cd020cbd67e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a79d174feaef684e4ca40de46076c8bc7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlcmd.html#a79d174feaef684e4ca40de46076c8bc7">printtrace</a> (self, err)</td></tr>
+<tr class="memdesc:a79d174feaef684e4ca40de46076c8bc7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Better trackstack printing function.  <a href="classctlcmd_1_1cmdbase_1_1controlcmd.html#a79d174feaef684e4ca40de46076c8bc7">More...</a><br /></td></tr>
+<tr class="separator:a79d174feaef684e4ca40de46076c8bc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9a857eb496e768826a602b4fcc24acc6"><td class="memItemLeft" align="right" valign="top"><a id="a9a857eb496e768826a602b4fcc24acc6" name="a9a857eb496e768826a602b4fcc24acc6"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>start_pbar</b> (self, *args, **kwargs)</td></tr>
+<tr class="separator:a9a857eb496e768826a602b4fcc24acc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac13703006381938bda602e92586f640b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlcmd.html#ac13703006381938bda602e92586f640b">pbar_data</a> (self, **kwargs)</td></tr>
+<tr class="memdesc:ac13703006381938bda602e92586f640b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Making progress information dictionary.  <a href="classctlcmd_1_1cmdbase_1_1controlcmd.html#ac13703006381938bda602e92586f640b">More...</a><br /></td></tr>
+<tr class="separator:ac13703006381938bda602e92586f640b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a14d4a7ccb7fa1f3fa76acda1e33c44a0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlcmd.html#a14d4a7ccb7fa1f3fa76acda1e33c44a0">check_handle</a> (self)</td></tr>
 <tr class="memdesc:a14d4a7ccb7fa1f3fa76acda1e33c44a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper function for handling signals.  <a href="classctlcmd_1_1cmdbase_1_1controlcmd.html#a14d4a7ccb7fa1f3fa76acda1e33c44a0">More...</a><br /></td></tr>
 <tr class="separator:a14d4a7ccb7fa1f3fa76acda1e33c44a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -224,6 +225,9 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:ab236eaf69dc0093d779a9138261915be"><td class="memItemLeft" align="right" valign="top"><a id="ab236eaf69dc0093d779a9138261915be" name="ab236eaf69dc0093d779a9138261915be"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>cmd</b></td></tr>
 <tr class="separator:ab236eaf69dc0093d779a9138261915be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad0935caa4a4fb2571d54f38d041fd052"><td class="memItemLeft" align="right" valign="top"><a id="ad0935caa4a4fb2571d54f38d041fd052" name="ad0935caa4a4fb2571d54f38d041fd052"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>pbar</b></td></tr>
+<tr class="separator:ad0935caa4a4fb2571d54f38d041fd052"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
@@ -248,6 +252,12 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a1a04810d8dd30936a08f3e91963892d9"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlcmd.html#a1a04810d8dd30936a08f3e91963892d9">__run_mro_method</a> (self, method, args=None)</td></tr>
 <tr class="memdesc:a1a04810d8dd30936a08f3e91963892d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Running some method in inverted <b>mro</b> order,.  <a href="classctlcmd_1_1cmdbase_1_1controlcmd.html#a1a04810d8dd30936a08f3e91963892d9">More...</a><br /></td></tr>
 <tr class="separator:a1a04810d8dd30936a08f3e91963892d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
+Static Private Attributes</h2></td></tr>
+<tr class="memitem:adadc571b2ce429148af3d7ae5dc165d0"><td class="memItemLeft" align="right" valign="top"><a id="adadc571b2ce429148af3d7ae5dc165d0" name="adadc571b2ce429148af3d7ae5dc165d0"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>_PROGRESS_BAR_CONSTRUCTOR_</b> = tqdm.tqdm</td></tr>
+<tr class="separator:adadc571b2ce429148af3d7ae5dc165d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a074d0e3798f524909f450a6de363962d" name="a074d0e3798f524909f450a6de363962d"></a>
@@ -561,6 +571,37 @@ Private Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="ac13703006381938bda602e92586f640b" name="ac13703006381938bda602e92586f640b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac13703006381938bda602e92586f640b">&#9670;&#160;</a></span>pbar_data()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def ctlcmd.cmdbase.controlcmd.pbar_data </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">**&#160;</td>
+          <td class="paramname"><em>kwargs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >Function for displaying a progress description information to tqdm progress bar. sequence would be (given the input variables)</p><ul>
+<li>display_data: the key is used to display the data, and the values should be a list of floats corresponding to the data to be displayed. Data will be truncated to the 2nd decimal place, so scale data accordingly. </li>
+</ul>
+
+</div>
+</div>
 <a id="a7461f81564db788ad1de4355e54cebd8" name="a7461f81564db788ad1de4355e54cebd8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7461f81564db788ad1de4355e54cebd8">&#9670;&#160;</a></span>post_run()</h2>
 
@@ -581,14 +622,14 @@ Private Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ab8445d822d8bb3c5c8f0a3db925404eb" name="ab8445d822d8bb3c5c8f0a3db925404eb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab8445d822d8bb3c5c8f0a3db925404eb">&#9670;&#160;</a></span>print_tracestack()</h2>
+<a id="a79d174feaef684e4ca40de46076c8bc7" name="a79d174feaef684e4ca40de46076c8bc7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a79d174feaef684e4ca40de46076c8bc7">&#9670;&#160;</a></span>printtrace()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">def ctlcmd.cmdbase.controlcmd.print_tracestack </td>
+          <td class="memname">def ctlcmd.cmdbase.controlcmd.printtrace </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>self</em>, </td>
@@ -674,58 +715,6 @@ Private Member Functions</h2></td></tr>
 <p >Functions that require command specific definitions, should be overwritten in the descendent classes </p>
 
 <p>Reimplemented in <a class="el" href="classctlcmd_1_1digicmd_1_1pulse.html#a55dcfe00ab529ea2b3fb2bc7a513e4fa">ctlcmd.digicmd.pulse</a>, <a class="el" href="classctlcmd_1_1digicmd_1_1pwm.html#ab92b8a995faa0794aaa3ed04f9253f31">ctlcmd.digicmd.pwm</a>, <a class="el" href="classctlcmd_1_1digicmd_1_1setadcref.html#a5e46bb4ed4bfa146eb1823496067e6dd">ctlcmd.digicmd.setadcref</a>, <a class="el" href="classctlcmd_1_1digicmd_1_1showadc.html#adca9ecf48d23297df06af5061b177fb0">ctlcmd.digicmd.showadc</a>, <a class="el" href="classctlcmd_1_1digicmd_1_1lighton.html#a545cc3b8e83744c0d84aaf7b6e9ecd9d">ctlcmd.digicmd.lighton</a>, <a class="el" href="classctlcmd_1_1drscmd_1_1drsset.html#a44575d4a796cf9b91678f82a3aa0d02a">ctlcmd.drscmd.drsset</a>, <a class="el" href="classctlcmd_1_1drscmd_1_1drscalib.html#af714c97f3b7e20bbf7eb3ed63cb1a740">ctlcmd.drscmd.drscalib</a>, <a class="el" href="classctlcmd_1_1drscmd_1_1drsrun.html#a6ff40e63641e2362116c12a9c1cae353">ctlcmd.drscmd.drsrun</a>, <a class="el" href="classctlcmd_1_1getset_1_1exit.html#a3fe1761280a03ffa1edf287f761bd746">ctlcmd.getset.exit</a>, <a class="el" href="classctlcmd_1_1getset_1_1set.html#a816f9548b062e8e5a7b24917b7f71cf0">ctlcmd.getset.set</a>, <a class="el" href="classctlcmd_1_1getset_1_1get.html#a0fdde3ffbde7336eed55c5d4d561130d">ctlcmd.getset.get</a>, <a class="el" href="classctlcmd_1_1getset_1_1savecalib.html#a62e0ab1241bbf4ef4d87ff4184420449">ctlcmd.getset.savecalib</a>, <a class="el" href="classctlcmd_1_1getset_1_1loadcalib.html#a2f501463ac7cae8be17865037c567fd3">ctlcmd.getset.loadcalib</a>, <a class="el" href="classctlcmd_1_1getset_1_1promptaction.html#a161c0f94277bffd8ab2d412e765b73f6">ctlcmd.getset.promptaction</a>, <a class="el" href="classctlcmd_1_1getset_1_1history.html#aa35d5065962327dbbc8dc7eaa7b1cfd6">ctlcmd.getset.history</a>, <a class="el" href="classctlcmd_1_1getset_1_1wait.html#a6109a8a63022ac3b895252ace02e5d93">ctlcmd.getset.wait</a>, <a class="el" href="classctlcmd_1_1getset_1_1runfile.html#ace05d4bf762b7771754c7c24f2db6fd2">ctlcmd.getset.runfile</a>, <a class="el" href="classctlcmd_1_1motioncmd_1_1rungcode.html#a129b8f4deccfc2233dcc73baf2afdabc">ctlcmd.motioncmd.rungcode</a>, <a class="el" href="classctlcmd_1_1motioncmd_1_1moveto.html#a4c0e078cd9fe379db85390301b3c4f99">ctlcmd.motioncmd.moveto</a>, <a class="el" href="classctlcmd_1_1motioncmd_1_1getcoord.html#a3ef8ecdb0bdb7a50105e55ab7d589621">ctlcmd.motioncmd.getcoord</a>, <a class="el" href="classctlcmd_1_1motioncmd_1_1disablestepper.html#ab6b22d2c11eea6d53af66c5cd8a6bb4a">ctlcmd.motioncmd.disablestepper</a>, <a class="el" href="classctlcmd_1_1motioncmd_1_1enablestepper.html#a6c1324b8c224bf372164ff8722124bf4">ctlcmd.motioncmd.enablestepper</a>, <a class="el" href="classctlcmd_1_1motioncmd_1_1movespeed.html#a4e7c77a634e3de672402d19902c50e6b">ctlcmd.motioncmd.movespeed</a>, <a class="el" href="classctlcmd_1_1motioncmd_1_1sendhome.html#a08fadd50e1820c527806449348b1df47">ctlcmd.motioncmd.sendhome</a>, <a class="el" href="classctlcmd_1_1motioncmd_1_1halign.html#ad452036884210a8423a521b044638dc8">ctlcmd.motioncmd.halign</a>, <a class="el" href="classctlcmd_1_1motioncmd_1_1zscan.html#aab3cedc340cba48fef238de3a2cfcf3b">ctlcmd.motioncmd.zscan</a>, <a class="el" href="classctlcmd_1_1motioncmd_1_1lowlightcollect.html#ad92c3830f9485b5f7fb5e44b1c4f4c4f">ctlcmd.motioncmd.lowlightcollect</a>, <a class="el" href="classctlcmd_1_1motioncmd_1_1timescan.html#a98baa0fc8624dc55369753c389303522">ctlcmd.motioncmd.timescan</a>, <a class="el" href="classctlcmd_1_1picocmd_1_1picoset.html#a35cf3aa522c20efffb57ab30b8896fd3">ctlcmd.picocmd.picoset</a>, <a class="el" href="classctlcmd_1_1picocmd_1_1picorunblock.html#a26260f1cf4e2c31cc9945b239b3691e4">ctlcmd.picocmd.picorunblock</a>, <a class="el" href="classctlcmd_1_1picocmd_1_1picorange.html#a029b4ac391a64f6ebdc92f9300ad0c33">ctlcmd.picocmd.picorange</a>, <a class="el" href="classctlcmd_1_1viscmd_1_1visualset.html#a52dfcdef21f91cc02618acc201f997b1">ctlcmd.viscmd.visualset</a>, <a class="el" href="classctlcmd_1_1viscmd_1_1visualhscan.html#ac9991e60e1709fbe63a6112cc8ec3b73">ctlcmd.viscmd.visualhscan</a>, <a class="el" href="classctlcmd_1_1viscmd_1_1visualcenterdet.html#a08eca230552c8b4026de16c816dffff0">ctlcmd.viscmd.visualcenterdet</a>, <a class="el" href="classctlcmd_1_1viscmd_1_1visualmaxsharp.html#a1a3ef675ddfd74a5268f373580681783">ctlcmd.viscmd.visualmaxsharp</a>, <a class="el" href="classctlcmd_1_1viscmd_1_1visualsaveframe.html#a0281b60e9b208644877397487f4c7804">ctlcmd.viscmd.visualsaveframe</a>, <a class="el" href="classctlcmd_1_1viscmd_1_1visualzscan.html#ad05bff65cad7f3692e3e238f019d30fb">ctlcmd.viscmd.visualzscan</a>, <a class="el" href="classctlcmd_1_1viscmd_1_1visualshowdet.html#a04333cd9ed7ba6838520daa2af677851">ctlcmd.viscmd.visualshowdet</a>, and <a class="el" href="classctlcmd_1_1digicmd_1_1lightoff.html#a6a92158874334e70f57573c0e389edd0">ctlcmd.digicmd.lightoff</a>.</p>
-
-</div>
-</div>
-<a id="a96cd82f992430453f9291cd020cbd67e" name="a96cd82f992430453f9291cd020cbd67e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a96cd82f992430453f9291cd020cbd67e">&#9670;&#160;</a></span>update_progress()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def ctlcmd.cmdbase.controlcmd.update_progress </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>progress</em> = <code>None</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>coordinates</em> = <code>None</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>temperature</em> = <code>None</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>display_data</em> = <code>{}</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p >Function for displaying a progress update for the data. The standard sequence would be (given the input variables)</p><ul>
-<li>progress: A 2-long iterable construct, indicating the number of iterations ran and the expected number of total iteration. A percent value will also be displayed for at-a-glance monitoring.</li>
-<li>coordinates: If set to true, add columns for gantry coordinates</li>
-<li>temperature: If set to true, add columns for temperature sensors</li>
-<li>display_data: the key is used to display the data, and the values should be a list of floats corresponding to the data to be displayed. Data will be truncated to the 2nd decimal place, so scale data accordingly. </li>
-</ul>
 
 </div>
 </div>
