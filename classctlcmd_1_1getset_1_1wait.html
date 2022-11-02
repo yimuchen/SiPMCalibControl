@@ -113,6 +113,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac556f75c2fe933c8be3a8d2ee09ab3a0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1getset_1_1wait.html#ac556f75c2fe933c8be3a8d2ee09ab3a0">add_args</a> (self)</td></tr>
 <tr class="memdesc:ac556f75c2fe933c8be3a8d2ee09ab3a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adding arguments to the command.  <a href="classctlcmd_1_1getset_1_1wait.html#ac556f75c2fe933c8be3a8d2ee09ab3a0">More...</a><br /></td></tr>
 <tr class="separator:ac556f75c2fe933c8be3a8d2ee09ab3a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62feeb882ccc7435d6e2247a03c56f58"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1getset_1_1wait.html#a62feeb882ccc7435d6e2247a03c56f58">parse</a> (self, args)</td></tr>
+<tr class="memdesc:a62feeb882ccc7435d6e2247a03c56f58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method that should be overwritten for additional argument parsing.  <a href="classctlcmd_1_1getset_1_1wait.html#a62feeb882ccc7435d6e2247a03c56f58">More...</a><br /></td></tr>
+<tr class="separator:a62feeb882ccc7435d6e2247a03c56f58"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6109a8a63022ac3b895252ace02e5d93"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1getset_1_1wait.html#a6109a8a63022ac3b895252ace02e5d93">run</a> (self, args)</td></tr>
 <tr class="memdesc:a6109a8a63022ac3b895252ace02e5d93"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method of execution to be overloaded.  <a href="classctlcmd_1_1getset_1_1wait.html#a6109a8a63022ac3b895252ace02e5d93">More...</a><br /></td></tr>
 <tr class="separator:a6109a8a63022ac3b895252ace02e5d93"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -264,6 +267,37 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>TERMINATE_CMD</b> = 2<
 <p >Method to be overridden for adding additional argument to the containing <code>parser</code> object. This can be added at any level of subsequently defined command classes. </p>
 
 <p>Reimplemented from <a class="el" href="classctlcmd_1_1cmdbase_1_1controlcmd.html#ac548f6e7a6a50135189ea2709e4056c9">ctlcmd.cmdbase.controlcmd</a>.</p>
+
+</div>
+</div>
+<a id="a62feeb882ccc7435d6e2247a03c56f58" name="a62feeb882ccc7435d6e2247a03c56f58"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a62feeb882ccc7435d6e2247a03c56f58">&#9670;&#160;</a></span>parse()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def ctlcmd.getset.wait.parse </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>args</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >Notice that the return of this method must be the augmented argument container instance. </p>
+
+<p>Reimplemented from <a class="el" href="classctlcmd_1_1cmdbase_1_1controlcmd.html#abe8bb7123627a12172c0a5b5033a6331">ctlcmd.cmdbase.controlcmd</a>.</p>
 
 </div>
 </div>
