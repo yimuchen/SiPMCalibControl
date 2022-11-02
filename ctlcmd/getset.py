@@ -41,8 +41,8 @@ class exit(cmdbase.controlcmd):
 
 class set(cmdbase.controlcmd):
   """
-  @brief Setting calibration system devices. This will only modify opening and closing the
-  interface, not the actual operation of the various interfaces.
+  @brief Setting calibration system devices. This will only modify opening and
+  closing the interface, not the actual operation of the various interfaces.
 
   - For visual system settings, see command: visualset
   - For settings for the picoscope, see command: picoset
@@ -91,7 +91,7 @@ class set(cmdbase.controlcmd):
   def run(self, args):
     """
     For the sake of clarity, device settings is split into each of their
-    functions. Notice that all function should have expection guards so the
+    functions. Notice that all function should have exception guards so the
     subsequent settings can still be set if a single settings is bad.
     """
     if args.boardtype:
@@ -123,7 +123,7 @@ class set(cmdbase.controlcmd):
       try:
         self.visual.init_dev(args.camdev)
       except RuntimeError as err:
-        self.devlog.error(str(err))
+        self.devlog('Visual').error(str(err))
         self.printwarn('Initializing webcam has failed, skipping over setting')
 
   def set_printer(self, args):
@@ -135,9 +135,9 @@ class set(cmdbase.controlcmd):
         printset = self.gcoder.getsettings()
         printset = printset.split('\necho:')
         for line in printset:
-          self.printmsg(line, extra={'device': 'printer'})
+          self.devlog('GCoder').info(line)
       except RuntimeError as err:
-        self.devlog.error(str(err))
+        self.devlog('GCoder').error(str(err))
         self.printwarn('Failed to setup printer, skipping over settings')
 
   def set_picodevice(self, args):
@@ -146,7 +146,7 @@ class set(cmdbase.controlcmd):
       try:
         self.pico.init()
       except RuntimeError as err:
-        self.devlog.error(str(err))
+        self.devlog('PicoUnit').error(str(err))
         self.printwarn('Picoscope device is not properly set!')
 
   def set_drs(self, args):
@@ -155,7 +155,7 @@ class set(cmdbase.controlcmd):
       try:
         self.drs.init()
       except RuntimeError as err:
-        self.devlog.error(str(err))
+        self.devlog('DRSContainer').error(str(err))
         self.printwarn('DRS device is not properly set!')
 
   def is_dummy_dev(self, dev, device_name):
@@ -217,25 +217,25 @@ class get(cmdbase.controlcmd):
       self.printmsg(msg, **extra)
 
   def print_printer(self):
-    extra = {'device': 'PRINTER'}
-    self.printmsg('device: ' + str(self.gcoder.dev_path), extra=extra)
-    self.printmsg('current coordinates: x{0:.1f} y{1:.1f} z{2:0.1f}'.format(
-        self.gcoder.opx, self.gcoder.opy, self.gcoder.opz),
-                  extra=extra)
+    extra = {'extra': {'device': 'PRINTER'}}
+    self.devlog.info('device: ' + str(self.gcoder.dev_path), **extra)
+    self.devlog.info(
+        f'current coordinates:' + f' x{self.gcoder.opx:.1f}' +
+        f' y{self.gcoder.opy:.1f}' + f' z{self.gcoder.opz:0.1f}', **extra)
     printset = self.gcoder.getsettings()
     printset = printset.split('\necho:')
     for line in printset:
-      self.printmsg(line, extra=extra)
+      self.devlog.info(line, **extra)
 
   def print_camera(self):
-    extra = {'device': 'CAMERA'}
-    self.printmsg(str(self.visual.dev_path))
-    self.printmsg('Threshold:{0:3f}'.format(self.visual.threshold))
-    self.printmsg('Blur:     {0:3d} [pix]'.format(self.visual.blur_range))
-    self.printmsg('Max Lumi: {0:3f}'.format(self.visual.lumi_cutoff))
-    self.printmsg('Min Size: {0:3d} [pix]'.format(self.visual.size_cutoff))
-    self.printmsg('Ratio:    {0:3f}'.format(self.visual.ratio_cutoff))
-    self.printmsg('Poly:     {0:3f}'.format(self.visual.poly_range))
+    extra = {'extra': {'device': 'CAMERA'}}
+    self.devlog.info(str(self.visual.dev_path), **extra)
+    self.devlog.info(f'Threshold:{self.visual.threshold:3f}', **extra)
+    self.devlog.info(f'Blur:     {self.visual.blur_range:3d} [pix]', **extra)
+    self.devlog.info(f'Max Lumi: {self.visual.lumi_cutoff:3f}', **extra)
+    self.devlog.info(f'Min Size: {self.visual.size_cutoff:3d} [pix]', **extra)
+    self.devlog.info(f'Ratio:    {self.visual.ratio_cutoff:3f}', **extra)
+    self.devlog.info(f'Poly:     {self.visual.poly_range:3f}', **extra)
 
   def print_alignment(self):
     lumi_header = fmt.GREEN('[LUMI_ALIGN]')
@@ -288,7 +288,7 @@ class savecalib(cmdbase.controlcmd):
 
   def parse(self, args):
     if not args.file:
-      raise Exception('File name must be specified')
+      raise ValueError('File name must be specified')
     return args
 
   def run(self, args):
@@ -404,13 +404,25 @@ class wait(cmdbase.controlcmd):
                              default=30,
                              help='Time to suspend session (seconds)')
 
+  def parse(self, args):
+    if args.time < 0:
+      raise ValueError('Pause time must be positive!')
+    return args
+
   def run(self, args):
-    start_time = time.time_ns()
-    current_time = start_time
-    while (current_time - start_time) / 1e9 < args.time:
+    _interval_ = 1
+    start_time = time.time()
+    prev_time = start_time
+    curr_time = start_time
+    self.start_pbar(total=int(args.time / _interval_))
+    while (curr_time - start_time) < args.time:
       self.check_handle()
-      time.sleep(0.1)
-      current_time = time.time_ns()
+      time.sleep(0.01)
+      curr_time = time.time()
+      if curr_time - prev_time > _interval_:
+        self.pbar.update()
+        self.pbar_data(Total=args.time)
+        prev_time = curr_time
 
 
 class runfile(cmdbase.controlcmd):
