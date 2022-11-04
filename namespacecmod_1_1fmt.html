@@ -89,7 +89,8 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">cmod.fmt Namespace Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -99,7 +100,14 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcmod_1_1fmt_1_1ArgumentParser.html">ArgumentParser</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Very thin wrapper for over-writing the error behavior of the argument parse class.  <a href="classcmod_1_1fmt_1_1ArgumentParser.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcmod_1_1fmt_1_1CmdStreamFormatter.html">CmdStreamFormatter</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a logging.Record object, format into a string that should be printed on string.  <a href="classcmod_1_1fmt_1_1CmdStreamFormatter.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcmod_1_1fmt_1_1FIFOHandler.html">FIFOHandler</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class for handling a first-in-first-out in-memory logging cache.  <a href="classcmod_1_1fmt_1_1FIFOHandler.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
@@ -123,9 +131,56 @@ str&#160;</td><td class="memItemRight" valign="bottom"><b>CYAN</b> (str message)
 <tr class="memitem:acb640928e3796e46dba3e1b8c788a9a6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecmod_1_1fmt.html#acb640928e3796e46dba3e1b8c788a9a6">oneline_string</a> (text)</td></tr>
 <tr class="memdesc:acb640928e3796e46dba3e1b8c788a9a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simplifying multiline text in python to a single line text in python, which also removes the additional whitespaces at the beginning of lines.  <a href="namespacecmod_1_1fmt.html#acb640928e3796e46dba3e1b8c788a9a6">More...</a><br /></td></tr>
 <tr class="separator:acb640928e3796e46dba3e1b8c788a9a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab1c2591af0b19f9b368448445f1ce374"><td class="memItemLeft" align="right" valign="top"><a id="ab1c2591af0b19f9b368448445f1ce374" name="ab1c2591af0b19f9b368448445f1ce374"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>wrapped_string</b> (text, width=120)</td></tr>
+<tr class="memdesc:ab1c2591af0b19f9b368448445f1ce374"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reducing the message to a block of text. <br /></td></tr>
+<tr class="separator:ab1c2591af0b19f9b368448445f1ce374"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a854bbc728e65e944ee9496765b5ba733"><td class="memItemLeft" align="right" valign="top"><a id="a854bbc728e65e944ee9496765b5ba733" name="a854bbc728e65e944ee9496765b5ba733"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>record_timestamp</b> (record)</td></tr>
+<tr class="memdesc:a854bbc728e65e944ee9496765b5ba733"><td class="mdescLeft">&#160;</td><td class="mdescRight">Standard time format for logging record. <br /></td></tr>
+<tr class="separator:a854bbc728e65e944ee9496765b5ba733"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf9ba2bcf83e1a0e0b65663d37195002"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecmod_1_1fmt.html#acf9ba2bcf83e1a0e0b65663d37195002">remove_newline</a> (s)</td></tr>
+<tr class="memdesc:acf9ba2bcf83e1a0e0b65663d37195002"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removing new-line characters with HTML-style <br  />
+ to ensure line-based operations can work further down the line.  <a href="namespacecmod_1_1fmt.html#acf9ba2bcf83e1a0e0b65663d37195002">More...</a><br /></td></tr>
+<tr class="separator:acf9ba2bcf83e1a0e0b65663d37195002"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:aa341380952028bfbe1fe209d4e5b708f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecmod_1_1fmt.html#aa341380952028bfbe1fe209d4e5b708f">CRITICAL</a></td></tr>
+<tr class="memdesc:aa341380952028bfbe1fe209d4e5b708f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Custom logging levels.  <a href="namespacecmod_1_1fmt.html#aa341380952028bfbe1fe209d4e5b708f">More...</a><br /></td></tr>
+<tr class="separator:aa341380952028bfbe1fe209d4e5b708f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46f4be836a3b56f7c7f9f45c35449ab0"><td class="memItemLeft" align="right" valign="top"><a id="a46f4be836a3b56f7c7f9f45c35449ab0" name="a46f4be836a3b56f7c7f9f45c35449ab0"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>ERROR</b></td></tr>
+<tr class="separator:a46f4be836a3b56f7c7f9f45c35449ab0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a195702ef9b22e1d0b9a1c34059f77948"><td class="memItemLeft" align="right" valign="top"><a id="a195702ef9b22e1d0b9a1c34059f77948" name="a195702ef9b22e1d0b9a1c34059f77948"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>WARNING</b></td></tr>
+<tr class="separator:a195702ef9b22e1d0b9a1c34059f77948"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8fe33b8c2f88b01f994fb36e861fe7fe"><td class="memItemLeft" align="right" valign="top"><a id="a8fe33b8c2f88b01f994fb36e861fe7fe" name="a8fe33b8c2f88b01f994fb36e861fe7fe"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>TRACEBACK</b></td></tr>
+<tr class="separator:a8fe33b8c2f88b01f994fb36e861fe7fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0967fa5a36408da22b8419854edf61ad"><td class="memItemLeft" align="right" valign="top"><a id="a0967fa5a36408da22b8419854edf61ad" name="a0967fa5a36408da22b8419854edf61ad"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>INFO</b></td></tr>
+<tr class="separator:a0967fa5a36408da22b8419854edf61ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7da5ece7a653db4dbde17e502193c2bc"><td class="memItemLeft" align="right" valign="top"><a id="a7da5ece7a653db4dbde17e502193c2bc" name="a7da5ece7a653db4dbde17e502193c2bc"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>HW_DEBUG</b></td></tr>
+<tr class="separator:a7da5ece7a653db4dbde17e502193c2bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a560d6908d6df31d619d5fd6804068278"><td class="memItemLeft" align="right" valign="top"><a id="a560d6908d6df31d619d5fd6804068278" name="a560d6908d6df31d619d5fd6804068278"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>INT_INFO</b></td></tr>
+<tr class="separator:a560d6908d6df31d619d5fd6804068278"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2cd88dcd04be7e7f7bf47d8991516f2"><td class="memItemLeft" align="right" valign="top"><a id="aa2cd88dcd04be7e7f7bf47d8991516f2" name="aa2cd88dcd04be7e7f7bf47d8991516f2"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>DEBUG</b></td></tr>
+<tr class="separator:aa2cd88dcd04be7e7f7bf47d8991516f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4efc495b57bf7d8de045940121481693"><td class="memItemLeft" align="right" valign="top"><a id="a4efc495b57bf7d8de045940121481693" name="a4efc495b57bf7d8de045940121481693"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>CMD_HIST</b></td></tr>
+<tr class="separator:a4efc495b57bf7d8de045940121481693"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f579658999f6e894a84f8f99599a0d9"><td class="memItemLeft" align="right" valign="top"><a id="a3f579658999f6e894a84f8f99599a0d9" name="a3f579658999f6e894a84f8f99599a0d9"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>NOTSET</b></td></tr>
+<tr class="separator:a3f579658999f6e894a84f8f99599a0d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1fded3431f6b80cacdf7034993dfbb1e"><td class="memItemLeft" align="right" valign="top">dictionary&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecmod_1_1fmt.html#a1fded3431f6b80cacdf7034993dfbb1e">__all_logging_levels__</a></td></tr>
+<tr class="separator:a1fded3431f6b80cacdf7034993dfbb1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p >Python helper function for helping with string formatting. This includes ASCII color code injection. And well as additional formatting to be performed for logging. </p>
+<div class="textblock"><p >Python helper function for helping with logging string formatting. This includes ASCII color code injection. And well as additional formatting to be performed for logging. As all outputs should be logged through python logging, we introduce more logging levels to better track all information. </p>
 </div><h2 class="groupheader">Function Documentation</h2>
 <a id="acb640928e3796e46dba3e1b8c788a9a6" name="acb640928e3796e46dba3e1b8c788a9a6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acb640928e3796e46dba3e1b8c788a9a6">&#9670;&#160;</a></span>oneline_string()</h2>
@@ -142,6 +197,67 @@ str&#160;</td><td class="memItemRight" valign="bottom"><b>CYAN</b> (str message)
         </tr>
       </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="acf9ba2bcf83e1a0e0b65663d37195002" name="acf9ba2bcf83e1a0e0b65663d37195002"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf9ba2bcf83e1a0e0b65663d37195002">&#9670;&#160;</a></span>remove_newline()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def cmod.fmt.remove_newline </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>s</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Variable Documentation</h2>
+<a id="a1fded3431f6b80cacdf7034993dfbb1e" name="a1fded3431f6b80cacdf7034993dfbb1e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1fded3431f6b80cacdf7034993dfbb1e">&#9670;&#160;</a></span>__all_logging_levels__</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">dictionary cmod.fmt.__all_logging_levels__</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  {</div>
+<div class="line"><span class="lineno">    2</span>    val: k</div>
+<div class="line"><span class="lineno">    3</span>    <span class="keywordflow">for</span> k, val <span class="keywordflow">in</span> logging.__dict__.items()</div>
+<div class="line"><span class="lineno">    4</span>    <span class="keywordflow">if</span> k.upper() == k <span class="keywordflow">and</span> type(val) == int</div>
+<div class="line"><span class="lineno">    5</span>}</div>
+</div><!-- fragment -->
+</div>
+</div>
+<a id="aa341380952028bfbe1fe209d4e5b708f" name="aa341380952028bfbe1fe209d4e5b708f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa341380952028bfbe1fe209d4e5b708f">&#9670;&#160;</a></span>CRITICAL</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">cmod.fmt.CRITICAL</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >This should match what is defined the src/logging.cc </p>
 
 </div>
 </div>

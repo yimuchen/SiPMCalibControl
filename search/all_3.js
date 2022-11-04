@@ -25,12 +25,13 @@ var searchData=
   ['controlcmd_22',['controlcmd',['../classctlcmd_1_1cmdbase_1_1controlcmd.html',1,'ctlcmd::cmdbase']]],
   ['controlterm_23',['controlterm',['../classctlcmd_1_1cmdbase_1_1controlterm.html',1,'ctlcmd::cmdbase']]],
   ['create_5fserver_5fflask_24',['create_server_flask',['../namespaceserver.html#a1036cee3149b4d989ef5d40fc4cc4362',1,'server']]],
-  ['cubic_5fmodel_25',['cubic_model',['../classctlcmd_1_1viscmd_1_1visualmaxsharp_1_1cubic__model.html',1,'ctlcmd::viscmd::visualmaxsharp']]],
-  ['current_5fimage_5fbytes_26',['current_image_bytes',['../namespaceserver_1_1sockets_1_1parsing.html#a8acec576b27b29a432fa7a9132082db3',1,'server::sockets::parsing']]],
-  ['cx_27',['cx',['../classGCoder.html#ab216457715e907c472ddad6ffbd8e3c0',1,'GCoder']]],
-  ['fmt_28',['fmt',['../namespacecmod_1_1fmt.html',1,'cmod']]],
-  ['getset_29',['getset',['../namespacectlcmd_1_1getset.html',1,'ctlcmd']]],
-  ['motioncmd_30',['motioncmd',['../namespacectlcmd_1_1motioncmd.html',1,'ctlcmd']]],
-  ['readoutmodel_31',['readoutmodel',['../namespacecmod_1_1readoutmodel.html',1,'cmod']]],
-  ['viscmd_32',['viscmd',['../namespacectlcmd_1_1viscmd.html',1,'ctlcmd']]]
+  ['critical_25',['CRITICAL',['../namespacecmod_1_1fmt.html#aa341380952028bfbe1fe209d4e5b708f',1,'cmod::fmt']]],
+  ['cubic_5fmodel_26',['cubic_model',['../classctlcmd_1_1viscmd_1_1visualmaxsharp_1_1cubic__model.html',1,'ctlcmd::viscmd::visualmaxsharp']]],
+  ['current_5fimage_5fbytes_27',['current_image_bytes',['../namespaceserver_1_1sockets_1_1parsing.html#a8acec576b27b29a432fa7a9132082db3',1,'server::sockets::parsing']]],
+  ['cx_28',['cx',['../classGCoder.html#ab216457715e907c472ddad6ffbd8e3c0',1,'GCoder']]],
+  ['fmt_29',['fmt',['../namespacecmod_1_1fmt.html',1,'cmod']]],
+  ['getset_30',['getset',['../namespacectlcmd_1_1getset.html',1,'ctlcmd']]],
+  ['motioncmd_31',['motioncmd',['../namespacectlcmd_1_1motioncmd.html',1,'ctlcmd']]],
+  ['readoutmodel_32',['readoutmodel',['../namespacecmod_1_1readoutmodel.html',1,'cmod']]],
+  ['viscmd_33',['viscmd',['../namespacectlcmd_1_1viscmd.html',1,'ctlcmd']]]
 ];

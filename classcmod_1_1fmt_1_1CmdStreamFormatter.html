@@ -89,13 +89,17 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
-<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="classcmod_1_1fmt_1_1CmdStreamFormatter-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">cmod.fmt.CmdStreamFormatter Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="dynheader">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p >The nominal format would be:</p>
+<p >[level][module] message</p>
+<p >Where the level would be omitted should for level that are lower than WARNING. For clarity, if the message is long, then when the line wraps, it should not pass wrap after the text-column of the [level][module] part.</p>
+<p >For the message, because it is typically cleaner to simply have a multiline with jagged newline in leading spaces in the code when writing a long string, by default we will pass the message string through a standard white string reduction functions. For these messages, break line characters would need to be explicitly defined via an html style "&lt;br&gt;" tag. </p>
+</div><div class="dynheader">
 Inheritance diagram for cmod.fmt.CmdStreamFormatter:</div>
 <div class="dyncontent">
  <div class="center">
@@ -104,24 +108,37 @@ Inheritance diagram for cmod.fmt.CmdStreamFormatter:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a9489a53f7a25b6c6a88c88719f27e7db"><td class="memItemLeft" align="right" valign="top"><a id="a9489a53f7a25b6c6a88c88719f27e7db" name="a9489a53f7a25b6c6a88c88719f27e7db"></a>
-def&#160;</td><td class="memItemRight" valign="bottom"><b>__init__</b> (self)</td></tr>
-<tr class="separator:a9489a53f7a25b6c6a88c88719f27e7db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a010f598afc72b6302e5e3530d2d11c60"><td class="memItemLeft" align="right" valign="top"><a id="a010f598afc72b6302e5e3530d2d11c60" name="a010f598afc72b6302e5e3530d2d11c60"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>__init__</b> (self, linewidth=120)</td></tr>
+<tr class="separator:a010f598afc72b6302e5e3530d2d11c60"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35eff1417ce2f3759bcb031a83bb3ae5"><td class="memItemLeft" align="right" valign="top"><a id="a35eff1417ce2f3759bcb031a83bb3ae5" name="a35eff1417ce2f3759bcb031a83bb3ae5"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>make_header</b> (self, record)</td></tr>
+<tr class="separator:a35eff1417ce2f3759bcb031a83bb3ae5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf32ef78a3603f0a50069a2b693ad211"><td class="memItemLeft" align="right" valign="top"><a id="aaf32ef78a3603f0a50069a2b693ad211" name="aaf32ef78a3603f0a50069a2b693ad211"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>default_message_parse</b> (self, record)</td></tr>
+<tr class="memdesc:aaf32ef78a3603f0a50069a2b693ad211"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reducing the message to a block of text. <br /></td></tr>
+<tr class="separator:aaf32ef78a3603f0a50069a2b693ad211"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2eb58870d2e1557a1e7fe7ed3fe55f14"><td class="memItemLeft" align="right" valign="top"><a id="a2eb58870d2e1557a1e7fe7ed3fe55f14" name="a2eb58870d2e1557a1e7fe7ed3fe55f14"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>traceback_message_parse</b> (self, record)</td></tr>
+<tr class="memdesc:a2eb58870d2e1557a1e7fe7ed3fe55f14"><td class="mdescLeft">&#160;</td><td class="mdescRight">Formatting of the track stack string to something easier to read. <br /></td></tr>
+<tr class="separator:a2eb58870d2e1557a1e7fe7ed3fe55f14"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86b915b792af40515ce5c9dd21215476"><td class="memItemLeft" align="right" valign="top"><a id="a86b915b792af40515ce5c9dd21215476" name="a86b915b792af40515ce5c9dd21215476"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>interactive_message_parse</b> (self, record)</td></tr>
+<tr class="separator:a86b915b792af40515ce5c9dd21215476"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abaa191638e2ddbb3d54debcfaac00bf7"><td class="memItemLeft" align="right" valign="top"><a id="abaa191638e2ddbb3d54debcfaac00bf7" name="abaa191638e2ddbb3d54debcfaac00bf7"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>format_table</b> (self, table)</td></tr>
+<tr class="memdesc:abaa191638e2ddbb3d54debcfaac00bf7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converting a nested list-of-list to a pleasant table string. <br /></td></tr>
+<tr class="separator:abaa191638e2ddbb3d54debcfaac00bf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0c96e3f7aeed9a289b228f6cb03f57a2"><td class="memItemLeft" align="right" valign="top"><a id="a0c96e3f7aeed9a289b228f6cb03f57a2" name="a0c96e3f7aeed9a289b228f6cb03f57a2"></a>
 def&#160;</td><td class="memItemRight" valign="bottom"><b>format</b> (self, record)</td></tr>
+<tr class="memdesc:a0c96e3f7aeed9a289b228f6cb03f57a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Over riding the main format method defined in the formatter class. <br /></td></tr>
 <tr class="separator:a0c96e3f7aeed9a289b228f6cb03f57a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
-Static Public Member Functions</h2></td></tr>
-<tr class="memitem:ad6287eeee7de0b7710cf70254588f9a5"><td class="memItemLeft" align="right" valign="top"><a id="ad6287eeee7de0b7710cf70254588f9a5" name="ad6287eeee7de0b7710cf70254588f9a5"></a>
-def&#160;</td><td class="memItemRight" valign="bottom"><b>format_traceback</b> (traceback_str)</td></tr>
-<tr class="separator:ad6287eeee7de0b7710cf70254588f9a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
-Static Public Attributes</h2></td></tr>
-<tr class="memitem:aec6eb8dff796ba517b247b930da7802e"><td class="memItemLeft" align="right" valign="top"><a id="aec6eb8dff796ba517b247b930da7802e" name="aec6eb8dff796ba517b247b930da7802e"></a>
-string&#160;</td><td class="memItemRight" valign="bottom"><b>default_format</b> = '\033[1;32m[{name:s}]\033[0m' + &quot; {message:s}&quot;</td></tr>
-<tr class="separator:aec6eb8dff796ba517b247b930da7802e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public Attributes</h2></td></tr>
+<tr class="memitem:ae3a7795e58402ff57608c1b0cebda9bf"><td class="memItemLeft" align="right" valign="top"><a id="ae3a7795e58402ff57608c1b0cebda9bf" name="ae3a7795e58402ff57608c1b0cebda9bf"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>linewidth</b></td></tr>
+<tr class="separator:ae3a7795e58402ff57608c1b0cebda9bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>/github/workspace/cmod/fmt.py</li>

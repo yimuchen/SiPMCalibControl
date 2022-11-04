@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['zscan_0',['zscan',['../classctlcmd_1_1motioncmd_1_1zscan.html',1,'ctlcmd::motioncmd']]],
-  ['zscancmd_1',['zscancmd',['../classctlcmd_1_1cmdbase_1_1zscancmd.html',1,'ctlcmd::cmdbase']]]
+  ['wait_0',['wait',['../classctlcmd_1_1getset_1_1wait.html',1,'ctlcmd::getset']]]
 ];
