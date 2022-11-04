@@ -3,19 +3,13 @@
 
 #include <cstdio>
 #include <map>
+#include <stdarg.h>
 #include <stdexcept>
 
 #ifndef PYTHON_H
 #define PYTHON_H
 #endif
 
-
-// Static flags to be mapped to python logging package
-static const int DEBUG    = 10;
-static const int INFO     = 20;
-static const int WARNING  = 30;
-static const int ERROR    = 40;
-static const int CRITICAL = 50;
 
 // Static objects used for logging.
 static PyObject* logging_lib = PyImport_ImportModuleNoBlock( "logging" );
@@ -34,27 +28,16 @@ logger_wrapped( const std::string& device,
                 int                level,
                 const std::string& message )
 {
-  // Log Accordingly
-  const char* logging_level = level == DEBUG ?
-                              "debug" :
-                              level == INFO ?
-                              "info" :
-                              level == WARNING ?
-                              "warning" :
-                              level == ERROR ?
-                              "error" :
-                              level == CRITICAL ?
-                              "critical" :
-                              "";
   PyObject* logging_name = Py_BuildValue( "s",
                                           ( "SiPMCalibCMD."+device ).c_str()  );
-  PyObject* logging_obj = PyObject_CallMethod( logging_lib,
-                                               "getLogger",
-                                               "O",
-                                               logging_name );
-  PyObject* logging_str = Py_BuildValue( "s", message.c_str() );    // Build the Logger Object
-  PyObject_CallMethod( logging_obj, logging_level, "O", logging_str );
-  Py_DECREF( logging_str );
+  PyObject* logging_args = Py_BuildValue( "(is)", level, message.c_str() );
+  PyObject* logging_obj  = PyObject_CallMethod( logging_lib,
+                                                "getLogger",
+                                                "O",
+                                                logging_name );
+  PyObject_CallMethod( logging_obj, "log", "O", logging_args );
+  Py_DECREF( logging_name );
+  Py_DECREF( logging_args );
 }
 
 
@@ -65,7 +48,18 @@ logger_wrapped( const std::string& device,
 void
 printdebug( const std::string& dev, const std::string& msg )
 {
-  logger_wrapped( dev, DEBUG, msg );
+  logger_wrapped( dev, 15, msg );
+}
+
+
+/**
+ * @brief
+ *
+ */
+void
+printinfo( const std::string& dev, const std::string& msg )
+{
+  logger_wrapped( dev, 20, msg );
 }
 
 
@@ -76,7 +70,7 @@ printdebug( const std::string& dev, const std::string& msg )
 void
 printmsg( const std::string& dev, const std::string& msg )
 {
-  logger_wrapped( dev, INFO, msg );
+  logger_wrapped( dev, 20, msg );
 }
 
 
@@ -87,7 +81,7 @@ printmsg( const std::string& dev, const std::string& msg )
 void
 printwarn( const std::string& dev, const std::string& msg )
 {
-  logger_wrapped( dev, WARNING, msg );
+  logger_wrapped( dev, 30, msg );
 }
 
 
@@ -95,4 +89,16 @@ std::runtime_error
 device_exception( const std::string& dev, const std::string& msg )
 {
   return std::runtime_error( msg );
+}
+
+
+void
+add_to_table( std::string& table, const char* exp, ... )
+{
+  char    str[1024];
+  va_list args;
+  va_start( args, exp );
+  sprintf( str, exp, args );
+  table += str;
+  va_end( args );
 }

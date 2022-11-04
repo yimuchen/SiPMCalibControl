@@ -341,11 +341,11 @@ GPIO::InitPWM()
 
   // Waiting for the sysfs to generated the corresponding file
   while( access( "/sys/class/pwm/pwmchip0/pwm0/enable", F_OK ) == OPEN_FAILED ){
-    printf( "Waiting for /sys/class/pwm/pwmchip0/pwm0/enable" );
+    printinfo( DeviceName, "Waiting for /sys/class/pwm/pwmchip0/pwm0/enable" );
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
   }
   while( access( "/sys/class/pwm/pwmchip0/pwm1/enable", F_OK ) == OPEN_FAILED ){
-    printf( "Waiting for /sys/class/pwm/pwmchip0/pwm1/enable" );
+    printinfo( DeviceName, "Waiting for /sys/class/pwm/pwmchip0/pwm1/enable" );
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
   }
 
@@ -598,7 +598,7 @@ GPIO::ADCReadRaw()
 
 
 /**
- * @brief The main loop for flushing the readout results into the the buffer.
+ * @brief The main loop for flushing the readout results into the buffer.
  *
  * Notice that the i2C readout will always be a single channel so the loop is
  * responsible for iterating the readout channel. The loop is continuously run

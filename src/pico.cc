@@ -147,9 +147,9 @@ PicoUnit::SetTrigger( const int16_t  channel,
                       const int16_t  maxwait )
 {
   static const int16_t enable   = 1;
-  const int16_t        leveladc = channel == PS5000_EXTERNAL ?
-                                  ( level * PS5000_MAX_VALUE ) / 20000 :
-                                  ( level * PS5000_MAX_VALUE )
+  const int16_t        leveladc = channel ==
+                                  PS5000_EXTERNAL ? ( level * PS5000_MAX_VALUE )
+                                  / 20000 : ( level * PS5000_MAX_VALUE )
                                   / inputRanges[range[channel]];
   char errormessage[1024];
 
@@ -355,9 +355,7 @@ PicoUnit::GetBuffer( const int      channel,
                      const unsigned cap,
                      const unsigned sample ) const
 {
-  return channel == 0 ?
-         bufferA[cap][sample] :
-         bufferB[cap][sample];
+  return channel == 0 ? bufferA[cap][sample] : bufferB[cap][sample];
 }
 
 
@@ -386,38 +384,31 @@ PicoUnit::adc2mv( int16_t channel, int16_t adc ) const
 void
 PicoUnit::DumpBuffer() const
 {
-  static const unsigned maxcols = 6;
-  const unsigned        ncols   = std::min( ncaptures, maxcols );
-  char                  line[1024];
-  char                  tempstr[1024];
+  static const unsigned maxcols      = 6;
+  const unsigned        ncols        = std::min( ncaptures, maxcols );
+  std::string           output_table = "";
 
   // Header line
-  sprintf( line, "%-7s | ", "Time" );
+  add_to_table( output_table, "%-7s | ", "Time" );
   for( unsigned j = 0; j < ncols; ++j ){
-    sprintf( tempstr, "Capture:%-11d |", j );
-    strcat( line, tempstr );
+    add_to_table( output_table, "Capture:%-11d |", j );
   }
-  printf( "%s\n", line );
+  add_to_table( output_table, "\n" );
 
   // Per channel line
   for( unsigned i = 0; i < presamples+postsamples; ++i  ){
     const int t = (int)i-(int)presamples;
-    sprintf( line, "%5dns | ", ( t * timeinterval ) );
+    add_to_table( output_table, "%5dns | ", ( t * timeinterval ) );
     for( unsigned j = 0; j < ncols; ++j ){
-      sprintf( tempstr,
-               "(%8.2f,%8.2f) |",
-               adc2mv( 0,
-                       GetBuffer( 0,
-                                  j,
-                                  i ) ),
-               adc2mv( 1, GetBuffer( 1, j, i ) ) );
-      strcat( line, tempstr );
+      add_to_table( output_table,
+                    "(%8.2f,%8.2f) |",
+                    adc2mv( 0, GetBuffer( 0, j, i ) ),
+                    adc2mv( 1, GetBuffer( 1, j, i ) ) );
     }
-    printf( "%s\n", line );
+    add_to_table( output_table, "\n" );
   }
 
-  // Two empty lines for aesthetic reasons
-  printf( "\n" );
+  printdebug( DeviceName, output_table );
 }
 
 
@@ -438,12 +429,8 @@ PicoUnit::WaveformString( const int16_t channel, const unsigned capture ) const
     const int16_t raw  = GetBuffer( channel, capture, i ) / 256;
     const int8_t  dig1 = ( raw >> 4 ) & 0xf;
     const int8_t  dig2 = raw & 0xf;
-    ans[2 * i  ] = dig1 <= 9 ?
-                   '0'+dig1 :
-                   'a'+( dig1 % 10 );
-    ans[2 * i+1] = dig2 <= 9 ?
-                   '0'+dig2 :
-                   'a'+( dig2 % 10 );
+    ans[2 * i  ] = dig1 <= 9 ? '0'+dig1 : 'a'+( dig1 % 10 );
+    ans[2 * i+1] = dig2 <= 9 ? '0'+dig2 : 'a'+( dig2 % 10 );
   }
   return ans;
 }
@@ -519,92 +506,75 @@ PicoUnit::PrintInfo() const
 {
   static const char description[5][25] = {
     "Driver Version", "USB Version", "Hardware Version", "Variant Info",
-    "Serial"    };
+    "Serial" };
   int16_t           r = 0;
   char              inputline[80];
-  char              line[1024];
   int32_t           variant;
+  std::string       output_table = "";
 
   for( unsigned i = 0; i < 5; i++ ){
     ps5000GetUnitInfo( device, (int8_t*)inputline, sizeof( inputline ), &r, i );
     if( i == 3 ){ variant = atoi( inputline ); }
-    printf( "%25s | %s\n", description[i], inputline );
+    add_to_table( output_table, "%25s | %s\n", description[i], inputline );
   }
 
-  printf( "%25s | %d (%dns)\n", "Time interval", timebase, timeinterval );
-  const auto minrange = variant == 5203 ?
-                        PS5000_100MV :
-                        variant == 5204 ?
-                        PS5000_100MV :
-                        PS5000_MAX_RANGES;
-  const auto maxrange = variant == 5203 ?
-                        PS5000_20V  :
-                        variant == 5204 ?
-                        PS5000_20V :
-                        PS5000_MAX_RANGES;
+  add_to_table( output_table,
+                "%25s | %d (%dns)\n",
+                "Time interval",
+                timebase,
+                timeinterval );
+
+  const auto minrange = variant == 5203 ? PS5000_100MV : variant ==
+                        5204 ? PS5000_100MV : PS5000_MAX_RANGES;
+  const auto maxrange = variant == 5203 ? PS5000_20V  : variant ==
+                        5204 ? PS5000_20V  : PS5000_MAX_RANGES;
 
   // Printing voltage range information
   for( int i = minrange; i <= maxrange; ++i ){
-    printf(
-      "%25s | [%c] %2d (%5dmV) [Res: %.3fmV]\n",
-      ( i == minrange ?
-        "Voltage Range index" :
-        "" ),
-      ( i == range[0] ?
-        'A' :
-        i == range[1] ?
-        'B' :
-        ' ' ),
-      ( i ),
-      ( (int)inputRanges[i] ),
-      ( (float)inputRanges[i] / PS5000_MAX_VALUE * 256 ) );
+    add_to_table( output_table,
+                  "%25s | [%c] %2d (%5dmV) [Res: %.3fmV]\n",
+                  ( i == minrange ? "Voltage Range index" : "" ),
+                  ( i == range[0] ? 'A' : i == range[1] ? 'B' : ' ' ),
+                  ( i ),
+                  ( (int)inputRanges[i] ),
+                  ( (float)inputRanges[i] / PS5000_MAX_VALUE * 256 ) );
   }
 
   // Channel information
   for( unsigned i = PS5000_CHANNEL_A; i <= PS5000_EXTERNAL; ++i ){
-    printf(  "%25s | %2d (%s) [%c]\n",
-             ( i == PS5000_CHANNEL_A ?
-               "Channel index" :
-               "" ),
-             i,
-             ( i == PS5000_EXTERNAL ?
-               "External trigger" :
-               "TEMP" ),
-             ( i == triggerchannel  ?
-               'T' :
-               ' ' ) );
+    add_to_table( output_table,
+                  "%25s | %2d (%s) [%c]\n",
+                  ( i == PS5000_CHANNEL_A ? "Channel index" : "" ),
+                  i,
+                  ( i == PS5000_EXTERNAL ? "External trigger" : "TEMP" ),
+                  ( i == triggerchannel  ? 'T' : ' ' ) );
   }
 
   // Trigger direction
   for( unsigned i = RISING; i <= RISING_OR_FALLING; ++i ){
-    printf(
-      "%25s | %2d (%s) [%c]\n",
-      ( i == RISING ?
-        "Trig. direction" :
-        "" ),
-      ( i ),
-      ( i == RISING ?
-        "RISING" :
-        i == FALLING ?
-        "FALLING" :
-        i == RISING_OR_FALLING ?
-        "RISING OR FALLING" :
-        "" ),
-      ( i == triggerdirection ?
-        'V' :
-        ' ' ) );
+    add_to_table( output_table,
+                  "%25s | %2d (%s) [%c]\n",
+                  ( i == RISING ? "Trig. direction" : "" ),
+                  ( i ),
+                  ( i == RISING ? "RISING" : i == FALLING ? "FALLING" : i ==
+                    RISING_OR_FALLING ? "RISING OR FALLING" : "" ),
+                  ( i == triggerdirection ? 'V' : ' ' ) );
   }
-  printf( "%25s | %.2fmV (ADC:%d)\n",
-          "Trigger Level",
-          triggerlevel,
-          int(triggerchannel == PS5000_EXTERNAL ?
-              ( triggerlevel * PS5000_MAX_VALUE ) / 20000 :
-              ( triggerlevel * PS5000_MAX_VALUE )
-              / inputRanges[range[triggerchannel]]) );
-  printf( "PRE:%10d | POST:%10d | NBLOCKS:%10d\n",
-          presamples,
-          postsamples,
-          ncaptures );
+  add_to_table( output_table,
+                "%25s | %.2fmV (ADC:%d)\n",
+                "Trigger Level",
+                triggerlevel,
+                int(triggerchannel ==
+                    PS5000_EXTERNAL ? ( triggerlevel * PS5000_MAX_VALUE )
+                    / 20000 : ( triggerlevel * PS5000_MAX_VALUE )
+                    / inputRanges[range[triggerchannel]]) );
+  add_to_table( output_table,
+                "PRE:%10d | POST:%10d | NBLOCKS:%10d\n",
+                presamples,
+                postsamples,
+                ncaptures );
+
+  printdebug( DeviceName, output_table );
 }
 
 
@@ -629,15 +599,14 @@ PicoUnit::FindTimeInterval()
 }
 
 
-PicoUnit::PicoUnit() :
-  device           ( 0 ),
-  triggerchannel   ( PS5000_EXTERNAL ),
-  triggerdirection ( FALLING ),
-  triggerlevel     ( 500 ),
-  triggerdelay     ( 0 ),
-  presamples       ( 0 ),
-  postsamples      ( 0 ),
-  ncaptures        ( 0 )
+PicoUnit::PicoUnit() : device ( 0 ),
+  triggerchannel              ( PS5000_EXTERNAL ),
+  triggerdirection            ( FALLING ),
+  triggerlevel                ( 500 ),
+  triggerdelay                ( 0 ),
+  presamples                  ( 0 ),
+  postsamples                 ( 0 ),
+  ncaptures                   ( 0 )
 {
   range[0] = 6;
   range[1] = 7;
@@ -646,9 +615,9 @@ PicoUnit::PicoUnit() :
 
 PicoUnit::~PicoUnit()
 {
-  printmsg( DeviceName, "Closing the PICOSCOPE interface" );
+  printinfo( DeviceName, "Closing the PICOSCOPE interface" );
   ps5000CloseUnit( device );
-  printmsg( DeviceName, "PICOSCOPE interface closed" );
+  printinfo( DeviceName, "PICOSCOPE interface closed" );
 }
 
 

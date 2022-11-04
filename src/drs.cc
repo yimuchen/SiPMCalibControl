@@ -179,18 +179,10 @@ DRSContainer::WaveformStr( const unsigned channel )
     const int8_t  dig1 = ( raw >> 8 )  & 0xf;
     const int8_t  dig2 = ( raw >> 4 )  & 0xf;
     const int8_t  dig3 = raw & 0xf;
-    ans[4 * i+0] = dig0 <= 9 ?
-                   '0'+dig0 :
-                   'a'+( dig0 % 10 );
-    ans[4 * i+1] = dig1 <= 9 ?
-                   '0'+dig1 :
-                   'a'+( dig1 % 10 );
-    ans[4 * i+2] = dig2 <= 9 ?
-                   '0'+dig2 :
-                   'a'+( dig2 % 10 );
-    ans[4 * i+3] = dig3 <= 9 ?
-                   '0'+dig3 :
-                   'a'+( dig3 % 10 );
+    ans[4 * i+0] = dig0 <= 9 ? '0'+dig0 : 'a'+( dig0 % 10 );
+    ans[4 * i+1] = dig1 <= 9 ? '0'+dig1 : 'a'+( dig1 % 10 );
+    ans[4 * i+2] = dig2 <= 9 ? '0'+dig2 : 'a'+( dig2 % 10 );
+    ans[4 * i+3] = dig3 <= 9 ? '0'+dig3 : 'a'+( dig3 % 10 );
   }
   return ans;
 }
@@ -259,11 +251,16 @@ DRSContainer::DumpBuffer( const unsigned channel )
   const auto     waveform   = GetWaveform( channel );
   const auto     time_array = GetTimeArray( channel );
   const unsigned length     = GetSamples();
-  printf( "%7s | Channel %d [mV]\n", "Time", channel );
+  char           line[1024];
+  std::string    output_table = "";
+  add_to_table( output_table, "%7s | Channel %d [mV]\n", "Time", channel );
   for( unsigned i = 0; i < length; ++i ){
-    printf( "%7.3lf | %7.2lf\n", time_array[i], waveform[i] );
+    add_to_table( output_table,
+                  "%7.3lf | %7.2lf\n",
+                  time_array[i],
+                  waveform[i] );
   }
-  printf( "\n" );
+  printdebug( DeviceName, output_table );
 }
 
 
@@ -482,8 +479,7 @@ public:
 
 IMPLEMENT_SINGLETON( DRSContainer );
 
-DRSContainer::DRSContainer() :
-  board( nullptr ){}
+DRSContainer::DRSContainer() : board( nullptr ){}
 
 DRSContainer::~DRSContainer()
 {
