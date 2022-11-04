@@ -31,12 +31,16 @@
  */
 extern void printdebug( const std::string& device,
                         const std::string& x );
-extern void printmsg( const std::string&  device,
-                      const std::string & x );
+extern void printinfo( const std::string& device,
+                       const std::string& x );
+extern void printmsg( const std::string& device,
+                      const std::string& x );
 extern void printwarn( const std::string& device,
                        const std::string& x );
 extern std::runtime_error device_exception( const std::string& device,
                                             const std::string& x  );
+
+extern void add_to_table( std::string& table, const char* exp, ... );
 
 /** @} */
 #endif
