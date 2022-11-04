@@ -191,7 +191,7 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
       if self.prompt_yn(
           f"""
           Transformation equation for z={args.scanz:.1f} already exists,
-          overwrite?""", 'no'):
+          overwrite?""", False):
         self.board.add_visM(detid, self.gcoder.opz,
                             [[fitx[0], fitx[1]], [fity[0], fity[1]]])
 
@@ -314,7 +314,7 @@ class visualcenterdet(cmdbase.singlexycmd, visualmeta):
       if self.prompt_yn(f"""
                         A visual alignment for z={args.scanz:.1f} already exists
                         for the current session, overwrite?""",
-                        default='no'):
+                        default=False):
         self.board.add_vis_coord(detid, self.gcoder.opz,
                                  [self.gcoder.opx, self.gcoder.opy])
 

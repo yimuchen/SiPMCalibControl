@@ -276,7 +276,7 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
     elif self.board.lumi_coord_hasz(detid, args.scanz):
       if self.prompt_yn(f"""A lumi alignment for z={args.scanz:.1f} already
                         exists for the current session, overwrite?""",
-                        default='no'):
+                        default=False):
         self.board.add_lumi_coord(detid, args.scanz, [
             fitval[1],
             np.sqrt(fitcovar[1][1]), fitval[2],

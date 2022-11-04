@@ -67,7 +67,6 @@ import cmod.visual as visual
 import cmod.pico as pico
 import cmod.drs as drs
 import cmod.fmt as fmt
-import cmod.actionlist as actionlist
 import cmod.sighandle as sig
 import numpy as np
 import cmd
@@ -103,27 +102,25 @@ class controlterm(cmd.Cmd):
   keep track of the status of the last executed command.
   """
 
-  intro = """
-    SiPM Calibration Gantry Control System
-    - Type help or ? to list commands.
-    - Type help <cmd> for the individual help messages of each commands
+  doc_block = fmt.wrapped_string("""
+  For the sake of declutering the interface, documentations of the commands in
+  the interface will be kept brief. Go to the official operator manual if you
+  are unsure which command/options you should used for you data collection
+  needs, check out this link for the online manual
+  https://umdcms.github.io/SiPMCalibControl/group__cli.html<br><br>
+  """,
+                                 width=100)
 
-    For the sake of declutering the interface, documentations of the commands in
-    the interface will be kept brief. Go to the official operator manual if you
-    are unsure which command/options you should used for you data collection needs:
-    https://umdcms.github.io/SiPMCalibControl/group__cli.html
-    """
+  intro = fmt.wrapped_string("""<br><br>
+  SiPM Calibration Gantry Control System<br>
+  - Type help or ? to list commands.<br>
+  - Type help <cmd> for the individual help messages of each commands<br><br>
+  """) + doc_block
 
-  doc_header = """
-    For the sake of declutering the interface, documentations of the commands in
-    the interface will be kept brief. Go to the official operator manual if you
-    are unsure which command/options you should used for you data collection needs:
-    https://umdcms.github.io/SiPMCalibControl/group__cli.html
-
-    Below is a list of commands available to the be used. For the detailed
-    arguments available for each command, type "help <cmd>".
-
-  """# Trailing empty lines required
+  doc_header = doc_block + fmt.wrapped_string(
+      """<br>Below is a list of commands available to the be used. For the
+      detailed arguments available for each command, type "help <cmd>". <br><br>""",
+      width=100)  # Trailing empty lines required
 
   ruler = ''
 
@@ -144,13 +141,15 @@ class controlterm(cmd.Cmd):
     """
     cmd.Cmd.__init__(self, **base_kwargs)
 
+    # Instances for hardware control
     self.gcoder = gcoder.GCoder.instance()
     self.board = board.Board()
     self.visual = visual.Visual()
     self.pico = pico.PicoUnit.instance()
     self.gpio = gpio.GPIO.instance()
     self.drs = drs.DRS.instance()
-    self.action = actionlist.ActionList()
+
+    # Session control
     self.sighandle = sig.SigHandle()
     self.sighandle.release()
 
@@ -185,8 +184,8 @@ class controlterm(cmd.Cmd):
 
   def __del__(self):
     """
-    Closing device instances to ensure these are release before other python
-    closing book keeping routines.
+    Closing device instances to ensure these are release before other
+    python-closing book keeping routines are ran.
     """
     self.gcoder = gcoder.GCoder.close_instance()
     self.pico = pico.PicoUnit.close_instance()
@@ -197,26 +196,27 @@ class controlterm(cmd.Cmd):
     """
     @brief routines to run just before executing a command.
 
-    @details Storing the last line, making sure that the current command status
-    is set to `None`, as well as logging the start time of the command.
+    @details Storing the command that is passed to the instance to the logger.
+    This will be used to detect in future instances whether the the command line
+    session is currently running the command using the in-memory log records, as
+    well as help diagnose which function command generated which error message
+    in log dumps.
     """
-    self.last_cmd = line
-    self.last_cmd_status = None
-    self.last_cmd_start = datetime.datetime.now()
-    self.last_cmd_stop = self.last_cmd_start
-    # Duplicate to indicate command has not yet finished running.
-    return line
+    self.cmdlog.log(logging.CMD_HIST, line, 'started')
+    return line  # Required for cmd execution.
 
   def postcmd(self, stop, line):
     """
     @brief routines to run just after executing the command
 
-    @details As the python cmd class uses a simple True/False check on the stop
-    signal for whether the command session should be terminated, we cannot
-    directly pass the command execution status to the base class.
+    @details We log the same command again, this time with the stop flag as well
+    as the execution status return code, so that execution status can also be
+    determined by looking at log dumps.
+
+    If the command also generates a TERMINATE_SESSION signal, the function
+    returns `True` to the base class to terminate the command line loop.
     """
-    self.last_cmd_status = stop
-    self.last_cmd_stop = datetime.datetime.now()
+    self.cmdlog.log(logging.CMD_HIST, line, 'stop', stop)
     if stop == controlcmd.TERMINATE_SESSION:
       return True
 
@@ -233,20 +233,35 @@ class controlterm(cmd.Cmd):
     """
     pass
 
+  def default(self, line):
+    """
+    @brief Override behavior for an un recognized command: add an error entry to
+    the logger.
+    """
+    self.cmdlog.error(f'Unrecognized command: {line}')
+    return controlcmd.PARSE_ERROR
+
   def init_log_format(self):
     """
-    Setting up the logging instances. We add a custom level for python level
-    trace-stack logging. Taken from the solution here:
-    https://stackoverflow.com/a/35804945/16223844
-    """
-    trace_num = logging.INFO + 5
-    logging.addLevelName(trace_num, 'TRACE')
-    setattr(logging, 'TRACE', trace_num)
+    @brief Additional settings for the logger instances
 
-    cmd_shandler = logging.StreamHandler()
-    cmd_shandler.setLevel(logging.DEBUG)
-    cmd_shandler.setFormatter(fmt.CmdStreamFormatter())
-    self.cmdlog.addHandler(cmd_shandler)
+    @details Here we set up 2 handlers by default:
+
+    - A stream handler for out-putting logging instances into a informative
+      format for be used interactively. The formatting used for different log
+      levels can be found in CmdStreamFormatter class.
+    - An in-memory handler, which stores up to 65536 logging entries for the
+      command line session. This is mainly used for history look up and
+      debugging dump log. Here we will attempt to log everything.
+
+    """
+    self.out_handle = logging.StreamHandler()
+    self.out_handle.setLevel(logging.DEBUG)
+    self.out_handle.setFormatter(fmt.CmdStreamFormatter())
+    self.mem_handle = fmt.FIFOHandler(65536, level=logging.NOTSET)
+
+    self.cmdlog.addHandler(self.out_handle)
+    self.cmdlog.addHandler(self.mem_handle)
 
   def devlog(self, devname):
     return logging.getLogger(self.logname + '.' + devname)
@@ -295,6 +310,23 @@ class controlcmd(object):
   def classname(self):
     return self.__class__.__name__.lower()
 
+  @property
+  def description_str(self):
+    """
+    Making the descriptions string to be display on help calls
+    """
+    desc_str = self.__class__.__doc__  # Getting the raw doc string.
+    desc_str = desc_str.replace('@brief', '')  # Removing doc string
+
+    ## Getting the file used to make the instance:
+    file_path = sys.modules[self.__class__.__module__].__file__
+    dir_name, file_name = file_path.split('/')[-2:]
+    file_name = file_name.split('.')[0]
+    __url_prefix = f'https://umdcms.github.io/SiPMCalibControl/'
+    link_url = f'{__url_prefix}/class{dir_name}_1_1{file_name}_1_1{self.classname}.html'
+    desc_str = desc_str.replace('<help link>', f'More information at {link_url}')
+    return desc_str
+
   def __init__(self, cmdsession):
     """
     @brief Initializing the parser class and creating a reference to the control
@@ -306,21 +338,21 @@ class controlcmd(object):
     accession to the cmd session, and by extension, every interface object the
     could potentially be used.
     """
-    self.parser = argparse.ArgumentParser(
-        prog=self.classname,
-        description=self.__class__.__doc__.replace('@brief', ''),
-        add_help=False)
-    self.cmd = cmdsession  # Reference to the master object.
+    formatter = lambda prog: argparse.HelpFormatter(prog, width=120)
+
+    self.parser = fmt.ArgumentParser(prog=self.classname,
+                                     description=self.description_str,
+                                     add_help=False,
+                                     formatter_class=formatter,
+                                     exit_on_error=False)
+    self.cmd = cmdsession  # Reference to the main control objects object.
     self.pbar = None
 
     # Getting reference to session objects for simpler shorthand
     for embedded_obj in [
-        # Logging objects
-        'cmdlog', 'devlog',
-        # Control objects ,
-        'gcoder', 'visual', 'pico', 'drs', 'gpio',
-        # Session management
-        'board', 'action', 'sighandle',
+        'cmdlog', 'devlog',  # Logging objects
+        'gcoder', 'visual', 'pico', 'drs', 'gpio',  # Control objects ,
+        'board', 'sighandle',  # Session management
     ]:
       setattr(self, embedded_obj, getattr(cmdsession, embedded_obj))
 
@@ -338,7 +370,7 @@ class controlcmd(object):
     for t in reversed(type(self).__mro__):
       if not hasattr(t, method): continue
       if method not in t.__dict__: continue  # Needs to be explicitly defined
-      if args == None:
+      if args is None:
         getattr(t, method)(self)
       else:
         args = getattr(t, method)(self, args)
@@ -358,14 +390,12 @@ class controlcmd(object):
     """
     @brief Parsing the arguments from the input line using the argparse method.
 
-    As this is a very standard method for parsing objects, this part should not
-    be overwritten. Additional parsing the the resulting arguments (complicated
-    parsing of default values... etc) should be handled by the `parse` method.
+    This handles the common parsing routines defined in the vanilla
+    ArgumentParser class, then it passes the obtained argument container to
+    subsequent `parse` methods defined in subclasses to allow for more
+    complicated value parsing.
     """
-    args, argv = self.parser.parse_known_args(shlex.split(line))
-    if argv:  # In-built parser error for unrecognized error
-      raise ValueError('Unrecognized inputs: ' + ' '.join(argv))
-
+    args = self.parser.parse_args(shlex.split(line))
     # Try additional parsing defined by sub-classes
     try:
       return self.__run_mro_method('parse', args)
@@ -382,22 +412,40 @@ class controlcmd(object):
 
     @details Execution of the commands is now split up into following steps:
 
-    - Parsing the command line using the standard argparse library
-    - Results of the parsing will passed the run method (to be overloaded)
+    - Parsing the command line using the standard argparse library, then
+      additional parsing routines defined in sub classes. (See the parse_line
+      method.)
+    - Results of the parsing will passed the run method. This run method is to
+      be overloaded be descendent classes.
+    - Additional job clean defined by the post_run method will be called.
     - An additional return value will be evaluate execution status.
 
-    Additional parsing is allowed by overloading the parse method in the children
-    classes. The actual execution of the function is handled in the run method.
-    The global signal handler is also triggered at the start of the command, so
-    that signals like CTL+C will have additional handling in iterative commands
-    so that data collection isn't completely lost.
+    For the standard processes, 2 "global" objects will also be initialized and
+    handled here:
+
+    - The resetting and closing of the progress bar to displaying loop-based
+      execution process along with diagnostic information. The initialization of
+      the progress bar instance is done through the `start_pbar` method, and
+      should be used for commands that require loop-based operations.
+    - A signal handler, so that the command that have a loop based executions
+      can get terminated early via interruption signals. Notice that the
+      `post_run` method will still be ran in case of interruption, so that
+      partial data can still be obtained.
     """
     try:
       args = self.parse_line(line)
     except Exception as err:
-      if str(err).startswith('Unrecognized inputs:'):
+      # In-built argparse errors should have a more simple output
+      # syntax error in input.
+      if isinstance(err, argparse.ArgumentError):
         self.printerr(str(err) + '<br>' + self.parser.format_usage())
+      elif str(err).startswith(fmt.ArgumentParser.__prefix__):
+        self.printerr(
+            str(err).replace(fmt.ArgumentParser.__prefix__, '') + '<br>' +
+            self.parser.format_usage())
       else:
+        # More detailed parsing information is provided in custom parse
+        # failures.
         self.printtrace(err)
       return controlcmd.PARSE_ERROR
 
@@ -422,6 +470,9 @@ class controlcmd(object):
       self.printtrace(err)
       return_value = controlcmd.EXECUTE_ERROR
 
+    if self.pbar:
+      self.pbar.close()
+
     return return_value
 
   def parse(self, args):
@@ -444,15 +495,16 @@ class controlcmd(object):
 
   def post_run(self):
     """
-    Routines to run after the run argument is called.
+    @brief Routines to run after the run argument is called.
     """
     pass
 
   def callhelp(self):
     """
-    @brief Printing the help message via the ArgumentParser in built functions.
+    @brief Printing the help message through the logger instances via the
+    ArgumentParser in built functions.
     """
-    self.parser.print_help(self.cmd.stdout)
+    self.logger.log(fmt.logging.INT_INFO, self.parser.format_help())
 
   def complete(self, text, line, start_index, end_index):
     """
@@ -460,6 +512,7 @@ class controlcmd(object):
 
     @details This function scans the options stored in the parse class and
     returns a string of things to return.
+
     - text is the word on this cursor is on (excluding tail)
     - line is the full input line string (including command)
     - start_index is the starting index of the word the cursor is at in the line
@@ -489,49 +542,66 @@ class controlcmd(object):
     else:
       return optwithtext()
 
+  @property
+  def logger(self):
+    """default logger to use is defined by the command name"""
+    return self.devlog(self.classname)
+
   def printmsg(self, text):
     """Printing a newline message using the custom LOG variable."""
-    self.devlog(self.classname).info(text)
+    self.logger.info(fmt.oneline_string(text))
 
   def printerr(self, text):
     """Printing a error message with a standard red "ERROR" header."""
-    self.devlog(self.classname).error(text)
+    self.logger.error(fmt.oneline_string(text))
 
   def printwarn(self, text):
     """Printing a warning message with a standard yellow "WARNING" header."""
-    self.devlog(self.classname).warning(text)
+    self.logger.warning(fmt.oneline_string(text))
+
+  def printdump(self, text, table):
+    self.logger.log(fmt.logging.INT_INFO,
+                    fmt.oneline_string(text),
+                    extra={'table': table})
 
   def printtrace(self, err):
     """
     @brief Better trackstack printing function.
 
-    @details The file and error lines are highlighted in read and yellow, and
-    compressed down to a single line to make the traceback more compact while
-    still being readable and useful for debugging.
+    @details Using a custom log-level to trigger a unique formatter. Details of
+    the formatting can be found in the fmt.CmdStreamFormatter class.
     """
-    self.devlog(self.classname).log(logging.TRACE, traceback.format_exc())
-
-    # Printing the original error message
-    self.printerr(str(err))
+    self.logger.log(logging.TRACEBACK, traceback.format_exc())
+    self.printerr(str(err))  # Printing the original error for clarity.
 
   def start_pbar(self, *args, **kwargs):
+    """
+    @brief Resetting and starting the progress bar for loop-based commands
+
+    @details The inputs of these arguments will be pass directly to the tqdm
+    progress bar constructor, so anything options that is compatible with tqdm
+    can be used. By default, we set the left-hand description to the command
+    name.
+    """
     kwargs.setdefault('desc', fmt.GREEN(f'[{self.classname}]'))
     kwargs.setdefault('unit', 'steps')
     if self.pbar is not None:
       self.pbar.close()
     self.pbar = self._PROGRESS_BAR_CONSTRUCTOR_(*args, **kwargs)
-    self.pbar_data() # Empty data for the first start
+    self.pbar_data()  # Empty data for the first start
     return self.pbar
 
   def pbar_data(self, **kwargs):
     """
-    @brief Making progress information dictionary.
+    @brief Adding information to the progress bar
 
-    @details Function for displaying a progress description information to tqdm progress bar.
-    sequence would be (given the input variables)
-    - display_data: the key is used to display the data, and the values should be
-      a list of floats corresponding to the data to be displayed. Data will be
-      truncated to the 2nd decimal place, so scale data accordingly.
+    @details Adding information to be displayed on the right hand side of the
+    tqdm progress bar. This is handled via a dictionary. The default information
+    that will be displayed for all progress bars will include:
+
+    - The current coordindate of the gantry system
+    - The pulser board low voltage value.
+    - Temperature of the pulser board and SiPM board.
     """
     self.pbar.set_postfix({
         'Gantry':
@@ -555,7 +625,8 @@ class controlcmd(object):
     termination signal was ever set by the user.
     """
     if self.sighandle.terminate:
-      self.printmsg('TERMINATION SIGNAL RECIEVED, EXITING COMMAND')
+      if self.pbar:
+        self.pbar.close()
       raise InterruptedError('TERMINATION SIGNAL')
 
   def move_gantry(self, x, y, z, verbose):
@@ -585,7 +656,25 @@ class controlcmd(object):
       self.gcoder.cz = z
       pass
 
-  def prompt_yn(self, question, default='no'):
+  def prompt_input(self, message, allowed=None) -> str:
+    """
+    Prompting for a user message, suspend the session until the input is placed.
+    If the allowed entry is not None, then the input will need to be included in
+    the allowed value, or the prompt will be raised again with an error message.
+    Notice that the prompt message is displayed via the python `input` method an
+    will not be displayed in the log. However, we will place the input value
+    into the log.
+    """
+    while True:
+      input_val = input(fmt.wrapped_string(message, 80))
+      # Default behavior for no inputs.
+      if allowed is not None and input_val not in allowed:
+        self.printerr(f'Illegal value: "{input_val}", valid inputs: {allowed}')
+      else:
+        self.cmdlog.log(fmt.logging.CMD_HIST, '', 'user_input', input_val)
+        return input_val
+
+  def prompt_yn(self, question, default=None) -> bool:
     """
     @brief Ask a yes/no question and prompt a question to the user and return
     their answer.
@@ -597,35 +686,16 @@ class controlcmd(object):
 
     The return value is True for 'yes' or False for 'no'.
     """
-    valid = {'yes': True, 'ye': True, 'y': True, 'no': False, 'n': False}
-    try:
-      if default is None:
-        prompt_str = ' [y/n] '
-      elif valid[default.lower()]:
-        prompt_str = ' [Y/n] '
-      else:
-        prompt_str = ' [y/N] '
-    except KeyError:
-      raise ValueError('invalid default answer: {0}'.format(default))
+    valid_map = {'yes': True, 'ye': True, 'y': True, 'no': False, 'n': False}
 
-    # Special case of wrapped input
-    if (self.cmd.use_rawinput == False or  #
-        self.cmd.stdin != sys.stdin or self.cmd.stdout != sys.stdout):
-      self.printmsg(f'Wrapped I/O detected, assuming default answer: {default}')
-      return valid[default]
+    if default is not None:
+      valid_map[''] = default
+    prompt_str = '[Y/n]' if default is True else \
+                 '[y/N]' if default is False else \
+                 '[y/n]'
 
-    while True:
-      self.printmsg(question + prompt_str)
-      if self.cmd.use_rawinput:
-        choice = input()
-      else:
-        choice = self.cmd.stdin.readline().strip().lower()
-      if default is not None and choice == '':
-        return valid[default]
-      elif choice in valid:
-        return valid[choice]
-      else:
-        self.printerr("Please respond with 'yes' or 'no' (or 'y' or 'n').")
+    return valid_map[self.prompt_input(question + prompt_str,
+                                       allowed=valid_map.keys())]
 
   @staticmethod
   def globcomp(text):
@@ -711,6 +781,9 @@ class savefilecmd(controlcmd):
     To ensure the filename sanity, after all place holder arguments are
     completed. we will substitute all '.' characters into 'p' characters.
     """
+    if not args.savefile:  # Early exit if savefile is not set
+      self.savefile = None
+      return args
     filename = args.savefile
 
     # Adding time stamp filenames
@@ -758,6 +831,7 @@ class savefilecmd(controlcmd):
     message to notify the user of where the save file is. This function also
     handles that the save files are closed nominally.
     """
+    if not self.savefile: return  # Early exit for if savefile is not set
     self.printmsg(f"Saving results to file [{self.savefile.name}]")
     self.savefile.flush()
     self.savefile.close()
@@ -828,8 +902,9 @@ class singlexycmd(controlcmd):
 
   def add_args(self):
     group = self.parser.add_argument_group(
-        "horizontal position", """Options for specifying the operation postion in
-        the x-y coordinates.""")
+        "horizontal position",
+        """Options for specifying the operation postion in the x-y
+        coordinates.""")
     group.add_argument('-x',
                        type=float,
                        help="Specifying the x coordinate explicitly [mm].")
@@ -1069,7 +1144,7 @@ class zscancmd(controlcmd):
     """
     @brief Expanding out the string arugment of zlist into a list of numbers.
 
-    @details egular expression is used to find the sets of numbers in square
+    @details Regular expression is used to find the sets of numbers in square
     braces, the numbers in the square braces is then used to expand out into a
     list of floating points similar to the range/numpy.linspace methods.
 

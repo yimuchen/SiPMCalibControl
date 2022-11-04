@@ -14,7 +14,8 @@ import traceback
 import re
 
 if __name__ == '__main__':
-  logging.root.setLevel(logging.DEBUG)  # Setting the base log level
+  logging.root.setLevel(
+      logging.NOTSET)  # Setting the base logger to keep everything
   cmd = cmdbase.controlterm([
       motioncmd.rungcode,  #
       motioncmd.moveto,  #
@@ -38,10 +39,10 @@ if __name__ == '__main__':
       getset.set,  #
       getset.get,  #
       getset.history,  #
+      getset.logdump,  #
       getset.wait,  #
       getset.savecalib,  #
       getset.loadcalib,  #
-      getset.promptaction,  #
       getset.runfile,  #
       digicmd.pulse,  #
       digicmd.pwm,  #
@@ -68,7 +69,6 @@ if __name__ == '__main__':
 
   ## Using map to store Default values:
   default_overide = {
-      '--action': 'cfg/useractions.json',
       # Devices that can actually switch interfaces with the given string.
       '--printerdev': '/dev/ttyUSB0',
       '--camdev': '/dev/video0',
@@ -98,10 +98,9 @@ if __name__ == '__main__':
     cmd.gpio.init()
   except RuntimeError as err:
     logger.error(str(err))
-    logger.warning(
-        fmt.oneline_string("""There was error in the setup process, program
-                           will continue but will most likely misbehave! Use at
-                           your own risk!"""))
+    logger.warning("""There was error in the setup process, program will
+                   continue but will most likely misbehave! Use at your own
+                   risk!""")
 
   cmd.cmdloop()
-  #print('Exiting out of loop')
+  del cmd  # This object requires explicit closing!
