@@ -129,7 +129,7 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
   char                      buffer[buffer_length];
   char                      path[buffer_length];
   char                      errmsg[1024];
-  int                       fd = open_with_lock( "/sys/class/gpio/export",
+  int                       fd = open_with_lock( "/sys/class/gpio/",
                                                  O_WRONLY );
   write_length = snprintf( buffer, buffer_length, "%u", pin );
   write( fd, buffer, write_length );
@@ -222,7 +222,7 @@ GPIO::CloseGPIO( const int pin )
   static constexpr unsigned buffer_length = 3;
   unsigned                  write_length;
   char                      buffer[buffer_length];
-  int                       fd = open_with_lock( "/sys/class/gpio/unexport",
+  int                       fd = open_with_lock( "/sys/class/gpio/un",
                                                  O_WRONLY );
   write_length = snprintf( buffer, buffer_length, "%d", pin );
   write( fd, buffer, write_length );
@@ -334,7 +334,7 @@ GPIO::InitPWM()
   // Flaaing the pwm_enable as open failed.
   pwm_enable[0] = OPEN_FAILED;
   pwm_enable[1] = OPEN_FAILED;
-  int fd = open_with_lock( "/sys/class/pwm/pwmchip0/export", O_WRONLY );
+  int fd = open_with_lock( "/sys/class/pwm/pwmchip0/", O_WRONLY );
   write( fd, "0", 1 );
   write( fd, "1", 1 );// Single write to enable interface
   close( fd );
@@ -393,10 +393,10 @@ GPIO::ClosePWM()
       close( pwm_duty[channel] );
       close( pwm_period[channel] );
     }
-    sprintf( errmsg, "/sys/class/pwm/pwmchip0/unexport" );
+    sprintf( errmsg, "/sys/class/pwm/pwmchip0/un" );
     int fd = open( errmsg, O_WRONLY );
     if( fd == OPEN_FAILED ){
-      sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip0/unexport" );
+      sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip0/un" );
       throw device_exception( DeviceName, errmsg );
     }
     write( fd, "0", 1 );

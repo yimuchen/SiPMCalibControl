@@ -92,13 +92,13 @@ device_exception( const std::string& dev, const std::string& msg )
 }
 
 
-void
-add_to_table( std::string& table, const char* exp, ... )
+std::string
+format_str( const char* exp, ... )
 {
-  char    str[1024];
+  char    return_str[65536];
   va_list args;
   va_start( args, exp );
-  sprintf( str, exp, args );
-  table += str;
-  va_end( args );
+  sprintf( return_str, exp, args );
+  return return_str;
 }
+

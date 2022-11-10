@@ -92,28 +92,27 @@ static const auto __dummy_settings = cv::utils::logging::setLogLevel(
 
 // Python logging options
 
-Visual::Visual() :
-  cam      (),
-  run_loop ( false )
+Visual::Visual() : cam (),
+  run_loop             ( false )
 {
   InitVarDefault();
   StartLoopThread();
 }
 
 
-Visual::Visual( const std::string& dev ) :
-  cam      (),
-  run_loop ( false )
+Visual::Visual( const std::string& dev ) : cam (),
+  run_loop                                     ( false )
 {
   init_dev( dev );
   InitVarDefault();
   StartLoopThread();
 }
 
+
 std::string
 Visual::DeviceName() const
 {
-  return "Visual@" + dev_path;
+  return "Visual@"+dev_path;
 }
 
 
@@ -278,11 +277,9 @@ Visual::GetImage( const bool raw )
   static const cv::Mat blank_frame( cv::Size( FrameWidth(), FrameHeight() ),
                                     CV_8UC3, cv::Scalar( 0, 0, 0 ) );
   loop_mutex.lock();
-  cv::Mat ans_mat = ( display.empty() || display.cols == 0 ) ?
-                    blank_frame :
-                    raw ?
-                    image :
-                    display;
+  cv::Mat ans_mat =
+    ( display.empty() ||
+      display.cols == 0 ) ? blank_frame : raw ? image : display;
   loop_mutex.unlock();
   return ans_mat;
 }
@@ -363,9 +360,8 @@ Visual::FindDetector( const cv::Mat& img )
   }
   const auto  contours = FindContours( img );
   const auto& hulls    = contours.at( 0 );
-  const auto  ans      = hulls.empty() ?
-                         empty_return :
-                         MakeResult( img, hulls.at( 0 ) );
+  const auto  ans      = hulls.empty() ? empty_return : MakeResult( img, hulls.at(
+                                                                      0 ) );
   display = MakeDisplay( img, contours );
   return ans;
 }

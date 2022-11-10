@@ -40,7 +40,7 @@ extern void printwarn( const std::string& device,
 extern std::runtime_error device_exception( const std::string& device,
                                             const std::string& x  );
 
-extern void add_to_table( std::string& table, const char* exp, ... );
+extern std::string format_str( const char* exp, ... );
 
 /** @} */
 #endif

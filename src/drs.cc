@@ -248,17 +248,13 @@ DRSContainer::WaveformSum( const unsigned channel,
 void
 DRSContainer::DumpBuffer( const unsigned channel )
 {
-  const auto     waveform   = GetWaveform( channel );
-  const auto     time_array = GetTimeArray( channel );
-  const unsigned length     = GetSamples();
-  char           line[1024];
+  const auto     waveform     = GetWaveform( channel );
+  const auto     time_array   = GetTimeArray( channel );
+  const unsigned length       = GetSamples();
   std::string    output_table = "";
-  add_to_table( output_table, "%7s | Channel %d [mV]\n", "Time", channel );
+  output_table += format_str( "%s | Channel%d | [mV]\n", "Time", channel );
   for( unsigned i = 0; i < length; ++i ){
-    add_to_table( output_table,
-                  "%7.3lf | %7.2lf\n",
-                  time_array[i],
-                  waveform[i] );
+    output_table += format_str( "%.3lf | %.2lf\n", time_array[i], waveform[i] );
   }
   printdebug( DeviceName, output_table );
 }
