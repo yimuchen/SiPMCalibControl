@@ -10,6 +10,6 @@ var searchData=
   ['flushloop_7',['FlushLoop',['../classGPIO.html#a3d8164a9c9a3de3be43632cf99fb8db3',1,'GPIO']]],
   ['flushtobuffer_8',['FlushToBuffer',['../classPicoUnit.html#a09d233d75d0f37cfed84de96c69c1fb9',1,'PicoUnit']]],
   ['forcestop_9',['ForceStop',['../classDRSContainer.html#a9345ab991a7e9c26a4d8064ddafad685',1,'DRSContainer']]],
-  ['format_10',['format',['../classcmod_1_1fmt_1_1CmdStreamFormatter.html#a0c96e3f7aeed9a289b228f6cb03f57a2',1,'cmod::fmt::CmdStreamFormatter']]],
+  ['format_10',['format',['../namespaceformat.html',1,'format'],['../classcmod_1_1fmt_1_1CmdStreamFormatter.html#a0c96e3f7aeed9a289b228f6cb03f57a2',1,'cmod.fmt.CmdStreamFormatter.format(self, record)']]],
   ['format_5ftable_11',['format_table',['../classcmod_1_1fmt_1_1CmdStreamFormatter.html#abaa191638e2ddbb3d54debcfaac00bf7',1,'cmod::fmt::CmdStreamFormatter']]]
 ];

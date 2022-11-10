@@ -1,9 +1,9 @@
 var searchData=
 [
-  ['action_0',['action',['../namespaceserver_1_1sockets_1_1action.html',1,'server::sockets']]],
-  ['format_1',['format',['../namespaceserver_1_1sockets_1_1format.html',1,'server::sockets']]],
-  ['parsing_2',['parsing',['../namespaceserver_1_1sockets_1_1parsing.html',1,'server::sockets']]],
-  ['report_3',['report',['../namespaceserver_1_1sockets_1_1report.html',1,'server::sockets']]],
-  ['server_4',['server',['../namespaceserver.html',1,'']]],
-  ['sync_5',['sync',['../namespaceserver_1_1sockets_1_1sync.html',1,'server::sockets']]]
+  ['board_0',['board',['../namespacecmod_1_1board.html',1,'cmod']]],
+  ['fmt_1',['fmt',['../namespacecmod_1_1fmt.html',1,'cmod']]],
+  ['getset_2',['getset',['../namespacectlcmd_1_1getset.html',1,'ctlcmd']]],
+  ['motioncmd_3',['motioncmd',['../namespacectlcmd_1_1motioncmd.html',1,'ctlcmd']]],
+  ['readoutmodel_4',['readoutmodel',['../namespacecmod_1_1readoutmodel.html',1,'cmod']]],
+  ['viscmd_5',['viscmd',['../namespacectlcmd_1_1viscmd.html',1,'ctlcmd']]]
 ];

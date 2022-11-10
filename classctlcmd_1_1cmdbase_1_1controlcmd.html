@@ -211,11 +211,12 @@ def&#160;</td><td class="memItemRight" valign="bottom"><b>printdump</b> (self, t
 <tr class="memitem:a14d4a7ccb7fa1f3fa76acda1e33c44a0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlcmd.html#a14d4a7ccb7fa1f3fa76acda1e33c44a0">check_handle</a> (self)</td></tr>
 <tr class="memdesc:a14d4a7ccb7fa1f3fa76acda1e33c44a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper function for handling signals.  <a href="classctlcmd_1_1cmdbase_1_1controlcmd.html#a14d4a7ccb7fa1f3fa76acda1e33c44a0">More...</a><br /></td></tr>
 <tr class="separator:a14d4a7ccb7fa1f3fa76acda1e33c44a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a74703b72742aa4d52ee94514a169a47b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlcmd.html#a74703b72742aa4d52ee94514a169a47b">move_gantry</a> (self, x, y, z, verbose)</td></tr>
-<tr class="memdesc:a74703b72742aa4d52ee94514a169a47b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wrapper for gantry motion to be called by children method.  <a href="classctlcmd_1_1cmdbase_1_1controlcmd.html#a74703b72742aa4d52ee94514a169a47b">More...</a><br /></td></tr>
-<tr class="separator:a74703b72742aa4d52ee94514a169a47b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeba94464a9eca3859d4f89c65d92c034"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlcmd.html#aeba94464a9eca3859d4f89c65d92c034">prompt_input</a> (self, message, allowed=None)</td></tr>
-<tr class="memdesc:aeba94464a9eca3859d4f89c65d92c034"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prompting for a user message, suspend the session until the input is placed.  <a href="classctlcmd_1_1cmdbase_1_1controlcmd.html#aeba94464a9eca3859d4f89c65d92c034">More...</a><br /></td></tr>
+<tr class="memitem:ae536f5012b40d6a7f5284927e32bb523"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlcmd.html#ae536f5012b40d6a7f5284927e32bb523">move_gantry</a> (self, x, y, z)</td></tr>
+<tr class="memdesc:ae536f5012b40d6a7f5284927e32bb523"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wrapper for gantry motion to be called by children method.  <a href="classctlcmd_1_1cmdbase_1_1controlcmd.html#ae536f5012b40d6a7f5284927e32bb523">More...</a><br /></td></tr>
+<tr class="separator:ae536f5012b40d6a7f5284927e32bb523"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeba94464a9eca3859d4f89c65d92c034"><td class="memItemLeft" align="right" valign="top"><a id="aeba94464a9eca3859d4f89c65d92c034" name="aeba94464a9eca3859d4f89c65d92c034"></a>
+str&#160;</td><td class="memItemRight" valign="bottom"><b>prompt_input</b> (self, message, allowed=None)</td></tr>
+<tr class="memdesc:aeba94464a9eca3859d4f89c65d92c034"><td class="mdescLeft">&#160;</td><td class="mdescRight">Thin wrapper for prompt input of the main controlterm method. <br /></td></tr>
 <tr class="separator:aeba94464a9eca3859d4f89c65d92c034"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a840ad9428e388cf73c9a8cd852891c3f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlcmd.html#a840ad9428e388cf73c9a8cd852891c3f">prompt_yn</a> (self, question, default=None)</td></tr>
 <tr class="memdesc:a840ad9428e388cf73c9a8cd852891c3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ask a yes/no question and prompt a question to the user and return their answer.  <a href="classctlcmd_1_1cmdbase_1_1controlcmd.html#a840ad9428e388cf73c9a8cd852891c3f">More...</a><br /></td></tr>
@@ -499,8 +500,8 @@ Static Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a74703b72742aa4d52ee94514a169a47b" name="a74703b72742aa4d52ee94514a169a47b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a74703b72742aa4d52ee94514a169a47b">&#9670;&#160;</a></span>move_gantry()</h2>
+<a id="ae536f5012b40d6a7f5284927e32bb523" name="ae536f5012b40d6a7f5284927e32bb523"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae536f5012b40d6a7f5284927e32bb523">&#9670;&#160;</a></span>move_gantry()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -527,13 +528,7 @@ Static Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>z</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>verbose</em>&#160;</td>
+          <td class="paramname"><em>z</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -686,41 +681,6 @@ Static Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p >Using a custom log-level to trigger a unique formatter. Details of the formatting can be found in the fmt.CmdStreamFormatter class. </p>
-
-</div>
-</div>
-<a id="aeba94464a9eca3859d4f89c65d92c034" name="aeba94464a9eca3859d4f89c65d92c034"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeba94464a9eca3859d4f89c65d92c034">&#9670;&#160;</a></span>prompt_input()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"> str ctlcmd.cmdbase.controlcmd.prompt_input </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>message</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>allowed</em> = <code>None</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p >If the allowed entry is not None, then the input will need to be included in the allowed value, or the prompt will be raised again with an error message. Notice that the prompt message is displayed via the python <code>input</code> method an will not be displayed in the log. However, we will place the input value into the log. </p>
 
 </div>
 </div>

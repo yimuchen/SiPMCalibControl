@@ -142,6 +142,9 @@ def&#160;</td><td class="memItemRight" valign="bottom"><b>default</b> (self, lin
 <tr class="memitem:a94c901491bc10faf020a8777f060dce6"><td class="memItemLeft" align="right" valign="top"><a id="a94c901491bc10faf020a8777f060dce6" name="a94c901491bc10faf020a8777f060dce6"></a>
 def&#160;</td><td class="memItemRight" valign="bottom"><b>devlog</b> (self, devname)</td></tr>
 <tr class="separator:a94c901491bc10faf020a8777f060dce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64c049efa0398d8195e01b4ee607e844"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classctlcmd_1_1cmdbase_1_1controlterm.html#a64c049efa0398d8195e01b4ee607e844">prompt_input</a> (self, device, message, allowed=None)</td></tr>
+<tr class="memdesc:a64c049efa0398d8195e01b4ee607e844"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prompting for a user message, suspend the session until the input is placed.  <a href="classctlcmd_1_1cmdbase_1_1controlterm.html#a64c049efa0398d8195e01b4ee607e844">More...</a><br /></td></tr>
+<tr class="separator:a64c049efa0398d8195e01b4ee607e844"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -169,22 +172,6 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:adf745a2e26ee30ee7fba72e0a2ae6b90"><td class="memItemLeft" align="right" valign="top"><a id="adf745a2e26ee30ee7fba72e0a2ae6b90" name="adf745a2e26ee30ee7fba72e0a2ae6b90"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>cmdlog</b></td></tr>
 <tr class="separator:adf745a2e26ee30ee7fba72e0a2ae6b90"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d3d9d61b3927ccbe7111394125bc286"><td class="memItemLeft" align="right" valign="top"><a id="a2d3d9d61b3927ccbe7111394125bc286" name="a2d3d9d61b3927ccbe7111394125bc286"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>last_cmd</b></td></tr>
-<tr class="memdesc:a2d3d9d61b3927ccbe7111394125bc286"><td class="mdescLeft">&#160;</td><td class="mdescRight">Additional members for command status logging. <br /></td></tr>
-<tr class="separator:a2d3d9d61b3927ccbe7111394125bc286"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab00130972a6a3205f801f541b05392e8"><td class="memItemLeft" align="right" valign="top"><a id="ab00130972a6a3205f801f541b05392e8" name="ab00130972a6a3205f801f541b05392e8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>last_cmd_status</b></td></tr>
-<tr class="separator:ab00130972a6a3205f801f541b05392e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae70cd380b9c8102eb79811f44de31c85"><td class="memItemLeft" align="right" valign="top"><a id="ae70cd380b9c8102eb79811f44de31c85" name="ae70cd380b9c8102eb79811f44de31c85"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>last_cmd_start</b></td></tr>
-<tr class="separator:ae70cd380b9c8102eb79811f44de31c85"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a058a57ae993f298da281c6c573448891"><td class="memItemLeft" align="right" valign="top"><a id="a058a57ae993f298da281c6c573448891" name="a058a57ae993f298da281c6c573448891"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>last_cmd_stop</b></td></tr>
-<tr class="separator:a058a57ae993f298da281c6c573448891"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c0c73d80dac44dbd4034d699b7420f8"><td class="memItemLeft" align="right" valign="top"><a id="a1c0c73d80dac44dbd4034d699b7420f8" name="a1c0c73d80dac44dbd4034d699b7420f8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>opfile</b></td></tr>
-<tr class="separator:a1c0c73d80dac44dbd4034d699b7420f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32a0079470e89f2cb62b8147bc1a7a6a"><td class="memItemLeft" align="right" valign="top"><a id="a32a0079470e89f2cb62b8147bc1a7a6a" name="a32a0079470e89f2cb62b8147bc1a7a6a"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>out_handle</b></td></tr>
 <tr class="separator:a32a0079470e89f2cb62b8147bc1a7a6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -336,6 +323,47 @@ string&#160;</td><td class="memItemRight" valign="bottom"><b>logname</b> = 'SiPM
       </table>
 </div><div class="memdoc">
 <p >Storing the command that is passed to the instance to the logger. This will be used to detect in future instances whether the the command line session is currently running the command using the in-memory log records, as well as help diagnose which function command generated which error message in log dumps. </p>
+
+</div>
+</div>
+<a id="a64c049efa0398d8195e01b4ee607e844" name="a64c049efa0398d8195e01b4ee607e844"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64c049efa0398d8195e01b4ee607e844">&#9670;&#160;</a></span>prompt_input()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> str ctlcmd.cmdbase.controlterm.prompt_input </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>message</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>allowed</em> = <code>None</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >If the allowed entry is not None, then the input will need to be included in the allowed value, or the prompt will be raised again with an error message. Notice that the prompt message is displayed via the python <code>input</code> method an will not be displayed in the log. However, we will place the input value into the log. This is elevated to be a member function in the controlterm object, since we forsee this being overloaded in a GUI session implementation. </p>
 
 </div>
 </div>

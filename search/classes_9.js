@@ -1,6 +1,8 @@
 var searchData=
 [
-  ['mode_0',['Mode',['../classctlcmd_1_1cmdbase_1_1readoutcmd_1_1Mode.html',1,'ctlcmd::cmdbase::readoutcmd']]],
-  ['movespeed_1',['movespeed',['../classctlcmd_1_1motioncmd_1_1movespeed.html',1,'ctlcmd::motioncmd']]],
-  ['moveto_2',['moveto',['../classctlcmd_1_1motioncmd_1_1moveto.html',1,'ctlcmd::motioncmd']]]
+  ['lightoff_0',['lightoff',['../classctlcmd_1_1digicmd_1_1lightoff.html',1,'ctlcmd::digicmd']]],
+  ['lighton_1',['lighton',['../classctlcmd_1_1digicmd_1_1lighton.html',1,'ctlcmd::digicmd']]],
+  ['loadcalib_2',['loadcalib',['../classctlcmd_1_1getset_1_1loadcalib.html',1,'ctlcmd::getset']]],
+  ['logdump_3',['logdump',['../classctlcmd_1_1getset_1_1logdump.html',1,'ctlcmd.getset.logdump'],['../classviews_1_1logdump.html',1,'views.logdump']]],
+  ['lowlightcollect_4',['lowlightcollect',['../classctlcmd_1_1motioncmd_1_1lowlightcollect.html',1,'ctlcmd::motioncmd']]]
 ];

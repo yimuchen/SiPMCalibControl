@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['get_5fboards_0',['get_boards',['../namespaceserver_1_1sockets_1_1report.html#adb94b18179f42fc28406f16b381e5a0e',1,'server::sockets::report']]],
-  ['get_5fdetid_5fdata_1',['get_detid_data',['../namespaceserver_1_1sockets_1_1parsing.html#a94356cb2dcb63224a4745375d4214120',1,'server::sockets::parsing']]],
-  ['get_5ffile_5fdata_2',['get_file_data',['../namespaceserver_1_1sockets_1_1parsing.html#a86f9049100c046a9592a7953250719c0',1,'server::sockets::parsing']]],
+  ['get_5fboards_0',['get_boards',['../namespacereport.html#a78f982ee26de79b482caa68ee23b3b14',1,'report']]],
+  ['get_5fdetid_5fdata_1',['get_detid_data',['../namespaceparsing.html#a1f1bfb7720f7042d277d6f824e9fc812',1,'parsing']]],
+  ['get_5ffile_5fdata_2',['get_file_data',['../namespaceparsing.html#abe74db7ea4c196a366297eb13fd822a9',1,'parsing']]],
   ['get_5fnames_3',['get_names',['../classctlcmd_1_1cmdbase_1_1controlterm.html#a25c7a6a5519310533014633cafab320e',1,'ctlcmd::cmdbase::controlterm']]],
   ['getbuffer_4',['GetBuffer',['../classPicoUnit.html#a8ef09162758f45f7394c1b6581115561',1,'PicoUnit']]],
   ['getcontourmaxmeasure_5',['GetContourMaxMeasure',['../classVisual.html#a0b621b6354183f884d307b8538826acf',1,'Visual']]],
