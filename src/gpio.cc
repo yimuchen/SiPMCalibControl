@@ -129,8 +129,7 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
   char                      buffer[buffer_length];
   char                      path[buffer_length];
   char                      errmsg[1024];
-  int                       fd = open_with_lock( "/sys/class/gpio/",
-                                                 O_WRONLY );
+  int                       fd = open_with_lock( "/sys/class/gpio/", O_WRONLY );
   write_length = snprintf( buffer, buffer_length, "%u", pin );
   write( fd, buffer, write_length );
   close( fd );
@@ -145,18 +144,13 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
   while( access( path, F_OK ) == -1 ){
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
   }
-  fd = ( direction == READ ) ?
-       open_with_lock( path, O_WRONLY ) :
-       open_with_lock(
-    path,
-    O_WRONLY );
+  fd =
+    ( direction == READ ) ? open_with_lock( path, O_WRONLY ) : open_with_lock(
+      path,
+      O_WRONLY );
   int status = write( fd,
-                      direction == READ ?
-                      "in" :
-                      "out",
-                      direction == READ ?
-                      2    :
-                      3 );
+                      direction == READ ? "in" : "out",
+                      direction == READ ? 2    : 3 );
   if( status == IO_FAILED ){
     sprintf( errmsg, "Failed to set gpio [%d] direction!", pin );
     throw device_exception( DeviceName, errmsg );
@@ -165,11 +159,10 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
 
   // Opening GPIO PIN
   snprintf( path, buffer_length, "/sys/class/gpio/gpio%d/value", pin );
-  fd = ( direction == READ ) ?
-       open_with_lock( path, O_RDONLY ) :
-       open_with_lock(
-    path,
-    O_WRONLY );
+  fd =
+    ( direction == READ ) ? open_with_lock( path, O_RDONLY ) : open_with_lock(
+      path,
+      O_WRONLY );
   return fd;
 }
 
@@ -200,11 +193,7 @@ GPIO::GPIORead( const int fd )
 void
 GPIO::GPIOWrite( const int fd, const unsigned val )
 {
-  if( write( fd,
-             LOW == val ?
-             "0" :
-             "1",
-             1 ) == IO_FAILED ){
+  if( write( fd, LOW == val ? "0" : "1", 1 ) == IO_FAILED ){
     throw device_exception( DeviceName, "Failed to write gpio value!" );
   }
 }
@@ -222,8 +211,8 @@ GPIO::CloseGPIO( const int pin )
   static constexpr unsigned buffer_length = 3;
   unsigned                  write_length;
   char                      buffer[buffer_length];
-  int                       fd = open_with_lock( "/sys/class/gpio/un",
-                                                 O_WRONLY );
+  int                       fd =
+    open_with_lock( "/sys/class/gpio/un", O_WRONLY );
   write_length = snprintf( buffer, buffer_length, "%d", pin );
   write( fd, buffer, write_length );
   close( fd );
@@ -362,7 +351,7 @@ GPIO::InitPWM()
   // Attempting to lock everything
   for( int fd :
        {pwm_enable[0], pwm_duty[0], pwm_period[0], pwm_enable[1], pwm_duty[1],
-   pwm_period[1]} ){
+        pwm_period[1]} ){
     int lock = flock( fd, LOCK_EX | LOCK_NB );
     if( lock ){
       close( pwm_enable[0] );
@@ -616,17 +605,13 @@ GPIO::FlushLoop( std::atomic<bool>& i2d_flush )
           PushADCSetting();
           const int16_t adc   = ADCReadRaw();
           const uint8_t range = adc_range & 0x7;
-          const float   conv  = range == ADS_RANGE_6V  ?
-                                6144.0 / 32678.0 :
-                                range == ADS_RANGE_4V  ?
-                                4096.0 / 32678.0 :
-                                range == ADS_RANGE_2V  ?
-                                2048.0 / 32678.0 :
-                                range == ADS_RANGE_1V  ?
-                                1024.0 / 32678.0 :
-                                range == ADS_RANGE_p5V ?
-                                512.0 / 32678.0  :
-                                256.0 / 32678.0;
+          const float   conv  = range ==
+                                ADS_RANGE_6V  ? 6144.0 / 32678.0 : range ==
+                                ADS_RANGE_4V  ? 4096.0 / 32678.0 : range ==
+                                ADS_RANGE_2V  ? 2048.0 / 32678.0 : range ==
+                                ADS_RANGE_1V  ? 1024.0 / 32678.0 : range ==
+                                ADS_RANGE_p5V ? 512.0 / 32678.0  : 256.0
+                                / 32678.0;
           i2c_flush_array[channel] = adc * conv;
           std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
         } catch( std::exception& e ){
@@ -776,15 +761,14 @@ GPIO::ReadRTDTemp( const unsigned channel ) const
  * will be activated.
  *
  */
-GPIO::GPIO() :
-  gpio_trigger( UNOPENED ),
-  gpio_light  ( UNOPENED ),
-  gpio_spare  ( UNOPENED ),
-  gpio_adc    ( UNOPENED ),
-  adc_range   ( ADS_RANGE_4V ),
-  adc_rate    ( ADS_RATE_250SPS ),
-  adc_channel ( 0 ),
-  i2c_flush   ( false )
+GPIO::GPIO() : gpio_trigger( UNOPENED ),
+  gpio_light               ( UNOPENED ),
+  gpio_spare               ( UNOPENED ),
+  gpio_adc                 ( UNOPENED ),
+  adc_range                ( ADS_RANGE_4V ),
+  adc_rate                 ( ADS_RATE_250SPS ),
+  adc_channel              ( 0 ),
+  i2c_flush                ( false )
 {
   pwm_enable[0] = UNOPENED;
   pwm_duty[0]   = UNOPENED;

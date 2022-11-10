@@ -101,4 +101,3 @@ format_str( const char* exp, ... )
   sprintf( return_str, exp, args );
   return return_str;
 }
-
