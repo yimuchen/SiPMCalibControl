@@ -18,15 +18,15 @@
 """
 from flask import Flask, request
 from flask_socketio import SocketIO
-from werkzeug.serving import make_server
 from threading import Thread
 
 import server.views as views
 import server.sockets as sockets
 import ctlcmd.cmdbase as cmdbase  # For the command line session
 import cmod.fmt as fmt
+
 ## Additional python libraries
-import os, logging, tqdm, datetime, time
+import os, logging, tqdm, datetime, time, trace, sys
 
 
 class GUISocketHandler(logging.Handler):
@@ -74,13 +74,7 @@ class GUIcontrolterm(cmdbase.controlterm):
       command line session. This is mainly used for history look up and
       debugging dump log. Here we will attempt to log everything.
     - An additional signal
-
     """
-    # self.out_handle = logging.StreamHandler()
-    # self.out_handle.setLevel(logging.DEBUG)
-    # self.out_handle.setFormatter(fmt.CmdStreamFormatter())
-
-    # self.cmdlog.addHandler(self.out_handle)
     self.mem_handle = self.session.mem_handle
     self.cmdlog.addHandler(self.session.mem_handle)
     self.cmdlog.addHandler(self.session.sock_handle)
@@ -123,30 +117,10 @@ class GUIcontrolterm(cmdbase.controlterm):
       time.sleep(0.1)
 
 
-class SlowMonitoringThread(Thread):
-  """
-  Thread for starting a continuous logging the slow data monitoring stream. Here
-  we also keep a short log (~1hr long)
-  """
-  def __init__(self, session):
-    super().__init__()
-    self.session = session  # Reference to main session object
-    self.running = True
-
-  def run(self):
-    """The main looping instruction, using python.logging to manage"""
-    while self.running is True:
-      self.session.update_session_state(self.session.state)
-      time.sleep(0.5)  # Update every 0.5 seconds
-
-  def stop(self):
-    self.running = False
-
-
 class SocketTQDM(tqdm.cli.tqdm):
   """
-  Custom TQDM object to allow the progress of a command running on the server
-  side to be passed to the remote client. Since the TQDM instance required by
+  Custom tqdm object to allow the progress of a command running on the server
+  side to be passed to the remote client. Since the tqdm instance required by
   the command objects needs to be initialized. with only objects recognized by
   the vanilla tdqm object, this object will not be directly used to override the
   progress bar constructor.
@@ -183,6 +157,41 @@ class GUIsignalhandle(object):
 
   def release(self):
     self.terminate = False
+
+
+class TraceThread(Thread):
+  """
+  Thread with additional trace injected to allow for termination. Solution taken
+  from https://www.geeksforgeeks.org/python-different-ways-to-kill-a-thread/
+  """
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self.terminate_flag = False
+
+  def start(self):
+    self.__run_backup = self.run
+    self.run = self.__run
+    super().start()
+
+  def __run(self):
+    sys.settrace(self.globaltrace)
+    self.__run_backup()
+    self.run = self.__run_backup
+
+  def globaltrace(self, frame, event, arg):
+    if event == 'call':
+      return self.localtrace
+    else:
+      return None
+
+  def localtrace(self, frame, event, arg):
+    if self.terminate_flag:
+      if event == 'line':
+        raise SystemExit()
+    return self.localtrace
+
+  def terminate(self):
+    self.terminate_flag = True
 
 
 class GUISession(object):
@@ -232,7 +241,6 @@ class GUISession(object):
     self.is_running = False  # Flag to hard lock incoming requests
     self.sighandle = GUIsignalhandle()
     self.cmd = GUIcontrolterm(cmdlist, self)
-    self.monitor_thread = SlowMonitoringThread(self)
 
     # Custom function for making the various objects
     def _MAKE_CUSTOM_TQDM_(*args, **kwargs):
@@ -378,6 +386,60 @@ class GUISession(object):
     self.logger.info(fmt.oneline_string(msg))
 
   def start_session(self):
-    self.monitor_thread.start()
-    self.socketio.run(self.app)
+    self.is_serving = True
 
+    def monitor_loop():  # Thin wrapper to create a continuous update
+      while self.is_serving:
+        self.update_session_state(self.state)
+        time.sleep(0.5)
+
+    self.is_serving = True
+    self.monitor_thread = Thread(target=monitor_loop)
+    self.monitor_thread.start()
+    self.socketio_thread = TraceThread(target=self.socketio.run,
+                                       args=(self.app, ),
+                                       kwargs={
+                                           'host': '127.0.0.1',
+                                           'port': 9100,
+                                           'debug': False
+                                       })
+    self.socketio_thread.start()
+
+    print('Monitor thread status:', self.monitor_thread.is_alive())
+
+  def stop_session(self):
+    self.is_serving = False
+    self.socketio.emit('server-shutdown')
+    # Stopping the thread with a terminate signal
+    self.monitor_thread.join()  # Waiting for the monitoring thread to stop.
+    self.socketio_thread.terminate()
+    self.socketio_thread.join()
+
+
+class shutdown(cmdbase.controlcmd):
+  """
+  Shutting down the server session. We will prompt the user for inputs before
+  starting the shutdown routine, only the message prompting will be defined in
+  this class, all other operations should be handled by the
+  GUIsession.stop_session method.
+  """
+  def __init__(self, cmd):
+    super().__init__(cmd)
+
+  def run(self, args):
+    self.prompt_input(fmt.oneline_string("""
+        You have initiated the routine to terminate the server session!
+
+        <ul>
+
+        <li>If you are sure you want to shutdown, plase enter "I am sure, stop
+        the server" into the input box below to complete the shutdown, the
+        browser should refresh to a blank page shortly after entering. </li>
+
+        <li>If you want to continue the session, hit the interrupt signal
+        button. An error would be kept in the log</li>
+
+        </ul>
+    """),
+                      allowed=['I am sure, stop the server'])
+    self.cmd.session.stop_session()

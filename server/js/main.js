@@ -57,6 +57,7 @@ $(function () {
     session.socketio.on('monitor-info', update_monitor_entry);
     session.socketio.on('logging-info', update_system_entry);
     session.socketio.on('progress-update', update_progress);
+    session.socketio.on('server-shutdown', server_shutdown);
 
     // Interaction buttons for the interacting with the main session. Mainly
     // defined in js/action.js

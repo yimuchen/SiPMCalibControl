@@ -121,7 +121,8 @@ function system_log_common() {
 
   // Check the last command entry. If it is a request input entry. Open the user
   // interface request. Otherwise, explicitly wipe and hide the user action tab
-  if (last_cmd.args[0] == 'request_input') {
+  if (last_cmd == undefined) {
+  } else if (last_cmd.args[0] == 'request_input') {
     $('#user-action-msg').html(last_cmd.msg);
     $('#user-action').removeClass('hidden');
   } else {
@@ -146,4 +147,14 @@ function update_progress(msg) {
     );
   } else {
   }
+}
+
+/**
+ * Server shutdown signal. To avoid issues with trailing script states loading
+ * when the server maybe restarted, here we force the client to move to a blank
+ * page to force clear the client script state.
+ */
+function server_shutdown(msg) {
+  console.log('shutdown signal received!');
+  location.replace('about:blank'); // Standard blank page for Firefox and Chromium
 }

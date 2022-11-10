@@ -36,7 +36,11 @@ class Session {
  * simply done by looking at the last entry in the monitoring log.
  */
 Session.prototype.state = function () {
-  return this.monitor_log[this.monitor_log.length - 1].state;
+  if (this.monitor_log.length > 0) {
+    return this.monitor_log[this.monitor_log.length - 1].state;
+  } else {
+    return null
+  }
 };
 
 /**

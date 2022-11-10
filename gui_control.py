@@ -64,7 +64,7 @@ if __name__ == '__main__':
   ])
   """
 
-  session = ss.GUISession([getset.set, getset.get, getset.wait])
+  session = ss.GUISession([getset.set, getset.get, getset.wait, ss.shutdown])
 
   # Duplicating the session to allow for default override.
   prog_parser = copy.deepcopy(session.cmd.set.parser)
@@ -113,10 +113,6 @@ if __name__ == '__main__':
           most likely misbehave! Use at your own risk!"""))
 
   session.start_session()  # Starting the session!
-
-  # Routines to run after the server is closed.
-  session.monitor_thread.stop()
-  session.monitor_thread.join()
 
   # Currently this seg-faults on exit. I am not sure which hardware interface is
   # not being released properly, but doesn't seem to cause any persistent issue
