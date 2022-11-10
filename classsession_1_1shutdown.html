@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.5"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SiPM Calibration Control Program: session.SlowMonitoringThread Class Reference</title>
+<title>SiPM Calibration Control Program: session.shutdown Class Reference</title>
 <!-- Overriding the tabs css with our own -->
 <!--link href="tabs.css" rel="stylesheet" type="text/css"/-->
 <script type="text/javascript" src="jquery.js"></script>
@@ -83,47 +83,33 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="namespacesession.html">session</a></li><li class="navelem"><a class="el" href="classsession_1_1SlowMonitoringThread.html">SlowMonitoringThread</a></li>  </ul>
+<li class="navelem"><a class="el" href="namespacesession.html">session</a></li><li class="navelem"><a class="el" href="classsession_1_1shutdown.html">shutdown</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="classsession_1_1SlowMonitoringThread-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">session.SlowMonitoringThread Class Reference</div></div>
+<a href="classsession_1_1shutdown-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">session.shutdown Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p >Here we also keep a short log (~1hr long) </p>
+<div class="textblock"><p >We will prompt the user for inputs before starting the shutdown routine, only the message prompting will be defined in this class, all other operations should be handled by the GUIsession.stop_session method. </p>
 </div><div class="dynheader">
-Inheritance diagram for session.SlowMonitoringThread:</div>
+Inheritance diagram for session.shutdown:</div>
 <div class="dyncontent">
  <div class="center">
-  <img src="classsession_1_1SlowMonitoringThread.png" alt=""/>
+  <img src="classsession_1_1shutdown.png" alt=""/>
  </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a2f48c5446106f8151360832890f88062"><td class="memItemLeft" align="right" valign="top"><a id="a2f48c5446106f8151360832890f88062" name="a2f48c5446106f8151360832890f88062"></a>
-def&#160;</td><td class="memItemRight" valign="bottom"><b>__init__</b> (self, session)</td></tr>
-<tr class="separator:a2f48c5446106f8151360832890f88062"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aba3270e43bea750aaf29c72f78dc85bb"><td class="memItemLeft" align="right" valign="top"><a id="aba3270e43bea750aaf29c72f78dc85bb" name="aba3270e43bea750aaf29c72f78dc85bb"></a>
-def&#160;</td><td class="memItemRight" valign="bottom"><b>run</b> (self)</td></tr>
-<tr class="memdesc:aba3270e43bea750aaf29c72f78dc85bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">The main looping instruction, using python.logging to manage. <br /></td></tr>
-<tr class="separator:aba3270e43bea750aaf29c72f78dc85bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a27e1f89a34f940ea7241b975b8d5c7f5"><td class="memItemLeft" align="right" valign="top"><a id="a27e1f89a34f940ea7241b975b8d5c7f5" name="a27e1f89a34f940ea7241b975b8d5c7f5"></a>
-def&#160;</td><td class="memItemRight" valign="bottom"><b>stop</b> (self)</td></tr>
-<tr class="separator:a27e1f89a34f940ea7241b975b8d5c7f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
-Public Attributes</h2></td></tr>
-<tr class="memitem:a8fc1e0fcbd6eb8ec87dc226cd2e5887d"><td class="memItemLeft" align="right" valign="top"><a id="a8fc1e0fcbd6eb8ec87dc226cd2e5887d" name="a8fc1e0fcbd6eb8ec87dc226cd2e5887d"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>session</b></td></tr>
-<tr class="separator:a8fc1e0fcbd6eb8ec87dc226cd2e5887d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf1ebed1042fcb8920c5dc52db530d8c"><td class="memItemLeft" align="right" valign="top"><a id="adf1ebed1042fcb8920c5dc52db530d8c" name="adf1ebed1042fcb8920c5dc52db530d8c"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>running</b></td></tr>
-<tr class="separator:adf1ebed1042fcb8920c5dc52db530d8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90d3233a2498873cca2a903b8183c426"><td class="memItemLeft" align="right" valign="top"><a id="a90d3233a2498873cca2a903b8183c426" name="a90d3233a2498873cca2a903b8183c426"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>__init__</b> (self, cmd)</td></tr>
+<tr class="separator:a90d3233a2498873cca2a903b8183c426"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a835a42c332518a5eaa2e6d87268362f6"><td class="memItemLeft" align="right" valign="top"><a id="a835a42c332518a5eaa2e6d87268362f6" name="a835a42c332518a5eaa2e6d87268362f6"></a>
+def&#160;</td><td class="memItemRight" valign="bottom"><b>run</b> (self, args)</td></tr>
+<tr class="separator:a835a42c332518a5eaa2e6d87268362f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>/github/workspace/server/session.py</li>
