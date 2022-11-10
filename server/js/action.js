@@ -8,17 +8,55 @@
  * should wait for the appropriate signals to be initiated form the server side.
  *
  *******************************************************************************/
+function session_cmd_lock_toggle(event) {
+  if (session.state() == Session.SESSION_RUNNING_CMD) {
+    // If the session is currently running a command always lock the command input
+    $('#session-cmd-input').prop('disabled', true);
+    $('#session-cmd-lock-toggle').append(
+      dom('i', { class: 'fa fa-solid fa-lock', style: 'color:red;' }, ''),
+    );
+  } else {
+    if ($('#session-cmd-input').prop('disabled')) {
+      $('#session-cmd-input').prop('disabled', false);
+      $('#session-cmd-lock-toggle').html('');
+      $('#session-cmd-lock-toggle').append(
+        dom('i', { class: 'fa fa-solid fa-lock' }, ''),
+      );
+    } else {
+      $('#session-cmd-input').prop('disabled', true);
+      $('#session-cmd-lock-toggle').html('');
+      $('#session-cmd-lock-toggle').append(
+        dom('i', { class: 'fa fa-solid fa-lock-open' }, ''),
+      );
+    }
+  }
+}
 
 /**
- * Simplified interface for emitting a user action to the socket interface.
- *
- * 'id' is used to classify the action to be carried out by the main session.
- * 'msg' is used for any accompanying data to be used.
+ * Requesting the server run a single command from main command input.
  */
-function emit_action_cmd(id, msg) {
-  $('#display-message').html('');
-  socketio.emit('run-action-cmd', { id: id, data: msg });
+function session_cmd_send() {
+  session.socketio.emit('run-single-cmd', $('#session-cmd-input').val());
+  $('#session-cmd-input').val(''); // Clearing the command input prompt
 }
+
+/**
+ * Sending an interruption signal to the server session.
+ */
+function session_interrupt_send() {
+  session.socketio.emit('interrupt', '');
+}
+
+/**
+ * Getting the input string for the user action check lock, and applying sending
+ * it to the server session to be evaluated.
+ */
+function user_action_send_check(){
+  session.socketio.emit('user-action-check', $('#user-action-input').val());
+  // Clearing the user input prompt to avoid accidental matches.
+  $('#user-action-input').val('');
+}
+
 
 /**
  * Action to send to the server on the completion of the user action. Hide the
@@ -41,7 +79,7 @@ function run_system_calibration() {
 
   if (boardtype == undefined) {
     $('#system-calib-submit-error').html(
-      'System calibration board type not selected'
+      'System calibration board type not selected',
     );
   } else {
     $('#system-calib-submit-error').html('');
@@ -62,11 +100,11 @@ function run_std_calibration() {
     $('#standard-calib-submit-error').html('Board ID not specified');
   } else if (boardtype == undefined) {
     $('#standard-calib-submit-error').html(
-      'Board type for standard calibration is not selected'
+      'Board type for standard calibration is not selected',
     );
   } else if (reference == undefined) {
     $('#standard-calib-submit-error').html(
-      'Reference calibration session is not selected'
+      'Reference calibration session is not selected',
     );
   } else {
     $('#standard-calib-submit-error').html('');
@@ -152,7 +190,7 @@ async function rerun_single(action_tag, detid, extend) {
           dom('div', {
             class: 'plot',
             id: `single-det-summary-plot-${det_id}-${action_tag}`,
-          })
+          }),
         );
     } else {
       if (!extend) {
@@ -208,10 +246,10 @@ function zscan_settings_update() {
     samples: $('#zscan-settings-samples').val(),
     pwm: split_string_to_float_array($('#zscan-settings-pwm').val()),
     zlist_dense: split_string_to_float_array(
-      $('#zscan-settings-zval-dense').val()
+      $('#zscan-settings-zval-dense').val(),
     ),
     zlist_sparse: split_string_to_float_array(
-      $('#zscan-settings-zval-sparse').val()
+      $('#zscan-settings-zval-sparse').val(),
     ),
   };
 
@@ -255,7 +293,7 @@ function lumialign_settings_update() {
 function picoscope_settings_update() {
   const trigger_level = value_from_adc(
     $('#trigger-level-text').val(),
-    $('input[name="trigger-channel"]:checked').val()
+    $('input[name="trigger-channel"]:checked').val(),
   );
 
   const new_settings = {
@@ -309,12 +347,3 @@ function drs_calib_complete() {
     SENT_CALIB_SIGNAL = 0;
   }
 }
-
-/** ========================================================================== */
-/** PICOSCOPE SETTING FUNCTIONS */
-/** Below are function specific to the step of the picoscope readout system.
- *   Since these function are only used by the picoscope function and nowhere
- *   else. Though these function uses css manipulation, it was decided to put the
- *   following function in the settings.js file.
- */
-/** ========================================================================== */

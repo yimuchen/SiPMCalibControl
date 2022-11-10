@@ -1,158 +1,182 @@
 <!-- Importing the common display elements --->
-{% from 'macros/headers.html' import headers with context %}
-
-{% from 'macros/settings.html' import image_settings          with context %}
-{% from 'macros/settings.html' import picoscope_settings      with context %}
-{% from 'macros/settings.html' import drs_settings            with context %}
-{% from 'macros/settings.html' import intensity_scan_settings with context %}
-{% from 'macros/settings.html' import lumi_alignment_settings with context %}
-
-{% from 'macros/monitor.html' import status_tab      with context %}
-{% from 'macros/monitor.html' import temperature_tab with context %}
-{% from 'macros/monitor.html' import voltage_tab     with context %}
-{% from 'macros/monitor.html' import visual_tab      with context %}
-{% from 'macros/monitor.html' import gantry_tab      with context %}
-
-{% from 'macros/monitor.html' import command_progress with context %}
-{% from 'macros/monitor.html' import session_progress with context %}
-
-{% from 'macros/actions.html' import user_action with context %}
-{% from 'macros/actions.html' import system_calibration with context %}
-{% from 'macros/actions.html' import standard_calibration with context %}
-{% from 'macros/actions.html' import terminal_control_tab with context %}
-
+{% from 'macros/headers.html' import headers with context %} {% from
+'macros/settings.html' import image_settings with context %} {% from
+'macros/settings.html' import picoscope_settings with context %} {% from
+'macros/settings.html' import drs_settings with context %} {% from
+'macros/settings.html' import intensity_scan_settings with context %} {% from
+'macros/settings.html' import lumi_alignment_settings with context %} {% from
+'macros/monitor.html' import status_tab with context %} {% from
+'macros/monitor.html' import temperature_tab with context %} {% from
+'macros/monitor.html' import voltage_tab with context %} {% from
+'macros/monitor.html' import visual_tab with context %} {% from
+'macros/monitor.html' import gantry_tab with context %} {% from
+'macros/monitor.html' import command_progress with context %} {% from
+'macros/monitor.html' import session_progress with context %} {% from
+'macros/actions.html' import user_action with context %} {% from
+'macros/actions.html' import system_calibration with context %} {% from
+'macros/actions.html' import standard_calibration with context %} {% from
+'macros/actions.html' import terminal_control_tab with context %}
 
 <!DOCTYPE html>
 <html>
+  <head>
+    <title>UMD SIPM Calib - {{hostname}}</title>
+    <!--Common header stuff, see the macros/headers.html file for details-->
+    {{ headers() }}
 
-<head>
-  <title>UMD SIPM Calib - {{hostname}}</title>
+    <!--Custom Specific for the main page-->
+    <script
+      type="module"
+      src="{{url_for('static',filename='js/main.js')}}"
+    ></script>
+  </head>
 
-  <!--Common header stuff, see the macros/headers.html file for details-->
-  {{ headers() }}
+  <body>
+    <button id="monitor-column-toggle">M</button>
+    <button id="action-column-toggle">A</button>
 
-  <!--Custom Specific for the main page-->
-  <script src="{{url_for('static',filename='js/main.js')}}"></script>
-</head>
+    <div id="monitor-column">
+      <h2>Monitoring</h2>
 
-<body>
+      {{ status_tab() }} {{ temperature_tab() }} {{ voltage_tab() }} {{
+      visual_tab() }} {{ gantry_tab() }}
+    </div>
+    <!--End of monitor column-->
 
-  <button id="monitor-column-toggle">M</button>
-  <button id="action-column-toggle">A</button>
+    <div id="action-column">
+      <h2>Calibration Actions</h2>
 
+      <!--Defined in macros/actions.html-->
+      {{ system_calibration() }} {{ standard_calibration()
+      }}
 
-  <div id="monitor-column">
-    <h2> Monitoring </h2>
+      <!--Defined in macros/settings.html-->
+      {{ image_settings() }} {{ picoscope_settings() }} {{ drs_settings() }} {{
+      intensity_scan_settings() }} {{ lumi_alignment_settings() }}
 
-    {{ status_tab() }}
-    {{ temperature_tab() }}
-    {{ voltage_tab() }}
-    {{ visual_tab() }}
-    {{ gantry_tab() }}
+      <!--Defined in macro/actions.html-->
+    </div>
 
-  </div>
-  <!--End of monitor column-->
-
-
-  <div id="action-column">
-    <h2>Calibration Actions</h2>
-
-    <!--Defined in macros/actions.html-->
-    {{ user_action() }}
-    {{ system_calibration() }}
-    {{ standard_calibration() }}
-
-    <!--Defined in macros/settings.html-->
-    {{ image_settings() }}
-    {{ picoscope_settings() }}
-    {{ drs_settings() }}
-    {{ intensity_scan_settings() }}
-    {{ lumi_alignment_settings() }}
-
-    <!--Defined in macro/actions.html-->
-  </div>
-
-  <!-- Main column in center-->
-  <div id="session-column">
-    <span class="column-title">
-      <i class="fa fa=fa-angle-left"></i>
-      <h2>Session monitor and controls</h2>
-      <i class="fa fa=fa-angle-right"></i>
-    </span>
-
-    <div class="tab">
-      <div class="tab-title">
-        <span>Command progress</span>
+    <!-- Main column in center-->
+    <div id="session-column">
+      <span class="column-title">
         <i class="fa fa=fa-angle-left"></i>
-      </div>
-      <div class="tab-content">
-        <div class="column-container">
-          <div class="column">
-            <div class="input-align">
-              <div class="input-row">
-                <span class="input-name">Session type</span>
-                <div class="input-units" id="session-type-text"></div>
-              </div>
-              <div class="input-row" id="bar-container">
-                <div class="input-name"></div>
-                <div>
-                  <div class="legend" style="width:300px">
-                    <div class="progress-pending" style="width:25%;">Pending</div>
-                    <div class="progress-complete" style="width:25%;">Complete</div>
-                    <div class="progress-running" style="width:25%;">Running</div>
-                    <div class="progress-error" style="width:25%;">Error</div>
+        <h2>Session monitor and controls</h2>
+        <i class="fa fa=fa-angle-right"></i>
+      </span>
+
+      <div class="tab">
+        <div class="tab-title">
+          <span>Session control</span>
+          <i class="fa fa=fa-angle-left"></i>
+        </div>
+        <div class="tab-content">
+          <div class="column-container">
+            <div class="column">
+              <div class="input-align">
+                <div class="input-row">
+                  <span class="input-name" id="session-log-header">
+                    <b>Session log</b>
+                    <br>
+
+                    <div class="input-align">
+                      <div class="input-row">
+                        <div class="input-name">
+                          <input type="checkbox" class="log-display-check" id="log-display-error" checked/>
+                        </div><span class="input-unit">Error</span>
+                      </div>
+                      <div class="input-row">
+                        <div class="input-name">
+                          <input type="checkbox" class="log-display-check" id="log-display-warning" checked/>
+                        </div><span class="input-unit">Warning</span>
+                      </div>
+                      <div class="input-row">
+                        <div class="input-name">
+                          <input type="checkbox" class="log-display-check" id="log-display-info" checked/>
+                        </div><span class="input-unit">Info</span>
+                      </div>
+                      <div class="input-row">
+                        <div class="input-name">
+                          <input type="checkbox" class="log-display-check" id="log-display-config"/>
+                        </div><span class="input-unit">Configs.</span>
+                      </div>
+                      <div class="input-row">
+                        <div class="input-name">
+                          <input type="checkbox" class="log-display-check" id="log-display-cmd"/>
+                        </div><span class="input-unit">Commands</span>
+                      </div>
+                    </div>
+
+                    <a href="/logdump/system">Get full log</a>
+
+                  </span>
+                  <div class="input-units" id="session-log-table-container">
+                    <table id="session-log-table"></table>
+                  </div>
+                </div>
+                <div class="input-row">
+                  <span class="input-name">Command Input</span
+                  ><!--Section for the command input block-->
+                  <div class="input-units">
+                    <button id="session-cmd-lock-toggle">
+                      <i class="fa fa-solid fa-lock-open"></i>
+                    </button>
+                    <input type="text" id="session-cmd-input" disabled />
+                    <button id="session-cmd-send" class="action-button">
+                      Execute
+                    </button>
+                    <button id="interrupt-send" style="width:30px;">
+                      <i class="fa fa-solid fa-bolt"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="input-row">
+                  <!--Showing the single command progress bar-->
+                  <span class="input-name">Command progress</span>
+                  <div class="input-units">
+                    <div id="command-progress" class="progress-bar-container" style="width:80%;">
+                      <div id="command-progress-display" style="width:100%;"></div>
+                    </div>
+                    <div id="command-progress-desc"></div>
                   </div>
                 </div>
               </div>
-              <div class="input-row">{{ session_progress() }}</div>
-              <div class="input-row">{{ command_progress() }}</div>
             </div>
           </div>
-          <div class="column">
-            <div>Command log:</div>
-            <div id="command-output-log"></div>
+        </div>
+      </div>
+
+      {{ user_action() }}
+
+      <div class="tab" id="tile-layout">
+        <div class="tab-title">
+          <span>Tileboard view</span>
+          <i class="fa fa=fa-angle-left"></i>
+        </div>
+        <div class="tab-content">
+          <div class="column-container">
+            <div class="column" id="tileboard-view">
+              <div class="det-progress-legend">
+                <div class="left-limit">0%</div>
+                <div class="middle-limit">50%</div>
+                <div class="right-limit">100%</div>
+              </div>
+              <svg class="tilegrid" width="600" height="550">
+                <g id="tile-layout-common-svg"></g>
+                <g id="tile-layout-svg"></g>
+                <g id="tile-layout-gantry-svg"></g>
+              </svg>
+            </div>
+
+            <div class="column" id="table-view"></div>
+
+            <div class="column" id="detector-view">
+              <div id="single-det-summary"></div>
+              <div id="det-plot-and-figure"></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-
-    <div class="tab" id="tile-layout">
-      <div class="tab-title">
-        <span>Tileboard view</span>
-        <i class="fa fa=fa-angle-left"></i>
-      </div>
-      <div class="tab-content">
-        <div class="column-container">
-          <div class="column" id="tileboard-view">
-            <div class="det-progress-legend">
-              <div class="left-limit">0%</div>
-              <div class="middle-limit">50%</div>
-              <div class="right-limit">100%</div>
-            </div>
-            <svg class="tilegrid" width="600" height="550">
-              <g id="tile-layout-common-svg"></g>
-              <g id="tile-layout-svg"></g>
-              <g id="tile-layout-gantry-svg"></g>
-            </svg>
-          </div>
-
-          <div class="column" id="table-view">
-          </div>
-
-          <div class="column" id="detector-view">
-            <div id="single-det-summary"></div>
-            <div id="det-plot-and-figure"></div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    {{terminal_control_tab()}}
-
-  </div>
-
-
-</body>
-
+  </body>
 </html>

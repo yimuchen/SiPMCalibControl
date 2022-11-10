@@ -251,7 +251,7 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
       self.printerr(f"""
                     Lumi fit failed to converge, check output stored in file
                     {self.savefile.name} for collected values""")
-      self.move_gantry(args.x, args.y, args.scanz, False)
+      self.move_gantry(args.x, args.y, args.scanz)
       raise err
 
     def meas_str(v, u):
@@ -286,7 +286,7 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
     ## Sending gantry to position
     if (fitval[1] > 0 and fitval[1] < self.gcoder.max_x() and fitval[2] > 0
         and fitval[2] < self.gcoder.max_y()):
-      self.move_gantry(fitval[1], fitval[2], args.scanz, True)
+      self.move_gantry(fitval[1], fitval[2], args.scanz)
     else:
       self.printwarn("""Fit position is out of gantry bounds, the gantry will not
       attempt to move there""")
@@ -342,7 +342,7 @@ class zscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.readoutcmd,
     for z, power in self.start_pbar(
         [(z, p) for z in args.zlist for p in args.power]):
       self.check_handle()
-      self.move_gantry(args.x, args.y, z, False)
+      self.move_gantry(args.x, args.y, z)
       self.gpio.pwm(0, power, 1e5)  # Maximum PWM frequency
 
       lumival = 0
@@ -414,7 +414,7 @@ class lowlightcollect(cmdbase.singlexycmd, cmdbase.readoutcmd,
     the readout command multiple times with no averaging and write to a file in
     standard format. Progress will be printed for every 1000 data collections.
     """
-    self.move_gantry(args.x, args.y, args.z, False)
+    self.move_gantry(args.x, args.y, args.z)
     self.gpio.pwm(0, args.power, 1e5)
     for _ in self.start_pbar(range(args.nparts)):
       self.check_handle()

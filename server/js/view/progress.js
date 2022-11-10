@@ -91,7 +91,7 @@ function progress_update_table(progress) {
       const progress_code = progress[tag][detid];
       $(`#table-${detid}-${tag}`).css(
         'background-color',
-        progress_color(progress_code)
+        progress_color(progress_code),
       );
     }
   }
@@ -107,7 +107,7 @@ function make_table_html() {
   let header_row_dom = dom('tr', {}, [dom('th', {})]);
   all_progress.forEach((tag) => {
     header_row_dom.append(
-      dom('th', {}, dom('span', {}, `${process_full_name(tag)}`))
+      dom('th', {}, dom('span', {}, `${process_full_name(tag)}`)),
     );
   });
   table_dom.append(header_row_dom);
@@ -174,30 +174,8 @@ function progress_update_det_summary(progress) {
       const lighten = (200.0 * (total - comp)) / total;
       $(`#tile-layout-${detid}`).css(
         'fill',
-        hex_lumi_shift(base_color, lighten)
+        hex_lumi_shift(base_color, lighten),
       );
     }
-  }
-}
-
-/**
- * Updating the command progress bar.
- */
-function progress_update_cmd(cmd_progress) {
-  const complete = cmd_progress[0];
-  const total = cmd_progress[1];
-  const percent = (100.0 * complete) / total;
-  $('#command-progress')
-    .children('.progress-complete')
-    .css('width', `${percent}%`);
-  if (total < 0) {
-    // If error occurred for the command
-    $('#command-progress')
-      .children('.progress-complete')
-      .css('background-color', progress_color(CMD_ERROR));
-  } else {
-    $('#command-progress')
-      .children('.progress-complete')
-      .css('background-color', progress_color(CMD_COMPLETE));
   }
 }

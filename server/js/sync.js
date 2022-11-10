@@ -1,9 +1,10 @@
 /**
  * sync.js
  *
- * Javascript function for handling the sync signals sent out by the main
+ * Javascript function for handling the signals sent out by the main
  * calibration session.
  */
+
 
 function request_sync(msg) {
   socketio.emit('resend', msg);
@@ -157,65 +158,4 @@ function run_progress_update() {
  */
 function sync_cmd_progress(msg) {
   progress_update_cmd(msg);
-}
-
-/**
- * Additional parsing required for passing data. This is required as certain
- * key-strokes requires additional translation into a python friendly format.
- * (Notice that the python backend will not attempt to emulate the entire command
- * line session, keys like tab, history crawling will not be available)
- */
-function parse_terminal_keystroke(key) {
-  const TERMINAL_PARSE_DEBUG = false; // Flag for debugging if needed.
-
-  // Early exit if terminal is locked
-  if (session.terminal_lock) {
-    return;
-  }
-
-  // Generating the helper string to the console to help debug console inputs
-  if (TERMINAL_PARSE_DEBUG) {
-    str = '';
-    for (i = 0; i < key.length; ++i) {
-      str += ' ' + key.charCodeAt(i).toString();
-    }
-    console.log('combination:', str);
-  }
-
-  const code = key.charCodeAt(0); // parsing on first character
-  switch (code) {
-    case 127: // backspace doesn't trigger backspace character
-      socketio.emit('xterminput', { input: '\b' });
-      break;
-    default:
-      socketio.emit('xterminput', { input: key });
-      break;
-  }
-}
-
-/**
- * Displaying the output received from server side.
- */
-function parse_terminal_response(data) {
-  // Parsing output is relatively simple
-  session.terminal.write(data.output);
-}
-
-/**
- * Terminal locking toggle. As there are no other elements regarding lock
- * toggling. We are just going to defined this function there.
- */
-function check_terminal_lock() {
-  if (session.terminal_lock) {
-    // unlocking the terminal
-    session.terminal_lock = false;
-    $('#terminal_status').html('TERMINAL IS UNLOCKED');
-    $('#terminal_lock').html('LOCK');
-    // Getting the prompt in case it wasn't generated.
-    parse_terminal_keystroke(String.fromCharCode(1));
-  } else {
-    terminal_lock = true; // locking the terminal
-    $('#terminal_status').html('TERMINAL IS LOCKED');
-    $('#terminal_lock').html('UNLOCK');
-  }
 }

@@ -5,31 +5,72 @@ sheets #}
   href="{{url_for('static', filename='external/fontawesome-free/css/all.min.css')}}"
   rel="stylesheet"
 />
-<link
-  href="{{url_for('static', filename='external/xterm/css/xterm.css')}}"
-  rel="stylesheet"
-/>
 
-{# External javascript libraries #}
-<script src="{{url_for('static', filename='external/jquery/dist/jquery.min.js')}}"></script>
-<script src="{{url_for('static', filename='external/socket.io-client/dist/socket.io.min.js')}}"></script>
-<script src="{{url_for('static', filename='external/plotly.js/dist/plotly.min.js')}}"></script>
-<script src="{{url_for('static', filename='external/xterm/lib/xterm.js')}}"></script>
+{# External JavaScript libraries #}
+<script
+  language="JavaScript"
+  type="text/javascript"
+  src="{{url_for('static', filename='external/js/jquery-3.6.1.min.js')}}"
+></script>
+<script
+  language="JavaScript"
+  type="text/javascript"
+  src="{{url_for('static', filename='external/js/plotly-1.58.4.min.js')}}"
+></script>
+<script
+  language="JavaScript"
+  type="text/javascript"
+  src="{{url_for('static', filename='external/js/socket.io-4.5.3.js')}}"
+  crossorigin="anonymous"
+></script>
 
 {#Our own CSS stylesheet #}
-<link rel="stylesheet" href="{{url_for('static',filename='style.css')}}" />
+<link rel="stylesheet" href="{{url_for('static', filename='style.css')}}" />
 
-{# Common javascript elements #}
-<script src="{{url_for('static',filename='js/action.js')}}"></script>
-<script src="{{url_for('static',filename='js/global.js')}}"></script>
-<script src="{{url_for('static',filename='js/request.js')}}"></script>
-<script src="{{url_for('static',filename='js/sync.js')}}"></script>
-<script src="{{url_for('static',filename='js/sync.js')}}"></script>
-<script src="{{url_for('static',filename='js/view/layout.js')}}"></script>
-<script src="{{url_for('static',filename='js/view/monitor.js')}}"></script>
-<script src="{{url_for('static',filename='js/view/plots.js')}}"></script>
-<script src="{{url_for('static',filename='js/view/progress.js')}}"></script>
-<script src="{{url_for('static',filename='js/view/settings.js')}}"></script>
-<script src="{{url_for('static',filename='js/view/tileboard.js')}}"></script>
+{# Common JavaScript elements. #}
+
+<!--Do not change type from "text/javascript"! Otherwise, stricter typing and
+module dependencies will be enforced.-->
+
+<script
+  type="text/javascript"
+  src="{{url_for('static',filename='js/session.js')}}"
+></script>
+<script
+  type="text/javascript"
+  src="{{url_for('static',filename='js/action.js')}}"
+></script>
+<script
+  type="text/javascript"
+  src="{{url_for('static',filename='js/request.js')}}"
+></script>
+<script
+  type="text/javascript"
+  src="{{url_for('static',filename='js/synchronize.js')}}"
+></script>
+<script
+  type="text/javascript"
+  src="{{url_for('static',filename='js/view/layout.js')}}"
+></script>
+<script
+  type="text/javascript"
+  src="{{url_for('static',filename='js/view/plots.js')}}"
+></script>
+<script
+  type="text/javascript"
+  src="{{url_for('static',filename='js/view/progress.js')}}"
+></script>
+<script
+  type="text/javascript"
+  src="{{url_for('static',filename='js/view/settings.js')}}"
+></script>
+<script
+  type="text/javascript"
+  src="{{url_for('static',filename='js/view/tileboard.js')}}"
+></script>
+<script
+  type="text/javascript"
+  src="{{url_for('static',filename='js/view/controls.js')}}"
+></script>
 
 {% endmacro %}

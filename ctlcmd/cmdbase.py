@@ -67,7 +67,6 @@ import cmod.visual as visual
 import cmod.pico as pico
 import cmod.drs as drs
 import cmod.fmt as fmt
-import cmod.sighandle as sig
 import numpy as np
 import cmd
 import sys
@@ -83,6 +82,61 @@ import select
 import enum
 import logging
 import tqdm
+import signal
+
+
+class controlsignalhandle(object):
+  """
+  Simple class for handling signal termination signals emitted by user input
+  (typically CTL+C). In this case, store that the termination signal has been
+  requested, and do nothing else, the program should handle how to gracefully
+  terminate the current running progress. Solution is taken from:
+  https://stackoverflow.com/questions/18499497/how-to-process-sigterm-signal-gracefully
+  """
+  """
+  Storing the original in-built functions defined by python used to handle the
+  interrupt and terminate signals.
+  """
+  ORIGINAL_SIGINT = signal.getsignal(signal.SIGINT)
+  ORIGINAL_SIGTERM = signal.getsignal(signal.SIGTERM)
+
+  def __init__(self):
+    """
+    Here we only provide a boolean flag to track whether an signal has been
+    received during the run.
+    """
+    self.terminate = False
+    self.release()
+    ## SIG_INT is Ctl+C
+
+  def receive_term(self, signum, frame):
+    """When receiving a signal, do nothing other than changing the flag."""
+    self.terminate = True
+
+  def reset(self):
+    """
+    Setting the signal flag to a clean start, and set the function to handle the signal
+    to the internal method.
+    """
+    self.terminate = False
+    try:
+      signal.signal(signal.SIGINT, self.receive_term)
+      signal.signal(signal.SIGTERM, self.receive_term)
+    except:
+      pass
+
+  def release(self):
+    """
+    Setting the signal flag to a clean start, also release the signal handling
+    function to that used by the python.
+    """
+    self.terminate = False
+    try:
+      ## Disabling signal handling by releasing the found function
+      signal.signal(signal.SIGINT, SigHandle.ORIGINAL_SIGINT)
+      signal.signal(signal.SIGTERM, SigHandle.ORIGINAL_SIGTERM)
+    except:
+      pass
 
 
 class controlterm(cmd.Cmd):
@@ -150,8 +204,7 @@ class controlterm(cmd.Cmd):
     self.drs = drs.DRS.instance()
 
     # Session control
-    self.sighandle = sig.SigHandle()
-    self.sighandle.release()
+    self.sighandle = controlsignalhandle()
 
     # Creating logging instances for command line parsing
     self.cmdlog = logging.getLogger(self.logname)
@@ -172,13 +225,6 @@ class controlterm(cmd.Cmd):
     import readline
     readline.set_completer_delims(' \t\n`~!@#$%^&*()=+[{]}\\|;:\'",<>?')
     readline.set_history_length(1000)
-
-    ## Additional members for command status logging
-    self.last_cmd = ''  # string for containing the command that was last called
-    self.last_cmd_status = None  # Execution status of the command
-    self.last_cmd_start = None  # Start time of the last command
-    self.last_cmd_stop = None  # End time of the last command
-    self.opfile = ''
 
     self.init_log_format()
 
@@ -202,7 +248,7 @@ class controlterm(cmd.Cmd):
     well as help diagnose which function command generated which error message
     in log dumps.
     """
-    self.cmdlog.log(logging.CMD_HIST, line, 'started')
+    self.cmdlog.log(logging.CMD_HIST, line, 'start')
     return line  # Required for cmd execution.
 
   def postcmd(self, stop, line):
@@ -265,6 +311,31 @@ class controlterm(cmd.Cmd):
 
   def devlog(self, devname):
     return logging.getLogger(self.logname + '.' + devname)
+
+  def prompt_input(self, device, message, allowed=None) -> str:
+    """
+    @brief Prompting for a user message, suspend the session until the input is
+    placed.
+
+    @details If the allowed entry is not None, then the input will need to be
+    included in the allowed value, or the prompt will be raised again with an
+    error message. Notice that the prompt message is displayed via the python
+    `input` method an will not be displayed in the log. However, we will place
+    the input value into the log. This is elevated to be a member function in
+    the controlterm object, since we forsee this being overloaded in a GUI
+    session implementation.
+    """
+    while True:
+      if self.sighandle.terminate:
+        raise InterruptedError('TERMINATION SIGNAL')
+      input_val = input(fmt.wrapped_string(message, 80))
+      # Default behavior for no inputs.
+      if allowed is not None and input_val not in allowed:
+        self.devlog(device).error(
+            f'Illegal value: "{input_val}", valid inputs: {allowed}')
+      else:
+        self.cmdlog.log(fmt.logging.CMD_HIST, '', 'user_input', input_val)
+        return input_val
 
 
 class controlcmd(object):
@@ -629,7 +700,7 @@ class controlcmd(object):
         self.pbar.close()
       raise InterruptedError('TERMINATION SIGNAL')
 
-  def move_gantry(self, x, y, z, verbose):
+  def move_gantry(self, x, y, z):
     """
     @brief Wrapper for gantry motion to be called by children method.
 
@@ -642,7 +713,7 @@ class controlcmd(object):
     try:
       # Try to move the gantry. Even if it fails there will be fail safes
       # in other classes
-      self.gcoder.moveto(x, y, z, verbose)
+      self.gcoder.moveto(x, y, z)
       while self.gcoder.in_motion(x, y, z):
         self.check_handle()  # Allowing for interuption
         time.sleep(0.01)  ## Updating position in 0.01 second increments
@@ -657,22 +728,8 @@ class controlcmd(object):
       pass
 
   def prompt_input(self, message, allowed=None) -> str:
-    """
-    Prompting for a user message, suspend the session until the input is placed.
-    If the allowed entry is not None, then the input will need to be included in
-    the allowed value, or the prompt will be raised again with an error message.
-    Notice that the prompt message is displayed via the python `input` method an
-    will not be displayed in the log. However, we will place the input value
-    into the log.
-    """
-    while True:
-      input_val = input(fmt.wrapped_string(message, 80))
-      # Default behavior for no inputs.
-      if allowed is not None and input_val not in allowed:
-        self.printerr(f'Illegal value: "{input_val}", valid inputs: {allowed}')
-      else:
-        self.cmdlog.log(fmt.logging.CMD_HIST, '', 'user_input', input_val)
-        return input_val
+    """Thin wrapper for prompt input of the main controlterm method"""
+    return self.cmd.prompt_input(self.classname, message, allowed)
 
   def prompt_yn(self, question, default=None) -> bool:
     """

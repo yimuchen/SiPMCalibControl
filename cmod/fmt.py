@@ -31,6 +31,7 @@ logging.HW_DEBUG = 15  # For interactive hardware debugging dumps.
 logging.INT_INFO = 14  # For interactive message displays (like action prompts)
 logging.DEBUG = 10  # For generic debugging message <- Default screen logging level.
 logging.CMD_HIST = 5  # The history of the command line interface
+logging.MONITOR = 4 # For continuous monitoring stream
 logging.NOTSET = 0  # <- Default memory log level
 
 # Getting all string and integer representation of logging levels available.
@@ -299,9 +300,13 @@ class CmdStreamFormatter(logging.Formatter):
 ### Miscellaneous items
 class ArgumentParser(argparse.ArgumentParser):
   """
-  Very thin wrapper for over-writing the error behavior of the argument parse
-  class. Changing the SystemExit error (very hard error that must be caught) to
-  a ValueError.
+  @brief Thin wrapper for overwriting the 'error' method behavior
+
+  @details Changing the SystemExit error to a ValueError. As the SystemExit is a
+  very hard error that needs to be explicitly caught (not caught by simply
+  catching 'Exception'), and only contains the exit code not the original error
+  message. We also add a prefix to help indicate that this is an error that was
+  raise from the ArgumentParser's parsing methods.
   """
   __prefix__ = '[parser_error]'
 

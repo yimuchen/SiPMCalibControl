@@ -212,3 +212,197 @@ function plot_zscan(div, data) {
 function plot_tscan(div, data) {
   console.log('plotting tscan', data);
 }
+
+/**
+ * Updating the uptime display container:
+ */
+function status_update_time() {
+  const time = parseInt(session.monitor.time[session.monitor.time.length - 1]);
+  const time_hour = parseInt(time / 3600)
+    .toString()
+    .padStart(2, 0);
+  const time_min = parseInt((time / 60) % 60)
+    .toString()
+    .padStart(2, 0);
+  const time_sec = parseInt(time % 60)
+    .toString()
+    .padStart(2, 0);
+  const state_str =
+    session.state == STATE_IDLE
+      ? `IDLE`
+      : session.state == STATE_EXEC_CMD
+      ? `EXECUTING COMMAND`
+      : session.state == STATE_RUN_PROCESS
+      ? `PROCESSING`
+      : session.state == STATE_WAIT_USER
+      ? `WAITING UESR ACTION`
+      : ``;
+  $(`#up-time`).html(`Uptime: ${time_hour}:${time_min}:${time_sec}`);
+  $('#up-time-since').html(
+    `Session is: ${state_str} </br>
+     Since: ${session.monitor.start}`,
+  );
+}
+
+/**
+ * Plotting the the monitoring data.
+ *
+ * Styling information is placed at the bottom
+ * of the file to reduce verbosity.
+ */
+function plot_monitor_data() {
+  let time = [];
+  let sipm_temp = [];
+  let pulser_temp = [];
+  let pulser_volt = [];
+
+  for (const entry of session.monitor_log) {
+    time.push(new Date(Math.round(entry.created * 1000)));
+    pulser_temp.push(entry.pulser_temp);
+    sipm_temp.push(entry.sipm_temp);
+    pulser_volt.push(entry.pulser_lv);
+  }
+
+  const temperature_data = [
+    {
+      x: time,
+      y: pulser_temp,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Pulser',
+    },
+    {
+      x: time,
+      y: sipm_temp,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Tileboard',
+    },
+  ];
+  const temperature_plot_layout = {
+    autosize: true,
+    xaxis: {
+      title: 'Time',
+      nticks: 4,
+    },
+    yaxis: {
+      title: 'Temperature [°C]',
+      range: [
+        Math.min(15, Math.min(...sipm_temp) - 2, Math.min(...pulser_temp) - 2),
+        Math.max(24, Math.max(...sipm_temp) + 2, Math.max(...pulser_temp) + 2),
+      ],
+    },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    margin: {
+      l: '40',
+      r: '5',
+      b: '40',
+      t: '10',
+      pad: 0,
+    },
+    legend: {
+      x: 0.5,
+      y: 0.9,
+    },
+  };
+
+  const voltage_data = [
+    {
+      x: time,
+      y: pulser_volt,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Pulser board Bias',
+      showlegend: true,
+    },
+  ];
+
+  const voltage_plot_layout = {
+    autosize: true,
+    xaxis: {
+      title: 'Time',
+      nticks: 4,
+    },
+    yaxis: {
+      title: 'Voltage [mV]',
+      range: [0, 5000],
+    },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    margin: {
+      l: '60',
+      r: '5',
+      b: '40',
+      t: '10',
+      pad: 0,
+    },
+    legend: {
+      x: 0.5,
+      y: 0.9,
+    },
+  };
+
+  const layout_default_config = {
+    displayModeBar: false,
+    responsive: true,
+  };
+
+  if ($(`#temperature-plot`).length != 0) {
+    Plotly.newPlot(
+      'temperature-plot',
+      temperature_data,
+      temperature_plot_layout,
+      layout_default_config,
+    );
+  } else {
+    console.log('temperature-plot DIV does not exist!');
+  }
+
+  if ($('#voltage-plot').length != 0) {
+    Plotly.newPlot(
+      'voltage-plot',
+      voltage_data,
+      voltage_plot_layout,
+      layout_default_config,
+    );
+  } else {
+    console.log('voltage-plot DIV does nto exist!');
+  }
+}
+
+/**
+ * Two parts needs to be updated regarding the values. One is a text based
+ * display of the coordinates values in the monitor tab. The other is the
+ * graphical elements in the tile-board view.
+ */
+function plot_coordinate_data() {
+  if (session.monitor_log.length == 0) {
+    return;
+  } // Early exit for empty log entry.
+  const last = session.monitor_log.length - 1;
+  const x = session.monitor_log[last].gantry_coord[0];
+  const y = session.monitor_log[last].gantry_coord[1];
+  const z = session.monitor_log[last].gantry_coord[2];
+  $(`#gantry-coordinates`).html(
+    `Gantry coordinates: (${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)})`,
+  );
+
+  $('#tile-layout-gantry-svg').html('');
+  $('#tile-layout-gantry-svg').append(
+    svgdom('polyline', {
+      points: `${x + 20},${510 - y} ${x + 25},${525 - y}  ${x + 30},${510 - y}`,
+      stroke: 'red',
+      fill: 'red',
+      'stroke-width': '1px',
+    }),
+  );
+  $('#tile-layout-gantry-svg').append(
+    svgdom('polyline', {
+      points: `548,${520 - z} 538,${525 - z} 548,${530 - z}`,
+      stroke: 'red',
+      fill: 'red',
+      'stroke-width': '1px',
+    }),
+  );
+}

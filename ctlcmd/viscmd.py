@@ -147,7 +147,7 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
     ## Running over mesh.
     for xval, yval in self.start_pbar(zip(args.x, args.y)):
       self.check_handle()
-      self.move_gantry(xval, yval, args.scanz, False)
+      self.move_gantry(xval, yval, args.scanz)
       time.sleep(args.vwait)
 
       center = self.visual.get_latest()
@@ -196,7 +196,7 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
                             [[fitx[0], fitx[1]], [fity[0], fity[1]]])
 
     ## Moving back to center
-    self.move_gantry(args.x, args.y, args.scanz, False)
+    self.move_gantry(args.x, args.y, args.scanz)
 
   @staticmethod
   def model(xydata, a, b, c):
@@ -260,7 +260,7 @@ class visualcenterdet(cmdbase.singlexycmd, visualmeta):
     artifacts comes and goes, we will try up to 8 times to find the detector
     element in the camera.
     """
-    self.move_gantry(args.x, args.y, args.scanz, False)
+    self.move_gantry(args.x, args.y, args.scanz)
     center = None
 
     for _ in range(16):
@@ -287,7 +287,7 @@ class visualcenterdet(cmdbase.singlexycmd, visualmeta):
       ## Early exit if difference from center is small
       if np.linalg.norm(motionxy) < 0.1: break
       self.move_gantry(self.gcoder.opx + motionxy[0],
-                       self.gcoder.opy + motionxy[1], self.gcoder.opz, False)
+                       self.gcoder.opy + motionxy[1], self.gcoder.opz)
       time.sleep(args.vwait)  ## Waiting for the gantry to stop moving
 
     center = self.visual.get_latest()
@@ -363,7 +363,7 @@ class visualmaxsharp(cmdbase.singlexycmd, cmdbase.zscancmd, visualmeta):
 
     for z in args.zlist:
       self.check_handle()
-      self.move_gantry(args.x, args.y, z, False)
+      self.move_gantry(args.x, args.y, z)
       time.sleep(args.vwait)
 
       center = self.visual.get_latest()
@@ -393,7 +393,7 @@ class visualmaxsharp(cmdbase.singlexycmd, cmdbase.zscancmd, visualmeta):
                  *model.bounds[0]], [np.max(args.zlist), *model.bounds[1]]),
         maxfev=int(1e4))
     self.printmsg(f"Target z position: {fit[0]:.2f}mm (actual: {fit[0]:.1f}mm)")
-    self.move_gantry(args.x, args.y, fit[0], False)
+    self.move_gantry(args.x, args.y, fit[0])
 
   """
   Models for running the sharpness fit profile, defined as static methods. Notice
@@ -472,7 +472,7 @@ class visualzscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.savefilecmd,
     for z in self.start_pbar(args.zlist):
       # Checking termination signal
       self.check_handle()
-      self.move_gantry(args.x, args.y, z, False)
+      self.move_gantry(args.x, args.y, z)
       time.sleep(args.wait)
 
       center = self.visual.get_latest()

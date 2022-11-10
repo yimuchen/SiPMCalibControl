@@ -30,7 +30,7 @@ class exit(cmdbase.controlcmd):
                       default=False):
       self.printmsg("Sending gantry home...")
       # Fast motion to somewhere close to home
-      self.move_gantry(1, 1, 1, False)
+      self.move_gantry(1, 1, 1)
       # Activate send home
       try:
         self.gcoder.sendhome(True, True, True)
@@ -128,7 +128,10 @@ class set(cmdbase.controlcmd):
           self.devlog('GCoder').info(line)
       except RuntimeError as err:
         self.devlog('GCoder').error(str(err))
-        self.printwarn('Failed to setup printer, skipping over settings')
+        self.printwarn(
+            """Failed to setup printer, skipping over settings and setting
+            coordinates to (0,0,0)""")
+        self.move_gantry(0, 0, 0)
 
   def set_picodevice(self, args):
     """Setting up the pico device, Skipping if dummy path detected """
@@ -433,7 +436,8 @@ class wait(cmdbase.controlcmd):
         raise ValueError('Pause time must be positive!')
     else:  # Pausing by message:
       args.userkey = args.message[0]
-      args.message = ' '.join(args.message[1:])
+      args.message = ' '.join(
+          args.message[1:]) + f'<br>Enter [{args.userkey}] to continue: '
     return args
 
   def run(self, args):
@@ -461,7 +465,7 @@ class wait(cmdbase.controlcmd):
       self.pbar.update(self.pbar.total - self.pbar.n)
 
   def wait_user_input(self, args):
-    pass
+    self.prompt_input(args.message, allowed=[args.userkey])
 
 
 class runfile(cmdbase.controlcmd):

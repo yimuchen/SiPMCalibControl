@@ -14,8 +14,10 @@ import traceback
 import re
 
 if __name__ == '__main__':
-  logging.root.setLevel(
-      logging.NOTSET)  # Setting the base logger to keep everything
+  # Setting the base logger to keep everything
+  logging.root.setLevel(logging.NOTSET)
+
+  # Declaring the list of commands that can be used
   cmd = cmdbase.controlterm([
       motioncmd.rungcode,  #
       motioncmd.moveto,  #
@@ -98,9 +100,10 @@ if __name__ == '__main__':
     cmd.gpio.init()
   except RuntimeError as err:
     logger.error(str(err))
-    logger.warning("""There was error in the setup process, program will
-                   continue but will most likely misbehave! Use at your own
-                   risk!""")
+    logger.warning(
+        fmt.oneline_string("""
+          There was error in the setup process, program will continue but will
+          most likely misbehave! Use at your own risk!"""))
 
   cmd.cmdloop()
   del cmd  # This object requires explicit closing!
