@@ -83,7 +83,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>cmod</b></li><li class="navelem"><a class="el" href="namespacecmod_1_1fmt.html">fmt</a></li><li class="navelem"><a class="el" href="classcmod_1_1fmt_1_1FIFOHandler.html">FIFOHandler</a></li>  </ul>
+<li class="navelem"><b>cmod</b></li><li class="navelem"><b>fmt</b></li><li class="navelem"><a class="el" href="classcmod_1_1fmt_1_1FIFOHandler.html">FIFOHandler</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -92,11 +92,11 @@ $(function() {
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classcmod_1_1fmt_1_1FIFOHandler-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">cmod.fmt.FIFOHandler Class Reference</div></div>
+  <div class="headertitle"><div class="title">cmod.fmt.FIFOHandler Class Reference<div class="ingroups"><a class="el" href="group__hardware.html">Hardware Interface</a> &raquo; <a class="el" href="group__Logging.html">Logging</a></div></div></div>
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p >As we don't expect to flush the log unless explicitly requested by the user, here we provide a class that stores the logging records in a first-in-first-out list, so that logging information can be retrieve for later use. The user should specify a maximum capacity. </p>
+<div class="textblock"><p >As the action of flushing/clearing the log information would only be performed at the explicit request of the operator, here we provide a class that stores the logging records in a first-in-first-out list, so that logging information can be retrieve for later use. The user should specify a suitable maximum capacity, that ensures that memory usage of the record list does not get out-of-hand during operations, while still retaining all useful information between log clearing (typically performed when loading a new tileboard into the system). </p>
 </div><div class="dynheader">
 Inheritance diagram for cmod.fmt.FIFOHandler:</div>
 <div class="dyncontent">
@@ -106,37 +106,37 @@ Inheritance diagram for cmod.fmt.FIFOHandler:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ad7b87ba7c71e1e5a6a0307fa4780d666"><td class="memItemLeft" align="right" valign="top"><a id="ad7b87ba7c71e1e5a6a0307fa4780d666" name="ad7b87ba7c71e1e5a6a0307fa4780d666"></a>
-def&#160;</td><td class="memItemRight" valign="bottom"><b>__init__</b> (self, capacity, level=logging.NOTSET)</td></tr>
-<tr class="memdesc:ad7b87ba7c71e1e5a6a0307fa4780d666"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creating the FIFOCache provided in cachetools package. <br /></td></tr>
-<tr class="separator:ad7b87ba7c71e1e5a6a0307fa4780d666"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e9bc45206e3d710efe5a5829e7c0dde"><td class="memItemLeft" align="right" valign="top"><a id="a3e9bc45206e3d710efe5a5829e7c0dde" name="a3e9bc45206e3d710efe5a5829e7c0dde"></a>
+<tr class="memitem:gad7b87ba7c71e1e5a6a0307fa4780d666"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Logging.html#gad7b87ba7c71e1e5a6a0307fa4780d666">__init__</a> (self, capacity, level=logging.NOTSET)</td></tr>
+<tr class="memdesc:gad7b87ba7c71e1e5a6a0307fa4780d666"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creating the FIFO object using the python deque module.  <a href="group__Logging.html#gad7b87ba7c71e1e5a6a0307fa4780d666">More...</a><br /></td></tr>
+<tr class="separator:gad7b87ba7c71e1e5a6a0307fa4780d666"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3e9bc45206e3d710efe5a5829e7c0dde"><td class="memItemLeft" align="right" valign="top">
 def&#160;</td><td class="memItemRight" valign="bottom"><b>emit</b> (self, record)</td></tr>
-<tr class="separator:a3e9bc45206e3d710efe5a5829e7c0dde"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab2e8cab405fa7d74637f8023d8340baa"><td class="memItemLeft" align="right" valign="top"><a id="ab2e8cab405fa7d74637f8023d8340baa" name="ab2e8cab405fa7d74637f8023d8340baa"></a>
-def&#160;</td><td class="memItemRight" valign="bottom"><b>record_to_dict</b> (self, record)</td></tr>
-<tr class="memdesc:ab2e8cab405fa7d74637f8023d8340baa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transforming the a logging entry to a dictionary to be used for further processing. <br /></td></tr>
-<tr class="separator:ab2e8cab405fa7d74637f8023d8340baa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af8bfee2a66890964105043d948099438"><td class="memItemLeft" align="right" valign="top"><a id="af8bfee2a66890964105043d948099438" name="af8bfee2a66890964105043d948099438"></a>
-def&#160;</td><td class="memItemRight" valign="bottom"><b>dump_lines</b> (self, file_obj, list[int] exclude)</td></tr>
-<tr class="memdesc:af8bfee2a66890964105043d948099438"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dumping the the record entries to a file in line-based format. <br /></td></tr>
-<tr class="separator:af8bfee2a66890964105043d948099438"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0a644d21fec15f2f8a6643689755b0a"><td class="memItemLeft" align="right" valign="top"><a id="aa0a644d21fec15f2f8a6643689755b0a" name="aa0a644d21fec15f2f8a6643689755b0a"></a>
-def&#160;</td><td class="memItemRight" valign="bottom"><b>dump_json</b> (self, file_obj, list[int] exclude)</td></tr>
-<tr class="memdesc:aa0a644d21fec15f2f8a6643689755b0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dumping the record entries to a json file. <br /></td></tr>
-<tr class="separator:aa0a644d21fec15f2f8a6643689755b0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memdesc:ga3e9bc45206e3d710efe5a5829e7c0dde"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main logging.Handler method from the python module that needs overloading. <br /></td></tr>
+<tr class="separator:ga3e9bc45206e3d710efe5a5829e7c0dde"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab2e8cab405fa7d74637f8023d8340baa"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Logging.html#gab2e8cab405fa7d74637f8023d8340baa">record_to_dict</a> (self, record)</td></tr>
+<tr class="memdesc:gab2e8cab405fa7d74637f8023d8340baa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transforming a logging record to a python dictionary.  <a href="group__Logging.html#gab2e8cab405fa7d74637f8023d8340baa">More...</a><br /></td></tr>
+<tr class="separator:gab2e8cab405fa7d74637f8023d8340baa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac3bca3e0300a738f218bdcc84a5b7dde"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Logging.html#gac3bca3e0300a738f218bdcc84a5b7dde">record_to_line</a> (self, record)</td></tr>
+<tr class="memdesc:gac3bca3e0300a738f218bdcc84a5b7dde"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returning a record instance as a single line of text.  <a href="group__Logging.html#gac3bca3e0300a738f218bdcc84a5b7dde">More...</a><br /></td></tr>
+<tr class="separator:gac3bca3e0300a738f218bdcc84a5b7dde"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf8bfee2a66890964105043d948099438"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Logging.html#gaf8bfee2a66890964105043d948099438">dump_lines</a> (self, file_obj, list[int] exclude)</td></tr>
+<tr class="memdesc:gaf8bfee2a66890964105043d948099438"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write records to a file in line-based format.  <a href="group__Logging.html#gaf8bfee2a66890964105043d948099438">More...</a><br /></td></tr>
+<tr class="separator:gaf8bfee2a66890964105043d948099438"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa0a644d21fec15f2f8a6643689755b0a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Logging.html#gaa0a644d21fec15f2f8a6643689755b0a">dump_json</a> (self, file_obj, list[int] exclude)</td></tr>
+<tr class="memdesc:gaa0a644d21fec15f2f8a6643689755b0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write records to a file in json-based format.  <a href="group__Logging.html#gaa0a644d21fec15f2f8a6643689755b0a">More...</a><br /></td></tr>
+<tr class="separator:gaa0a644d21fec15f2f8a6643689755b0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a10e1c5d9c3ab9ba6b51a80f46a9fb984"><td class="memItemLeft" align="right" valign="top"><a id="a10e1c5d9c3ab9ba6b51a80f46a9fb984" name="a10e1c5d9c3ab9ba6b51a80f46a9fb984"></a>
+<tr class="memitem:ga10e1c5d9c3ab9ba6b51a80f46a9fb984"><td class="memItemLeft" align="right" valign="top">
 &#160;</td><td class="memItemRight" valign="bottom"><b>record_list</b></td></tr>
-<tr class="separator:a10e1c5d9c3ab9ba6b51a80f46a9fb984"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:ga10e1c5d9c3ab9ba6b51a80f46a9fb984"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
 Static Private Attributes</h2></td></tr>
-<tr class="memitem:aa2f3874b81e333983fb54565be7ae5be"><td class="memItemLeft" align="right" valign="top"><a id="aa2f3874b81e333983fb54565be7ae5be" name="aa2f3874b81e333983fb54565be7ae5be"></a>
+<tr class="memitem:gaa2f3874b81e333983fb54565be7ae5be"><td class="memItemLeft" align="right" valign="top">
 list&#160;</td><td class="memItemRight" valign="bottom"><b>_registered_extras_</b> = ['table']</td></tr>
-<tr class="separator:aa2f3874b81e333983fb54565be7ae5be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:gaa2f3874b81e333983fb54565be7ae5be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>/github/workspace/cmod/fmt.py</li>

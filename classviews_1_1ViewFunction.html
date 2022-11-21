@@ -102,16 +102,15 @@ Inheritance diagram for views.ViewFunction:</div>
  <div class="center">
   <img src="classviews_1_1ViewFunction.png" usemap="#views.ViewFunction_map" alt=""/>
   <map id="views.ViewFunction_map" name="views.ViewFunction_map">
-<area href="classviews_1_1data.html" alt="views.data" shape="rect" coords="145,112,280,136"/>
-<area href="classviews_1_1datafile.html" alt="views.datafile" shape="rect" coords="145,168,280,192"/>
-<area href="classviews_1_1device__settings.html" alt="views.device_settings" shape="rect" coords="145,224,280,248"/>
-<area href="classviews_1_1expert.html" title="This is the page containing the debugging GUI, mainly used for the fast data turn around and a simple..." alt="views.expert" shape="rect" coords="145,280,280,304"/>
-<area href="classviews_1_1geometry.html" alt="views.geometry" shape="rect" coords="145,336,280,360"/>
-<area href="classviews_1_1index.html" title="This is the main page the is to be rendered to the front user." alt="views.index" shape="rect" coords="145,392,280,416"/>
-<area href="classviews_1_1logdump.html" title="Returning the monitoring stream as a single json file." alt="views.logdump" shape="rect" coords="145,448,280,472"/>
-<area href="classviews_1_1playground.html" title="This URL is for testing display functions only." alt="views.playground" shape="rect" coords="145,504,280,528"/>
-<area href="classviews_1_1status.html" alt="views.status" shape="rect" coords="145,560,280,584"/>
-<area href="classviews_1_1visual.html" title="This is a pseudo URL, which responds with the current camera image stored in the session memory,..." alt="views.visual" shape="rect" coords="145,616,280,640"/>
+<area href="classviews_1_1databyfile.html" alt="views.databyfile" shape="rect" coords="145,112,280,136"/>
+<area href="classviews_1_1device__settings.html" alt="views.device_settings" shape="rect" coords="145,168,280,192"/>
+<area href="classviews_1_1expert.html" title="This is the page containing the debugging GUI, mainly used for the fast data turn around and a simple..." alt="views.expert" shape="rect" coords="145,224,280,248"/>
+<area href="classviews_1_1geometry.html" alt="views.geometry" shape="rect" coords="145,280,280,304"/>
+<area href="classviews_1_1index.html" title="This is the main page the is to be rendered to the front user." alt="views.index" shape="rect" coords="145,336,280,360"/>
+<area href="classviews_1_1logdump.html" title="Returning the monitoring stream as a single json file." alt="views.logdump" shape="rect" coords="145,392,280,416"/>
+<area href="classviews_1_1playground.html" title="This URL is for testing display functions only." alt="views.playground" shape="rect" coords="145,448,280,472"/>
+<area href="classviews_1_1status.html" alt="views.status" shape="rect" coords="145,504,280,528"/>
+<area href="classviews_1_1visual.html" title="This is a pseudo URL, which responds with the current camera image stored in the session memory,..." alt="views.visual" shape="rect" coords="145,560,280,584"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -121,9 +120,12 @@ Public Member Functions</h2></td></tr>
 def&#160;</td><td class="memItemRight" valign="bottom"><b>__init__</b> (self, session)</td></tr>
 <tr class="memdesc:a934e0b66cd5d85395c669dea74d738f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Saving a reference to them main session instance. <br /></td></tr>
 <tr class="separator:a934e0b66cd5d85395c669dea74d738f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a60d500d84327c486b1b5a4f36d72f008"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classviews_1_1ViewFunction.html#a60d500d84327c486b1b5a4f36d72f008">__call__</a> (self)</td></tr>
-<tr class="memdesc:a60d500d84327c486b1b5a4f36d72f008"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method that is registered to the flask application and should be implemented in inherited classes.  <a href="classviews_1_1ViewFunction.html#a60d500d84327c486b1b5a4f36d72f008">More...</a><br /></td></tr>
-<tr class="separator:a60d500d84327c486b1b5a4f36d72f008"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd824baa15083ac7dbb16342db9da040"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classviews_1_1ViewFunction.html#abd824baa15083ac7dbb16342db9da040">__call__</a> (self, *args, **kwargs)</td></tr>
+<tr class="memdesc:abd824baa15083ac7dbb16342db9da040"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method that is registered to the flask application.  <a href="classviews_1_1ViewFunction.html#abd824baa15083ac7dbb16342db9da040">More...</a><br /></td></tr>
+<tr class="separator:abd824baa15083ac7dbb16342db9da040"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8e8e44b4c7dd1014432f154a0e1b435"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classviews_1_1ViewFunction.html#ab8e8e44b4c7dd1014432f154a0e1b435">view</a> (self, *args, **kwargs)</td></tr>
+<tr class="memdesc:ab8e8e44b4c7dd1014432f154a0e1b435"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method to overload for the other classes.  <a href="classviews_1_1ViewFunction.html#ab8e8e44b4c7dd1014432f154a0e1b435">More...</a><br /></td></tr>
+<tr class="separator:ab8e8e44b4c7dd1014432f154a0e1b435"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -132,8 +134,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:adfa411138f81d977efa649130f61df80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a60d500d84327c486b1b5a4f36d72f008" name="a60d500d84327c486b1b5a4f36d72f008"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a60d500d84327c486b1b5a4f36d72f008">&#9670;&#160;</a></span>__call__()</h2>
+<a id="abd824baa15083ac7dbb16342db9da040" name="abd824baa15083ac7dbb16342db9da040"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abd824baa15083ac7dbb16342db9da040">&#9670;&#160;</a></span>__call__()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -142,13 +144,64 @@ Public Attributes</h2></td></tr>
           <td class="memname">def views.ViewFunction.__call__ </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em></td><td>)</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">*&#160;</td>
+          <td class="paramname"><em>args</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">**&#160;</td>
+          <td class="paramname"><em>kwargs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >Here we provide a thin wrapper to emit an error message to connected clients should an error be detected. Subsequent classes should over the view method. </p>
+
+</div>
+</div>
+<a id="ab8e8e44b4c7dd1014432f154a0e1b435" name="ab8e8e44b4c7dd1014432f154a0e1b435"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8e8e44b4c7dd1014432f154a0e1b435">&#9670;&#160;</a></span>view()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def views.ViewFunction.view </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">*&#160;</td>
+          <td class="paramname"><em>args</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">**&#160;</td>
+          <td class="paramname"><em>kwargs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classviews_1_1index.html#ad09466362ac0e984a7af5cece39f80e2">views.index</a>, <a class="el" href="classviews_1_1expert.html#a8efac7816ad1f16f14493cd10a5161b0">views.expert</a>, <a class="el" href="classviews_1_1playground.html#ad2761b9e080de7056c8c0aa1ab1b4919">views.playground</a>, <a class="el" href="classviews_1_1device__settings.html#a556cfd29b304cae75f1c84198055f8e5">views.device_settings</a>, <a class="el" href="classviews_1_1visual.html#a3f69cac7f43a7e7dab9316c5761d4ba0">views.visual</a>, <a class="el" href="classviews_1_1geometry.html#ad13cff96050d8dcd21a124ccd8ebb25a">views.geometry</a>, <a class="el" href="classviews_1_1logdump.html#ae581f05a9021c72c066c408dcfd60bb8">views.logdump</a>, <a class="el" href="classviews_1_1data.html#a1b3f89acabba02db3bc7fd6224e6eb25">views.data</a>, <a class="el" href="classviews_1_1datafile.html#a366075828d142af1936d8f1bb1363058">views.datafile</a>, and <a class="el" href="classviews_1_1status.html#a4aebe008a2d2d9114b0704b4adbd5aad">views.status</a>.</p>
+<p>Reimplemented in <a class="el" href="classviews_1_1index.html#a98435cf8c55320339d6f2cc4c528ac80">views.index</a>, <a class="el" href="classviews_1_1expert.html#afb58e23659d373cd941f7378f9e72fa6">views.expert</a>, <a class="el" href="classviews_1_1playground.html#ac4b9511eabb62345273a6360bf9f59f5">views.playground</a>, <a class="el" href="classviews_1_1device__settings.html#a63c81154cd318515798dd49e34007c5a">views.device_settings</a>, <a class="el" href="classviews_1_1visual.html#a1936141dc104ec8b7a838afb320c50fb">views.visual</a>, <a class="el" href="classviews_1_1geometry.html#a53d0c79db4327af992631accb7e9fe4f">views.geometry</a>, <a class="el" href="classviews_1_1logdump.html#a50aa073d402f37b9e78de9f282e4462d">views.logdump</a>, <a class="el" href="classviews_1_1databyfile.html#af0efc50269b75c30b41d18ebe2995d55">views.databyfile</a>, and <a class="el" href="classviews_1_1status.html#acdccda05cee25ccddc720bda2a6cd4ef">views.status</a>.</p>
 
 </div>
 </div>

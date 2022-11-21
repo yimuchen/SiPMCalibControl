@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['darkcurrentdistribution_0',['DarkCurrentDistribution',['../classcmod_1_1readoutmodel_1_1DarkCurrentDistribution.html',1,'cmod::readoutmodel']]],
-  ['data_1',['data',['../classviews_1_1data.html',1,'views']]],
-  ['datafile_2',['datafile',['../classviews_1_1datafile.html',1,'views']]],
+  ['daqcontroller_0',['DAQController',['../classcmod_1_1TBController_1_1DAQController.html',1,'cmod::TBController']]],
+  ['darkcurrentdistribution_1',['DarkCurrentDistribution',['../classcmod_1_1readoutmodel_1_1DarkCurrentDistribution.html',1,'cmod::readoutmodel']]],
+  ['databyfile_2',['databyfile',['../classviews_1_1databyfile.html',1,'views']]],
   ['detector_3',['Detector',['../classcmod_1_1board_1_1Detector.html',1,'cmod::board']]],
   ['device_5fsettings_4',['device_settings',['../classviews_1_1device__settings.html',1,'views']]],
   ['diodemodel_5',['DiodeModel',['../classcmod_1_1readoutmodel_1_1DiodeModel.html',1,'cmod::readoutmodel']]],

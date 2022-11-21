@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['action_0',['action',['../namespaceaction.html',1,'']]],
+  ['acquire_0',['acquire',['../classcmod_1_1TBController_1_1TBController.html#ae3af857b616ed745bdf057dbba1d4eeb',1,'cmod::TBController::TBController']]],
   ['actionrequest_1',['ActionRequest',['../classsockets_1_1ActionRequest.html',1,'sockets']]],
   ['adc2mv_2',['adc2mv',['../classPicoUnit.html#ad804611bb03a352070039b8c4917339d',1,'PicoUnit']]],
   ['adcreadraw_3',['ADCReadRaw',['../classGPIO.html#a80d11826f8f86ce37700fb5d36f2a4dd',1,'GPIO']]],

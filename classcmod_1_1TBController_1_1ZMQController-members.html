@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.5"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SiPM Calibration Control Program: GUI Server</title>
+<title>SiPM Calibration Control Program: Member List</title>
 <!-- Overriding the tabs css with our own -->
 <!--link href="tabs.css" rel="stylesheet" type="text/css"/-->
 <script type="text/javascript" src="jquery.js"></script>
@@ -60,7 +60,6 @@ $(function() {
 /* @license-end */
 </script>
 <div id="main-nav"></div>
-</div><!-- top -->
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -82,19 +81,28 @@ $(function() {
 </div>
 </div>
 
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><b>cmod</b></li><li class="navelem"><b>TBController</b></li><li class="navelem"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">ZMQController</a></li>  </ul>
+</div>
+</div><!-- top -->
 <div class="header">
-  <div class="headertitle"><div class="title">GUI Server<div class="ingroups"><a class="el" href="group__gui__design.html">GUI Design</a></div></div></div>
+  <div class="headertitle"><div class="title">cmod.TBController.ZMQController Member List</div></div>
 </div><!--header-->
 <div class="contents">
-<p >The server session uses the <a href="https://flask-socketio.readthedocs.io/en/latest/">flask socketio</a> for the socket i/o handling. A single global <code>SocketIO()</code> instance is initiated in the package <code>__init__.py</code> file for all sub-routines to emit signals. In the same <code>__init__.py</code> file, a global instance of the <code>Session</code> object is used to record the system status and progress, as well as containing and controlling the underlying command line session. All server interactions are then defined as functions that interact with these two global objects.</p>
-<ul>
-<li><a href="parsing.py"><code>parsing.py</code></a> contains the functions for immediately processing the socket signals and AJAX request, determining whether to process the signal and which subsequent functions to call for the client side request.</li>
-<li><a href="action.py"><code>action.py</code></a> Functions to perform server side calibration actions, including individual commands and sets of calibration commands for the full tileboard calibration runs.</li>
-<li><a href="sync.py"><code>sync.py</code></a> Functions for emitting operation critical signals to ensure that the GUI client sees the precise server state. Sync-like signals can be emitted at any time and the client should respond accordingly.</li>
-<li><a href="report.py"><code>report.py</code></a> Functions for emitting non-critical information to the client, either for aesthetic for progress checking or basic data quality management.</li>
-<li><a href="format.py"><code>format.py</code></a> Additional helper functions for ensuring the format of certain actions. </li>
-</ul>
-</div><!-- contents -->
+
+<p>This is the complete list of members for <a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">cmod.TBController.ZMQController</a>, including all inherited members.</p>
+<table class="directory">
+  <tr class="even"><td class="entry"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html#a3476004263481081e1cbd86b10c6f58c">__init__</a>(self)</td><td class="entry"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">cmod.TBController.ZMQController</a></td><td class="entry"></td></tr>
+  <tr class="odd"><td class="entry"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html#aa3770f5ee468aa650c0ac92b9f3351ab">configure</a>(self, str yaml_config=None)</td><td class="entry"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">cmod.TBController.ZMQController</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html#a5ba4f08ec8250004b6d3cf235ad18dcd">init</a>(self, ip=None, port=None, config_file='configs/init.yaml')</td><td class="entry"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">cmod.TBController.ZMQController</a></td><td class="entry"></td></tr>
+  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>ip</b> (defined in <a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">cmod.TBController.ZMQController</a>)</td><td class="entry"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">cmod.TBController.ZMQController</a></td><td class="entry"></td></tr>
+  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>port</b> (defined in <a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">cmod.TBController.ZMQController</a>)</td><td class="entry"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">cmod.TBController.ZMQController</a></td><td class="entry"></td></tr>
+  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>socket</b> (defined in <a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">cmod.TBController.ZMQController</a>)</td><td class="entry"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">cmod.TBController.ZMQController</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html#a1e4b43134a11caf9c12a70c611307631">socket_check</a>(self, str message, str check_str)</td><td class="entry"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">cmod.TBController.ZMQController</a></td><td class="entry"></td></tr>
+  <tr class="odd"><td class="entry"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html#ab3c4b345903f8574f35d137752fc3c96">socket_send</a>(self, str message)</td><td class="entry"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">cmod.TBController.ZMQController</a></td><td class="entry"></td></tr>
+  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>yaml_config</b> (defined in <a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">cmod.TBController.ZMQController</a>)</td><td class="entry"><a class="el" href="classcmod_1_1TBController_1_1ZMQController.html">cmod.TBController.ZMQController</a></td><td class="entry"></td></tr>
+</table></div><!-- contents -->
 <!-- HTML footer for doxygen 1.8.14-->
 <!-- start footer part -->
 <hr class="footer"/>

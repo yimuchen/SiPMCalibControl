@@ -1,14 +1,14 @@
 var searchData=
 [
-  ['darkcurrentdistribution_0',['DarkCurrentDistribution',['../classcmod_1_1readoutmodel_1_1DarkCurrentDistribution.html',1,'cmod::readoutmodel']]],
-  ['data_1',['data',['../classviews_1_1data.html',1,'views']]],
-  ['datafile_2',['datafile',['../classviews_1_1datafile.html',1,'views']]],
-  ['default_3',['default',['../classctlcmd_1_1cmdbase_1_1controlterm.html#ae98b3315bcb26bc3cf20c31052522d7a',1,'ctlcmd::cmdbase::controlterm']]],
-  ['default_5fmessage_5fparse_4',['default_message_parse',['../classcmod_1_1fmt_1_1CmdStreamFormatter.html#aaf32ef78a3603f0a50069a2b693ad211',1,'cmod::fmt::CmdStreamFormatter']]],
-  ['description_5fstr_5',['description_str',['../classctlcmd_1_1cmdbase_1_1controlcmd.html#a3d81eea085432e8cb5fce175f50202ae',1,'ctlcmd::cmdbase::controlcmd']]],
-  ['detector_6',['Detector',['../classcmod_1_1board_1_1Detector.html',1,'cmod::board']]],
-  ['dev_5fpath_7',['dev_path',['../classGCoder.html#ac7341ee1195207149f271ac51ebb8ed5',1,'GCoder']]],
-  ['developers_20notes_8',['Developers notes',['../md_developer.html',1,'']]],
+  ['daqcontroller_0',['DAQController',['../classcmod_1_1TBController_1_1DAQController.html',1,'cmod::TBController']]],
+  ['darkcurrentdistribution_1',['DarkCurrentDistribution',['../classcmod_1_1readoutmodel_1_1DarkCurrentDistribution.html',1,'cmod::readoutmodel']]],
+  ['databyfile_2',['databyfile',['../classviews_1_1databyfile.html',1,'views']]],
+  ['debug_3',['DEBUG',['../group__Logging.html#gaa2cd88dcd04be7e7f7bf47d8991516f2',1,'cmod::fmt']]],
+  ['default_4',['default',['../classctlcmd_1_1cmdbase_1_1controlterm.html#ae98b3315bcb26bc3cf20c31052522d7a',1,'ctlcmd::cmdbase::controlterm']]],
+  ['default_5fmessage_5fparse_5',['default_message_parse',['../group__Logging.html#gaaf32ef78a3603f0a50069a2b693ad211',1,'cmod::fmt::CmdStreamFormatter']]],
+  ['description_5fstr_6',['description_str',['../classctlcmd_1_1cmdbase_1_1controlcmd.html#a3d81eea085432e8cb5fce175f50202ae',1,'ctlcmd::cmdbase::controlcmd']]],
+  ['detector_7',['Detector',['../classcmod_1_1board_1_1Detector.html',1,'cmod::board']]],
+  ['dev_5fpath_8',['dev_path',['../classGCoder.html#ac7341ee1195207149f271ac51ebb8ed5',1,'GCoder']]],
   ['device_5fsettings_9',['device_settings',['../classviews_1_1device__settings.html',1,'views']]],
   ['digicmd_2epy_10',['digicmd.py',['../digicmd_8py.html',1,'']]],
   ['diodemodel_11',['DiodeModel',['../classcmod_1_1readoutmodel_1_1DiodeModel.html',1,'cmod::readoutmodel']]],
@@ -21,7 +21,7 @@ var searchData=
   ['drscontainer_18',['DRSContainer',['../classDRSContainer.html',1,'']]],
   ['drsrun_19',['drsrun',['../classctlcmd_1_1drscmd_1_1drsrun.html',1,'ctlcmd::drscmd']]],
   ['drsset_20',['drsset',['../classctlcmd_1_1drscmd_1_1drsset.html',1,'ctlcmd::drscmd']]],
-  ['dump_5fjson_21',['dump_json',['../classcmod_1_1fmt_1_1FIFOHandler.html#aa0a644d21fec15f2f8a6643689755b0a',1,'cmod::fmt::FIFOHandler']]],
-  ['dump_5flines_22',['dump_lines',['../classcmod_1_1fmt_1_1FIFOHandler.html#af8bfee2a66890964105043d948099438',1,'cmod::fmt::FIFOHandler']]],
+  ['dump_5fjson_21',['dump_json',['../group__Logging.html#gaa0a644d21fec15f2f8a6643689755b0a',1,'cmod::fmt::FIFOHandler']]],
+  ['dump_5flines_22',['dump_lines',['../group__Logging.html#gaf8bfee2a66890964105043d948099438',1,'cmod::fmt::FIFOHandler']]],
   ['dumpbuffer_23',['DumpBuffer',['../classDRSContainer.html#a20718f6583a34aa81409f6a62e11aaa0',1,'DRSContainer::DumpBuffer()'],['../classPicoUnit.html#a35f324112ba9dff72db139a1a3aa2c18',1,'PicoUnit::DumpBuffer()']]]
 ];
