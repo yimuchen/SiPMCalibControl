@@ -4,9 +4,7 @@
 PYBIND11_MODULE( pico, m )
 {
   pybind11::class_<PicoUnit>( m, "PicoUnit" )
-  .def( "instance",
-        &PicoUnit::instance,
-        pybind11::return_value_policy::reference )
+  SINGLETON_PYBIND( PicoUnit )
   .def( "init",             &PicoUnit::Init            )
   .def( "settrigger",       &PicoUnit::SetTrigger      )
   .def( "rangemin",         &PicoUnit::VoltageRangeMin )

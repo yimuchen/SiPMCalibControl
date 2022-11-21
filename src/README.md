@@ -1,11 +1,12 @@
 @defgroup hardware Hardware Interface
 
-The document details how exposure of low-level hardware control interfaces to
-python with C++ is done. C++ is used to allow for some time critical processes to
-run (such as the fast pulse required for the data collection trigger), and keep
-the library requirements to a minimal. The `pybind11` related files used to
-expose the interfaces to python will be separated into the [`cmod`](../cmod)
-directory with the other low level python interfaces.
+The control and manipulation of hardware interfaces is typically implemented in
+C/C++, then exposed to python via `pybind11`. The choice of using C/C++ is to
+allow for some time critical processes to run (such as the fast pulse required
+for the data collection trigger), while keep the library requirements to a
+minimal. The `pybind11` related files used to expose the interfaces to python
+will be separated into the `cmod` directory with the other low level python
+interfaces.
 
 ## General design philosophy
 
@@ -13,14 +14,10 @@ For the various interfaces, we expect that there will be issues with the certain
 interface not existing, either because the system is in a non-standard
 configuration for testing, or the system in question is some personal machine
 used for local testing. In such a case, the program in question should **raise
-exceptions** during the _initialization_ phase, and should simply **do nothing**
-(other than perhaps printing an error messages) if the user tries to use the
-interface regardless. This allows for the user to test the various
-functionalities of the system during interface testing.
-
-To help the user be aware of which interfaces are available, the start-up and
-shutdown of each interface will be verbose (i.e. many `printf` or `cout`
-statements).
+exceptions** during the _initialization_ phase, and should raise an exception
+when if the user tries to use the interface regardless. This allows for the user
+to test the various functionalities of the system, even when certain interfaces
+are not available or not connected.
 
 As the `pybind11` section of the code is separated out into a separate directory.
 All interfaces should have their dedicated header file. The documentation within
@@ -37,11 +34,13 @@ are compiled using [pybind11][pybind11] for exposure to python interface.
 
 ### GPIO interface for ADC, PWM and raw trigger control
 
-Files: [gpio.cc](gpio.cc), [gpio.hpp](gpio.hpp)
+- Files: [gpio.cc](gpio.cc), [gpio.hpp](gpio.hpp)
+- Main documentation: [GPIO](@ref GPIO)
 
 Controls to the GPIO interface uses raw `sysfs` interfaces to reduce external
 library dependencies, and to allow for fast switching for raw trigger controls
 (trigger can fire as fast a new nanosecond with a period of 1 microsecond).
+External documentations of the various systems used:
 
 - For references of raw gpio controls (trigger and switches), see the [linux
   kernel documentation][gpio-elinux].
@@ -52,27 +51,30 @@ library dependencies, and to allow for fast switching for raw trigger controls
 
 ### Visual interface for visual processing
 
-Files: [visual.cc](visual.cc), [visual.hpp](visual.hpp)
+- Files: [visual.cc](visual.cc), [visual.hpp](visual.hpp)
+- Main documentation: [Visual](@ref Visual)
 
 We are using OpenCV to process the inputs of a video stream to find a detector
 element. It uses a relatively simple contouring algorithm and dark square finding
-algorithm define the photo-detector position. Details of the implementation are
+algorithm define the photodetector position. Details of the implementation are
 documented in the function itself.
 
 ### Picoscope interface for SiPM data collection
 
-Files: [pico.cc](pico.cc), [pico.hpp](pico.hpp)
+- Files: [pico.cc](pico.cc), [pico.hpp](pico.hpp)
+- Main documentation: [PicoUnit](@ref PicoUnit)
 
 We are using the C++ interface provided by Pico Technology. Essentially we are
 compartment the relevant code in the given reference main function to fit our
 needs. The reference code can be found in the open source part of the part of
 the [picoscope reference software][picoscope]. Notice that the picoscope
 requires proprietary drivers from PicoTechnology, you can find how to install
-it in the [install instructions](@ref developer)
+it in the [install instructions](@ref install)
 
 ### DRS4 interfacoe for high resolution SiPM data collection
 
-Files: [drs.cc](drs.cc), [drs.hpp](drs.hpp)
+- Files: [drs.cc](drs.cc), [drs.hpp](drs.hpp)
+- Main documentation: [DRSContainer](@ref DRSContainer)
 
 Similar to the picoscope, we are exposing the C-interface of the DRS4, as well
 as abstracting various control flows commonly used by the system into single

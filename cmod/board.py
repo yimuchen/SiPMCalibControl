@@ -5,10 +5,9 @@
   positional calibration results. More details will be provided in the per class
   documentations.
 """
-import cmod.logger as logger
 import cmod.gcoder as gcoder
 import json
-
+import logging
 
 class Detector(object):
   """
@@ -35,12 +34,11 @@ class Detector(object):
         self.orig_coord[1] > gcoder.GCoder.max_y() or  #
         self.orig_coord[0] < 0 or self.orig_coord[1] < 0):
       logger.printwarn(f"""
-      The specified detector position (x:{self.orig_coord[0]},
-      y:{self.orig_coord[1]}) is outside of the gantry boundaries
-      (0-{gcoder.GCoder.max_x()},0-{gcoder.GCoder.max_y()}). The expected
-      detector position will be not adjusted, but gantry motion might not reach
-      it. Which mean any results may be wrong.
-      """)
+        The specified detector position (x:{self.orig_coord[0]},
+        y:{self.orig_coord[1]}) is outside of the gantry boundaries
+        (0-{gcoder.GCoder.max_x()},0-{gcoder.GCoder.max_y()}). The expected
+        detector position will be not adjusted, but gantry motion might not
+        reach it. Which mean any results may be wrong.""")
 
   def __str__(self):
     return str(self.__dict__)
@@ -88,9 +86,10 @@ class Board(object):
 
   def load_calib_file(self, file):
     if not self.empty():
-      logger.printwarn(('The current session is not empty. Loading a new '
-                        'boardtype will erase any existing configuration '
-                        'for the current session'))
+      logger.printwarn("""
+                       The current session is not empty. Loading a new boardtype
+                       will erase any existing configuration for the current
+                       session""")
     jsonmap = json.loads(open(file, 'r').read())
 
     for det in jsonmap:

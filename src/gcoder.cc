@@ -19,7 +19,7 @@
  * gcode commands into single functions with parameters which is simpler to call
  * for end users. For the full list of available marlin-flavored gcode, see
  * [here][marlin]. Due to how communications is handled in the kernel, not all
- * motions is abstractable in C++, with some needing to be handled at python
+ * motions is abstracted in C++, with some needing to be handled at python
  * level. Those will be high-lighted for in the various code segments.
  *
  * [s-port]: https://www.xanthium.in/Serial-Port-Programming-on-Linux
@@ -42,10 +42,12 @@
 #include <termios.h>
 #include <unistd.h>
 
+static const std::string DeviceName = "GCoder";
+
 /**
  * @brief Hard limit coordinates for gantry motion.
  * @details As there are now stop limiter for the gantry maximum motion range
- * value, here, progammatically add a hard input into the system to avoid
+ * value, here, programmatically add a hard input into the system to avoid
  * hardware damaged.
  * @{
  */
@@ -65,7 +67,7 @@ static bool check_ack( const std::string& cmd, const std::string& msg );
  *
  * Low level instructions in the termios interface for setting up the read
  * speed and mode for the communicating with the printer over USB. This part of
- * the code currently considered black-magicm as most of the statements are
+ * the code currently considered black-magic, as most of the statements are
  * copy from [here][s-port], so do not edit statements containing the tty
  * container unless you are absolutely sure about what you are doing.
  *
@@ -89,10 +91,10 @@ GCoder::Init( const std::string& dev )
 
   if( printer_IO < 0 ){
     sprintf( errormessage,
-             "Failed to open printer IO [%d] %s",
+             "Failed to open gcode device IO [%d] %s",
              printer_IO,
              dev.c_str() );
-    throw std::runtime_error( errormessage  );
+    throw device_exception( DeviceName, errormessage );
   }
 
   int lock = flock( printer_IO, LOCK_EX | LOCK_NB );
@@ -100,7 +102,7 @@ GCoder::Init( const std::string& dev )
     close( printer_IO );
     printer_IO = -1;
     sprintf( errormessage, "Failed to lock path [%s]", dev.c_str() );
-    throw std::runtime_error( errormessage );
+    throw device_exception( DeviceName, errormessage );
   }
 
   if( tcgetattr( printer_IO, &tty ) < 0 ){
@@ -108,7 +110,7 @@ GCoder::Init( const std::string& dev )
              "Error getting termios settings %s",
              strerror(
                errno ) );
-    throw std::runtime_error( errormessage );
+    throw device_exception( DeviceName, errormessage );
   }
 
   cfsetospeed( &tty, (speed_t)speed );
@@ -133,10 +135,10 @@ GCoder::Init( const std::string& dev )
 
   if( tcsetattr( printer_IO, TCSANOW, &tty ) != 0 ){
     sprintf( errormessage, "Error setting termios: %s", strerror( errno ) );
-    throw std::runtime_error( errormessage );
+    throw device_exception( DeviceName, errormessage );
   }
 
-  printmsg( GREEN( "[PRINTER]" ), "Waking up printer...." );
+  printmsg( DeviceName, "Waking up printer...." );
   std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
   SendHome( true, true, true );
   std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
@@ -145,7 +147,7 @@ GCoder::Init( const std::string& dev )
   SetSpeedLimit( 1000, 1000, 1000 );
 
   // Setting acceleration to 3x the factory default:
-  RunGcode( "M201 X1000 Y1000 Z300\n", 0, 1e5, false );
+  RunGcode( "M201 X1000 Y1000 Z300\n", 0, 1e5 );
 
   return;
 }
@@ -171,15 +173,13 @@ GCoder::Init( const std::string& dev )
 std::string
 GCoder::RunGcode( const std::string& gcode,
                   const unsigned     attempt,
-                  const unsigned     waitack,
-                  const bool         verbose ) const
+                  const unsigned     waitack ) const
 {
   using namespace std::chrono;
 
   // static variables
-  static const unsigned    maxtry     = 10;
-  static const unsigned    buffersize = 65536;
-  static const std::string msghead    = GREEN( "[GCODE-SEND]" );
+  static const unsigned maxtry     = 10;
+  static const unsigned buffersize = 65536;
 
   // Readout data
   char        buffer[buffersize];
@@ -199,19 +199,21 @@ GCoder::RunGcode( const std::string& gcode,
            attempt );
 
   if( printer_IO < 0 ){
-    throw std::runtime_error( "Printer is not available for commands" );
+    throw device_exception( DeviceName, "Printer is not available for commands" );
   }
 
   if( attempt >= maxtry ){
     sprintf( msg,
-             "ACK string for command [%s] was not received after [%d] attempts! The message could be dropped or there is something wrong with the printer!",
+             R"(ACK string for command [%s] was not received after [%d] attempts!
+             The message could be dropped or there is something wrong with the
+             printer!)",
              pstring.c_str(),
              maxtry );
-    throw std::runtime_error( msg );
+    throw device_exception( DeviceName, msg );
   }
 
   // Sending output
-  if( verbose ){ update( msghead, msg ); }
+  printdebug( DeviceName, msg );
   write( printer_IO, gcode.c_str(), gcode.length() );
   tcdrain( printer_IO );
 
@@ -235,10 +237,8 @@ GCoder::RunGcode( const std::string& gcode,
 
   // Checking output
   if( awk ){
-    if( verbose ){
-      strcat( msg, "... Done!" );
-      update( msghead, msg );
-    }
+    strcat( msg, "... Done!" );
+    printdebug( DeviceName, msg );
 
     // Flushing the printer buffer after executing the command.
     while( readlen > 0 ){
@@ -248,7 +248,7 @@ GCoder::RunGcode( const std::string& gcode,
 
     return ackstr;
   } else {
-    return RunGcode( gcode, attempt+1, waitack, verbose );
+    return RunGcode( gcode, attempt+1, waitack );
   }
 }
 
@@ -319,8 +319,7 @@ GCoder::SendHome( bool x, bool y, bool z )
   // Adding end of line character.
   strcat( cmd, "\n" );
 
-  RunGcode( cmd, 0, 4e9, true );
-  clear_update();
+  RunGcode( cmd, 0, 4e9 );
 }
 
 
@@ -337,13 +336,13 @@ void
 GCoder::DisableStepper( bool x, bool y, bool z )
 {
   if( x ){
-    RunGcode( "M18 X E\n", 0, 1e5, false );
+    RunGcode( "M18 X E\n", 0, 1e5 );
   }
   if( y ){
-    RunGcode( "M18 Y E\n", 0, 1e5, false );
+    RunGcode( "M18 Y E\n", 0, 1e5 );
   }
   if( z ){
-    RunGcode( "M18 Z E\n", 0, 1e5, false );
+    RunGcode( "M18 Z E\n", 0, 1e5 );
   }
 }
 
@@ -358,13 +357,13 @@ void
 GCoder::EnableStepper( bool x, bool y, bool z )
 {
   if( x ){
-    RunGcode( "M17 X\n", 0, 1e5, false );
+    RunGcode( "M17 X\n", 0, 1e5 );
   }
   if( y ){
-    RunGcode( "M17 Y\n", 0, 1e5, false );
+    RunGcode( "M17 Y\n", 0, 1e5 );
   }
   if( z ){
-    RunGcode( "M17 Z\n", 0, 1e5, false );
+    RunGcode( "M17 Z\n", 0, 1e5 );
   }
 }
 
@@ -414,11 +413,11 @@ GCoder::SetSpeedLimit( float x, float y, float z )
   if( z > maxv ){ z = maxz; }
 
   sprintf( gcode, gcode1_fmt, x, y, z );
-  RunGcode( gcode, 0, 1e5, false );
+  RunGcode( gcode, 0, 1e5 );
 
   const float vmax = std::max( std::max( x, y ), z );
   sprintf( gcode, gcode2_fmt, vmax * 60  );
-  RunGcode( gcode, 0, 1e5, false );
+  RunGcode( gcode, 0, 1e5 );
 
   vx = x;
   vy = y;
@@ -440,10 +439,9 @@ GCoder::SetSpeedLimit( float x, float y, float z )
  * additional parsing is required for make sure the motion has completed.
  */
 void
-GCoder::MoveToRaw( float x, float y, float z, bool verbose )
+GCoder::MoveToRaw( float x, float y, float z )
 {
-  static const std::string msghead    = GREEN( "[GANTRYPOS]" );
-  static const char        move_fmt[] = "G0 X%.1f Y%.1f Z%.1f\n";
+  static const char move_fmt[] = "G0 X%.1f Y%.1f Z%.1f\n";
 
   char gcode[128];
 
@@ -459,14 +457,13 @@ GCoder::MoveToRaw( float x, float y, float z, bool verbose )
         opz;
 
   // Rounding to closest 0.1 (precision of gantry system)
-  opx = ModifyTargetCoordinate( opx, max_x(), true );
-  opy = ModifyTargetCoordinate( opy, max_y(), true );
-  opz = ModifyTargetCoordinate( opz, max_z(), true );
+  opx = ModifyTargetCoordinate( opx, max_x() );
+  opy = ModifyTargetCoordinate( opy, max_y() );
+  opz = ModifyTargetCoordinate( opz, max_z() );
 
   // Running the code
   sprintf( gcode, move_fmt, opx, opy, opz );
-  RunGcode( gcode, 0, 1000, verbose );
-  if( verbose ){ clear_update(); }
+  RunGcode( gcode, 0, 1000 );
 
   return;
 }
@@ -539,29 +536,29 @@ GCoder::InMotion( float x, float y, float z )
  * head does not impact the platten or the circuit board.
  */
 void
-GCoder::MoveTo( float x, float y, float z, bool verbose )
+GCoder::MoveTo( float x, float y, float z )
 {
   static constexpr float min_z_safety = 3;
 
   if( z < min_z_safety && opz < min_z_safety ){
-    MoveToRaw( opx, opy, min_z_safety, verbose );
+    MoveToRaw( opx, opy, min_z_safety );
     std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-    MoveToRaw( x,   y,   min_z_safety, verbose  );
+    MoveToRaw( x, y, min_z_safety );
     std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-    MoveToRaw( x,   y,   z,            verbose );
+    MoveToRaw( x, y,  z );
     std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
   } else if( opz < min_z_safety ){
-    MoveToRaw( opx, opy, min_z_safety, verbose );
+    MoveToRaw( opx, opy, min_z_safety );
     std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-    MoveToRaw( x,   y,   z,            verbose  );
+    MoveToRaw( x, y, z );
     std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
   } else if( z < min_z_safety ){
-    MoveToRaw( x, y, min_z_safety, verbose );
+    MoveToRaw( x, y, min_z_safety );
     std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-    MoveToRaw( x, y, z,            verbose );
+    MoveToRaw( x, y, z );
     std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
   } else {
-    MoveToRaw( x, y, z, verbose );
+    MoveToRaw( x, y, z );
     std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
   }
 }
@@ -582,11 +579,11 @@ GCoder::MatchCoord( double x, double y )
 
 
 /**
- * @brief Modifying the orignal target cooridnate to somewhere that can be
+ * @brief Modifying the original target coordinate to somewhere that can be
  * accessed by the gantry
  *
- * Original given some original coodinate value, we return a modified target
- * cooridnate such that:
+ * Original given some original coordinate value, we return a modified target
+ * coordinate such that:
  * - the return value is always larger than the minimum value 0.1
  * - The return value is always smaller than the given maximum value.
  * - The return value is rounded to the closest 0.1 decimal place.
@@ -598,31 +595,29 @@ GCoder::MatchCoord( double x, double y )
  * modifications.
  */
 double
-GCoder::ModifyTargetCoordinate( const double original,
-                                const double max_value,
-                                const bool   verbose )
+GCoder::ModifyTargetCoordinate( const double original, const double max_value )
 {
   char message[1024];
   auto rnd = []( double x ){ return std::round( x * 10 ) / 10;};
 
   double ans = rnd( original ); // rounding to closest
   if( ans < 0.1 ){
-    if( verbose ){
-      sprintf( message,
-               "Target cooridnate values [%.1lf] is below the lower limit 0.1. " "Modifying the target motion cooridnate to 0.1 to avoid damage to the system",
-               ans );
-      printwarn( message );
-    }
+    sprintf( message,
+             R"(Target cooridnate values [%.1lf] is below the lower limit 0.1.
+             Modifying the target motion cooridnate to 0.1 to avoid damaging
+             the system)",
+             ans );
+    printwarn( DeviceName, message );
     return 0.1;
   } else if( ans > max_value ){
-    if( verbose ){
-      sprintf( message,
-               "Target cooridnate values [%.1lf] is above upper limit [%.1lf]. " "Modifying the target motion cooridnate to [%.1lf] to avoid damage to the system",
-               ans,
-               max_value,
-               max_value );
-      printwarn( message );
-    }
+    sprintf( message,
+             R"(Target cooridnate values [%.1lf] is above upper limit [%.1lf].
+             Modifying the target motion cooridnate to [%.1lf] to avoid damaging
+             the system)",
+             ans,
+             max_value,
+             max_value );
+    printwarn( DeviceName, message );
     return rnd( max_value );
   } else {
     return ans;
@@ -645,11 +640,11 @@ GCoder::GCoder() :
  */
 GCoder::~GCoder()
 {
-  printf( "Deallocating the gantry controls\n" );
+  printdebug( DeviceName, "Deallocating the gantry controls" );
   if( printer_IO > 0 ){
     close( printer_IO );
   }
-  printf( "Gantry system closed\n" );
+  printdebug( DeviceName, "Gantry system closed" );
 }
 
 

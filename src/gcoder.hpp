@@ -19,8 +19,7 @@ public:
   void        Init( const std::string& dev );
   std::string RunGcode( const std::string& gcode,
                         const unsigned     attempt = 0,
-                        const unsigned     waitack = 1e4,
-                        const bool         verbose = false ) const;
+                        const unsigned     waitack = 1e4 ) const;
 
   // Motion command abstraction
   std::string GetSettings() const;
@@ -33,22 +32,18 @@ public:
                              float z = std::nanf("") );
 
   //
-  void MoveTo( float      x       = std::nanf(""),
-               float      y       = std::nanf(""),
-               float      z       = std::nanf(""),
-               const bool verbose = false );
+  void MoveTo( float x = std::nanf(""),
+               float y = std::nanf(""),
+               float z = std::nanf(""));
 
   //
-  void MoveToRaw( float      x       = std::nanf(""),
-                  float      y       = std::nanf(""),
-                  float      z       = std::nanf(""),
-                  const bool verbose = false );
+  void MoveToRaw( float x = std::nanf(""),
+                  float y = std::nanf(""),
+                  float z = std::nanf(""));
 
   // Floating point comparison.
   static bool   MatchCoord( double x, double y );
-  static double ModifyTargetCoordinate( double       orig,
-                                        const double max,
-                                        const bool   verbose = false );
+  static double ModifyTargetCoordinate( double orig, const double max );
 
 public:
   int         printer_IO;

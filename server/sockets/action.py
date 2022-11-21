@@ -28,9 +28,6 @@ from .sync import *
 from .report import *
 from .format import *
 
-## For redirecting logging output
-from ..cmod.logger import *
-
 
 def run_image_settings(socketio, data):
   """
@@ -165,7 +162,7 @@ def run_calib_cmd(socketio, cmd, action, detid):
     set_status(action, detid, session.CMD_COMPLETE)
   elif session.run_results == cmdbase.controlcmd.TERMINATE_CMD:
     set_status(action, detid, session.CMD_ERROR)
-    raise RuntimeError('INTERRUPT SIGNAL RAISED')
+    raise KeyboardInterrupt('INTERRUPT SIGNAL RAISED')
   else:
     set_status(action, detid, session.CMD_ERROR)
 

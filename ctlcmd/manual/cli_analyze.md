@@ -198,7 +198,7 @@ is 1 additional setting that can be used for this command:
   the current PWM duty cycle value.
 
 For details on the execution routine, see the detailed documentation of the
-`run` method.
+[run](@ref ctlcmd.motioncmd.zscan.run) method.
 
 ---
 

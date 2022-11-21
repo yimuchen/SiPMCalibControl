@@ -1,5 +1,4 @@
 import ctlcmd.cmdbase as cmdbase
-import cmod.logger as log
 import time
 #import ctypes
 
@@ -81,8 +80,6 @@ class drscalib(cmdbase.controlcmd):
   """This function will confirm with the user where or not the DRS is in the
   correct configuration before continuing.
   """
-  LOG = log.GREEN('[DRSCALIB]')
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -93,14 +90,16 @@ class drscalib(cmdbase.controlcmd):
 
   def run(self, args):
     if not args.skipconfirm:
-      self.cmd.onecmd('promptaction DRS_CALIB')
+      self.cmd.onecmd(
+          fmt.oneline_string("""wait --mesage DRS_CALIB Running the
+                      DRS calibration process. Make sure all SiPM DRS input
+                      channels are disconnected before continuing."""))
     self.drs.run_calibrations()
 
 
 class drsrun(cmdbase.savefilecmd):
   """@brief Running the DRS stand alone waveform extraction"""
 
-  LOG = log.GREEN('[DRS]')
   DEFAULT_SAVEFILE = 'drsrun_<TIMESTAMP>.txt'
 
   def __init__(self, cmd):
@@ -163,14 +162,8 @@ class drsrun(cmdbase.savefilecmd):
           time=1.0 / self.drs.rate(), bits=4, adcval=0.1))
       self.savefile.flush()
 
-    for i in range(args.numevents):
-      if i % 100 == 0:
-        self.update('Collecting event...[{0:5d}/{1:d}]'.format(
-            i + 1,
-            args.numevents,
-        ))
+    for _ in self.start_pbar(range(args.numevents)):
       self.drs.startcollect()
-
       tstart = time.time()
       while not self.drs.is_ready():
         self.check_handle()

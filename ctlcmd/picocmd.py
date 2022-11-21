@@ -1,5 +1,4 @@
 import ctlcmd.cmdbase as cmdbase
-import cmod.logger as log
 
 
 class picoset(cmdbase.controlcmd):
@@ -101,13 +100,11 @@ class picoset(cmdbase.controlcmd):
 
 class picorunblock(cmdbase.savefilecmd):
   """@brief Initiating a single run block instance."""
-  """ This assumes that the program will finish without user intervension (no
+  """ This assumes that the program will finish without user intervention (no
   program fired triggering)
   """
 
   DEFAULT_SAVEFILE = 'picoblock_<TIMESTAMP>.txt'
-  LOG = log.GREEN('[PICOBLOCK]')
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 

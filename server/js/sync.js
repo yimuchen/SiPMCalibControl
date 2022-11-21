@@ -1,41 +1,12 @@
 /**
  * sync.js
  *
- * Javascript function for handling the sync signals sent out by the main
+ * Javascript function for handling the signals sent out by the main
  * calibration session.
  */
 
 function request_sync(msg) {
   socketio.emit('resend', msg);
-}
-
-/**
- * Updating the session state as seen by the client. In addition to the raw
- * variable used to store the session state, the following are also update:
- * 1. If the new state indicates the system is idle, unlock all action button,
- *    otherwise lock all action buttons.
- * 2. If the new state is "waiting for user", unlock a action button associated
- *    with the user action button and display the wait message as given by
- *    submitting an ajax request.
- */
-function sync_system_state(new_state) {
-  session.state = new_state; // updating the raw system state.
-
-  // Action button locking if state is not idle
-  const lock = session.state != STATE_IDLE;
-  $('.action-button').each(function () {
-    $(this).prop('disabled', lock);
-  });
-
-  // Editing the user action HTML DOM elements
-  if (session.state === STATE_WAIT_USER) {
-    show_action_column();
-    $('#user-action').removeClass('hidden');
-    $('#user-action-complete').prop('disabled', false);
-    request_user_action();
-  } else {
-    $('#user-action').addClass('hidden');
-  }
 }
 
 /**
@@ -157,65 +128,4 @@ function run_progress_update() {
  */
 function sync_cmd_progress(msg) {
   progress_update_cmd(msg);
-}
-
-/**
- * Additional parsing required for passing data. This is required as certain
- * key-strokes requires additional translation into a python friendly format.
- * (Notice that the python backend will not attempt to emulate the entire command
- * line session, keys like tab, history crawling will not be available)
- */
-function parse_terminal_keystroke(key) {
-  const TERMINAL_PARSE_DEBUG = false; // Flag for debugging if needed.
-
-  // Early exit if terminal is locked
-  if (session.terminal_lock) {
-    return;
-  }
-
-  // Generating the helper string to the console to help debug console inputs
-  if (TERMINAL_PARSE_DEBUG) {
-    str = '';
-    for (i = 0; i < key.length; ++i) {
-      str += ' ' + key.charCodeAt(i).toString();
-    }
-    console.log('combination:', str);
-  }
-
-  const code = key.charCodeAt(0); // parsing on first character
-  switch (code) {
-    case 127: // backspace doesn't trigger backspace character
-      socketio.emit('xterminput', { input: '\b' });
-      break;
-    default:
-      socketio.emit('xterminput', { input: key });
-      break;
-  }
-}
-
-/**
- * Displaying the output received from server side.
- */
-function parse_terminal_response(data) {
-  // Parsing output is relatively simple
-  session.terminal.write(data.output);
-}
-
-/**
- * Terminal locking toggle. As there are no other elements regarding lock
- * toggling. We are just going to defined this function there.
- */
-function check_terminal_lock() {
-  if (session.terminal_lock) {
-    // unlocking the terminal
-    session.terminal_lock = false;
-    $('#terminal_status').html('TERMINAL IS UNLOCKED');
-    $('#terminal_lock').html('LOCK');
-    // Getting the prompt in case it wasn't generated.
-    parse_terminal_keystroke(String.fromCharCode(1));
-  } else {
-    terminal_lock = true; // locking the terminal
-    $('#terminal_status').html('TERMINAL IS LOCKED');
-    $('#terminal_lock').html('UNLOCK');
-  }
 }

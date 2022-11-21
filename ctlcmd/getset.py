@@ -10,8 +10,12 @@
 """
 
 import ctlcmd.cmdbase as cmdbase
-import cmod.logger as log
-import argparse, re, os, sys, time
+import cmod.fmt as fmt
+import argparse
+import re
+import os
+import sys
+import time
 
 
 class exit(cmdbase.controlcmd):
@@ -21,12 +25,12 @@ class exit(cmdbase.controlcmd):
 
   def run(self, args):
     if self.prompt_yn("""Exiting this will terminate the session and all
-                      calibration variables (results are still on disk), are you
+                      calibration variables (results are still on disk). Are you
                       sure you want to exit?""",
-                      default='no'):
+                      default=False):
       self.printmsg("Sending gantry home...")
       # Fast motion to somewhere close to home
-      self.move_gantry(1, 1, 1, False)
+      self.move_gantry(1, 1, 1)
       # Activate send home
       try:
         self.gcoder.sendhome(True, True, True)
@@ -37,12 +41,9 @@ class exit(cmdbase.controlcmd):
 
 class set(cmdbase.controlcmd):
   """
-  @brief Setting calibration system devices. This will only modify opening and closing the
-  interface, not the actual operation of the various interfaces.
-
-  - For visual system settings, see command: visualset
-  - For settings for the picoscope, see command: picoset
-  - For settings for the DRS4, see command: drsset
+  @brief Setting calibration system devices. This will only modify opening and
+  closing the interface, not the actual operation of the various interfaces. See
+  visualset, picoset, and drsset for more information.
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -68,7 +69,7 @@ class set(cmdbase.controlcmd):
                              type=str,
                              help="""
                              Device path for the primary camera, should be
-                             something like `/dev/video<index>.`""")
+                             something like `/dev/video<index>`.""")
     self.parser.add_argument('--picodevice',
                              type=str,
                              help="""
@@ -77,18 +78,13 @@ class set(cmdbase.controlcmd):
     self.parser.add_argument('--drsdevice',
                              type=str,
                              help='Code flag to refresh DRS device')
-    self.parser.add_argument('--action',
-                             '-a',
-                             type=argparse.FileType(mode='r'),
-                             help="""
-                             Add files to a list of short hands for setting user
-                             prompts""")
 
   def run(self, args):
     """
     For the sake of clarity, device settings is split into each of their
-    functions. Notice that all function should have expection guards so the
-    subsequent settings can still be set if a single settings is bad.
+    functions. Notice that all function should have exception guards so the
+    subsequent settings can still be set if settings for one particular device
+    is bad or not available.
     """
     if args.boardtype:
       self.set_board(args)
@@ -102,15 +98,13 @@ class set(cmdbase.controlcmd):
       self.set_picodevice(args)
     if args.drsdevice:
       self.set_drs(args)
-    if args.action:
-      self.action.add_json(args.action.name)
 
   def set_board(self, args):
     try:
       self.board.set_boardtype(args.boardtype.name)
-    except Exception as err:
-      log.printerr(str(err))
-      log.printwarn('Board type setting has failed, skipping over setting')
+    except RuntimeError as err:
+      self.printerr(str(err))
+      self.printwarn('Board type setting has failed, skipping...')
 
   def set_camera(self, args):
     """Setting up the camera system, given /dev/video path"""
@@ -118,12 +112,12 @@ class set(cmdbase.controlcmd):
         and args.camdev != self.visual.dev_path):
       try:
         self.visual.init_dev(args.camdev)
-      except Exception as err:
-        log.printerr(str(err))
-        log.printwarn('Initializing webcam has failed, skipping over setting')
+      except RuntimeError as err:
+        self.devlog('Visual').error(str(err))
+        self.printwarn('Initializing webcam has failed, skipping over setting')
 
   def set_printer(self, args):
-    """Setting up the gantry system, given the /dev/ USB path"""
+    """Setting up the gantry system, given the /dev/USB path"""
     if (not self.is_dummy_dev(args.printerdev, 'Printer')
         and args.printerdev != self.gcoder.dev_path):
       try:
@@ -131,18 +125,21 @@ class set(cmdbase.controlcmd):
         printset = self.gcoder.getsettings()
         printset = printset.split('\necho:')
         for line in printset:
-          log.printmsg(log.GREEN('[PRINTER]'), line)
-      except Exception as err:
-        self.printerr(str(err))
-        self.printwarn('Failed to setup printer, skipping over settings')
+          self.devlog('GCoder').info(line)
+      except RuntimeError as err:
+        self.devlog('GCoder').error(str(err))
+        self.printwarn(
+            """Failed to setup printer, skipping over settings and setting
+            coordinates to (0,0,0)""")
+        self.move_gantry(0, 0, 0)
 
   def set_picodevice(self, args):
     """Setting up the pico device, Skipping if dummy path detected """
     if not self.is_dummy_dev(args.picodevice, 'PicoScope'):
       try:
         self.pico.init()
-      except Exception as err:
-        self.printerr(str(err))
+      except RuntimeError as err:
+        self.devlog('PicoUnit').error(str(err))
         self.printwarn('Picoscope device is not properly set!')
 
   def set_drs(self, args):
@@ -150,8 +147,8 @@ class set(cmdbase.controlcmd):
     if not self.is_dummy_dev(args.drsdevice, 'DRS4'):
       try:
         self.drs.init()
-      except Exception as err:
-        self.printerr(str(err))
+      except RuntimeError as err:
+        self.devlog('DRSContainer').error(str(err))
         self.printwarn('DRS device is not properly set!')
 
   def is_dummy_dev(self, dev, device_name):
@@ -181,8 +178,6 @@ class get(cmdbase.controlcmd):
     self.parser.add_argument('--align', action='store_true')
     self.parser.add_argument('--pico', action='store_true')
     self.parser.add_argument('--drs', action='store_true')
-    self.parser.add_argument('--action', action='store_true')
-
     self.parser.add_argument('-a', '--all', action='store_true')
 
   def run(self, args):
@@ -198,83 +193,66 @@ class get(cmdbase.controlcmd):
       self.pico.printinfo()
     if args.drs or args.all:
       self.print_drs()
-    if args.action or args.all:
-      self.print_action()
 
   def print_board(self):
-    header = log.GREEN('[BOARDTYPE]')
-    msg_format = 'Det:{0:>4s} | x:{1:5.1f}, y:{2:5.1f}'
-    log.printmsg(header, str(self.board.boardtype))
-    log.printmsg(header, str(self.board.boarddescription))
-    log.printmsg(header, 'Board ID: ' + self.board.boardid)
+    table = [('Type:', self.board.boardtype),
+             ('Desc.:', self.board.boarddescription),
+             ('ID:', self.board.boardid)]
     for detid in self.board.dets():
       det = self.board.get_det(detid)
-      msg = msg_format.format(detid, det.orig_coord[0], det.orig_coord[1])
-      log.printmsg(header, msg)
+      x, y = det.orig_coord
+      table.append((f'Det:{detid:>4s}', f'x:{x:5.1f}, y:{y:5.1f}'))
+    self.devlog('Board').log(fmt.logging.INT_INFO, '', extra={'table': table})
 
   def print_printer(self):
-    header = log.GREEN('[PRINTER]')
-    log.printmsg(header, 'device: ' + str(self.gcoder.dev_path))
-    log.printmsg(
-        header, 'current coordinates: x{0:.1f} y{1:.1f} z{2:0.1f}'.format(
-            self.gcoder.opx, self.gcoder.opy, self.gcoder.opz))
-    printset = self.gcoder.getsettings()
-    printset = printset.split('\necho:')
-    for line in printset:
-      log.printmsg(log.GREEN('[PRINTER]'), line)
+    logger = self.devlog("GCoder")
+    level = fmt.logging.INT_INFO
+    logger.log(level, 'device: ' + str(self.gcoder.dev_path))
+    logger.log(
+        level, f'current coordinates:' + f' x{self.gcoder.opx:.1f}' +
+        f' y{self.gcoder.opy:.1f}' + f' z{self.gcoder.opz:.1f}')
+    settings = self.gcoder.getsettings().split('\necho:')
+    logging.log(leve, '\n'.join(line))
 
   def print_camera(self):
-    header = log.GREEN('[CAMERA]')
-    log.printmsg(header, str(self.visual.dev_path))
-    log.printmsg(header, 'Threshold:{0:3f}'.format(self.visual.threshold))
-    log.printmsg(header, 'Blur:     {0:3d} [pix]'.format(self.visual.blur_range))
-    log.printmsg(header, 'Max Lumi: {0:3f}'.format(self.visual.lumi_cutoff))
-    log.printmsg(header,
-                 'Min Size: {0:3d} [pix]'.format(self.visual.size_cutoff))
-    log.printmsg(header, 'Ratio:    {0:3f}'.format(self.visual.ratio_cutoff))
-    log.printmsg(header, 'Poly:     {0:3f}'.format(self.visual.poly_range))
+    table = [('Device', str(self.visual.dev_path)),  #
+             (f'Threshold', f'{self.visual.threshold:.0f}'),
+             (f'Blur', f'{self.visual.blur_range:d}', '[pix]'),
+             (f'Max Lumi', f'{self.visual.lumi_cutoff:.0f}'),
+             (f'Min Size', f'{self.visual.size_cutoff:d}', '[pix]'),
+             (f'Ratio', f'{self.visual.ratio_cutoff:.3f}'),
+             (f'Poly', f'{self.visual.poly_range:.3f}'), ]
+    self.devlog("Visual").log(fmt.logging.INT_INFO, '', extra={'table': table})
 
   def print_alignment(self):
-    lumi_header = log.GREEN('[LUMI_ALIGN]')
-    matrix_header = log.GREEN('[VIS_MATRIX]')
-    vis_header = log.GREEN('[VIS__ALIGN]')
-    det_format = log.YELLOW(' DET{0:3d}')
+    lumi_header = fmt.GREEN('[LUMI_ALIGN]')
+    matrix_header = fmt.GREEN('[VIS_MATRIX]')
+    vis_header = fmt.GREEN('[VIS__ALIGN]')
+    det_format = fmt.YELLOW(' DET{0:3d}')
 
     for detid in self.board.dets():
       det_str = det_format.format(int(detid))
       det = self.board.get_det(detid)
       for z in det.lumi_coord:
-        log.printmsg(
+        self.printmsg(
             lumi_header + det_str,
             'x:{0:.2f}+-{1:.2f} y:{2:.2f}+-{3:.2f} | at z={4:.1f}'.format(
                 det.lumi_coord[z][0], det.lumi_coord[z][2], det.lumi_coord[z][1],
                 det.lumi_coord[z][3], z))
       for z in det.vis_M:
-        log.printmsg(matrix_header + det_str, '{0} | at z={1:.1f}'.format(
+        self.printmsg(matrix_header + det_str, '{0} | at z={1:.1f}'.format(
             det.vis_M[z], z))
       for z in det.vis_coord:
-        log.printmsg(
+        self.printmsg(
             vis_header + det_str, 'x:{0:.2f} y:{1:.2f} | at z={2:.1f}'.format(
                 det.vis_coord[z][0], det.vis_coord[z][1], z))
 
   def print_drs(self):
-    log.printmsg(self.drs.is_available())
-
-  def print_action(self):
-    header = log.GREEN('[ACTION]')
-    msg_format = log.YELLOW('{0}') + ' | {1}'
-    set_format = log.YELLOW('{0}') + ' | RUN CMD | set {1}'
-    for key in self.action.shorthands():
-      msg = msg_format.format(key, self.action.getmessage(key))
-      smsg = set_format.format(key, " ".join(self.action.getset(key)))
-      log.printmsg(header, msg)
-      log.printmsg(header, smsg)
+    self.printmsg(self.drs.is_available())
 
 
 class savecalib(cmdbase.controlcmd):
   """@brief Saving current calibration information into a json file"""
-  LOG = log.GREEN('[SAVE_CALIB]')
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -287,7 +265,7 @@ class savecalib(cmdbase.controlcmd):
 
   def parse(self, args):
     if not args.file:
-      raise Exception('File name must be specified')
+      raise ValueError('File name must be specified')
     return args
 
   def run(self, args):
@@ -317,98 +295,177 @@ class loadcalib(cmdbase.controlcmd):
     self.board.load_calib_file(args.file.name)
 
 
-class promptaction(cmdbase.controlcmd):
-  """@brief Displaying message that requires manual intervention."""
-  """This is handy for inserting pause points in a runfile that requires user
-  intervension.
-  """
-  def __init__(self, cmd):
-    cmdbase.controlcmd.__init__(self, cmd)
-
-  def add_args(self):
-    self.parser.add_argument('string',
-                             nargs=1,
-                             type=str,
-                             help="""
-        String of message to show (program is paused until Enter key is pressed).
-        This can either be a short hand that is defined using the loadaction
-        command (use the listaction command to get a list) or a raw string
-        message that is to be shown on the screen""")
-
-  def run(self, args):
-    def color_change(x):
-      """
-      Formatting the output for clarity of what the user should be doing.
-      """
-      if x == '[ON]':
-        return log.GREEN(x)
-      if x == '[OFF]':
-        return log.RED(x)
-      if re.match(r'\[[\d\.]+[a-zA-Z]*\]', x):
-        return log.GREEN(x)
-      if x.isupper():
-        return log.YELLOW(x)
-      return x
-
-    is_defined = args.string[0] in self.action.shorthands()
-
-    msg = self.action.getmessage(args.string[0]) if is_defined \
-          else args.string[0]
-
-    msg = ' '.join([color_change(x) for x in msg.split()])
-    log.printmsg(log.GREEN('    THE NEXT STEP REQUIRES USER INTERVENTION'))
-    log.printmsg('    > ' + msg)
-
-    input_text = ''
-    while input_text != args.string[0]:
-      self.check_handle()
-      self.printmsg(log.GREEN(f'    TYPE [{args.string[0]}] to continue...'))
-      input_text = self.cmd.stdin.readline().strip()
-
-    if is_defined:
-      cmd = 'set ' + ' '.join(self.action.getset(args.string[0]))
-      self.cmd.onecmd(cmd.strip())
-
-
-class history(cmdbase.controlcmd):
+class history(cmdbase.savefilecmd):
   """
   Getting the input history. Notice that this will only include the user input
   history. Commands in the runfile will note be expanded.
   """
-  LOG = log.GREEN("[SIPMCALIB HISTORY]")
+  DEFAULT_SAVEFILE = None  # Do not attempt to save the command history on call.
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
+  def add_args(self):
+    self.parser.add_argument('--successful',
+                             '-s',
+                             action='store_true',
+                             help="""
+                             Keep only the commands the successfully executed
+                             without error (user interuptions would be treated
+                             as errors!)""")
+
   def run(self, args):
-    import readline
-    self.printmsg(
-        f'commands since startup: {str(readline.get_current_history_length())}')
-    for idx in range(1, readline.get_current_history_length() + 1):
-      self.printmsg(readline.get_history_item(idx))
+    """
+    Getting the command execution record based on the the logging entries.
+    """
+    cmd_record = [
+        x for x in self.cmd.mem_handle.record_list
+        if x.levelno == fmt.logging.CMD_HIST and 'stop' in x.args
+    ]
+    if args.successful:  # Additional filtering for successfully executed commands
+      cmd_record = [x for x in cmd_record if x.args[1] == self.EXIT_SUCCESS]
+
+    self.screen_history(cmd_record)
+    if self.savefile:
+      self.file_history(cmd_record)
+
+  def screen_history(self, cmd_record):
+    """
+    @brief Printing the cmd history dump to screen
+
+    @details We will only include the exceution status and the command itself
+    (no time stamps!) for a brevity.
+    """
+    def stat_str(stat_no):
+      return fmt.RED(   "[PARSE ERROR ]") if stat_no == self.PARSE_ERROR else \
+             fmt.RED(   "[EXEC ERROR  ]") if stat_no == self.EXECUTE_ERROR else \
+             fmt.YELLOW("[INTERRUPTED ]") if stat_no == self.TERMINATE_CMD else \
+             fmt.GREEN( "[EXEC SUCCESS]")
+
+    cmd_lines = [stat_str(x.args[1]) + ' ' + x.msg for x in cmd_record]
+    if len(cmd_lines):
+      self.logger.log(fmt.logging.INT_INFO, '\n'.join(cmd_lines))
+
+  def file_history(self, cmd_record):
+    """
+    @brief Saving the cmd history dump to the savefile
+
+    @details The first 2 columns would be the time stamp (for potentially
+    debugging), and the exit status string. The latter entires would be the
+    command executed.
+    """
+    def stat_str(record):
+      """Converting execute status code to human readable string"""
+      stat_no = record.args[1]
+      return "PARSE_ERROR"   if stat_no == self.PARSE_ERROR else   \
+             "EXECUTE_ERROR" if stat_no == self.EXECUTE_ERROR else \
+             "INTERRUPTED"   if stat_no == self.TERMINATE_CMD else \
+             "EXIT_SUCCESS"
+
+    for rec in cmd_record:
+      self.savefile.write(
+          f'{fmt.record_timestamp(rec):s} {stat_str(rec):15s} {rec.msg:s}\n')
+
+
+class logdump(cmdbase.savefilecmd):
+  """
+  @brief Dumping log entries into to a file.
+  """
+  DEFAULT_SAVEFILE = 'logdump_<TIMESTAMP>.log'
+
+  def __init__(self, cmd):
+    cmdbase.controlcmd.__init__(self, cmd)
+
+  def add_args(self):
+    self.parser.add_argument('--exclude',
+                             '-x',
+                             type=str,
+                             nargs='*',
+                             choices=list(fmt.__all_logging_levels__.values()),
+                             default=['TRACEBACK', 'HW_DEBUG', 'INT_INFO'],
+                             help="""Removing log-levels to avoid being too
+                                  verbose in output file. Default =
+                                  %(default)s""")
+    self.parser.add_argument('--format',
+                             type=str,
+                             choices=['line', 'json'],
+                             default='line',
+                             help="""Format to dump the file into (json is
+                                  eaiser to reconstruct for advanced processing,
+                                  but difficult for command-line based
+                                  piping operations (Default=%(default)s)""")
+
+  def run(self, args):
+    """
+    As log parsing is more verbose, here will call the in-built method in the
+    fmt file for processing the file.
+    """
+    if args.format == 'line':
+      self.cmd.mem_handle.dump_lines(self.savefile, exclude=args.exclude)
+    else:
+      self.cmd.mem_handle.dump_json(self.savefile, exclude=args.exclude)
 
 
 class wait(cmdbase.controlcmd):
-  """@brief Suspending the interactive session for N seconds."""
-  """The wait time can be terminated early using Ctl+C.
+  """
+  @brief Suspending the interactive session for N seconds, or until a
+  confirmation string is entered by user. Wait can be terminated early using
+  Ctl+C.
+
+  <help link>
   """
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
   def add_args(self):
-    self.parser.add_argument('--time',
-                             '-t',
-                             type=float,
-                             default=30,
-                             help='Time to suspend session (seconds)')
+    group = self.parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--time',
+                       '-t',
+                       type=float,
+                       help='Time to suspend session (seconds)')
+    group.add_argument('--message',
+                       type=str,
+                       nargs='+',
+                       help="""The first string would be the key that that user
+                            inputs to release the wait, the trailing string
+                            would be a message to display during wait time""")
+
+  def parse(self, args):
+    if args.time:  # Pausing by time
+      if args.time < 0:
+        raise ValueError('Pause time must be positive!')
+    else:  # Pausing by message:
+      args.userkey = args.message[0]
+      args.message = ' '.join(
+          args.message[1:]) + f'<br>Enter [{args.userkey}] to continue: '
+    return args
 
   def run(self, args):
-    start_time = time.time_ns()
-    current_time = start_time
-    while (current_time - start_time) / 1e9 < args.time:
+    if args.time:
+      self.wait_fixed_time(args)
+    else:
+      self.wait_user_input(args)
+
+  def wait_fixed_time(self, args):
+    """Waiting for a fixed time. Here we also include a progress bar for easier
+    checking of progress (We are expecting wait times on the order of seconds"""
+    start_time = time.time()
+    prev_time = start_time
+    curr_time = start_time
+    self.start_pbar(total=int(args.time))
+    while (curr_time - start_time) < args.time:
       self.check_handle()
-      time.sleep(0.1)
-      current_time = time.time_ns()
+      time.sleep(0.01)
+      curr_time = time.time()
+      if curr_time - prev_time > 1.0:
+        self.pbar.update()
+        self.pbar_data(Total=args.time)
+        prev_time = curr_time
+    if self.pbar.n != self.pbar.total:  # Forcing complete progress bard to appear.
+      self.pbar.update(self.pbar.total - self.pbar.n)
+
+  def wait_user_input(self, args):
+    self.prompt_input(args.message, allowed=[args.userkey])
 
 
 class runfile(cmdbase.controlcmd):
@@ -421,8 +478,6 @@ class runfile(cmdbase.controlcmd):
   command in the command file fails, the whole runfile call will be terminated to
   prevent user error from damaging the gantry.
   """
-  LOG = log.GREEN('[RUNFILE LINE]')
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -438,7 +493,7 @@ class runfile(cmdbase.controlcmd):
     """Making sure the target is a readable file."""
     args.file = args.file[0]
     if not os.path.isfile(args.file):
-      raise RuntimeError('Specified path is not a file!')
+      raise ValueError('Specified path is not a file!')
     return args
 
   def run(self, args):
@@ -453,8 +508,7 @@ class runfile(cmdbase.controlcmd):
     if args.file in self.cmd.runfile_stack:
       self.error_exit_run(f"""
         File [{args.file}] has already been called! This indicates there is some
-        error in user logic. Exiting the top level runfile command.
-      """)
+        error in user logic. Exiting the top level runfile command.""")
     else:
       self.cmd.runfile_stack.append(args.file)
 
@@ -466,9 +520,8 @@ class runfile(cmdbase.controlcmd):
         status = self.cmd.onecmd(line)
         if status != cmdbase.controlcmd.EXIT_SUCCESS:
           self.error_exit_run(f"""
-            Command [{line}] in file [{args.file}] has failed.
-            Exiting top level runfile command.
-          """)
+            Command [{line}] in file [{args.file}] has failed. Exiting top level
+            runfile command.""")
     self.cmd.runfile_stack.pop(-1)
 
   def error_exit_run(self, msg):
@@ -476,7 +529,7 @@ class runfile(cmdbase.controlcmd):
     Save exit on error to ensure that the runfile stack is properly cleared out.
     """
     self.cmd.runfile_stack = []
-    raise RuntimeError(msg)
+    raise ValueError(msg)
 
   def complete(self, text, line, start_index, end_index):
     return cmdbase.controlcmd.globcomp(text)

@@ -165,7 +165,7 @@ function draw_tileboard_view_common() {
 /**
  * Function related to the display of the action column
  */
-action_column_width = 500;
+const action_column_width = 500;
 function toggle_action_column() {
   if ($(`#action-column`).css('right').startsWith('-')) {
     //

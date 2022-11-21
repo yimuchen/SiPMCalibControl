@@ -40,25 +40,28 @@
 void
 DRSContainer::Init()
 {
+  printdebug( DeviceName, "Setting up DRS devices..." );
   char str[256];
   char errmsg[2048];
   drs = std::make_unique<DRS>();
   if( drs->GetError( str, sizeof( str ) ) ){
     drs = nullptr;
     sprintf( errmsg, "Error created DRS instance: %s", str );
-    throw std::runtime_error( errmsg );
+    throw device_exception( DeviceName, errmsg );
   }
   if( !drs->GetNumberOfBoards() ){
-    throw std::runtime_error( "No DRS boards found" );
+    throw device_exception( DeviceName, "No DRS boards found" );
   }
 
   // Only getting the first board for now.
   board = drs->GetBoard( 0 );
   board->Init();
-  printf( "Found DRS%d board on USB, serial #%04d, firmware revision %5d\n",
-          board->GetDRSType(),
-          board->GetBoardSerialNumber(),
-          board->GetFirmwareVersion() );
+  sprintf( errmsg,
+           "Found DRS%d board on USB, serial #%04d, firmware revision %5d\n",
+           board->GetDRSType(),
+           board->GetBoardSerialNumber(),
+           board->GetFirmwareVersion() );
+  printdebug( DeviceName, errmsg );
 
   // 2 microsecond sleep to allow for settings to settle down
   usleep( 2 );
@@ -83,6 +86,8 @@ DRSContainer::Init()
               0 );// 0 nanosecond delay by default.
   // Additional two microsecond sleep for configuration to get through.
   usleep( 2 );
+
+  printdebug( DeviceName, "Completed setting DRS Container" );
 }
 
 
@@ -146,7 +151,7 @@ DRSContainer::GetWaveform( const unsigned channel )
   // channel 1 input, and so on.
   int status = board->GetWave( 0, channel * 2, waveform );
   if( status ){
-    throw std::runtime_error( "Error running DRSBoard::GetWave" );
+    throw device_exception( DeviceName, "Error running DRSBoard::GetWave" );
   }
   return std::vector<float>( waveform, waveform+len );
 }
@@ -174,18 +179,10 @@ DRSContainer::WaveformStr( const unsigned channel )
     const int8_t  dig1 = ( raw >> 8 )  & 0xf;
     const int8_t  dig2 = ( raw >> 4 )  & 0xf;
     const int8_t  dig3 = raw & 0xf;
-    ans[4 * i+0] = dig0 <= 9 ?
-                   '0'+dig0 :
-                   'a'+( dig0 % 10 );
-    ans[4 * i+1] = dig1 <= 9 ?
-                   '0'+dig1 :
-                   'a'+( dig1 % 10 );
-    ans[4 * i+2] = dig2 <= 9 ?
-                   '0'+dig2 :
-                   'a'+( dig2 % 10 );
-    ans[4 * i+3] = dig3 <= 9 ?
-                   '0'+dig3 :
-                   'a'+( dig3 % 10 );
+    ans[4 * i+0] = dig0 <= 9 ? '0'+dig0 : 'a'+( dig0 % 10 );
+    ans[4 * i+1] = dig1 <= 9 ? '0'+dig1 : 'a'+( dig1 % 10 );
+    ans[4 * i+2] = dig2 <= 9 ? '0'+dig2 : 'a'+( dig2 % 10 );
+    ans[4 * i+3] = dig3 <= 9 ? '0'+dig3 : 'a'+( dig3 % 10 );
   }
   return ans;
 }
@@ -244,26 +241,22 @@ DRSContainer::WaveformSum( const unsigned channel,
  * debugging.
  *
  * This will be the only time where the timing results will be displayed. The
- * waveform summation will not use the timing information.
+ * waveform summation will not use the timing information. Also, as this is
+ * strictly meant for runtime debugging, the output will not use the common
+ * logging output.
  */
 void
 DRSContainer::DumpBuffer( const unsigned channel )
 {
-  static const std::string head = GREEN( "[DRSBUFFER]" );
-  char                     print_line[256];// Display string;
-  const auto               waveform   = GetWaveform( channel );
-  const auto               time_array = GetTimeArray( channel );
-  const unsigned           length     = GetSamples();
-  sprintf( print_line, "%7s | Channel %d [mV]", "Time", channel );
-  printmsg( head, print_line );
+  const auto     waveform     = GetWaveform( channel );
+  const auto     time_array   = GetTimeArray( channel );
+  const unsigned length       = GetSamples();
+  std::string    output_table = "";
+  output_table += format_str( "%s | Channel%d | [mV]\n", "Time", channel );
   for( unsigned i = 0; i < length; ++i ){
-    sprintf( print_line, "%7.3lf | %7.2lf", time_array[i], waveform[i] );
-    printmsg( head, print_line );
+    output_table += format_str( "%.3lf | %.2lf\n", time_array[i], waveform[i] );
   }
-
-  // Additional two empty lines for aesthetic reasons.
-  printmsg( "" );
-  printmsg( "" );
+  printdebug( DeviceName, output_table );
 }
 
 
@@ -419,7 +412,7 @@ void
 DRSContainer::CheckAvailable() const
 {
   if( !IsAvailable() ){
-    throw std::runtime_error( "DRS4 board is not available" );
+    throw device_exception( DeviceName, "DRS4 board is not available" );
   }
 }
 
@@ -481,9 +474,10 @@ public:
 
 
 IMPLEMENT_SINGLETON( DRSContainer );
-DRSContainer::DRSContainer() :
-  board( nullptr ){}
+
+DRSContainer::DRSContainer() : board( nullptr ){}
+
 DRSContainer::~DRSContainer()
 {
-  printf( "Deallocating the DRS controller\n" );
+  printdebug( DeviceName, "Deallocating the DRS controller" );
 }

@@ -86,46 +86,6 @@ def report_useraction():
   return session.waiting_msg
 
 
-def report_file_data(process, filename):
-  """
-  Returning the contents of a data file in the requested format. The formatting
-  functions will be defined at the end of this file. We also compare the file
-  name with the current file being work on by the underlying command line
-  session, and use this to generate a flag for the client to know whether the
-  data requested is actively being updated by the underlying session and should
-  be updated in the near future.
-  """
-  __default = {}
-
-  ans = {
-      'filename': filename,
-      'type': process,
-      'update': filename in session.cmd.opfile,
-      'data': None,
-  }
-
-  try:
-    with open(filename, 'r') as f:
-      if process == 'xyz':
-        ans['data'] = parse_file_xyz(f)
-      elif process == 'hist':
-        ans['data'] = parse_file_hist(f)
-      elif process == 'zscan':
-        ans['data'] = parse_file_zscan(f)
-      elif process == 'tscan':
-        ans['data'] = parse_file_tscan(f)
-      return ans
-  except Exception as err:
-    print("Error parsing data:", type(err), err)
-    if ans['update']:
-      print('Updating in progress')
-      # If data is currently being written to, return the empty data
-      return ans
-    else:
-      print(filename, session.cmd.opfile)
-      ## Returning the empty JSON in case any parsing went wrong
-      return __default
-
 
 def report_detid_data(process, detid):
   """
@@ -151,73 +111,6 @@ def report_detid_data(process, detid):
     return __default
 
 
-def report_settings():
-  """
-  Returning the list of settings to be parsed by the display client. The reason
-  why this function is generated on user request is because the user might need
-  to clear the client-side settings. This function allows for this to be
-  performed without needing to update all other connect clients.
-  """
-  settings = {
-      'image': {
-          'threshold': session.cmd.visual.threshold,
-          'blur': session.cmd.visual.blur_range,
-          'lumi': session.cmd.visual.lumi_cutoff,
-          'size': session.cmd.visual.size_cutoff,
-          'ratio': session.cmd.visual.ratio_cutoff * 100,
-          'poly': session.cmd.visual.poly_range * 100,
-      },
-      'zscan': {
-          'samples': session.zscan_samples,
-          'pwm': session.zscan_power_list,
-          'zdense': session.zscan_zlist_dense,
-          'zsparse': session.zscan_zlist_sparse,
-      },
-      'lowlight': {
-          'samples': session.lowlight_samples,
-          'pwm': session.lowlight_pwm,
-          'zval': session.lowlight_zval,
-      },
-      'lumialign': {
-          'samples': session.lowlight_samples,
-          'pwm': session.lowlight_pwm,
-          'zval': session.lowlight_zval,
-          'range': session.lumialign_range,
-          'distance': session.lumialign_distance,
-      },
-      'picoscope': {
-          # Picoscope settings are availabe regardless of picoscope availability.
-          'channel-a-range': session.cmd.pico.rangeA(),
-          'channel-b-range': session.cmd.pico.rangeB(),
-          'trigger-channel': session.cmd.pico.triggerchannel,
-          'trigger-value': session.cmd.pico.triggerlevel,
-          'trigger-direction': session.cmd.pico.triggerdirection,
-          'trigger-delay': session.cmd.pico.triggerdelay,
-          'trigger-presample': session.cmd.pico.presamples,
-          'trigger-postsample': session.cmd.pico.postsamples,
-          'blocksize': session.cmd.pico.ncaptures
-      }
-  }
-
-  # DRS settings are only available if a physical board is attached to the
-  # machine.
-  if session.cmd.drs.is_available():
-    settings.update({
-        'drs': {
-            'triggerdelay': session.cmd.drs.trigger_delay(),
-            'samplerate': session.cmd.drs.rate(),
-            'samples': session.cmd.drs.samples(),
-        }
-    })
-  else:
-    settings.update(
-        {'drs': {
-            'triggerdelay': 0,
-            'samplerate': 0,
-            'samples': 0,
-        }})
-
-  return settings
 
 
 def report_system_boards():
@@ -317,35 +210,6 @@ def parse_file_xyz(f):
   return ans
 
 
-def parse_file_hist(f):
-  """
-  Here we aggregate the results in a histogram. Here we assume the standard
-  write-out format with the last N columns being a list of readout values. The
-  first line is then used to create an numpy histogram. All other lines will be
-  accumulated into this histogram. We choose to create the histogram early to
-  reduce the memory footprint of the program.
-  """
-  ans = {'edges': [], 'values': [], 'mean': 0.0, 'rms': 0.0}
-
-  for line in f:
-    tokens = line.split()
-    if (len(tokens) < 10): continue  # Skipping over lines with bad format
-    array = [float(x) for x in tokens[8:]]
-    if ans['edges'] == []:
-      ans['values'], ans['edges'] = np.histogram(array, bins=40)
-    else:
-      v, _ = np.histogram(array, bins=ans['edges'])
-      ans['values'] = ans['values'] + v
-
-  cen = 0.5 * (ans['edges'][1:] + ans['edges'][:-1])
-  ans['mean'] = np.average(cen, weights=ans['values'])
-  ans['rms'] = np.average((cen - ans['mean'])**2, weights=ans['values'])**0.5
-
-  # Converting to python list
-  ans['edges'] = ans['edges'].tolist()
-  ans['values'] = ans['values'].tolist()
-
-  return ans
 
 
 def parse_file_zscan(f):
@@ -359,7 +223,6 @@ def parse_file_zscan(f):
     tokens = line.split()
     if (len(tokens) != 10): continue  # Skipping over lines with bad format
     ans['z'].append(float(tokens[4]))
-    ans['p'].append(float(tokens[5]))
     ans['v'].append(float(tokens[8]))
     ans['vu'].append(float(tokens[9]))
 

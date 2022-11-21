@@ -2,11 +2,10 @@
 @file digicmd.py
 
 @brief Commands for raw control and display of GPIO/ADC/PWM related interfaces
-  functions
+functions
 
 """
 import ctlcmd.cmdbase as cmdbase
-import cmod.logger as log
 import time
 
 
@@ -17,9 +16,6 @@ class pulse(cmdbase.controlcmd):
 
   @details this is some test
   """
-
-  LOG = log.GREEN('[PULSE]')
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -62,7 +58,7 @@ class pwm(cmdbase.controlcmd):
     self.parser.add_argument('--frequency',
                              '-f',
                              type=float,
-                             default=1000000,
+                             default=10000,
                              help='Base frequency of the PWM')
 
   def run(self, args):
@@ -99,47 +95,24 @@ class setadcref(cmdbase.controlcmd):
 
 class showadc(cmdbase.controlcmd):
   """
-  Printing the ADC values that are stored in memory
+  Printing the most recent readout values associated with ADC readouts.
   """
-
-  LOG = log.GREEN("[SHOWADC]")
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
-  def add_args(self):
-    self.parser.add_argument('--time',
-                             '-t',
-                             default=10,
-                             type=float,
-                             help='Time to run command [seconds]')
-    self.parser.add_argument('--interval',
-                             '-i',
-                             type=float,
-                             default=1,
-                             help='Time interval between updates [seconds]')
-
   def run(self, args):
-    start_time = time.time()
-    end_time = time.time()
-    while (end_time - start_time) < args.time:
-      self.check_handle()
-      self.update('{0} | {1} | {2} | {3}'.format(
-          'LED TEMP:{0:5.2f}C ({1:5.1f}mV)'.format(self.gpio.ntc_read(0),
-                                                   self.gpio.adc_read(0)),
-          'SiPM TEMP:{0:5.2f}C ({1:5.1f}mV)'.format(self.gpio.rtd_read(1),
-                                                    self.gpio.adc_read(1)),
-          'PWM0: {0:6.4f}V'.format(
-              self.gpio.adc_read(2) / 1000), 'PWM1: {0:6.4f}V'.format(
-                  self.gpio.adc_read(3) / 1000)))
-      time.sleep(args.interval)
-      end_time = time.time()
+    self.printdump('', [  #
+        ('LED', f'{self.gpio.ntc_read(0):5.2f}C',
+         f'{self.gpio.adc_read(0):5.1f}mV'),  #
+        ('SiPM', f'{self.gpio.rtd_read(1):5.2f}C',
+         f'{self.gpio.adc_read(1):5.1f}mV'),  #
+        ('PWM0', '', f'{self.gpio.adc_read(2):6.1f}mV'),  #
+        ('PWM1', '', f'{self.gpio.adc_read(3):6.1f}mV'),  #
+    ])
 
 
 class lighton(cmdbase.controlcmd):
-  """
-  Turning the LED lights on.
-  """
+  """@brief Turning the LED lights on."""
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -148,8 +121,7 @@ class lighton(cmdbase.controlcmd):
 
 
 class lightoff(cmdbase.controlcmd):
-  """@brief This is a test"""
-  """Turning the LED lights off."""
+  """@brief Turning the LED lights off."""
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 

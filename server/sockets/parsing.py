@@ -32,20 +32,6 @@ def socket_connect(socketio):
   send_cmd_progress(socketio)
   send_calib_progress(socketio)
 
-  # Before starting the first instance, we will be resetting the session file
-  # descriptor used to monitor the session back to 0 so that the full history
-  # will be flushed to the terminal session
-  session.session_output_monitor.seek(0)
-  print('Starting the terminal background task')
-  socketio.start_background_task(terminal_passthrough_output, *[socketio])
-
-
-def terminal_input(socketio, msg):
-  """
-  Receiving the user input for the client side terminal session. This is defined in the sync.py file.
-  """
-  terminal_passthrough_input(socketio, msg)
-
 
 def resend_sync(socketio, msg):
   """
@@ -116,24 +102,6 @@ def send_interrupt(socketio):
   session_interrupt(socketio)  # action.py
 
 
-def session_report(msg):
-  """
-  The handling of report of session data. Most of the data will be handled by the
-  report.py file.
-  """
-  if msg == 'tileboard_layout': return report_tileboard_layout()
-  elif msg == 'status': return report_system_status()
-  elif msg == 'validreference': return report_valid_reference()
-  elif msg == 'useraction': return report_useraction()
-  elif msg == 'systemboards': return report_system_boards()
-  elif msg == 'standardboards': return report_standard_boards()
-  elif msg == 'settings': return report_settings()
-  else:
-    ## Defaults to printing a message and returning an empty message.
-    print(msg)
-    return {}
-
-
 def get_file_data(process, filename):
   """
   Returning the cached data of the a the given process defined by the process. To
@@ -152,59 +120,3 @@ def get_detid_data(process, detid):
   function formatting is similar to a typical reporting process)
   """
   return report_detid_data(process, detid)
-
-
-def make_jpeg_image_byte(image):
-  """
-  Helper function to make the a byte stream as a string representing an image
-  object.
-  """
-  return (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + image + b'\r\n')
-
-
-"""
-Definition of static images to return if image is not available.
-"""
-__default_image_io = io.BytesIO(
-    cv2.imencode('.jpg', cv2.imread('server/static/icon/notdone.jpg', 0))[1])
-__default_yield = make_jpeg_image_byte(__default_image_io.read())
-
-
-def current_image_bytes():
-  """
-  Returning the byte string of the current image stored in the visual system's
-  buffer. The formatting code is borrowed from here: Notice that the framerate
-  of how fast the image is updated is defined here.
-
-  Reference: https://medium.com/datadriveninvestor/
-  video-streaming-using-flask-and-opencv-c464bf8473d6
-  """
-  while True:  ## This function will always generate a return
-    try:
-      yield make_jpeg_image_byte(session.cmd.visual.get_image_bytes())
-    except Exception as e:
-      yield __default_yield
-
-    time.sleep(0.1)
-
-
-#def get_visual_bytes(detid):
-#  """
-#  Getting the detector image used for visual alignment. The calibration session
-#  should store a jpeg byte stream each time a visual alignment is performed. In
-#  case the image doesn't exists, either because the visual alignment failed or
-#  the visual alignment hasn't been performed. Return the default image of a not
-#  found status.
-#  """
-#  while True:
-#    if detid in session.visual_cache and len(session.visual_cache[detid]) > 0:
-#      try:
-#        yield make_jpeg_image_byte(session.visual_cache[detid])
-#      except:
-#        yield __default_yield
-#    else:
-#      yield __default_yield
-#    time.sleep(0.1)
-#
-#def default_image_bytes():
-#  return __default_yield

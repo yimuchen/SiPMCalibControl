@@ -5,8 +5,8 @@ Commands for interacting and using the visual system for positional calibration.
 
 """
 import ctlcmd.cmdbase as cmdbase
-import cmod.logger as log
 import cmod.visual as vis
+import cmod.fmt as fmt
 import numpy as np
 from scipy.optimize import curve_fit
 import time
@@ -27,7 +27,7 @@ class visualmeta(cmdbase.controlcmd):
                              action='store_true',
                              help="""
                              Whether or not to open a window monitoring window
-                             (as this is working over SSH, this could be very
+                             (if you are working over SSH, this could be very
                              slow!!)""")
     self.parser.add_argument('--vwait',
                              type=float,
@@ -117,7 +117,6 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
   """
 
   DEFAULT_SAVEFILE = 'vhscan_<BOARDTYPE>_<BOARDID>_<DETID>_<SCANZ>_<TIMESTAMP>.txt'
-  LOG = log.GREEN('[VIS HSCAN]')
   HSCAN_ZVALUE = 20
   HSCAN_RANGE = 3
   HSCAN_SEPRATION = 0.5
@@ -146,9 +145,9 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
     reco_y = []
 
     ## Running over mesh.
-    for idx, (xval, yval) in enumerate(zip(args.x, args.y)):
+    for xval, yval in self.start_pbar(zip(args.x, args.y)):
       self.check_handle()
-      self.move_gantry(xval, yval, args.scanz, False)
+      self.move_gantry(xval, yval, args.scanz)
       time.sleep(args.vwait)
 
       center = self.visual.get_latest()
@@ -160,28 +159,24 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
         reco_x.append(center.x)
         reco_y.append(center.y)
 
-      self.update_progress(progress=(idx, len(args.x)),
-                           temperature=True,
-                           coodinates=True,
-                           display_data={
-                               'center': (center.x, center.y),
-                               'sharp': (center.s2, center.s4)
-                           })
       self.write_standard_line((center.x, center.y), det_id=args.detid)
+      self.pbar_data(center=f'({center.x:.0f}, {center.y:.0f})',
+                     sharp=f'({center.s2:1f}, {center.s4:.1f})')
 
     fitx, covar_x = curve_fit(visualhscan.model, np.vstack((gantry_x, gantry_y)),
                               reco_x)
     fity, covar_y = curve_fit(visualhscan.model, np.vstack((gantry_x, gantry_y)),
                               reco_y)
 
-    self.printmsg( 'Transformation for CamX ' \
-          '= ({0:.2f}+-{1:.3f})x + ({2:.2f}+-{3:.2f})y'.format(
-              fitx[0], np.sqrt(covar_x[0][0]),
-              fitx[1], np.sqrt(covar_x[1][1])  ) )
-    self.printmsg( 'Transformation for CamY ' \
-          '= ({0:.2f}+-{1:.3f})x + ({2:.2f}+-{3:.2f})y'.format(
-              fity[0], np.sqrt(covar_y[0][0]),
-              fity[1], np.sqrt(covar_y[1][1])  ) )
+    def meas_str(v, unc):
+      return f'{v:.2f}+-{unc:.3f}'
+
+    xx = meas_str(fitx[0], np.sqrt(covar_x[0][0]))
+    xy = meas_str(fitx[1], np.sqrt(covar_x[1][1]))
+    yx = meas_str(fity[0], np.sqrt(covar_y[0][0]))
+    yy = meas_str(fity[1], np.sqrt(covar_y[1][1]))
+    self.printmsg(f'Transformation for CamX = ({xx})x + ({xy})y')
+    self.printmsg(f'Transformation for CamY = ({yx})x + ({yy})y')
 
     ## Generating calibration det id if using det coordinates
     detid = str(args.detid)
@@ -194,14 +189,14 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
                           [[fitx[0], fitx[1]], [fity[0], fity[1]]])
     elif self.board.visM_hasz(detid, self.gcoder.opz):
       if self.prompt_yn(
-          """
-          Tranformation equation for z={args.scanz:.1f} already exists,
-          overwrite?""", 'no'):
+          f"""
+          Transformation equation for z={args.scanz:.1f} already exists,
+          overwrite?""", False):
         self.board.add_visM(detid, self.gcoder.opz,
                             [[fitx[0], fitx[1]], [fity[0], fity[1]]])
 
     ## Moving back to center
-    self.move_gantry(args.x, args.y, args.scanz, False)
+    self.move_gantry(args.x, args.y, args.scanz)
 
   @staticmethod
   def model(xydata, a, b, c):
@@ -222,8 +217,6 @@ class visualcenterdet(cmdbase.singlexycmd, visualmeta):
   - That a working visual-gantry transformation has already been constructed.
   """
   VISUAL_OFFSET = True
-
-  LOG = log.GREEN('[VIS ALIGN]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -267,7 +260,7 @@ class visualcenterdet(cmdbase.singlexycmd, visualmeta):
     artifacts comes and goes, we will try up to 8 times to find the detector
     element in the camera.
     """
-    self.move_gantry(args.x, args.y, args.scanz, False)
+    self.move_gantry(args.x, args.y, args.scanz)
     center = None
 
     for _ in range(16):
@@ -294,7 +287,7 @@ class visualcenterdet(cmdbase.singlexycmd, visualmeta):
       ## Early exit if difference from center is small
       if np.linalg.norm(motionxy) < 0.1: break
       self.move_gantry(self.gcoder.opx + motionxy[0],
-                       self.gcoder.opy + motionxy[1], self.gcoder.opz, False)
+                       self.gcoder.opy + motionxy[1], self.gcoder.opz)
       time.sleep(args.vwait)  ## Waiting for the gantry to stop moving
 
     center = self.visual.get_latest()
@@ -321,7 +314,7 @@ class visualcenterdet(cmdbase.singlexycmd, visualmeta):
       if self.prompt_yn(f"""
                         A visual alignment for z={args.scanz:.1f} already exists
                         for the current session, overwrite?""",
-                        default='no'):
+                        default=False):
         self.board.add_vis_coord(detid, self.gcoder.opz,
                                  [self.gcoder.opx, self.gcoder.opy])
 
@@ -352,7 +345,6 @@ class visualmaxsharp(cmdbase.singlexycmd, cmdbase.zscancmd, visualmeta):
   """
   The user is required to input the z points to scan for maximum sharpness.
   """
-  LOG = log.GREEN('[VISMAXSHARP]')
   VISUAL_OFFSET = True
 
   def __init__(self, cmd):
@@ -371,7 +363,7 @@ class visualmaxsharp(cmdbase.singlexycmd, cmdbase.zscancmd, visualmeta):
 
     for z in args.zlist:
       self.check_handle()
-      self.move_gantry(args.x, args.y, z, False)
+      self.move_gantry(args.x, args.y, z)
       time.sleep(args.vwait)
 
       center = self.visual.get_latest()
@@ -401,7 +393,7 @@ class visualmaxsharp(cmdbase.singlexycmd, cmdbase.zscancmd, visualmeta):
                  *model.bounds[0]], [np.max(args.zlist), *model.bounds[1]]),
         maxfev=int(1e4))
     self.printmsg(f"Target z position: {fit[0]:.2f}mm (actual: {fit[0]:.1f}mm)")
-    self.move_gantry(args.x, args.y, fit[0], False)
+    self.move_gantry(args.x, args.y, fit[0])
 
   """
   Models for running the sharpness fit profile, defined as static methods. Notice
@@ -469,7 +461,6 @@ class visualzscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.savefilecmd,
   """
   VISUAL_OFFSET = True
   DEFAULT_SAVEFILE = 'vscan_<DETID>_<TIMESTAMP>.txt'
-  LOG = log.GREEN('[VISZSCAN]')
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -478,10 +469,10 @@ class visualzscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.savefilecmd,
     pass
 
   def run(self, args):
-    for idx, z in enumerate(args.zlist):
+    for z in self.start_pbar(args.zlist):
       # Checking termination signal
       self.check_handle()
-      self.move_gantry(args.x, args.y, z, False)
+      self.move_gantry(args.x, args.y, z)
       time.sleep(args.wait)
 
       center = self.visual.get_latest()
@@ -492,23 +483,16 @@ class visualzscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.savefilecmd,
       reco_a.append(center.area)
       reco_d.append(center.maxmeas)
 
-      self.update_progress(progress=(idx, len(args.zlen)),
-                           temperature=True,
-                           coordinates=True,
-                           display_data={
-                               'sharpness': (center.s2, center.s4),
-                               'reco': (center.x, center.y),
-                               'measure': (center.area, center.maxmeas)
-                           })
       self.write_standard_line(
           (laplace[-1], center.x, center.y, center.area, center.maxmeas),
           det_id=args.detid)
+      self.pbar_data(sharpness=f'({center.s2:.1f}, {center.s4:.1f})',
+                     reco=f'({center.x:.0f}, {center.y:.0f})',
+                     measure=f'({center.area:.0f}, {center.maxmeas:.0f})')
 
 
 class visualshowdet(visualmeta):
   """@brief Display of detector position, until termination signal is obtained."""
-  LOG = log.GREEN('[SHOW DETECTOR]')
-
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
 
@@ -528,9 +512,9 @@ class visualshowdet(visualmeta):
     self.printmsg("PRESS CTL+C to stop the command")
     self.printmsg("Legend")
     self.printmsg("Failed contor ratio requirement")
-    self.printmsg(log.GREEN("Failed area luminosity requirement"))
-    self.printmsg(log.YELLOW("Failed rectangular approximation"))
-    self.printmsg(log.CYAN("Candidate contour (not largest)"))
+    self.printmsg(fmt.GREEN("Failed area luminosity requirement"))
+    self.printmsg(fmt.YELLOW("Failed rectangular approximation"))
+    self.printmsg(fmt.CYAN("Candidate contour (not largest)"))
     while True:
       try:
         self.check_handle()
