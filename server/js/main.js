@@ -65,6 +65,8 @@ $(function () {
     $('#session-cmd-send').on('click', session_cmd_send);
     $('#interrupt-send').on('click', session_interrupt_send);
     $('#user-action-check').on('click', user_action_send_check);
+    $('#debug-request-guess').on('click', debug_request_guess);
+    $('#debug-request-plot').on('click', debug_request_plot);
   });
 
   // Connect to the network socket
@@ -83,7 +85,6 @@ $(function () {
    */
   // $('#run-system-calibration').on('click', run_system_calibration);
   // $('#run-std-calibration').on('click', run_std_calibration);
-  // $('#user-action-complete').on('click', complete_user_action);
   // $('#system-calib-signoff').on('click', system_calibration_signoff);
   // $('#standard-calib-signoff').on('click', standard_calibration_signoff);
   // $('#debug-request-plot').on('click', debug_request_plot);

@@ -18,18 +18,35 @@
  * resubmitting a data request to the server. As no data caching will be handled
  * on the server, extensive resubmission will be very computationally expensive.
  */
-async function parse_plot_data(data, div_id) {
+
+// Default plotting layout settings for all plots
+const layout_default_config = {
+  displayModeBar: false /** Do not add widgets to change plot range */,
+  responsive: true /** Scales with CSS geometry changes */,
+};
+
+/**
+ * Function for requesting plot data directly by filename.
+ *
+ * The following inputs is required:
+ * - The filename used to extract plotting information.
+ * - The plot-type to reduce the information.
+ * - The element id to store the plot.
+ *
+ * The file name needs to be adjusted to replace the slashed with a unique
+ * character not typically used for file naming while being URL safe (ex. using
+ * @ for now).
+ */
+function plot_data_to_id(data, plot_type, div_id) {
   token = data.token;
   filename = data.filename;
-  type = data.type;
-  update = data.update;
   plotdata = data.data;
 
   if ($(`#${div_id}`).length == 0) {
     console.log(`DIV doesn't exist for plotting`);
     console.log(plotdata);
   } else {
-    switch (type) {
+    switch (plot_type) {
       case 'xyz':
         plot_heat_map(div_id, plotdata);
         break;
@@ -42,14 +59,8 @@ async function parse_plot_data(data, div_id) {
       case 'time':
         plot_tscan(div_id, plotdata);
       default:
-        console.log('Unknown plot type', type);
+        console.log('Unknown plot type', plot_type);
     }
-  }
-  await sleep(200);
-  console.log('Requesting plot update!', update);
-  if (update) {
-    // Rerunning the plot request
-    request_plot_by_file(filename, type, div_id);
   }
 }
 
@@ -57,11 +68,15 @@ async function parse_plot_data(data, div_id) {
  * Plotting the output x-y-z data format.
  */
 function plot_heat_map(div, data) {
+  let z = [];
+  for (const entry of data.readout) {
+    z.push(entry[0]);
+  }
   const plotly_data = [
     {
       x: data.x,
       y: data.y,
-      z: data.z,
+      z: z,
       type: 'contour',
       colorscale: 'RdBu',
     },
@@ -157,13 +172,20 @@ function plot_histogram(div, data) {
 }
 
 function plot_zscan(div, data) {
+  var v = [];
+  var vu = [];
+  for (const entry of data.readout) {
+    v.push(entry[0]);
+    vu.push(entry[1]);
+  }
+
   var plotly_data = [
     {
       x: data.z,
-      y: data.v,
+      y: v,
       error_y: {
         type: 'data',
-        array: data.vu,
+        array: vu,
         visible: true,
       },
       marker: {
@@ -179,6 +201,8 @@ function plot_zscan(div, data) {
       name: 'Readout value',
     },
   ];
+
+  console.log(plotly_data)
 
   layout = {
     autosize: true,
@@ -211,37 +235,6 @@ function plot_zscan(div, data) {
 
 function plot_tscan(div, data) {
   console.log('plotting tscan', data);
-}
-
-/**
- * Updating the uptime display container:
- */
-function status_update_time() {
-  const time = parseInt(session.monitor.time[session.monitor.time.length - 1]);
-  const time_hour = parseInt(time / 3600)
-    .toString()
-    .padStart(2, 0);
-  const time_min = parseInt((time / 60) % 60)
-    .toString()
-    .padStart(2, 0);
-  const time_sec = parseInt(time % 60)
-    .toString()
-    .padStart(2, 0);
-  const state_str =
-    session.state == STATE_IDLE
-      ? `IDLE`
-      : session.state == STATE_EXEC_CMD
-      ? `EXECUTING COMMAND`
-      : session.state == STATE_RUN_PROCESS
-      ? `PROCESSING`
-      : session.state == STATE_WAIT_USER
-      ? `WAITING UESR ACTION`
-      : ``;
-  $(`#up-time`).html(`Uptime: ${time_hour}:${time_min}:${time_sec}`);
-  $('#up-time-since').html(
-    `Session is: ${state_str} </br>
-     Since: ${session.monitor.start}`,
-  );
 }
 
 /**
@@ -341,11 +334,6 @@ function plot_monitor_data() {
       x: 0.5,
       y: 0.9,
     },
-  };
-
-  const layout_default_config = {
-    displayModeBar: false,
-    responsive: true,
   };
 
   if ($(`#temperature-plot`).length != 0) {

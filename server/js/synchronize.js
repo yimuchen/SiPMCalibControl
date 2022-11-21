@@ -100,7 +100,6 @@ function system_log_common() {
   // Checking the last command entry. Update the command progress bar
   // accordingly.
   const last_cmd = session.last_cmd();
-  console.log(last_cmd);
   let pbar_dom = $('#command-progress-display');
   pbar_dom.removeClass();
   if (last_cmd === undefined) {

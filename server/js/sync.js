@@ -5,38 +5,8 @@
  * calibration session.
  */
 
-
 function request_sync(msg) {
   socketio.emit('resend', msg);
-}
-
-/**
- * Updating the session state as seen by the client. In addition to the raw
- * variable used to store the session state, the following are also update:
- * 1. If the new state indicates the system is idle, unlock all action button,
- *    otherwise lock all action buttons.
- * 2. If the new state is "waiting for user", unlock a action button associated
- *    with the user action button and display the wait message as given by
- *    submitting an ajax request.
- */
-function sync_system_state(new_state) {
-  session.state = new_state; // updating the raw system state.
-
-  // Action button locking if state is not idle
-  const lock = session.state != STATE_IDLE;
-  $('.action-button').each(function () {
-    $(this).prop('disabled', lock);
-  });
-
-  // Editing the user action HTML DOM elements
-  if (session.state === STATE_WAIT_USER) {
-    show_action_column();
-    $('#user-action').removeClass('hidden');
-    $('#user-action-complete').prop('disabled', false);
-    request_user_action();
-  } else {
-    $('#user-action').addClass('hidden');
-  }
 }
 
 /**

@@ -47,8 +47,7 @@
       <h2>Calibration Actions</h2>
 
       <!--Defined in macros/actions.html-->
-      {{ system_calibration() }} {{ standard_calibration()
-      }}
+      {{ system_calibration() }} {{ standard_calibration() }}
 
       <!--Defined in macros/settings.html-->
       {{ image_settings() }} {{ picoscope_settings() }} {{ drs_settings() }} {{
@@ -77,38 +76,65 @@
                 <div class="input-row">
                   <span class="input-name" id="session-log-header">
                     <b>Session log</b>
-                    <br>
+                    <br />
 
                     <div class="input-align">
                       <div class="input-row">
                         <div class="input-name">
-                          <input type="checkbox" class="log-display-check" id="log-display-error" checked/>
-                        </div><span class="input-unit">Error</span>
+                          <input
+                            type="checkbox"
+                            class="log-display-check"
+                            id="log-display-error"
+                            checked
+                          />
+                        </div>
+                        <span class="input-unit">Error</span>
                       </div>
                       <div class="input-row">
                         <div class="input-name">
-                          <input type="checkbox" class="log-display-check" id="log-display-warning" checked/>
-                        </div><span class="input-unit">Warning</span>
+                          <input
+                            type="checkbox"
+                            class="log-display-check"
+                            id="log-display-warning"
+                            checked
+                          />
+                        </div>
+                        <span class="input-unit">Warning</span>
                       </div>
                       <div class="input-row">
                         <div class="input-name">
-                          <input type="checkbox" class="log-display-check" id="log-display-info" checked/>
-                        </div><span class="input-unit">Info</span>
+                          <input
+                            type="checkbox"
+                            class="log-display-check"
+                            id="log-display-info"
+                            checked
+                          />
+                        </div>
+                        <span class="input-unit">Info</span>
                       </div>
                       <div class="input-row">
                         <div class="input-name">
-                          <input type="checkbox" class="log-display-check" id="log-display-config"/>
-                        </div><span class="input-unit">Configs.</span>
+                          <input
+                            type="checkbox"
+                            class="log-display-check"
+                            id="log-display-config"
+                          />
+                        </div>
+                        <span class="input-unit">Configs.</span>
                       </div>
                       <div class="input-row">
                         <div class="input-name">
-                          <input type="checkbox" class="log-display-check" id="log-display-cmd"/>
-                        </div><span class="input-unit">Commands</span>
+                          <input
+                            type="checkbox"
+                            class="log-display-check"
+                            id="log-display-cmd"
+                          />
+                        </div>
+                        <span class="input-unit">Commands</span>
                       </div>
                     </div>
 
                     <a href="/logdump/system">Get full log</a>
-
                   </span>
                   <div class="input-units" id="session-log-table-container">
                     <table id="session-log-table"></table>
@@ -125,7 +151,7 @@
                     <button id="session-cmd-send" class="action-button">
                       Execute
                     </button>
-                    <button id="interrupt-send" style="width:30px;">
+                    <button id="interrupt-send" style="width: 30px">
                       <i class="fa fa-solid fa-bolt"></i>
                     </button>
                   </div>
@@ -134,8 +160,15 @@
                   <!--Showing the single command progress bar-->
                   <span class="input-name">Command progress</span>
                   <div class="input-units">
-                    <div id="command-progress" class="progress-bar-container" style="width:80%;">
-                      <div id="command-progress-display" style="width:100%;"></div>
+                    <div
+                      id="command-progress"
+                      class="progress-bar-container"
+                      style="width: 80%"
+                    >
+                      <div
+                        id="command-progress-display"
+                        style="width: 100%"
+                      ></div>
                     </div>
                     <div id="command-progress-desc"></div>
                   </div>
@@ -173,6 +206,90 @@
             <div class="column" id="detector-view">
               <div id="single-det-summary"></div>
               <div id="det-plot-and-figure"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab">
+        <div class="tab-title">
+          <span>Single plot requests</span>
+          <i class="fa fa=fa-angle-left"></i>
+        </div>
+        <div class="tab-content">
+          <div class="column-container">
+            <div class="column">
+              <div class="input-align">
+                <div class="input-row">
+                  <span class="input-name">data file</span>
+                  <span></span>
+                  <!--For alignment-->
+                  <span class="input-units">
+                    <input
+                      type="text"
+                      style="width: 25em"
+                      id="debug-plot-file"
+                      value=""
+                    />
+                  </span>
+                </div>
+                <div class="input-row">
+                  <span class="input-name">Plot type</span>
+                  <input
+                    type="radio"
+                    id="xyz"
+                    name="debug-plot-type"
+                    value="xyz"
+                  />
+                  <span class="input-units">
+                    <label for="xyz">x-y-z Heat map</label>
+                  </span>
+                </div>
+                <div class="input-row">
+                  <span class="input-name"></span>
+                  <input
+                    type="radio"
+                    id="hist"
+                    name="debug-plot-type"
+                    value="hist"
+                  />
+                  <span class="input-units">
+                    <label for="hist">Histogram</label>
+                  </span>
+                </div>
+                <div class="input-row">
+                  <span class="input-name"></span>
+                  <input
+                    type="radio"
+                    id="zscan"
+                    name="debug-plot-type"
+                    value="zscan"
+                  />
+                  <span class="input-units">
+                    <label for="zscan">z-scan</label>
+                  </span>
+                </div>
+                <div class="input-row">
+                  <span class="input-name"></span>
+                  <input
+                    type="radio"
+                    id="tscan"
+                    name="debug-plot-type"
+                    value="tscan"
+                  />
+                  <span class="input-units">
+                    <label for="tscan">time scan</label>
+                  </span>
+                </div>
+              </div>
+
+              <div class="button-container">
+                <button id="debug-request-guess">Guess plot</button>
+                <button id="debug-request-plot">Request plot</button>
+              </div>
+            </div>
+            <div class="column">
+              <div id="debug-plot-div"></div>
             </div>
           </div>
         </div>

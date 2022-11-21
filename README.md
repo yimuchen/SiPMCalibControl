@@ -13,7 +13,7 @@ calibration project:
 - Technical details for the analysis program: [here][sipmcalibanalysis]
 
 
-[manual-cli]: https://yimuchen.github.io/SiPMCalibControl/group__cli.html
-[doc]: https://yimuchen.github.io/SiPMCalibControl/index.html
-[sipmcalibanalysis]: https://github.com/yimuchen/SiPMCalib
+[manual-cli]: https://umdcms.github.io/SiPMCalibControl/group__cli.html
+[doc]: https://umdcms.github.io/SiPMCalibControl/index.html
+[sipmcalibanalysis]: https://github.com/UMDCMS/SiPMCalib
 [sipmcalibdn]: https://icms.cern.ch/tools/publications/notes/entries/DN/2019/048

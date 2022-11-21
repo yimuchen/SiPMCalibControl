@@ -48,25 +48,54 @@ function session_interrupt_send() {
 }
 
 /**
+ * Guessing the plotting request by the file name.
+ */
+function debug_request_guess() {
+  filename = $('#debug-plot-file').val();
+  plottype = filename.includes('zscan')
+    ? 'zscan'
+    : filename.includes('lowlight')
+    ? 'hist'
+    : filename.includes('halign')
+    ? 'xyz'
+    : 'unknown';
+  console.log(filename, plottype);
+  ajax_request(
+    `databyfile/${plottype}/${filename.replaceAll('/', '@')}`,
+    async function (json) {
+      plot_data_to_id(json, plottype, 'debug-plot-div');
+    },
+  );
+}
+
+/**
+ * Specifying the plotting type by the selected instance
+ */
+function debug_request_plot() {
+  filename = $('#debug-plot-file').val();
+  type = $('input[name="debug-plot-type"]:checked').val();
+  console.log(file, type);
+  ajax_request(
+    `databyfile/${type}/${filename.replaceAll('/', '@')}`,
+    async function (json) {
+      plot_data_to_id(json, type, 'debug-plot-div');
+    },
+  );
+}
+
+/**
  * Getting the input string for the user action check lock, and applying sending
  * it to the server session to be evaluated.
  */
-function user_action_send_check(){
+function user_action_send_check() {
   session.socketio.emit('user-action-check', $('#user-action-input').val());
   // Clearing the user input prompt to avoid accidental matches.
   $('#user-action-input').val('');
 }
 
-
-/**
- * Action to send to the server on the completion of the user action. Hide the
- * tab showing the required user action.
- */
-function complete_user_action() {
-  hide_action_column();
-  $('#user-action').addClass('hidden');
-  socketio.emit('complete-user-action', '');
-}
+/****************************************************************************** */
+/* OLD CODE BEYOND THIS POINT
+/****************************************************************************** */
 
 /**
  * Process defined to running a system calibration.
@@ -202,16 +231,6 @@ async function rerun_single(action_tag, detid, extend) {
 
   await sleep(100);
   request_plot_by_detid(detid, action_tag, detector_plot_id(detid, action_tag));
-}
-
-/**
- * Asking the session to execute the drs debugging sequence
- */
-async function debug_request_plot() {
-  file = $('#debug-plot-file').val();
-  type = $('input[name="debug-plot-type"]:checked').val();
-  console.log(file, type);
-  request_plot_by_file(file, type, 'debug-plot-div');
 }
 
 /********************************************************************************

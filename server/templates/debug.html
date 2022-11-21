@@ -107,68 +107,6 @@
     <!--Adding a second visual tab with large image for ease of debugging-->
     {{ visual_tab() }}
 
-    <div class="tab">
-      <div class="tab-title">
-        <span>Debug plotting</span>
-        <i class="fa fa=fa-angle-left"></i>
-      </div>
-      <div class="tab-content">
-        <div class="column-container">
-          <div class="column">
-            <div class="input-align">
-              <div class="input-row">
-                <span class="input-name">data file</span>
-                <span></span>
-                <!--For alignment-->
-                <span class="input-units">
-                  <input type="text" style="width:25em;" id="debug-plot-file" value="" />
-                </span>
-              </div>
-              <div class="input-row">
-                <span class="input-name">Plot type</span>
-                <input type="radio" id="xyz" name="debug-plot-type" value="xyz" />
-                <span class="input-units">
-                  <label for="xyz">x-y-z Heat map</label>
-                </span>
-              </div>
-              <div class="input-row">
-                <span class="input-name"></span>
-                <input type="radio" id="hist" name="debug-plot-type" value="hist" />
-                <span class="input-units">
-                  <label for="hist">Histogram</label>
-                </span>
-              </div>
-              <div class="input-row">
-                <span class="input-name"></span>
-                <input type="radio" id="zscan" name="debug-plot-type" value="zscan" />
-                <span class="input-units">
-                  <label for="zscan">z-scan</label>
-                </span>
-              </div>
-              <div class="input-row">
-                <span class="input-name"></span>
-                <input type="radio" id="tscan" name="debug-plot-type" value="tscan" />
-                <span class="input-units">
-                  <label for="tscan">time scan</label>
-                </span>
-              </div>
-            </div>
-
-
-            <div class="button-container">
-              <button id="debug-request-plot">
-                Request plot
-              </button>
-            </div>
-
-          </div>
-          <div class="column">
-            <div id="debug-plot-div">
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
 </body>
 

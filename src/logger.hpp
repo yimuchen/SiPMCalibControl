@@ -4,28 +4,11 @@
 #include <stdexcept>
 #include <string>
 
+// Main documentation kept in cmod/fmt.py file
 /**
- * @defgroup Logger Logger
+ * @defgroup Logging Logging
  * @ingroup hardware
- * @brief Simple logging facilities across python and C++ modules
- *
- * @details Logging here means the manipulation display of messages on the
- * terminal, not the persistent logging of the system status. Instead of C++'s
- * `std::cout` method and the python `print` method, all terminal printing in
- * the packages should used the facilities provided here to allow for
- * consistent output and piping of the monitoring stream when specified.
- * Functions are also provided to the decorator strings for colored text to be
- * easily printed onto the terminal. All functions should use raw [UNIX escape
- * characters][escapechar] for fancy string manipulation to reduce dependencies
- * on external libraries.
- *
- * The `update` related methods uses a unique header string as the identifier,
- * each time the `update` method is called, the line with the corresponding
- * header string is updated with the new string. This method is particularly
- * useful for commands that require progress reporting without swamping the
- * screen with output lines.
- *
- * [escapechar]: https://en.wikipedia.org/wiki/ANSI_escape_code
+ * @brief Exposing python logging facilities to low level C++ modules
  *
  * @{
  */
@@ -41,6 +24,5 @@ extern std::runtime_error device_exception( const std::string& device,
                                             const std::string& x  );
 
 extern std::string format_str( const char* exp, ... );
-
 /** @} */
 #endif

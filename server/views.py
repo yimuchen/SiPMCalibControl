@@ -15,10 +15,9 @@ As flasks `add_url_rule` method requires a callable with no other inputs other
 than the URL, we use a thin wrapper class to allow all function to access the
 main session instance.
 """
-from flask import render_template, Response, jsonify, request, redirect
-import cv2
-import io
-import time
+from flask import render_template, Response, jsonify
+import cv2, io, time
+import numpy as np
 
 
 class ViewFunction(object):
@@ -31,11 +30,21 @@ class ViewFunction(object):
     """Saving a reference to them main session instance"""
     self.session = session
 
-  def __call__(self):
+  def __call__(self, *args, **kwargs):
     """
-    Method that is registered to the flask application and should be implemented
-    in inherited classes
+    Method that is registered to the flask application. Here we provide a thin
+    wrapper to emit an error message to connected clients should an error be
+    detected. Subsequent classes should over the view method.
     """
+    try:
+      return self.view(*args, **kwargs)
+    except Exception as err:
+      self.session.devlog(f'guiview.{self.__class__.__name__.lower()}').error(
+          str(err))
+    pass
+
+  def view(self, *args, **kwargs):
+    """Method to overload for the other classes"""
     pass
 
 
@@ -51,7 +60,7 @@ class index(ViewFunction):
   This is the main page the is to be rendered to the front user. The
   corresponding file can be found at server/template/index.html
   """
-  def __call__(self):
+  def view(self):
     return render_template('index.html')
 
 
@@ -62,7 +71,7 @@ class expert(ViewFunction):
   output in a simplified data format. This corresponding file is found in the
   server/template/debug.html path.
   """
-  def __call__(self):
+  def view(self):
     return render_template('debug.html')
 
 
@@ -70,7 +79,7 @@ class playground(ViewFunction):
   """
   This URL is for testing display functions only.
   """
-  def __call__(self):
+  def view(self):
     return render_template('playground.html')
 
 
@@ -83,7 +92,7 @@ requests.
 
 
 class geometry(ViewFunction):
-  def __call__(self, boardtype):
+  def view(self, boardtype):
     """
     The geometry json files. These files correspond directly to the json files in
     the cfg/geometry/ directory if they exists.
@@ -97,7 +106,7 @@ class geometry(ViewFunction):
 
 
 class status(ViewFunction):
-  def __call__(self, reporttype):
+  def view(self, reporttype):
     """
     Instead of report via a socket command, display updates are performed using
     the call to a pseudo JSON file that contains the current status of the
@@ -117,7 +126,7 @@ class status(ViewFunction):
 
 
 class device_settings(ViewFunction):
-  def __call__(self):
+  def view(self):
     """
     Returning the list of settings to be parsed by the display client. The
     reason why this function is generated on user request is because the user
@@ -186,23 +195,81 @@ class device_settings(ViewFunction):
     return jsonify(settings)
 
 
-class datafile(ViewFunction):
-  def __call__(self, process, filename):
+class FileDataParsing(object):
+  """
+  Common class for for parsing data given a file name, this is so that different
+  methods can use the same parsing routine.
+  """
+  def make_dict_response(self, process, filename):
+    """
+    Defining the standard response format
+    """
+    return {
+        'filename': filename,
+        'type': process,
+        'data': self.make_hist_processed_data(filename) if process == 'hist' else \
+                self.make_generic_processed_data(filename)
+    }
+
+  def make_hist_processed_data(self, filename):
+    """
+    Here we aggregate the results in a histogram. Here we assume the standard
+    write-out format with the last N columns being a list of readout values. The
+    first line is then used to create an numpy histogram. All other lines will be
+    accumulated into this histogram. We choose to create the histogram early to
+    reduce the memory footprint of the program.
+    """
+    raw_values = np.array([])
+    with open(filename, 'r') as f:
+      for line in f:
+        tokens = line.split()
+        if (len(tokens) < 10): continue  # Skipping over lines with bad format
+        raw_values = np.append(raw_values,
+                               np.array([float(x) for x in tokens[8:]]))
+    hist_values, hist_edges = np.histogram(raw_values, bins=40)
+    return {
+        'edges': hist_edges.tolist(),
+        'values': hist_values.tolist(),
+        'mean': np.mean(raw_values),
+        'rms': np.std(raw_values)
+    }
+
+  def make_generic_processed_data(self, filename):
+    """
+    Returning the full data collected as a set of named array values.
+    """
+    ret_dict = {
+        't': [],
+        'x': [],
+        'y': [],
+        'z': [],
+        'p': [],
+        'pt': [],
+        'st': [],
+        'readout': [],
+    }
+    with open(filename) as f:
+      for line in f:
+        tokens = line.split()
+        if (len(tokens) != 10): continue  # Skipping over line in bad format.
+        ret_dict['t'].append(float(tokens[0]))
+        ret_dict['x'].append(float(tokens[2]))
+        ret_dict['y'].append(float(tokens[3]))
+        ret_dict['z'].append(float(tokens[4]))
+        ret_dict['p'].append(float(tokens[5]))
+        ret_dict['pt'].append(float(tokens[6]))
+        ret_dict['st'].append(float(tokens[7]))
+        ret_dict['readout'].append([float(x) for x in tokens[8:]])
+    return ret_dict
+
+
+class databyfile(ViewFunction, FileDataParsing):
+  def view(self, process, filename):
     """
     Returning the data stored at the requested path, and reduced the data
     according to the requested process format.
     """
-    return jsonify(get_file_data(process, filename))  # Defined in parsing.py
-
-
-class data(ViewFunction):
-  def __call__(self, process, detid):
-    """
-    Returning the data of a certain calibration process on a detector elements in
-    json format. This aims to minimized the amount of time the same piece of data
-    needs to be transported over the network.
-    """
-    return jsonify(get_detid_data(process, detid))  # Defined in parsing.py
+    return jsonify(self.make_dict_response(process, filename.replace('@', '/')))
 
 
 class visual(ViewFunction):
@@ -225,7 +292,7 @@ class visual(ViewFunction):
     __default_yield = visual.make_jpeg_image_byte(__default_image_io.read())
     return __default_yield
 
-  def __call__(self):
+  def view(self):
     def current_image_bytes():
       while True:  ## This function will always generate a return
         try:
@@ -243,7 +310,7 @@ class logdump(ViewFunction):
   """
   Returning the monitoring stream as a single json file
   """
-  def __call__(self, logtype):
+  def view(self, logtype):
     return jsonify({
         'request_timestamp':
         time.time(),

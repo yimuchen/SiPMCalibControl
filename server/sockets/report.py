@@ -86,46 +86,6 @@ def report_useraction():
   return session.waiting_msg
 
 
-def report_file_data(process, filename):
-  """
-  Returning the contents of a data file in the requested format. The formatting
-  functions will be defined at the end of this file. We also compare the file
-  name with the current file being work on by the underlying command line
-  session, and use this to generate a flag for the client to know whether the
-  data requested is actively being updated by the underlying session and should
-  be updated in the near future.
-  """
-  __default = {}
-
-  ans = {
-      'filename': filename,
-      'type': process,
-      'update': filename in session.cmd.opfile,
-      'data': None,
-  }
-
-  try:
-    with open(filename, 'r') as f:
-      if process == 'xyz':
-        ans['data'] = parse_file_xyz(f)
-      elif process == 'hist':
-        ans['data'] = parse_file_hist(f)
-      elif process == 'zscan':
-        ans['data'] = parse_file_zscan(f)
-      elif process == 'tscan':
-        ans['data'] = parse_file_tscan(f)
-      return ans
-  except Exception as err:
-    print("Error parsing data:", type(err), err)
-    if ans['update']:
-      print('Updating in progress')
-      # If data is currently being written to, return the empty data
-      return ans
-    else:
-      print(filename, session.cmd.opfile)
-      ## Returning the empty JSON in case any parsing went wrong
-      return __default
-
 
 def report_detid_data(process, detid):
   """
@@ -250,35 +210,6 @@ def parse_file_xyz(f):
   return ans
 
 
-def parse_file_hist(f):
-  """
-  Here we aggregate the results in a histogram. Here we assume the standard
-  write-out format with the last N columns being a list of readout values. The
-  first line is then used to create an numpy histogram. All other lines will be
-  accumulated into this histogram. We choose to create the histogram early to
-  reduce the memory footprint of the program.
-  """
-  ans = {'edges': [], 'values': [], 'mean': 0.0, 'rms': 0.0}
-
-  for line in f:
-    tokens = line.split()
-    if (len(tokens) < 10): continue  # Skipping over lines with bad format
-    array = [float(x) for x in tokens[8:]]
-    if ans['edges'] == []:
-      ans['values'], ans['edges'] = np.histogram(array, bins=40)
-    else:
-      v, _ = np.histogram(array, bins=ans['edges'])
-      ans['values'] = ans['values'] + v
-
-  cen = 0.5 * (ans['edges'][1:] + ans['edges'][:-1])
-  ans['mean'] = np.average(cen, weights=ans['values'])
-  ans['rms'] = np.average((cen - ans['mean'])**2, weights=ans['values'])**0.5
-
-  # Converting to python list
-  ans['edges'] = ans['edges'].tolist()
-  ans['values'] = ans['values'].tolist()
-
-  return ans
 
 
 def parse_file_zscan(f):
@@ -292,7 +223,6 @@ def parse_file_zscan(f):
     tokens = line.split()
     if (len(tokens) != 10): continue  # Skipping over lines with bad format
     ans['z'].append(float(tokens[4]))
-    ans['p'].append(float(tokens[5]))
     ans['v'].append(float(tokens[8]))
     ans['vu'].append(float(tokens[9]))
 

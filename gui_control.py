@@ -113,6 +113,8 @@ if __name__ == '__main__':
           most likely misbehave! Use at your own risk!"""))
 
   session.start_session()  # Starting the session!
+  # Notice that this will continue to run until the shutdown signal is sent from
+  # a client side request.
 
   # Currently this seg-faults on exit. I am not sure which hardware interface is
   # not being released properly, but doesn't seem to cause any persistent issue

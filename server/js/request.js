@@ -21,26 +21,6 @@ async function clear_settings() {
   ajax_request('devicesettings', update_settings, 500);
 }
 
-/**
- * Function for requesting plot data directly by filename.
- *
- * The following inputs is required:
- * - The filename used to extract plotting information.
- * - The plot-type to reduce the information.
- * - The element id to store the plot.
- *
- * The file name needs to be adjusted to replace the slashed with a unique
- * character not typically used for file naming while being URL safe (ex. using
- * @ for now).
- */
-async function request_plot_by_file(filename, type, id) {
-  ajax_request(
-    `databyfile/${type}/${filename.replaceAll('/', '@')}`,
-    async function (json) {
-      parse_plot_data(json, id);
-    },
-  );
-}
 
 /**
  * Function for requesting plot data by some detector ID of the current

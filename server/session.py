@@ -291,15 +291,16 @@ class GUISession(object):
     """
     # Forcing a debug server for easier handling of server shutdown (This )
     self.app.debug = True
-    for url, vfunc in [('/', 'index'),  #
-                       ('/devicesettings', 'device_settings'),
-                       ('/geometry/<boardtype>', 'geometry'),  #
-                       ('/report/<reporttype>', 'status'),  #
-                       ('/databyfile/<process>/<filename>', 'datafile'),  #
-                       ('/data/<process>/<detid>', 'data'),  #
-                       ('/visual', 'visual'),  #
-                       ('/logdump/<logtype>', 'logdump'),  #
-                       ]:
+    for url, vfunc in [
+        ('/', 'index'),  #
+        ('/devicesettings', 'device_settings'),
+        ('/geometry/<boardtype>', 'geometry'),  #
+        ('/report/<reporttype>', 'status'),  #
+        ('/databyfile/<process>/<filename>', 'databyfile'),  #
+        # ('/databyprocess/<process>/<detid>', 'databyprocess'),  #
+        ('/visual', 'visual'),  #
+        ('/logdump/<logtype>', 'logdump'),  #
+    ]:
       setattr(self, f'view_{vfunc}', getattr(views, vfunc)(self))
       self.app.add_url_rule(url,
                             endpoint=url,
