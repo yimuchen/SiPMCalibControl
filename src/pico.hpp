@@ -33,8 +33,8 @@ public:
   float adc2mv( const int16_t channel, const int16_t adc ) const;
 
   // Debugging methods
-  void        DumpBuffer() const;
-  void        PrintInfo() const;
+  std::string DumpBuffer() const;
+  std::string DumpInfo() const;
   std::string WaveformString( const int16_t  channel,
                               const unsigned capture ) const;
   float WaveformSum( const int16_t  channel,

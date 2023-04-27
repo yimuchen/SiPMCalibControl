@@ -48,7 +48,7 @@ logger_wrapped( const std::string& device,
 void
 printdebug( const std::string& dev, const std::string& msg )
 {
-  logger_wrapped( dev, 15, msg );
+  logger_wrapped( dev, 6, msg );
 }
 
 
@@ -89,15 +89,4 @@ std::runtime_error
 device_exception( const std::string& dev, const std::string& msg )
 {
   return std::runtime_error( msg );
-}
-
-
-std::string
-format_str( const char* exp, ... )
-{
-  char    return_str[65536];
-  va_list args;
-  va_start( args, exp );
-  sprintf( return_str, exp, args );
-  return return_str;
 }

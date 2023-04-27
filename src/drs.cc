@@ -24,6 +24,7 @@
 #include "drs.hpp"
 #include "logger.hpp"
 
+#include <fmt/printf.h>
 #include <iostream>
 #include <stdexcept>
 #include <unistd.h>
@@ -252,9 +253,10 @@ DRSContainer::DumpBuffer( const unsigned channel )
   const auto     time_array   = GetTimeArray( channel );
   const unsigned length       = GetSamples();
   std::string    output_table = "";
-  output_table += format_str( "%s | Channel%d | [mV]\n", "Time", channel );
+  output_table += fmt::sprintf( "%s | Channel%d | [mV]\n", "Time", channel );
   for( unsigned i = 0; i < length; ++i ){
-    output_table += format_str( "%.3lf | %.2lf\n", time_array[i], waveform[i] );
+    output_table +=
+      fmt::sprintf( "%.3lf | %.2lf\n", time_array[i], waveform[i] );
   }
   printdebug( DeviceName, output_table );
 }

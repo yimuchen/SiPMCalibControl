@@ -26,6 +26,7 @@
 
 #include "logger.hpp"
 #include "pico.hpp"
+#include <fmt/printf.h>
 #include <libps5000/ps5000Api.h>
 
 #include <chrono>
@@ -34,6 +35,7 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <vector>
 
 static const std::string DeviceName = "PICODEV";
 
@@ -52,16 +54,15 @@ static const float inputRanges[PS5000_MAX_RANGES] = {
 void
 PicoUnit::Init()
 {
-  char errormessage[1024];
   if( device ){
     ps5000CloseUnit( device );
   }
   const auto status = ps5000OpenUnit( &device );
   if( status != PICO_OK ){
-    sprintf( errormessage,
-             "Cannot open picotech device (Error code: %d)",
-             status  );
-    throw device_exception( DeviceName, errormessage );
+    throw device_exception( DeviceName,
+                            fmt::sprintf(
+                              "Cannot open picotech device (Error code: %d)",
+                              status  ) );
   }
   std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
 
@@ -100,15 +101,17 @@ PicoUnit::SetVoltageRange( const int16_t channel, const int newrange )
 {
   const static int16_t enable     = 1;
   const static int16_t dc_coupled = 1;
-  char                 errormessage[1024];
-  auto                 status = ps5000SetChannel( device,
-                                                  (PS5000_CHANNEL)channel,
-                                                  enable,
-                                                  dc_coupled,
-                                                  (PS5000_RANGE)newrange );
+
+  auto status = ps5000SetChannel( device,
+                                  (PS5000_CHANNEL)channel,
+                                  enable,
+                                  dc_coupled,
+                                  (PS5000_RANGE)newrange );
   if( status != PICO_OK ){
-    sprintf( errormessage, "Error setting up channel (Error code:%d)", status );
-    throw device_exception( DeviceName, errormessage );
+    throw device_exception( DeviceName,
+                            fmt::sprintf(
+                              "Error setting up channel (Error code:%d)",
+                              status ) );
   }
   range[channel] = newrange;
 }
@@ -146,12 +149,12 @@ PicoUnit::SetTrigger( const int16_t  channel,
                       const unsigned newdelay,
                       const int16_t  maxwait )
 {
-  static const int16_t enable   = 1;
-  const int16_t        leveladc = channel ==
-                                  PS5000_EXTERNAL ? ( level * PS5000_MAX_VALUE )
-                                  / 20000 : ( level * PS5000_MAX_VALUE )
-                                  / inputRanges[range[channel]];
-  char errormessage[1024];
+  static const int16_t enable = 1;
+
+  const int16_t leveladc = channel ==
+                           PS5000_EXTERNAL ? ( level * PS5000_MAX_VALUE )
+                           / 20000 : ( level * PS5000_MAX_VALUE )
+                           / inputRanges[range[channel]];
 
   auto status = ps5000SetSimpleTrigger( device,
                                         enable,
@@ -161,10 +164,10 @@ PicoUnit::SetTrigger( const int16_t  channel,
                                         newdelay,
                                         maxwait );
   if( status != PICO_OK ){
-    sprintf( errormessage,
-             "Error setting up trigger (Error code:%d)",
-             status  );
-    throw device_exception( DeviceName, errormessage );
+    throw device_exception( DeviceName,
+                            fmt::sprintf(
+                              "Error setting up trigger (Error code:%d)",
+                              status  ) );
   }
 
   // Storing information
@@ -186,7 +189,6 @@ PicoUnit::SetTrigger( const int16_t  channel,
 void
 PicoUnit::SetBlockNums( unsigned ncaps, unsigned post, unsigned pre )
 {
-  char errormessage[1024];
   int  maxcapture;
   auto status = ps5000MemorySegments( device,
                                       ncaps,// Number of captures per rapid
@@ -194,19 +196,19 @@ PicoUnit::SetBlockNums( unsigned ncaps, unsigned post, unsigned pre )
                                       &maxcapture );
   status = ps5000SetNoOfCaptures( device, ncaps );
   if( status != PICO_OK ){
-    sprintf( errormessage,
-             "Error setting rapid block capture (Error code%d)",
-             status );
-    throw device_exception( DeviceName, errormessage );
+    throw device_exception( DeviceName,
+                            fmt::sprintf(
+                              "Error setting rapid block capture (Error code%d)",
+                              status ) );
   }
   if( post+pre > (unsigned)maxsamples ){
-    sprintf( errormessage,
-             R"(requested samples [%u+%u]greater than maximum allowed
-             samples[%d], truncating to maximum)",
-             pre,
-             post,
-             maxsamples );
-    printwarn( DeviceName, errormessage );
+    printwarn( DeviceName,
+               fmt::sprintf(
+                 R"(requested samples [%u+%u]greater than maximum allowed samples[%d],
+                 truncating to maximum)",
+                 pre,
+                 post,
+                 maxsamples ));
     post = maxsamples-pre;
   }
 
@@ -218,12 +220,12 @@ PicoUnit::SetBlockNums( unsigned ncaps, unsigned post, unsigned pre )
       bufferA[i].reset( new int16_t[presamples+postsamples] );
       bufferB[i].reset( new int16_t[presamples+postsamples] );
       if( bufferA[i] == nullptr || bufferB[i] == nullptr ){
-        sprintf( errormessage,
-                 R"(Failed to initialize block memory buffer (%d/%d).
-                 Maybe try smaller number of captures)",
-                 i,
-                 ncaptures );
-        throw device_exception( DeviceName, errormessage );
+        throw device_exception( DeviceName,
+                                fmt::sprintf(
+                                  R"(Failed to initialize block memory buffer (%d/%d).
+                                  Maybe try smaller number of captures)",
+                                  i,
+                                  ncaptures ) );
       }
     }
     overflowbuffer.reset( new int16_t[ncaps] );
@@ -234,12 +236,12 @@ PicoUnit::SetBlockNums( unsigned ncaps, unsigned post, unsigned pre )
       bufferA[i].reset( new int16_t[ pre+post ] );
       bufferB[i].reset( new int16_t[ pre+post ] );
       if( bufferA[i] == nullptr || bufferB[i] == nullptr ){
-        sprintf( errormessage,
-                 R"(Failed to initialize block memory buffer (%d/%d).
-                 Maybe try smaller number of captures)",
-                 i,
-                 ncaptures );
-        throw device_exception( DeviceName, errormessage );
+        throw device_exception( DeviceName,
+                                fmt::sprintf(
+                                  R"(Failed to initialize block memory buffer (%d/%d).
+                                  Maybe try smaller number of captures)",
+                                  i,
+                                  ncaptures ) );
       }
     }
   }
@@ -258,7 +260,6 @@ PicoUnit::SetBlockNums( unsigned ncaps, unsigned post, unsigned pre )
 void
 PicoUnit::StartRapidBlock()
 {
-  char errormessage[1024];
   auto status = ps5000RunBlock( device,
                                 presamples,
                                 postsamples,
@@ -270,10 +271,10 @@ PicoUnit::StartRapidBlock()
                                 nullptr// Using IsReady, don't need to set here
                                 );
   if( status != PICO_OK ){
-    sprintf( errormessage,
-             "Error setting up run block (Error code:%d)",
-             status );
-    throw device_exception( DeviceName, errormessage );
+    throw device_exception( DeviceName,
+                            fmt::sprintf(
+                              "Error setting up run block (Error code:%d)",
+                              status ) );
   }
 }
 
@@ -304,7 +305,6 @@ PicoUnit::FlushToBuffer()
 {
   uint32_t actualsamples = presamples+postsamples;
   int      status        = 0;
-  char     errormessage[1024];
   for( unsigned block = 0; block < ncaptures; ++block ){
     status = ps5000SetDataBufferBulk( device,
                                       PS5000_CHANNEL_A,
@@ -317,10 +317,10 @@ PicoUnit::FlushToBuffer()
                                       actualsamples,
                                       block );
     if( status != PICO_OK ){
-      sprintf( errormessage,
-               "Error setting up data buffer (Error code:%d)",
-               status );
-      throw device_exception( DeviceName, errormessage );
+      throw device_exception( DeviceName,
+                              fmt::sprintf(
+                                "Error setting up data buffer (Error code:%d)",
+                                status ) );
     }
   }
   ps5000GetValuesBulk( device,
@@ -381,34 +381,34 @@ PicoUnit::adc2mv( int16_t channel, int16_t adc ) const
  * debugging and the information is never stored, we will not use the official
  * logging library used for print the information
  */
-void
+std::string
 PicoUnit::DumpBuffer() const
 {
-  static const unsigned maxcols      = 6;
-  const unsigned        ncols        = std::min( ncaptures, maxcols );
-  std::string           output_table = "";
+  static const unsigned maxcols = 4;
+  const unsigned        ncols   = std::min( ncaptures, maxcols );
+  std::string           output  = "";
 
   // Header line
-  output_table += format_str( "%s | ", "Time" );
+  output = output+fmt::sprintf( "%s | ", "Time" );
   for( unsigned j = 0; j < ncols; ++j ){
-    output_table += format_str( "Capture:%d |", j );
+    output = output+fmt::sprintf( "Capture:%d |", j );
   }
-  output_table += "\n";
+  output = output+"\n";
 
   // Per channel line
   for( unsigned i = 0; i < presamples+postsamples; ++i  ){
     const int t = (int)i-(int)presamples;
-    output_table += format_str( "%dns | ", ( t * timeinterval ) );
+    output = output+fmt::sprintf( "%dns | ", ( t * timeinterval ) );
     for( unsigned j = 0; j < ncols; ++j ){
-      output_table += format_str(
-                    "(%.2f,%.2f) |",
-                    adc2mv( 0, GetBuffer( 0, j, i ) ),
-                    adc2mv( 1, GetBuffer( 1, j, i ) ) );
+      output = output+fmt::sprintf(
+        "(%.2f,%.2f) |",
+        adc2mv( 0, GetBuffer( 0, j, i ) ),
+        adc2mv( 1, GetBuffer( 1, j, i ) ) );
     }
-    output_table += "\n" ;
+    output = output+"\n";
   }
 
-  printdebug( DeviceName, output_table );
+  return output;
 }
 
 
@@ -501,29 +501,30 @@ PicoUnit::WaveformAbsMax( const int16_t channel ) const
  * As this information is mainly for debugging via the text console, we will not
  * use the official logging interface
  */
-void
-PicoUnit::PrintInfo() const
+std::string
+PicoUnit::DumpInfo() const
 {
-  static const char description[5][25] = {
+  static const std::vector<std::string> description = {
     "Driver Version", "USB Version", "Hardware Version", "Variant Info",
     "Serial" };
-  int16_t           r = 0;
-  char              inputline[80];
-  int32_t           variant;
-  std::string       output_table = "";
+
+  int16_t     r = 0;
+  char        inputline[80];
+  int32_t     variant;
+  std::string output;
 
   for( unsigned i = 0; i < 5; i++ ){
     ps5000GetUnitInfo( device, (int8_t*)inputline, sizeof( inputline ), &r, i );
     if( i == 3 ){ variant = atoi( inputline ); }
-    output_table += format_str( "%s | %s\n", description[i], inputline );
+    if( i == 0 ){ inputline[33] = '\0';} // Manual termination of string required?
+    output = output+fmt::sprintf( "%s | %s\n", description[i], inputline );
   }
 
-  output_table += format_str(
-                "%25s | %d | %dns\n",
-                "Time interval",
-                timebase,
-                timeinterval );
-
+  output = output+fmt::sprintf( "%s | %d | %dns\n",
+                                "Time interval",
+                                timebase,
+                                timeinterval );
+  fmt::printf( output );
   const auto minrange = variant == 5203 ? PS5000_100MV : variant ==
                         5204 ? PS5000_100MV : PS5000_MAX_RANGES;
   const auto maxrange = variant == 5203 ? PS5000_20V  : variant ==
@@ -531,49 +532,51 @@ PicoUnit::PrintInfo() const
 
   // Printing voltage range information
   for( int i = minrange; i <= maxrange; ++i ){
-    output_table += format_str(
-                  "%s | [%c]  | %d |  (%dmV) |  [Res: %.3fmV]\n",
-                  ( i == minrange ? "Voltage Range index" : "" ),
-                  ( i == range[0] ? 'A' : i == range[1] ? 'B' : ' ' ),
-                  ( i ),
-                  ( (int)inputRanges[i] ),
-                  ( (float)inputRanges[i] / PS5000_MAX_VALUE * 256 ) );
+    output = output+fmt::sprintf(
+      "%s | %s  | %d |  (%dmV) |  [Res: %.3fmV]\n",
+      ( i == minrange ? "Voltage Range index" : "" ),
+      ( i == range[0] ? "A" : i == range[1] ? "B" : " " ),
+      ( i ),
+      ( (int)inputRanges[i] ),
+      ( (float)inputRanges[i] / PS5000_MAX_VALUE * 256 ) );
   }
 
   // Channel information
   for( unsigned i = PS5000_CHANNEL_A; i <= PS5000_EXTERNAL; ++i ){
-    output_table += format_str(
-                  "%s | %d | (%s) | [%c]\n",
-                  ( i == PS5000_CHANNEL_A ? "Channel index" : "" ),
-                  i,
-                  ( i == PS5000_EXTERNAL ? "External trigger" : "TEMP" ),
-                  ( i == triggerchannel  ? 'T' : ' ' ) );
+    output = output+fmt::sprintf(
+      "%s | %d | %s | [%s]\n",
+      ( i == PS5000_CHANNEL_A ? "Channel index" : "" ),
+      i,
+      ( i == PS5000_EXTERNAL ? "External trigger" : "TEMP" ),
+      ( i == triggerchannel  ? "T" : " " ) );
   }
 
   // Trigger direction
   for( unsigned i = RISING; i <= RISING_OR_FALLING; ++i ){
-    output_table += format_str(
-                  "%s | %d | (%s)  | [%c] | \n",
-                  ( i == RISING ? "Trig. direction" : "" ),
-                  ( i ),
-                  ( i == RISING ? "RISING" : i == FALLING ? "FALLING" : i ==
-                    RISING_OR_FALLING ? "RISING OR FALLING" : "" ),
-                  ( i == triggerdirection ? 'V' : ' ' ) );
+    output = output+fmt::sprintf(
+      "%s | %d | (%s)  | [%s] | \n",
+      ( i == RISING ? "Trig. direction" : "" ),
+      ( i ),
+      ( i == RISING ? "RISING" : i == FALLING ? "FALLING" : i ==
+        RISING_OR_FALLING ? "RISING OR FALLING" : "" ),
+      ( i == triggerdirection ? "V" : " " ) );
   }
-  output_table += format_str( "%s | %.2fmV | ADC:%d\n",
-                "Trigger Level",
-                triggerlevel,
-                int(triggerchannel ==
-                    PS5000_EXTERNAL ? ( triggerlevel * PS5000_MAX_VALUE )
-                    / 20000 : ( triggerlevel * PS5000_MAX_VALUE )
-                    / inputRanges[range[triggerchannel]]) );
-  output_table += format_str(
-                "PRE:%d | POST:%d | NBLOCKS:%d\n",
-                presamples,
-                postsamples,
-                ncaptures );
+  output = output+fmt::sprintf( "%s | %.2fmV | ADC:%d\n",
+                                "Trigger Level",
+                                triggerlevel,
+                                int(triggerchannel ==
+                                    PS5000_EXTERNAL ? ( triggerlevel
+                                                        * PS5000_MAX_VALUE )
+                                    / 20000 : ( triggerlevel
+                                                * PS5000_MAX_VALUE )
+                                    / inputRanges[range[triggerchannel]]) );
+  output = output+fmt::sprintf(
+    "PRE:%d | POST:%d | NBLOCKS:%d\n",
+    presamples,
+    postsamples,
+    ncaptures );
 
-  printdebug( DeviceName, output_table );
+  return output;
 }
 
 
@@ -614,9 +617,9 @@ PicoUnit::PicoUnit() : device ( 0 ),
 
 PicoUnit::~PicoUnit()
 {
-  printinfo( DeviceName, "Closing the PICOSCOPE interface" );
+  printdebug( DeviceName, "Closing the PICOSCOPE interface" );
   ps5000CloseUnit( device );
-  printinfo( DeviceName, "PICOSCOPE interface closed" );
+  printdebug( DeviceName, "PICOSCOPE interface closed" );
 }
 
 
