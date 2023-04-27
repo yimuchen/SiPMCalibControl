@@ -67,6 +67,7 @@ import cmod.visual as visual
 import cmod.pico as pico
 import cmod.drs as drs
 import cmod.fmt as fmt
+import cmod.TBController as tbc
 import numpy as np
 import cmd
 import sys
@@ -202,6 +203,7 @@ class controlterm(cmd.Cmd):
     self.pico = pico.PicoUnit.instance()
     self.gpio = gpio.GPIO.instance()
     self.drs = drs.DRS.instance()
+    self.tbc = tbc.TBController()
 
     # Session control
     self.sighandle = controlsignalhandle()
@@ -422,7 +424,7 @@ class controlcmd(object):
     # Getting reference to session objects for simpler shorthand
     for embedded_obj in [
         'cmdlog', 'devlog',  # Logging objects
-        'gcoder', 'visual', 'pico', 'drs', 'gpio',  # Control objects ,
+        'gcoder', 'visual', 'pico', 'drs', 'gpio', 'tbc',  # Control objects ,
         'board', 'sighandle',  # Session management
     ]:
       setattr(self, embedded_obj, getattr(cmdsession, embedded_obj))
@@ -877,7 +879,6 @@ class savefilecmd(controlcmd):
 
     # Opening the file.
     self.savefile = open(filename, 'w' if args.wipefile else 'a')
-    self.cmd.opfile = filename
     return args
 
   def post_run(self):
