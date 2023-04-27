@@ -69,11 +69,6 @@ logging.TRACEBACK = 25
 logging.INFO = 20
 
 ##
-# @details Similar level as INFO, except this is specialized for hardware
-# information dumps (mainly for custom output format parsing).
-logging.HW_DEBUG = 15  # For interactive hardware debugging dumps.
-
-##
 # @details Similar level as INFO, except this is specialized for operation
 # interaction message (like action prompts). Mainly separated out for additional
 # output format parsing.
@@ -83,6 +78,11 @@ logging.INT_INFO = 14
 # @details Generic debugging information messages. Notice that this is the
 # defaults CLI screen output level.
 logging.DEBUG = 10
+
+##
+# @details Similar level as DEBUG, except this is specialized for hardware
+# information dumps.
+logging.HW_DEBUG = 6
 
 ##
 # @details "Output" level Used for command history tracing.
