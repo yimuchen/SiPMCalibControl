@@ -6,6 +6,7 @@ import ctlcmd.digicmd as digicmd
 import ctlcmd.viscmd as viscmd
 import ctlcmd.picocmd as picocmd
 import ctlcmd.drscmd as drscmd
+import ctlcmd.tbcmd as tbcmd
 import cmod.fmt as fmt
 import logging
 import copy
@@ -57,7 +58,11 @@ if __name__ == '__main__':
       picocmd.picorange,  #
       drscmd.drsset,  #
       drscmd.drscalib,  #
-      drscmd.drsrun  #
+      drscmd.drsrun,  #
+      tbcmd.tbset,  #
+      tbcmd.tb_saveconfig,  #
+      tbcmd.tb_levelped,  #
+      tbcmd.tb_test,
   ])
   # Duplicating the session to allow for default override.
   prog_parser = copy.deepcopy(cmd.set.parser)
