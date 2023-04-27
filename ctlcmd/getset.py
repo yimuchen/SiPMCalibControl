@@ -124,14 +124,13 @@ class set(cmdbase.controlcmd):
         self.gcoder.init(args.printerdev)
         printset = self.gcoder.getsettings()
         printset = printset.split('\necho:')
-        for line in printset:
-          self.devlog('GCoder').info(line)
+        self.devlog('GCoder').info('<br>'.join(printset))
       except RuntimeError as err:
         self.devlog('GCoder').error(str(err))
         self.printwarn(
             """Failed to setup printer, skipping over settings and setting
             coordinates to (0,0,0)""")
-        self.move_gantry(0, 0, 0)
+        self.move_gantry(0.1, 0.1, 0.1)
 
   def set_picodevice(self, args):
     """Setting up the pico device, Skipping if dummy path detected """
@@ -190,7 +189,7 @@ class get(cmdbase.controlcmd):
     if args.align or args.all:
       self.print_alignment()
     if args.pico or args.all:
-      self.pico.printinfo()
+      self.print_pico()
     if args.drs or args.all:
       self.print_drs()
 
@@ -204,6 +203,14 @@ class get(cmdbase.controlcmd):
       table.append((f'Det:{detid:>4s}', f'x:{x:5.1f}, y:{y:5.1f}'))
     self.devlog('Board').log(fmt.logging.INT_INFO, '', extra={'table': table})
 
+  def print_pico(self):
+    logger = self.devlog('PicoUnit')
+    info = self.pico.dumpinfo()
+    info_table = [[x.strip()
+                   for x in line.split('|')]
+                  for line in info.split('\n')]
+    logger.log(fmt.logging.INT_INFO, '', extra={'table':info_table})
+
   def print_printer(self):
     logger = self.devlog("GCoder")
     level = fmt.logging.INT_INFO
@@ -212,7 +219,7 @@ class get(cmdbase.controlcmd):
         level, f'current coordinates:' + f' x{self.gcoder.opx:.1f}' +
         f' y{self.gcoder.opy:.1f}' + f' z{self.gcoder.opz:.1f}')
     settings = self.gcoder.getsettings().split('\necho:')
-    logging.log(leve, '\n'.join(line))
+    logging.log(level, '\n'.join(line))
 
   def print_camera(self):
     table = [('Device', str(self.visual.dev_path)),  #
@@ -248,7 +255,7 @@ class get(cmdbase.controlcmd):
                 det.vis_coord[z][0], det.vis_coord[z][1], z))
 
   def print_drs(self):
-    self.printmsg(self.drs.is_available())
+    self.printmsg(str(self.drs.is_available()))
 
 
 class savecalib(cmdbase.controlcmd):
