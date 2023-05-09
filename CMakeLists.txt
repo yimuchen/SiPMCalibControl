@@ -163,13 +163,11 @@ message("PYBIND11 libraries " ${pybind11_LIBRARIES})
 # target_compile_definitions(gcoder_test.exe PUBLIC "STANDALONE" )
 # target_link_libraries(gcoder_test.exe gcoder Threads::Threads)
 
-
-
 ## Making the GUI stuff
-file(GLOB CSS_FILES ${PROJECT_SOURCE_DIR}/server/sass/*.scss)
-add_custom_target(gen_server_css ALL
-  COMMAND "sass" "style.scss:style.css"
-  SOURCES ${CSS_FILES}
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/server)
+#file(GLOB CSS_FILES ${PROJECT_SOURCE_DIR}/server/sass/*.scss)
+#add_custom_target(gen_server_css ALL
+#  COMMAND "sass" "style.scss:style.css"
+#  SOURCES ${CSS_FILES}
+#  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/server)
 #add_custom_target(gen_server_css ALL DEPENDS server/static/style.css)
 #add_dependencies(gen_server_css ${CSS_FILES})
