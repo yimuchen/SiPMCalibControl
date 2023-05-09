@@ -2,27 +2,24 @@ FROM archlinux:latest
 
 WORKDIR /tmp/docker
 
+# Installing the required packages for C++ related objects
 RUN pacman -Sy --noconfirm "base-devel"
-RUN sudo pacman -Sy --noconfirm "cmake" "boost" "opencv"
-RUN sudo pacman -Sy --noconfirm "python-numpy" "python-scipy"
-RUN sudo pacman -Sy --noconfirm "python-flask-socketio" "python-paramiko"
-RUN sudo pacman -Sy --noconfirm "npm" "git"
+RUN sudo pacman -Sy --noconfirm "cmake" "boost" "opencv" "pybind11"
+# Special packages
 RUN sudo pacman -Sy --noconfirm "qt5-base" "hdf5-openmpi" "vtk" "glew"
 
-## Temporary user for building the picoscope library
-RUN useradd --no-create-home --shell=/bin/bash build
-RUN usermod -L build
-RUN echo "build ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-USER build
+#  Installing python packages
+RUN sudo pacman -Sy --noconfirm "python-numpy" "python-scipy" "python-opencv"
+RUN sudo pacman -Sy --noconfirm "python-flask-socketio" "python-paramiko"
+RUN sudo pacman -Sy --noconfirm "python-pyzmq" "python-yaml" "python-uproot"
 
-## Installing libps5000 stuff from AUR
-RUN sudo git clone https://aur.archlinux.org/libps5000.git
-RUN sudo chmod 777 libps5000
-RUN cd libps5000 && makepkg -s && sudo pacman -U --noconfirm libps5000*.pkg.*
+# Additional packages
+RUN sudo pacman -Sy --noconfirm "npm" "git"
 
-## Moving back to the ROOT user,
-## COPY source Code into main working directory and start
-USER root
+# Getting the external hardware interfaces
+
+
+## COPY source code into main working directory and start
 RUN npm install -g sass
 COPY . .
 RUN cmake         ./
