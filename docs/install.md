@@ -10,7 +10,7 @@ Current installation requirements include:
 - Software libraries
   - C++ compiler compatible with C++14 standard (using g++ as default)
   - [OpenCV 4][opencv]: For visual processing routines (webcams that can be used
-        in the system generally does not require special driver systems)
+    in the system generally does not require special driver systems)
   - [CMake 3][cmake]: For handling the build environemtn
   - [pybind11][pybind11]: For generating python binding for code written in C++
   - Python 3: Main language used for high-level interface design.
@@ -59,7 +59,7 @@ installed via the `pacman` command for ArchLinux.
 pacman -Sy --noconfirm xorg-xauth
 
 # The main C++ libraries and building
-pacman -Sy --noconfirm cmake opencv pybind11
+pacman -Sy --noconfirm cmake opencv pybind11 fmt
 
 # For additional package management
 pacman -Sy --noconfirm git
@@ -72,6 +72,7 @@ pacman -Sy --noconfirm python-scipy          \
                        python-flask-socketio \
                        python-pyzmq          \
                        python-yaml           \
+                       python-tqdm           \
                        python-uproot
 
 ## Additional packages required for opencv, since we are using the high level interface
@@ -124,7 +125,7 @@ cd external
 wget https://www.psi.ch/sites/default/files/import/drs/SoftwareDownloadEN/drs-5.0.5.tar.gz
 
 tar zxvf drs-5.0.5.tar.gz
-mv drs-5.0.5.tar.gz drs
+mv drs-5.0.5 drs
 ```
 
 #### Interface permission
@@ -132,7 +133,7 @@ mv drs-5.0.5.tar.gz drs
 First ensure that the `i2c` interface and the `pwm` interface has been enabled
 on the device. For a Raspberry Pi, add the following lines in to the
 `/boot/config.txt` file. Notice if you are using this for local interface
-testing, **be very careful** with the permissions as the  `i2c` and `pwm` may be
+testing, **be very careful** with the permissions as the `i2c` and `pwm` may be
 used other systems in the machine (ex: For the air flow fans). Do _NOT_ enable
 these permissions on your personal machine unless you are sure about what the
 permissions would affect. Note that the `dtparam` line must added after the
@@ -195,7 +196,32 @@ work for all UNIX based systems assuming all the dependencies are satisfied. See
 the sections above to see the dependencies. In addition, we provide a docker
 image for people looking to develop locally in a non-standard environment.
 
-#### Docker instructions (Under development)
+#### Docker instructions
+
+This is mainly used for testing interface development. While the docker script
+will copy the hardware interface packages for compilation, the interactive
+interface is set up such that it will still operate if the various control
+components are not available.
+
+To build a docker image and start the docker image.
+
+```bash
+docker build --tag sipmcalib_control --rm ./
+docker run -it -p 9100:9100 sipmcalib_control:latest
+```
+
+This should start an interactive bash session, where once can then start the
+CLI/GUI interfaces with the python commands
+
+```bash
+python control.py
+python gui_control.py
+```
+
+Notice that the files in the docker session are a copy and not a mount, meaning
+that if you should edit the file outside the docker session and rebuild the
+docker session to allow for data to be passed to docker session. If you did not
+modify the C++ files, you should not need to recompile.
 
 ## Installing software and firmware for the tileboard controller
 

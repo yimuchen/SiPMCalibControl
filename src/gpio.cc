@@ -68,6 +68,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <fmt/printf.h>
 #include <deque>
 #include <queue>
 #include <stdexcept>
@@ -89,11 +90,10 @@ static const std::string DeviceName = "GPIO";
 static int
 open_with_lock( const char* path, int mode )
 {
-  char errmsg[1024];
-  int  fd = open( path, mode );
+  int fd = open( path, mode );
   if( fd == GPIO::OPEN_FAILED ){
-    sprintf( errmsg, "Failed to open path [%s]", path );
-    throw device_exception( DeviceName, errmsg );
+    throw device_exception( DeviceName,
+                            fmt::sprintf( "Failed to open path [%s]", path ) );
   }
 
   // The _lock will be non-zero if the processes cannot create the lock instance
@@ -101,8 +101,8 @@ open_with_lock( const char* path, int mode )
   if( lock ){
     close( fd );
     fd = -1;
-    sprintf( errmsg, "Failed to lock path [%s]", path );
-    throw device_exception( DeviceName, errmsg );
+    throw device_exception( DeviceName,
+                            fmt::sprintf( "Failed to lock path [%s]", path ));
   }
   return fd;
 }
@@ -127,8 +127,6 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
   static constexpr unsigned buffer_length = 35;
   unsigned                  write_length;
   char                      buffer[buffer_length];
-  char                      path[buffer_length];
-  char                      errmsg[1024];
   int                       fd = open_with_lock( "/sys/class/gpio/", O_WRONLY );
   write_length = snprintf( buffer, buffer_length, "%u", pin );
   write( fd, buffer, write_length );
@@ -138,30 +136,34 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
   std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
   // Getting the direction path
-  snprintf( path, buffer_length, "/sys/class/gpio/gpio%d/direction", pin );
+  std::string path = fmt::sprintf( "/sys/class/gpio/gpio%d/direction", pin );
 
   // Waiting for the /sysfs to generated the corresponding file
-  while( access( path, F_OK ) == -1 ){
+  while( access( path.c_str(), F_OK ) == -1 ){
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
   }
   fd =
-    ( direction == READ ) ? open_with_lock( path, O_WRONLY ) : open_with_lock(
-      path,
+    ( direction == READ ) ? open_with_lock( path.c_str(),
+                                            O_WRONLY ) : open_with_lock(
+      path.c_str(),
       O_WRONLY );
   int status = write( fd,
                       direction == READ ? "in" : "out",
                       direction == READ ? 2    : 3 );
   if( status == IO_FAILED ){
-    sprintf( errmsg, "Failed to set gpio [%d] direction!", pin );
-    throw device_exception( DeviceName, errmsg );
+    throw device_exception( DeviceName,
+                            fmt::sprintf(
+                              "Failed to set gpio [%d] direction!",
+                              pin ) );
   }
   close( fd );
 
   // Opening GPIO PIN
-  snprintf( path, buffer_length, "/sys/class/gpio/gpio%d/value", pin );
-  fd =
-    ( direction == READ ) ? open_with_lock( path, O_RDONLY ) : open_with_lock(
-      path,
+  path = fmt::sprintf( "/sys/class/gpio/gpio%d/value", pin );
+  fd   =
+    ( direction == READ ) ? open_with_lock( path.c_str(),
+                                            O_RDONLY ) : open_with_lock(
+      path.c_str(),
       O_WRONLY );
   return fd;
 }
@@ -374,7 +376,6 @@ GPIO::InitPWM()
 void
 GPIO::ClosePWM()
 {
-  char errmsg[1024];
   if( pwm_enable[0] != UNOPENED ){
     for( unsigned channel = 0; channel <= 1; channel++ ){
       write( pwm_enable[channel], "0", 1 );
@@ -382,11 +383,10 @@ GPIO::ClosePWM()
       close( pwm_duty[channel] );
       close( pwm_period[channel] );
     }
-    sprintf( errmsg, "/sys/class/pwm/pwmchip0/un" );
-    int fd = open( errmsg, O_WRONLY );
+    int fd = open( "/sys/class/pwm/pwmchip0/un", O_WRONLY );
     if( fd == OPEN_FAILED ){
-      sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip0/un" );
-      throw device_exception( DeviceName, errmsg );
+      throw device_exception( DeviceName,
+                              "Failed to open /sys/class/pwm/pwmchip0/un" );
     }
     write( fd, "0", 1 );
     write( fd, "1", 1 );
@@ -422,12 +422,13 @@ GPIO::SetPWM( const unsigned c, const double dc, const double f )
   const unsigned duty   = period * duty_cycle;
   char           duty_str[10];
   char           period_str[10];
-  char           errmsg[1024];
   unsigned       duty_len   = sprintf( duty_str,    "%u", duty );
   unsigned       period_len = sprintf( period_str,  "%u", period );
   if( pwm_enable[channel] == OPEN_FAILED ){
-    sprintf( errmsg, "Failed to open /sys/class/pwm/pwmchip%u settings", c );
-    throw device_exception( DeviceName,  errmsg );
+    throw device_exception( DeviceName,
+                            fmt::sprintf(
+                              "Failed to open /sys/class/pwm/pwmchip%u settings",
+                              c ) );
   } else if( pwm_enable[channel] == UNOPENED ){
     if( channel == 0 ){
       i2c_flush_array[2] = duty_cycle * 5000.0;
@@ -492,13 +493,14 @@ const uint8_t GPIO::ADS_RATE_860SPS = 0x7;
 int
 GPIO::InitI2C()
 {
-  char errmsg[1024];
-  int  fd = open_with_lock( "/dev/i2c-1", O_RDWR );
+  int fd = open_with_lock( "/dev/i2c-1", O_RDWR );
 
   // connect to ADS1115 as i2c slave
   if( ioctl( fd, I2C_SLAVE, 0x48 ) == IO_FAILED ){
-    sprintf( errmsg, "Error: Couldn't find i2c device on address [%d]!", 0x48 );
-    throw device_exception( DeviceName, errmsg );
+    throw device_exception( DeviceName,
+                            fmt::sprintf(
+                              "Error: Couldn't find i2c device on address [%d]!",
+                              0x48 ));
   }
   return fd;
 }

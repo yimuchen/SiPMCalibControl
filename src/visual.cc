@@ -76,6 +76,7 @@
  */
 #include "logger.hpp"
 #include "visual.hpp"
+#include <fmt/printf.h>
 #include <opencv2/core/utils/logger.hpp>
 
 // Helper objects for consistant display (format BGR)

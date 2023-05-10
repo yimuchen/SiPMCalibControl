@@ -21,6 +21,8 @@ find_package(PythonInterp  3 REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
 find_package(OpenCV          REQUIRED)
 find_package(Threads         REQUIRED)
+find_package(fmt             REQUIRED)
+
 
 ## The DRS4 library, this assumes that the stuff have been added to the
 if( EXISTS "external/drs" )
@@ -73,10 +75,10 @@ endif()
 # The python logging pass thorugh as a separate library
 add_library(c_logger SHARED src/logger.cc)
 target_include_directories(c_logger PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries(c_logger PRIVATE ${PYTHON_LIBRARIES})
+target_link_libraries(c_logger PRIVATE  ${PYTHON_LIBRARIES})
 
 ## Libraries are supposed to be python modules
-function(make_control_library libname source )
+function(make_control_library libname source)
   add_library(c_${libname} SHARED ${source})
   get_filename_component(basename ${source} NAME)
   pybind11_add_module(${libname} SHARED cmod/py_${basename})
@@ -89,28 +91,29 @@ if( DRS_DEFINES )
   make_control_library(drs src/drs.cc)
   add_drs_requirements(drs)
   add_drs_requirements(c_drs)
-  target_link_libraries(c_drs PRIVATE c_logger)
+  target_link_libraries(c_drs PRIVATE c_logger fmt::fmt)
 endif()
 
 if( PICOSCOPE_LIB )
   make_control_library( pico src/pico.cc )
   target_include_directories(c_pico PRIVATE ${PICOSCOPE_INCDIR})
   target_link_directories(c_pico PRIVATE ${PICOSCOPE_LIBDIR})
-  target_link_libraries(c_pico PRIVATE c_logger ${PICOSCOPE_LIB})
+  target_link_libraries(c_pico PRIVATE c_logger ${PICOSCOPE_LIB} fmt::fmt)
 endif()
 
 make_control_library(gcoder src/gcoder.cc )
-target_link_libraries(gcoder PRIVATE c_logger)
+target_link_libraries(gcoder PRIVATE c_logger fmt::fmt)
 
 make_control_library(gpio src/gpio.cc)
-target_link_libraries(gpio PRIVATE c_logger Threads::Threads)
+target_link_libraries(gpio PRIVATE c_logger Threads::Threads fmt::fmt)
 
 make_control_library( visual src/visual.cc)
 target_link_libraries( c_visual PRIVATE  c_logger
                                          ${OpenCV_LIBS}
                                          Threads::Threads
                                          pybind11::pybind11
-                                         pybind11::python_link_helper)
+                                         pybind11::python_link_helper
+                                         fmt::fmt)
 #message( "TESTING" ${PYTHON#_INCLUDE_DIRS} )
 target_include_directories(c_visual PRIVATE ${OpenCV_INCLUDE_DIRS}
                                             ${PYTHON_INCLUDE_DIRS} )
@@ -160,13 +163,11 @@ message("PYBIND11 libraries " ${pybind11_LIBRARIES})
 # target_compile_definitions(gcoder_test.exe PUBLIC "STANDALONE" )
 # target_link_libraries(gcoder_test.exe gcoder Threads::Threads)
 
-
-
 ## Making the GUI stuff
-file(GLOB CSS_FILES ${PROJECT_SOURCE_DIR}/server/sass/*.scss)
-add_custom_target(gen_server_css ALL
-  COMMAND "sass" "style.scss:style.css"
-  SOURCES ${CSS_FILES}
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/server)
+#file(GLOB CSS_FILES ${PROJECT_SOURCE_DIR}/server/sass/*.scss)
+#add_custom_target(gen_server_css ALL
+#  COMMAND "sass" "style.scss:style.css"
+#  SOURCES ${CSS_FILES}
+#  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/server)
 #add_custom_target(gen_server_css ALL DEPENDS server/static/style.css)
 #add_dependencies(gen_server_css ${CSS_FILES})

@@ -40,9 +40,9 @@ class GUISocketHandler(logging.Handler):
 
   def emit(self, record):
     if 'GUIMonitor' in record.name:
-      self.socketio.emit('monitor-info', record.__dict__, boardcast=True)
+      self.socketio.emit('monitor-info', record.__dict__)
     else:
-      self.socketio.emit('logging-info', record.__dict__, boardcast=True)
+      self.socketio.emit('logging-info', record.__dict__)
 
 
 class GUIcontrolterm(cmdbase.controlterm):
@@ -399,11 +399,9 @@ class GUISession(object):
     self.monitor_thread.start()
     self.socketio_thread = TraceThread(target=self.socketio.run,
                                        args=(self.app, ),
-                                       kwargs={
-                                           'host': '127.0.0.1',
-                                           'port': 9100,
-                                           'debug': False
-                                       })
+                                       kwargs=dict(host='0.0.0.0',
+                                                   port=9100,
+                                                   debug=False))
     self.socketio_thread.start()
 
     print('Monitor thread status:', self.monitor_thread.is_alive())

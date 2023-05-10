@@ -1,7 +1,9 @@
 """
 @file TBController.py
 """
-import zmq, yaml, time, paramiko, copy, uproot
+import zmq, yaml, time, paramiko, copy, uproot, os
+import awkward as ak
+import cmod.fmt as fmt
 
 
 class TBController(object):
@@ -41,6 +43,13 @@ class TBController(object):
   having the the constructor do nothing, and have the instance be properly
   initialized on some `init` call.
 
+  One pattern that we will not attempt to abstract further the data acquisition
+  routine:
+
+  - We first push the data pulling configurations the server
+  - Then we call the data acquisition
+  - Finally we clear the various ob
+
 
   [zmq_controller]:
   https://gitlab.cern.ch/hgcal-daq-sw/hexactrl-script/-/blob/master/zmq_controler.py
@@ -65,6 +74,7 @@ class TBController(object):
            cli_port,
            i2c_port,
            config_file,
+           ssh_key,
            restart_server=False):
     """
     @brief Setting up the various socket connections.
@@ -77,10 +87,9 @@ class TBController(object):
     that is hosting the data pulling server).
     """
     # Setting up the ssh connection to handle data file manipulation
-    self.ssh_control.connect(
-        hostname=ip,
-        username='HGCAL_dev',  # How should I do this securely?
-        password='daq5HGCAL!')
+    self.ssh_control.connect(hostname=ip,
+                             username='HGCAL_dev',
+                             key_filename=ssh_key)
 
     if restart_server:
       self.tb_serverdown()
@@ -112,63 +121,36 @@ class TBController(object):
     # slow scan on start up)
     time.wait(10)
 
-  def acquire(self, n_events: int):
+  def acquire(self, n_events):
     """
-    @brief Acquiring N events files using the configuration that is currently
-    flushed to the servers.
+    @brief Acquiring N_events worth of data.
 
-    @details As the data format is centrally maintained by the HGCAL community
-    and is defined intimately by the requirements of the HGCROC, we will not
-    attempt to perform on-the-fly data formatting as with the other readout
-    systems. Rather we will rely on the `unpack` tool that sits on the tileboard
-    tester, using it to process to the raw data into a ROOT file, then we will
-    copy the root file back to the control Raspberry Pi, and use uproot to load
-    in the information into memory.
-
-    The paths where temporary data files should be stored, both on the remote
-    tileboard tester and the gantry control Raspberry Pi will be hard coded
-    here, as the processing of the data to a format suitable for later analysis
-    should be implemented as a calibration command or abstract via the readout
-    module.
+    @details Flushing the data puller configurations to the zmq-client instance.
+    We split this into a separate function in case we need to run multiple data
+    acquisition routines with different slow settings (frequently used for
+    configuration scanning routines.)
     """
     # Number of events is set by the the daq_socket yaml configuration
     self.daq_socket.yaml_config['daq']['NEvents'] = str(n_events)
     # Additional settings for the client
-    remote_dir = '/home/HGCAL_dev/DataTemp/'
-    remote_name = 'remote_acquire'
-    self.cli_socket.yaml_config['global']['outputDirectory'] = remote_dir
-    self.cli_socket.yaml_config['global']['run_type'] = remote_name
+    self.remote_dir = '/home/HGCAL_dev/DataTemp/'
+    self.remote_name = 'remote_acquire'
+    self.cli_socket.yaml_config['global']['outputDirectory'] = self.remote_dir
+    self.cli_socket.yaml_config['global']['run_type'] = self.remote_name
 
-    # Flushing the configuration to the client and DAQ sockets connections.
     self.cli_socket.configure()
     self.daq_socket.configure()
 
-    # Starting the servers with the current configurations.
     self.cli_socket.start()
     self.daq_socket.start()
     while not self.daq_socket.is_complete():
       time.sleep(0.01)
     self.daq_socket.stop()
     self.cli_socket.stop()
-    time.sleep(1)  # Sleep 10ms for output to be complete
 
-    # Paramiko to perform parse the file to a root file
-    self.tbssh_command(' '.join([
-        '/home/HGCAL_dev/sw/hexactrl-sw/bin/unpack',  #
-        '-i', f'{remote_dir}/{remote_name}0.raw',  #
-        '-o', f'{remote_dir}/{remote_name}0.root',  #
-    ]))
+    time.sleep(0.1)  # Sleep 10ms for output to be complete
 
-    # Copying the remote file over to the a local directory
-    ftp_client = self.ssh_control.open_sftp()
-    ftp_client.get(f'{remote_dir}/{remote_name}0.root',
-                   f'/tmp/{remote_name}0.root')
-    ftp_client.close()
-
-    # Create an array to contain the various objects
-    arr = []
-    with uproot.open(f'/tmp/{remote_name}0.root') as f:
-      arr = f['unpacker_data/hgcroc'].arrays()  # Returning as awkward array!
+    arr = self._get_raw_root_data()
 
     ### Additional array manipulation
     # Shifting the channel values according to half index to make all readout
@@ -178,18 +160,90 @@ class TBController(object):
     # Returning the array results
     return arr
 
+  def _get_raw_root_data(self):
+    raw_file = f'{self.remote_dir}/{self.remote_name}0.raw'
+    root_file = f'{self.remote_dir}/{self.remote_name}0.root'
+    local_file = f'/tmp/{self.remote_name}.root'
+
+    # Paramiko to perform parse the file to a root file
+    self.tbssh_command(' '.join([
+        '/home/HGCAL_dev/sw/hexactrl-sw/bin/unpack',  #
+        '-i', raw_file, '-o', root_file,  #
+    ]))
+
+    # Copying the remote file over to the a local directory
+    ftp_client = self.ssh_control.open_sftp()
+    ftp_client.get(root_file, local_file)
+    ftp_client.close()
+
+    # Create an array to contain the various objects
+    with uproot.open(local_file) as f:
+      return f['unpacker_data/hgcroc'].arrays()  # Returning as awkward array!
+
   def tbssh_command(self, cmd):
     """
     @brief Passing a command to tileboard tester to be executed.
 
-    The stdout/stderr reading ensures that that command has properly finished
-    before releasing thread resources. Here we assume that the command can be
-    terminated without any inputs. The return will be the contents of stdout and
-    stderr of requested command, each as singular strings.
+    @details The stdout/stderr reading ensures that that command has properly
+    finished before releasing thread resources. Here we assume that the command
+    can be terminated without any inputs. The return will be the contents of
+    stdout and stderr of requested command, each as singular strings.
     """
     sshin, sshout, ssherr = self.ssh_control.exec_command(cmd)
     return ('\n'.join([x for x in sshout.readlines()]),  #
             '\n'.join([x for x in ssherr.readlines()]))
+
+  @staticmethod
+  def deep_merge(dest, update, path=None):
+    """
+    @brief Updating a deeply nested dictionary-like object "dest" in-place using
+    an update dictionary
+
+    @details Updating the nested structure stored in the dictionary. The answer
+    is adapted from this [answer][solution] on StackOverflow, except at because
+    YAML configurations are not strictly dictionaries, we change the method of
+    detecting nested structure to anything having the `__getitem__` method.
+
+    [solution]:
+    https://stackoverflow.com/questions/7204805/how-to-merge-dictionaries-of-dictionaries/7205107#7205107
+    """
+    if path is None:  # Leaving default argument as empty mutable is dangerous!
+      path = []
+    for key in update:
+      if key in dest:
+        dest_is_nested = hasattr(dest[key], '__getitem__')
+        up_is_nested = hasattr(update[key], '__getitem__')
+        if dest_is_nested and up_is_nested:
+          # If both are nested recursively update nested structure
+          TBController.deep_merge(dest[key], update[key], path + [str(key)])
+        elif not dest_is_nested and not up_is_nested:
+          # If neither are nested update value directory
+          dest[key] = update[key]
+        else:
+          # Otherwise there is a structure mismatch
+          raise ValueError('Mismatch structure at %s'.format(
+              '.'.join(path + [str(key)])))
+      else:
+        dest[key] = update[key]
+    return dest
+
+  @staticmethod
+  def make_deep(*args):
+    """
+    @brief Short hand function for making a deeply nested dictionary entry
+
+    @details As YAML configurations are typically represented as nested
+    dictionary entries, to set a single parameter configuration will be very
+    verbose to declare in vanilla python, like  `{'a': {'b':{'c':{'d':v}}}}`,
+    which is difficult to read and format using typical tools. This method takes
+    arbitrary number of arguments, with all entries except for the last to be
+    used as a key to a dictionary. So the example given above would be declared
+    using this function as `make_deep('a','b','c','d', v)`
+    """
+    if len(args) == 1:
+      return args[0]
+    else:
+      return {args[0]: TBController.make_deep(*args[1:])}
 
 
 class ZMQController:
@@ -240,8 +294,8 @@ class ZMQController:
     @brief Sending a message over the socket connection and returning the
     respond string.
 
-    @details This is the most common socket connect/repond patten pattern used
-    in the subsequent classes. This method will is implemented to be "dumb": no
+    @details This is the most common socket connect/respond pattern used in the
+    subsequent classes. This method will is implemented to be "dumb": no
     additional parsing of the string will be carried out, as that will depend on
     the task that the specialized function wants to perform.
     """
@@ -262,30 +316,24 @@ class ZMQController:
     return self.socket_send(message).decode().lower().find(
         check_str.lower()) >= 0
 
-  def configure(self, yaml_config: str = None) -> str:
+  def configure(self, yaml_config: dict = None) -> str:
     """
     @brief Sending a yaml config string to socket connection.
 
     @details The return function will be the results of sending the
-    configuration. If the YAML configuration file is not specified, then the
-    configuration stored in the class instance is sent.
+    configuration. If no YAML fragment is specified, then the entire
+    configuration stored in the class instance is sent (this is potentially
+    slow!). If a YAML configuration fragment is specified, then the
+    configuration updated in the main configuration instances as well.
     """
     if not self.socket_check('configure', 'ready'):
       raise RuntimeError('Socket is not ready for configuration!')
 
     if yaml_config is None:
       yaml_config = self.yaml_config
+    else:
+      TBController.deep_merge(self.yaml_config, yaml_config)
     return self.socket_send(yaml.dump(yaml_config))
-
-    @staticmethod
-    def extract_yaml_from_file(filename):
-      """
-      Extracting the yaml configuration string from an input file.
-      """
-      config = ''
-      with open(filename, 'r') as f:
-        config = yaml.safe_load(f)
-      return config
 
 
 class I2CController(ZMQController):
@@ -480,13 +528,14 @@ class DAQController(ZMQController):
 
 # Unit test of Tileboard controller.
 # Using a mock pedestal run as an example.
-if __name__ == "__main__":
+def test1():
   tbc = TBController()
   # Obtain these numbers from the server start up instance.
   tbc.init('10.42.0.63',
            daq_port=6000,
            cli_port=6001,
            i2c_port=5555,
+           ssh_key=os.environ['HOME'] + '/.ssh/id_rsa',
            config_file='cfg/tbc_yaml/roc_config_ConvGain4.yaml')
 
   print(tbc.i2c_socket.MPPC_Bias())
@@ -495,5 +544,11 @@ if __name__ == "__main__":
   tbc.daq_socket.enable_fast_commands(random=1)
   tbc.daq_socket.l1a_settings(bx_spacing=45)
   #
-  arr = tbc.acquire(n_events=10000)  # Getting 10K events
-  print(arr[0:100].to_list())
+  arr = ak.concatenate([tbc.acquire(1000), tbc.acquire(1000)])
+
+  print(arr[0:10].to_list())
+  print(len(arr))
+
+
+if __name__ == '__main__':
+  test1()
