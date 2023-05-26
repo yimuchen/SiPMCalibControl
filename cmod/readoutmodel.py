@@ -50,7 +50,7 @@ class SiPMModel(object):
     self.ap_prob = kwargs.get('ap_prob', 0.05)
     self.sig0 = kwargs.get('sig0', 20)
     self.sig1 = kwargs.get('sig1', 5)
-    self.beta = kwargs.get('beta', 120 )
+    self.beta = kwargs.get('beta', 120)
     self.eps = kwargs.get('eps', 0.005)
     self.dcfrac = kwargs.get('dcfrac', 0.04)
     self.dc_dist = DarkCurrentDistribution(self.gain, self.eps)
@@ -65,6 +65,9 @@ class SiPMModel(object):
     return self._smear_values(nfired)
 
   def _calc_npixels_fired(self, r0, z, pwm):
+    """
+    Getting the number of pixels fired
+    """
     N0 = 500 * self.npix * _pwm_multiplier(pwm)
     Nraw = N0 * z / (r0**2 + z**2)**1.5
     return self.npix * (1 - np.exp(-Nraw / self.npix))
@@ -95,7 +98,7 @@ class SiPMModel(object):
     smear = np.random.normal(loc=0, scale=smear)
 
     ## Getting the number of after pulses
-    apcount = np.random.binomial(gp_list, self.ap_prob)
+    apcount = np.random.binomial(gp_list.astype(np.int64), self.ap_prob)
     apval = np.random.exponential(self.beta, size=(nevents, np.max(apcount)))
     _, index = np.indices((nevents, np.max(apcount)))
     apval = np.where(apcount[:, np.newaxis] > index, apval, 0)
