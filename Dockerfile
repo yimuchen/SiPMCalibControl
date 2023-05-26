@@ -1,9 +1,16 @@
-FROM archlinux:latest
+FROM archlinux:base-devel-20230507.0.148551
 
 WORKDIR /srv
 
+# Setting up to allow for installation
+RUN pacman-key --init
+RUN pacman-key --populate
+RUN pacman -Sy --noconfirm "archlinux-keyring"
+RUN pacman -Sy --noconfirm "glibc"
+RUN pacman -Syu --noconfirm
+RUN pacman -Sy --noconfirm "base-devel" "openssl-1.1"
+
 # Installing the required packages for C++ related objects
-RUN pacman -Sy --noconfirm "base-devel"
 RUN pacman -Sy --noconfirm "cmake" "boost" "opencv" "pybind11" "fmt"
 # Additional dependencies for external interface
 RUN pacman -Sy --noconfirm "qt5-base" "hdf5-openmpi" "vtk" "glew"
