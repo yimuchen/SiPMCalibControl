@@ -206,7 +206,7 @@ components are not available.
 To build a docker image and start the docker image.
 
 ```bash
-docker build --tag sipmcalib_control --rm ./
+docker build --tag sipmcalib_control --platform linux/amd64 --rm ./
 docker run -it -p 9100:9100 sipmcalib_control:latest
 ```
 
