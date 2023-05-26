@@ -1352,7 +1352,7 @@ class readoutcmd(controlcmd):
     ## Defaulting to the det id if it isn't specified exists
     if args.channel is None:
       if hasattr(args, 'detid') and str(args.detid) in self.board.dets():
-        args.channel = self.board.get_det(str(args.detid)).channel
+        args.channel = int(self.board.get_det(str(args.detid)).channel)
       else:
         args.channel = 0
 
@@ -1376,6 +1376,10 @@ class readoutcmd(controlcmd):
       if int(args.channel) < 0 or int(args.channel) > 3:
         raise ValueError(
             f'Channel for DRS4 can only be 0--4 (got {args.channel})')
+    else:
+      if int(args.channel) < 0 or int(args.channel) > 64:
+        raise ValueError(
+            f'Channel for FAKE readout can only be 0--63 (got {args.channel})')
 
     ## Checking the integration settings
     if args.mode == readoutcmd.Mode.MODE_PICO:
@@ -1512,25 +1516,22 @@ class readoutcmd(controlcmd):
     elif args.mode == readoutcmd.Mode.MODE_ADC:
       return False
     else:  # For mock readouts
-      if args.channel >= 0:
-        return True
-      elif args.channel % 2 == 0:
-        return True
-      else:
-        return False
+      return (args.channel % 2 == 0)
 
   def read_model(self, args):
     """
-    Generating a fake readout from a predefined model. The location is extracted
-    from the current gantry position and the relative coordinates is loaded from
-    the board information.
+    Generating a fake readout from a predefined model. Currently the position is
+    hard coded into into a grid of [100,100] -- [400,400]. Notice that even
+    channels are set to be SiPM-like, while the odd channels are set to be
+    LED-like.
     """
     x = self.gcoder.opx
     y = self.gcoder.opy
     z = self.gcoder.opz
 
-    det_x = self.board.det_map[str(args.channel)].orig_coord[0]
-    det_y = self.board.det_map[str(args.channel)].orig_coord[1]
+    # Hard coding the "position" of the dummy inputs
+    det_x = 100 + (300. / 8.) * (args.channel % 8)
+    det_y = 100 + (300. / 8.) * (args.channel // 8)
 
     r0 = ((x - det_x)**2 + (y - det_y)**2)**0.5
     pwm = self.gpio.pwm_duty(0)
