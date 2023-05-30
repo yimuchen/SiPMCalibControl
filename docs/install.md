@@ -198,17 +198,23 @@ image for people looking to develop locally in a non-standard environment.
 
 #### Docker instructions
 
-This is mainly used for testing interface development. While the docker script
-will copy the hardware interface packages for compilation, the interactive
-interface is set up such that it will still operate if the various control
-components are not available.
+[Docker][docker] can be used for testing interface development, but is not a
+substitute for running directly on the machine with all relevant interfaces
+connected. While the docker script will copy the hardware interface packages for
+compilation, the interactive interface is set up such that it will still operate
+if the various control components are not available.
 
 To build a docker image and start the docker image.
 
 ```bash
-docker build --tag sipmcalib_control --platform linux/amd64 --rm ./
-docker run -it -p 9100:9100 sipmcalib_control:latest
+docker buildx build  --tag sipmcalib_control --platform linux/arm/v7 --rm --load ./
+docker run -it -p 9100:9100 --platform linux/arm/v7 sipmcalib_control:latest
 ```
+
+As the image requires an ARM platform to ensure that the code runs on the target
+platform (RPi3), users will potentially need the [`docker-buildx` +
+`qemu-user-static`][docker-multilib] package combination installed for the image
+builder to work.
 
 This should start an interactive bash session, where once can then start the
 CLI/GUI interfaces with the python commands
@@ -292,3 +298,5 @@ directories:
 [python-uproot]: https://uproot.readthedocs.io/en/latest/
 [python-yaml]: https://pyyaml.org/wiki/PyYAMLDocumentation
 [hgcal-quickstart]: https://readthedocs.web.cern.ch/display/HGCELE/Tileboard+Tester+V2+Quick+Start+Guide
+[docker]: https://docs.docker.com/
+[docker-multilib]: https://docs.docker.com/build/building/multi-platform/
