@@ -103,7 +103,7 @@ if __name__ == '__main__':
     cmd.set.run(args)
     logger.info("Starting GPIO")
     cmd.gpio.init()
-  except RuntimeError as err:
+  except Exception as err:
     logger.error(str(err))
     logger.warning(
         fmt.oneline_string("""
