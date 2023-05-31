@@ -21,19 +21,20 @@ class Detector(object):
   be stored as a dictionary, with the z operation value used for obtaining the
   calibration used as the key.)
   """
-  def __init__(self, jsonmap):
+  def __init__(self, jsonmap, board):
     self.mode = int(jsonmap['mode'])
     self.channel = int(jsonmap['channel'])
     self.orig_coord = jsonmap['default coordinates']
     self.vis_coord = {}
     self.vis_M = {}
     self.lumi_coord = {}
+    self.logger = board.cmd.devlog("Det")
 
     # Additional parsing.
     if (self.orig_coord[0] > gcoder.GCoder.max_x() or  #
         self.orig_coord[1] > gcoder.GCoder.max_y() or  #
         self.orig_coord[0] < 0 or self.orig_coord[1] < 0):
-      logger.printwarn(f"""
+      self.logger.warning(f"""
         The specified detector position (x:{self.orig_coord[0]},
         y:{self.orig_coord[1]}) is outside of the gantry boundaries
         (0-{gcoder.GCoder.max_x()},0-{gcoder.GCoder.max_y()}). The expected
@@ -58,11 +59,13 @@ class Board(object):
   """
   Class for storing a board type an a list of det x-y positions
   """
-  def __init__(self):
+  def __init__(self, cmd):
     self.boardtype = ""
     self.boarddescription = ""
     self.boardid = ""
     self.det_map = {}
+    self.cmd = cmd # Reference to main object
+    self.logger = self.cmd.devlog("Board")
 
   def clear(self):
     self.boardtype = ""
@@ -72,9 +75,9 @@ class Board(object):
 
   def set_boardtype(self, file):
     if any(self.dets()) or not self.empty():
-      logger.printwarn(('The current session is not empty. Loading a new '
-                        'boardtype will erase any existing configuration '
-                        'for the current session'))
+      self.logger.warning("""
+        The current session is not empty. Loading a new boardtype will erase any
+        existing configuration for the current session""")
 
     jsonmap = json.loads(open(file, 'r').read())
     self.boardtype = jsonmap['board type']
@@ -82,21 +85,21 @@ class Board(object):
     self.boardid = jsonmap['board id']
 
     for detid in jsonmap['detectors']:
-      self.det_map[detid] = Detector(jsonmap['detectors'][detid])
+      self.det_map[detid] = Detector(jsonmap['detectors'][detid], self)
 
   def load_calib_file(self, file):
     if not self.empty():
-      logger.printwarn("""
-                       The current session is not empty. Loading a new boardtype
-                       will erase any existing configuration for the current
-                       session""")
+      self.logger.warning("""
+       The current session is not empty. Loading a new boardtype will erase any
+       existing configuration for the current session""")
     jsonmap = json.loads(open(file, 'r').read())
 
     for det in jsonmap:
       if det not in self.det_map:
         if int(det) >= 0:
-          logger.printwarn(('Detector recorded in the calibration file but not '
-                            'defined in the calibration, ignoring'))
+          self.logger.warning("""
+            Detector recorded in the calibration file but not defined in the
+            calibration, ignoring""")
           continue
         else:
           self.add_calib_det(det)
@@ -132,7 +135,7 @@ class Board(object):
           "mode": mode,
           "channel": channel,
           "default coordinates": [-100, -100]
-      })
+      }, self)
 
   # Get/Set calibration measures with additional parsing
   def add_vis_coord(self, det, z, data):
