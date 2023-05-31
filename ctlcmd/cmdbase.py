@@ -86,13 +86,13 @@ import signal
 # Potentially missing package -- PICO
 try:
   import cmod.pico as pico
-except ModuleNotFoundError as err:
+except (ImportError, ModuleNotFoundError) as err:
   pico = None
 
 # Potentially missing package -- DRS4
 try:
   import cmod.drs as drs
-except ModuleNotFoundError as err:
+except (ImportError, ModuleNotFoundError) as err:
   drs = None
 class controlsignalhandle(object):
   """
