@@ -206,7 +206,7 @@ class controlterm(cmd.Cmd):
 
     # Instances for hardware control
     self.gcoder = gcoder.GCoder.instance()
-    self.board = board.Board()
+    self.board = board.Board(self)
     self.visual = visual.Visual()
     self.gpio = gpio.GPIO.instance()
     self.pico = pico.PicoUnit.instance() if pico is not None else None
