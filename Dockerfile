@@ -1,70 +1,77 @@
-FROM --platform=linux/arm/v7 menci/archlinuxarm:base-devel-20230530.5118068268
-
+# Primary base image setup
+FROM    ubuntu:23.10
 WORKDIR /srv
+RUN     apt update
 
-# Setting up to allow for installation
-RUN pacman-key --init
-RUN pacman-key --populate
-RUN pacman -Sy --noconfirm "archlinux-keyring"
-RUN pacman -Sy --noconfirm "glibc"
-RUN pacman -Syu --noconfirm
-RUN pacman -Sy --noconfirm "base-devel" "openssl-1.1"
+# Common linux tools
+RUN apt-get -y install "tar" "wget" "gzip" "xz-utils"
 
-# Installing the required packages for C++ related objects
-RUN pacman -Sy --noconfirm "cmake" "boost" "opencv" "pybind11" "fmt"
-# Additional dependencies for external interface
-RUN pacman -Sy --noconfirm "qt5-base" "hdf5-openmpi" "vtk" "glew"
-RUN pacman -Sy --noconfirm "wxwidgets-gtk3" "libusb-compat"
+# Linux libraries required for C/C++ components
+RUN apt-get -y install "g++" "libfmt-dev" "cmake-extras" "ninja-build" \
+                       "python3-dev" "python3-pybind11" "pybind11-dev" \
+                       "libopencv-highgui-dev" "libopencv-dev"
 
-#  Installing python packages
-RUN pacman -Sy --noconfirm "python-setuptools" "python-tqdm"
-RUN pacman -Sy --noconfirm "python-numpy" "python-scipy" "python-opencv"
-RUN pacman -Sy --noconfirm "python-flask-socketio" "python-paramiko"
-RUN pacman -Sy --noconfirm "python-pyzmq" "python-yaml" "python-uproot"
-
-# Additional packages for GUI
-RUN pacman -Sy --noconfirm "npm" "wget" "tar"
-RUN npm install -g sass
-
-## COPY source code into main working directory
-# Copying in pieces to avoid re-compiling when minor packages updates are performed
-
-# Making directory for external packages (empty to avoid package version conflicts)
 RUN mkdir ./external
 
-# Getting the external packages -- picoscope
-RUN wget https://labs.picotech.com/debian/pool/main/libp/libps5000/libps5000_2.1.83-3r3073_armhf.deb
-RUN ar x libps5000_2.1.83-3r3073_armhf.deb
-RUN tar xvf data.tar.xz
-RUN mv opt/picoscope ./external/picoscope
-RUN rm -rf  control.tar.gz debian-binary usr/ opt/
+### External packages -- picoscope
 
-# Getting external packages -- DRS4
-RUN wget https://www.psi.ch/sites/default/files/import/drs/SoftwareDownloadEN/drs-5.0.5.tar.gz
-RUN tar zxvf drs-5.0.5.tar.gz
-RUN mv drs-5.0.5/ external/drs
+# TODO: currenly picoscope only supports ARMv7. We shall not use ARMv7, as this
+# makes python package management very difficult (neither pip nor conda ships
+# with pre-compiled python packages on ARMv7, and archlinux-arm is the only
+# known distribution to come with precompiled python-awkward). So the picoscope
+# interface will be disabled until either PicoTech officially supports ARM64 or
+# we find a way to easily cross compile on ARMv8.
 
+RUN if [[ $(uname -m) == "x86_64" ]] ; then                                                              \
+      wget https://labs.picotech.com/debian/pool/main/libp/libps5000/libps5000_2.1.83-3r3073_armhf.deb ; \
+      ar x libps5000_2.1.83-3r3073_armhf.deb ;                                                           \
+      tar xvf data.tar.xz ;                                                                              \
+      mv  opt/picoscope ./external/picoscope ;                                                           \
+      rm -rf control.tar.gz debian-binary;                                                               \
+    fi
+
+### External packages -- DRS4
+RUN wget https://www.psi.ch/sites/default/files/import/drs/SoftwareDownloadEN/drs-5.0.5.tar.gz ; \
+    tar zxvf drs-5.0.5.tar.gz;                                                                   \
+    mv drs-5.0.5/ external/drs;                                                                  \
+    apt-get -y install "libwxgtk3.2-dev" "libusb-1.0-0-dev" "libusb-dev"
+
+## Installing python components (using pip to pin version if needed).
+ENV  VIRTUAL_ENV=/opt/venv
+ENV  PATH="$VIRTUAL_ENV/bin/:$PATH"
+COPY ./requirements.txt ./requirements.txt
+RUN  apt-get -y install "python3-pip" "python3-venv"      \
+                        "libssl-dev" "libffi-dev" "curl"; \
+     python3 -m venv --system-site-packages $VIRTUAL_ENV; \
+     pip install -r requirements.txt
+
+# TODO: installing the external javascript dependencies here
+RUN apt-get -y install "npm" ; \
+    npm install -g sass
+
+# Copying the C/C++ related repository code
 COPY ./src   ./src
 COPY ./cmod  ./cmod
 COPY ./bin   ./bin
 
-# Running the compilation
+# Running the C/C++ compilation
 COPY ./CMakeLists.txt ./CMakeLists.txt
-RUN cmake         ./
-RUN cmake --build ./
+RUN  CXX=/usr/bin/g++ cmake         ./ ; \
+     CXX=/usr/bin/g++ cmake --build ./
 
-# Copying the configuration files
+# Copying the python-only components
+COPY ./ctlcmd ./ctlcmd
+COPY ./server ./server
+
+# Creating server side objects
+RUN sass server/style.scss:style.css ; \
+    mv   style.css server/style.css
+
+# Copying the top level control scripts and configurations
+COPY ./control.py     ./control.py
+COPY ./gui_control.py ./gui_control.py
 COPY ./dofiles ./dofiles
 COPY ./cfg     ./cfg
 
-# Copying the python-only components
-COPY ./ctlcmd         ./ctlcmd
-COPY ./server         ./server
-COPY ./control.py     ./control.py
-COPY ./gui_control.py ./gui_control.py
-
-RUN sass server/style.scss:style.css
-RUN mv   style.css server/style.css
-
-## This docker image is mainly designed for testing the GUI session
-CMD /bin/bash
+# Default is starting an interactive shell
+CMD  /bin/bash
