@@ -1,13 +1,13 @@
 # Primary base image setup
 FROM    ubuntu:23.10
 WORKDIR /srv
-RUN     apt update
 
 # Common linux tools
-RUN apt-get -y install "tar" "wget" "gzip" "xz-utils"
+RUN apt update ;                                       \
+    apt-get -y install "tar" "wget" "gzip" "xz-utils"
 
 # Linux libraries required for C/C++ components
-RUN apt-get -y install "g++" "libfmt-dev" "cmake-extras" "ninja-build" \
+RUN apt-get -y install "g++" "libfmt-dev" "cmake-extras"               \
                        "python3-dev" "python3-pybind11" "pybind11-dev" \
                        "libopencv-highgui-dev" "libopencv-dev"
 
@@ -22,13 +22,11 @@ RUN mkdir ./external
 # interface will be disabled until either PicoTech officially supports ARM64 or
 # we find a way to easily cross compile on ARMv8.
 
-RUN if [[ $(uname -m) == "x86_64" ]] ; then                                                              \
-      wget https://labs.picotech.com/debian/pool/main/libp/libps5000/libps5000_2.1.83-3r3073_armhf.deb ; \
-      ar x libps5000_2.1.83-3r3073_armhf.deb ;                                                           \
-      tar xvf data.tar.xz ;                                                                              \
-      mv  opt/picoscope ./external/picoscope ;                                                           \
-      rm -rf control.tar.gz debian-binary;                                                               \
-    fi
+# RUN wget https://labs.picotech.com/debian/pool/main/libp/libps5000/libps5000_2.1.83-3r3073_amd64.deb ; \
+#     ar x libps5000_2.1.83-3r3073_amd64.deb ;                                                           \
+#     tar xvf data.tar.xz ;                                                                              \
+#     mv  opt/picoscope ./external/picoscope ;                                                           \
+#     rm -rf control.tar.gz debian-binary;                                                               \
 
 ### External packages -- DRS4
 RUN wget https://www.psi.ch/sites/default/files/import/drs/SoftwareDownloadEN/drs-5.0.5.tar.gz ; \
