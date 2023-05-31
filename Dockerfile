@@ -11,7 +11,7 @@ RUN apt-get -y install "g++" "libfmt-dev" "cmake-extras"               \
                        "python3-dev" "python3-pybind11" "pybind11-dev" \
                        "libopencv-highgui-dev" "libopencv-dev"
 
-RUN mkdir ./external
+RUN mkdir -p /opt/external
 
 ### External packages -- picoscope
 
@@ -25,13 +25,13 @@ RUN mkdir ./external
 # RUN wget https://labs.picotech.com/debian/pool/main/libp/libps5000/libps5000_2.1.83-3r3073_amd64.deb ; \
 #     ar x libps5000_2.1.83-3r3073_amd64.deb ;                                                           \
 #     tar xvf data.tar.xz ;                                                                              \
-#     mv  opt/picoscope ./external/picoscope ;                                                           \
+#     mv  opt/picoscope /opt/external/picoscope ;                                                        \
 #     rm -rf control.tar.gz debian-binary;                                                               \
 
 ### External packages -- DRS4
 RUN wget https://www.psi.ch/sites/default/files/import/drs/SoftwareDownloadEN/drs-5.0.5.tar.gz ; \
     tar zxvf drs-5.0.5.tar.gz;                                                                   \
-    mv drs-5.0.5/ external/drs;                                                                  \
+    mv drs-5.0.5/ /opt/external/drs;                                                             \
     apt-get -y install "libwxgtk3.2-dev" "libusb-1.0-0-dev" "libusb-dev"
 
 ## Installing python components (using pip to pin version if needed).
@@ -46,30 +46,3 @@ RUN  apt-get -y install "python3-pip" "python3-venv"      \
 # TODO: installing the external javascript dependencies here
 RUN apt-get -y install "npm" ; \
     npm install -g sass
-
-# Copying the C/C++ related repository code
-COPY ./src   ./src
-COPY ./cmod  ./cmod
-COPY ./bin   ./bin
-
-# Running the C/C++ compilation
-COPY ./CMakeLists.txt ./CMakeLists.txt
-RUN  CXX=/usr/bin/g++ cmake         ./ ; \
-     CXX=/usr/bin/g++ cmake --build ./
-
-# Copying the python-only components
-COPY ./ctlcmd ./ctlcmd
-COPY ./server ./server
-
-# Creating server side objects
-RUN sass server/style.scss:style.css ; \
-    mv   style.css server/style.css
-
-# Copying the top level control scripts and configurations
-COPY ./control.py     ./control.py
-COPY ./gui_control.py ./gui_control.py
-COPY ./dofiles ./dofiles
-COPY ./cfg     ./cfg
-
-# Default is starting an interactive shell
-CMD  /bin/bash
