@@ -169,5 +169,5 @@ add_custom_target(gen_server_css ALL
   COMMAND "sass" "style.scss:style.css"
   SOURCES ${CSS_FILES}
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/server)
-add_custom_target(gen_server_css ALL DEPENDS server/static/style.css)
-add_dependencies(gen_server_css ${CSS_FILES})
+#add_custom_target(gen_server_css ALL DEPENDS server/static/style.css)
+#add_dependencies(gen_server_css ${CSS_FILES})
