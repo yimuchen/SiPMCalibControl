@@ -10,7 +10,8 @@ For security reasons, the details for connecting to the various machines will
 not be listed in this manual, and should ask the system administrators if there
 are connection issues. There are two UNIX-like machines in the system and the
 user is responsible to making sure they are using the correct commands on the
-correct machine.
+correct machine. The instructions works only after [installation](@ref install)
+of the various system permissions.
 
 ### Power on
 
@@ -21,9 +22,9 @@ Power on all low voltage systems required for gantry calibrations, this includes
 - The tileboard controller (the tileboard receives power through the tileboard
   controller.)
 - The analog pulse generator.
-- The Picoscope digital oscilloscope.
-- The DRS4 digital oscilloscope.
-- Additional monitoring scope outside the main dark room.
+- The Picoscope digital oscilloscope (optional).
+- The DRS4 digital oscilloscope (optional).
+- Additional monitoring scope outside the main dark room (optional).
 
 At this stage, do *not* turn on the high voltage power supply at this point in
 time, as this can potentially damage the SiPMs by exposing them to high
@@ -40,8 +41,8 @@ devices.
 drs pico i2c gpio video # Output should contain at least these 5 groups.
 ```
 
-After this, log into the tileboard controller, and start the relevant services
-using the following 2 commands:
+After this, log into the tileboard controller (again, contact administrators for
+how to do this), and start the relevant services using the following 2 commands:
 
 ```bash
 [user@TBController]$ $HOME/scripts/startup.sh
@@ -89,8 +90,9 @@ properly started. You can start 1 of the 2 control programs:
   instance using the following commands on the control Raspberry Pi:
 
 ```bash
-[user@RPi]$ cd $HOME/SiPMCalibControl
-[user@RPi]$ python3 control.py
+[user@RPi]$ cd $HOME/SiPMCalibControl/
+[user@RPi]$ ./deploy.sh # This will spawn a docker session
+[root@<hash>]$ python3 control.py
 ```
 
 - The [graphical user interface](@ref gui)(currently under constructions): This
@@ -102,17 +104,18 @@ properly started. You can start 1 of the 2 control programs:
 
 ```bash
 [user@RPi]$ cd $HOME/SiPMCalibControl
-[user@RPi]$ python3 gui_control.py
+[user@RPi]$ ./deploy.sh # This will spawn a docker session
+[root@<hash>]$ python3 gui_control.py
 ```
 
 ## Development instructions
 
-For developers, these following pages mainly aims to highlight the main design
-and development philosophies used for the various systems. Due to how the
-Doxygen prefering to generate docs pages of individual objects into a single
-page, which may cost you more clicks, developers might want to use these pages
-as a starting point, and browse the documentations in the various doc strings
-and comments directly.
+For developers, these following pages aim to highlight the main design and
+development philosophies used for the various systems. Due to how the Doxygen
+preferring to generate docs pages of individual objects into a single page,
+which costs more clicks, developers might want to use these pages as a starting
+point, and browse the documentations in the various doc strings and comments
+directly.
 
 - CLI interface objects and design main reference can be found on this page
   [here](@ref cli_design).
@@ -122,7 +125,6 @@ and comments directly.
   [page](@ref hardware)
 - The installation of the main program, as well the installation for the various
   external components can be found [here](@ref install).
-
 
 [github]: https://github.com/UMDCMS/SiPMCalibControl
 [analysis]: https://github.com/UMDCMS/SiPMCalib
