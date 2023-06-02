@@ -68,8 +68,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <fmt/printf.h>
 #include <deque>
+#include <fmt/printf.h>
 #include <queue>
 #include <stdexcept>
 
@@ -127,7 +127,8 @@ GPIO::InitGPIOPin( const int pin, const unsigned direction )
   static constexpr unsigned buffer_length = 35;
   unsigned                  write_length;
   char                      buffer[buffer_length];
-  int                       fd = open_with_lock( "/sys/class/gpio/", O_WRONLY );
+  int                       fd = open_with_lock( "/sys/class/gpio/export",
+                                                 O_WRONLY );
   write_length = snprintf( buffer, buffer_length, "%u", pin );
   write( fd, buffer, write_length );
   close( fd );
@@ -213,8 +214,8 @@ GPIO::CloseGPIO( const int pin )
   static constexpr unsigned buffer_length = 3;
   unsigned                  write_length;
   char                      buffer[buffer_length];
-  int                       fd =
-    open_with_lock( "/sys/class/gpio/un", O_WRONLY );
+  int                       fd = open_with_lock( "/sys/class/gpio/unexport",
+                                                 O_WRONLY );
   write_length = snprintf( buffer, buffer_length, "%d", pin );
   write( fd, buffer, write_length );
   close( fd );
@@ -325,7 +326,7 @@ GPIO::InitPWM()
   // Flaaing the pwm_enable as open failed.
   pwm_enable[0] = OPEN_FAILED;
   pwm_enable[1] = OPEN_FAILED;
-  int fd = open_with_lock( "/sys/class/pwm/pwmchip0/", O_WRONLY );
+  int fd = open_with_lock( "/sys/class/pwm/pwmchip0/export", O_WRONLY );
   write( fd, "0", 1 );
   write( fd, "1", 1 );// Single write to enable interface
   close( fd );
@@ -383,10 +384,10 @@ GPIO::ClosePWM()
       close( pwm_duty[channel] );
       close( pwm_period[channel] );
     }
-    int fd = open( "/sys/class/pwm/pwmchip0/un", O_WRONLY );
+    int fd = open( "/sys/class/pwm/pwmchip0/unexport", O_WRONLY );
     if( fd == OPEN_FAILED ){
       throw device_exception( DeviceName,
-                              "Failed to open /sys/class/pwm/pwmchip0/un" );
+                              "Failed to open /sys/class/pwm/pwmchip0/unexport" );
     }
     write( fd, "0", 1 );
     write( fd, "1", 1 );
