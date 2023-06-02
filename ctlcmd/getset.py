@@ -135,20 +135,26 @@ class set(cmdbase.controlcmd):
   def set_picodevice(self, args):
     """Setting up the pico device, Skipping if dummy path detected """
     if not self.is_dummy_dev(args.picodevice, 'PicoScope'):
-      try:
-        self.pico.init()
-      except RuntimeError as err:
-        self.devlog('PicoUnit').error(str(err))
-        self.printwarn('Picoscope device is not properly set!')
+      if self.pico is None:
+        self.printwarn("Picoscope device is not available, ignoring...")
+      else:
+        try:
+          self.pico.init()
+        except RuntimeError as err:
+          self.devlog('PicoUnit').error(str(err))
+          self.printwarn('Picoscope device is not properly set!')
 
   def set_drs(self, args):
     """Setting up the DRS4. Skipping if dummy path is detected"""
     if not self.is_dummy_dev(args.drsdevice, 'DRS4'):
-      try:
-        self.drs.init()
-      except RuntimeError as err:
-        self.devlog('DRSContainer').error(str(err))
-        self.printwarn('DRS device is not properly set!')
+      if self.drs is None:
+        self.printwarn("DRS device is not available, ignoring...")
+      else:
+        try:
+          self.drs.init()
+        except RuntimeError as err:
+          self.devlog('DRSContainer').error(str(err))
+          self.printwarn('DRS device is not properly set!')
 
   def is_dummy_dev(self, dev, device_name):
     """
@@ -209,7 +215,7 @@ class get(cmdbase.controlcmd):
     info_table = [[x.strip()
                    for x in line.split('|')]
                   for line in info.split('\n')]
-    logger.log(fmt.logging.INT_INFO, '', extra={'table':info_table})
+    logger.log(fmt.logging.INT_INFO, '', extra={'table': info_table})
 
   def print_printer(self):
     logger = self.devlog("GCoder")
