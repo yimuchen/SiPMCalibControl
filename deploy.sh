@@ -16,11 +16,12 @@ else
    EXEC="-c ${@}"
 fi
 
-docker run -it                                       \
-       -p 9100:9100                                  \
-       --platform ${PLATFORM}                        \
-       --device=/dev/video0:/dev/video0              \
-       --mount type=bind,source="${PWD}",target=/srv \
-       ${DEVICES}                                    \
-       sipmcalib_control:latest                      \
+docker run -it                                                  \
+       --network="host"                                         \
+       --platform ${PLATFORM}                                   \
+       --device=/dev/video0:/dev/video0                         \
+       --mount type=bind,source="${PWD}",target=/srv            \
+       --mount type=bind,source="${HOME}/.ssh",target=/srv/.ssh \
+       ${DEVICES}                                               \
+       sipmcalib_control:latest                                 \
        /bin/bash --init-file "/srv/.install.sh" $EXEC
