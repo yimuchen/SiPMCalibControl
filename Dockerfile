@@ -2,14 +2,22 @@
 FROM    ubuntu:23.10
 WORKDIR /srv
 
-# Common linux tools
-RUN apt update ;                                       \
-    apt-get -y install "tar" "wget" "gzip" "xz-utils"
+# List of tools to install using standard apt-get
+ARG BASE_TOOLS="tar wget gzip xz-utils"
+ARG MAKE_TOOLS="g++ libfmt-dev cmake-extras"
+ARG PYTHON_TOOLS="python3-dev python3-pybind11 pybind11-dev python3-pip python3-venv"
+ARG OPENCV_TOOLS="libopencv-highgui-dev libopencv-dev"
+ARG DRS_TOOLS="libwxgtk3.2-dev libusb-1.0-0-dev libusb-dev"
+ARG NPM_TOOLS="npm"
 
-# Linux libraries required for C/C++ components
-RUN apt-get -y install "g++" "libfmt-dev" "cmake-extras"               \
-                       "python3-dev" "python3-pybind11" "pybind11-dev" \
-                       "libopencv-highgui-dev" "libopencv-dev"
+# Installing common packages
+RUN apt update ;                          \
+    apt-get -y install ${BASE_TOOLS} ;    \
+    apt-get -y install ${MAKE_TOOLS} ;    \
+    apt-get -y install ${PYTHON_TOOLS} ;  \
+    apt-get -y install ${OPENCV_TOOLS} ;  \
+    apt-get -y install ${DRS_TOOLS} ;     \
+    apt-get -y install ${NPM_TOOLS} ;
 
 RUN mkdir -p /opt/external
 
@@ -31,18 +39,14 @@ RUN mkdir -p /opt/external
 ### External packages -- DRS4
 RUN wget https://www.psi.ch/sites/default/files/import/drs/SoftwareDownloadEN/drs-5.0.5.tar.gz ; \
     tar zxvf drs-5.0.5.tar.gz;                                                                   \
-    mv drs-5.0.5/ /opt/external/drs;                                                             \
-    apt-get -y install "libwxgtk3.2-dev" "libusb-1.0-0-dev" "libusb-dev"
+    mv drs-5.0.5/ /opt/external/drs;
 
 ## Installing python components (using pip to pin version if needed).
 ENV  VIRTUAL_ENV=/opt/venv
 ENV  PATH="$VIRTUAL_ENV/bin/:$PATH"
 COPY ./requirements.txt ./requirements.txt
-RUN  apt-get -y install "python3-pip" "python3-venv"      \
-                        "libssl-dev" "libffi-dev" "curl"; \
-     python3 -m venv --system-site-packages $VIRTUAL_ENV; \
+RUN  python3 -m venv --system-site-packages $VIRTUAL_ENV; \
      pip install -r requirements.txt
 
 # TODO: installing the external javascript dependencies here
-RUN apt-get -y install "npm" ; \
-    npm install -g sass
+RUN npm install -g sass
