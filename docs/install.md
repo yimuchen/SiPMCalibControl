@@ -96,8 +96,10 @@ The `DEVICES` flag is used to expose all device interfaces to the underlying
 docker image. Do **not** include this flag unless you know what you are doing.
 The first run of this program would be slow as it is generating the docker
 image. Subsequent runs should only upload changes made by the user and recompile
-the repository code if needed. Once the program is complete, you should be
-greeted with a bash prompt, where you can execute the main program:
+the repository code if needed. For the initial setup from a clean install, the
+docker image generating is expected to take about 40-50 minutes to fully
+complete. Once the program is complete, you should be greeted with a bash
+prompt, where you can execute the main program:
 
 ```bash
 python3 control.py     # For starting interactive CLI
@@ -141,7 +143,8 @@ installed for the image builder to work. Beware the cross-platform execution can
 have significant performance penalties, in particular for code compilation. Also
 notice that device interfaces is not guaranteed to work through cross-platform
 docker images (not even the USB based devices). The construction of the docker
-image on a local laptop will take about 20 minutes from a clean installation.
+image on a local laptop will take about 40-50 minutes from a clean installation
+on a Raspberry Pi.
 
 Between testing different image types, you will need to clear the `cmake` cache
 files and compiled binary:
@@ -152,7 +155,11 @@ files and compiled binary:
 
 Using the provided `deploy.sh` script, the repository directory is mounted to
 the docker image, so edits made outside the docker image will also be reflected
-inside the docker image.
+inside the docker image. While this does mean you can install dependencies on
+the fly in the docker image session, such installation will not be persistent.
+If you are certain that you need a new package. Consider modifying the
+Dockerfile or change the dependency listing files, then restart the `deploy`
+script.
 
 ## Contributing to the code
 

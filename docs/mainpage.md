@@ -91,7 +91,7 @@ properly started. You can start 1 of the 2 control programs:
 
 ```bash
 [user@RPi]$ cd $HOME/SiPMCalibControl/
-[user@RPi]$ ./deploy.sh # This will spawn a docker session
+[user@RPi]$ DEVICES=1 ./deploy.sh # This will spawn a docker session
 [root@<hash>]$ python3 control.py
 ```
 
@@ -104,7 +104,7 @@ properly started. You can start 1 of the 2 control programs:
 
 ```bash
 [user@RPi]$ cd $HOME/SiPMCalibControl
-[user@RPi]$ ./deploy.sh # This will spawn a docker session
+[user@RPi]$ DEVICES=1 ./deploy.sh # This will spawn a docker session
 [root@<hash>]$ python3 gui_control.py
 ```
 

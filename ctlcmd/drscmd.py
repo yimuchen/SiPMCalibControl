@@ -92,7 +92,7 @@ class drscalib(cmdbase.controlcmd):
     if not args.skipconfirm:
       self.prompt_input("""
         Running the DRS calibration process, make sure all DRS inputs channels
-        are disconnect before continuing.""",
+        are disconnect before continuing. Type [COMPLETE] to continue""",
                         allowed=['COMPLETE'])
     self.drs.run_calibrations()
 
