@@ -53,7 +53,7 @@ def find_corrected_dacb(scan, target=70.0):
 
     p, c = curve_fit(lin_f, x, y, sigma=ye)
 
-    ret[ch] = round((target - p[1])/p[0])
+    ret[ch] = round((target - p[1]) / p[0])
 
   return ret
 
@@ -65,6 +65,7 @@ if __name__ == '__main__':
            daq_port=6000,
            cli_port=6001,
            i2c_port=5555,
+           ssh_key='/srv/.ssh/id_rsa',
            config_file='cfg/tbc_yaml/roc_config_ConvGain4.yaml')
 
   # Additional settings for the data acquisition fast controls
@@ -84,7 +85,6 @@ if __name__ == '__main__':
       scan[ch][updated_dacb[ch]] = ped_vals[ch]
 
   corrected_dacb = find_corrected_dacb(scan)
-
 
   set_dacb(tbc, default_dacb)
   print('Orig Ped', get_pedestal(tbc))
