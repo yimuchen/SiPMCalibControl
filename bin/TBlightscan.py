@@ -29,6 +29,7 @@ if __name__ == '__main__':
            daq_port=6000,
            cli_port=6001,
            i2c_port=5555,
+           ssh_key='/srv/.ssh/id_rsa',
            config_file='cfg/tbc_yaml/roc_config_ConvGain4.yaml')
 
   # Additional settings for the data acquisition fast controls
@@ -54,8 +55,9 @@ if __name__ == '__main__':
                                           followMode='A')
 
     for phase in range(0, 16):
-      tbc.i2c_socket.yaml_config['roc_s0']['sc']['Top']['all']['Phase'] = phase
-      tbc.i2c_socket.configure()
+      yaml_node = tbc.make_deep('roc_s0', 'sc', 'Top', 'all', 'Phase', phase)
+      print(yaml_node)
+      tbc.i2c_socket.configure(yaml_config=yaml_node)
       tbc.i2c_socket.reset_tdc()  # Reset MasterTDCs
 
       data_single = tbc.acquire(500)

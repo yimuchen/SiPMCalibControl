@@ -90,10 +90,10 @@ class drscalib(cmdbase.controlcmd):
 
   def run(self, args):
     if not args.skipconfirm:
-      self.cmd.onecmd(
-          fmt.oneline_string("""wait --mesage DRS_CALIB Running the
-                      DRS calibration process. Make sure all SiPM DRS input
-                      channels are disconnected before continuing."""))
+      self.prompt_input("""
+        Running the DRS calibration process, make sure all DRS inputs channels
+        are disconnect before continuing. Type [COMPLETE] to continue""",
+                        allowed=['COMPLETE'])
     self.drs.run_calibrations()
 
 

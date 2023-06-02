@@ -1,233 +1,71 @@
 @page install Installation instructions
 
-## Installing the Calibration Control programs
+## Deploying the Calibration Control programs
 
-This is the program that is maintained by this packages by the developers at the
-University of Maryland. Installation should be done on the machine that is
-capable of interfacing with both the readout system and the trigger system.
-Current installation requirements include:
+The dependencies required to compile and run the program is handled by
+[docker][docker] with the `Dockerfile` found at the root directory of the
+project. This ensures that all deployments will run under the same set of
+packages to avoid setup specific issues from entering production.
 
-- Software libraries
-  - C++ compiler compatible with C++14 standard (using g++ as default)
-  - [OpenCV 4][opencv]: For visual processing routines (webcams that can be used
-    in the system generally does not require special driver systems)
-  - [CMake 3][cmake]: For handling the build environemtn
-  - [pybind11][pybind11]: For generating python binding for code written in C++
-  - Python 3: Main language used for high-level interface design.
-    - [numpy][numpy] and [scipy][scipy]: For in-time data processing.
-    - [flask socketio][flasksocket]: For GUI server hosting.
-    - [paramiko][paramiko]: For interaction of machines over network
-      connections, required for the tileboard controller system controls, as
-      well as sending the calibration outputs to remote servers for detailed
-      data processing.
-    - [zmq][python-zmq]: For interacting with the tileboard controller server instances.
-    - [yaml][python-yaml]: For interacting with the tileboard controller configurations.
-    - [uproot][python-uproot]: For processing the data returned by the tileboard controller.
-- Hardware specific tools:
-  - [libps5000][picoscope]: For interfacing with the Picoscope oscilloscope for data readout.
-  - [drs][drs]: For interfacing with the readout DRS oscilloscope for data readout.
-- For web interface generation
-  - [dart-sass][sass] for `css` file generation.
+Additional device permission setup is still required for the various data
+collection and control interface. The current configuration is designed to work
+on a [Raspberry Pi 3B+][raspi] running a [ArchLinux ARMv8][archarm] host, though
+any Linux-based ARMv8 system should work, as long as one can set up system
+permissions and can install an up-to-date version of docker.
 
-The current configuration is designed to work on a [Raspberry Pi 3B+][raspi]
-running [Arch Linux ARM7][archarm], and is known to work with a typical Arch
-Linux machine for local testing. Equivalent packages for different Linux
-distribution should also work, but have not been exhaustively tested. Notice,
-that this system is intended to work with some ARM-based headless system. As
-network configurations should not be stored online, contact the system
-maintainers if you have issues connecting to the system.
-
-### Arch Linux ARM for Deployment
-
-#### Dependency installation
-
-First, we can set up to code repository you can clone the main repository by
-cloning the git repository:
+First, we clone the code repository:
 
 ```bash
 git clone https://github.com/UMDCMS/SiPMCalibControl.git
 cd SiPMCalibControl
 ```
 
-But do not attempt to compile or run the program just yet, as additional
-dependencies need to be installed. Other than the standard developer packages
-such as a C++ compiler and make, there are additional packages that need to be
-installed via the `pacman` command for ArchLinux.
+### Setting up system permissions
 
-```bash
-# For ssh tunneling for the CLI interface
-pacman -Sy --noconfirm xorg-xauth
-
-# The main C++ libraries and building
-pacman -Sy --noconfirm cmake opencv pybind11 fmt
-
-# For additional package management
-pacman -Sy --noconfirm git
-
-## The main python packages
-pacman -Sy --noconfirm python-scipy          \
-                       python-opencv         \
-                       python-psutil         \
-                       python-paramiko       \
-                       python-flask-socketio \
-                       python-pyzmq          \
-                       python-yaml           \
-                       python-tqdm           \
-                       python-uproot
-
-## Additional packages required for opencv, since we are using the high level interface
-pacman -Sy --noconfirm qt5-base hdf5-openmpi vtk glew
-```
-
-Let the package developers know if you run into any issues with any of the
-install commands.
-
-#### Hardware specific dependency installation
-
-Not all interfaces are required for the package compile to complete. Which is
-useful when testing on personal hardware where one might not want to install the
-exotic hardware drivers. External package will be pulled to the `/external`
-directory of the directory.
-
-##### Picoscope
-
-The picoscope is a testing readout solution used during the calibration system
-development. This is not going to be added to the final deployment model, but
-should still be used for testing purposes. You can find the correct version
-[here][picoscope_download]. The following are instruction for added the required
-instruction for adding the picoscope to the external directory to be installed.
-
-```bash
-cd external
-wget https://labs.picotech.com/debian/pool/main/libp/libps5000/libps5000_version.deb
-ar x libps5000_version.deb
-
-tar xvf data.tar.xz
-mv opt/picoscope ./
-
-## Clean up stray files
-rm control.tar.gz
-rm debian-binary
-rm usr/ -rf
-rm opt/ -rf
-```
-
-##### DRS4
-
-The DRS4 is the high resolution readout used for the calibration system
-development. This is not going to be added for the final deployment model, but
-should still be compilable for testing purposes. You can find the correct version
-on the DRS [software page][drs4_download]. The following are instructions for
-adding the DRS 4 package to the external directory:
-
-```bash
-cd external
-wget https://www.psi.ch/sites/default/files/import/drs/SoftwareDownloadEN/drs-5.0.5.tar.gz
-
-tar zxvf drs-5.0.5.tar.gz
-mv drs-5.0.5 drs
-```
-
-#### Interface permission
-
-First ensure that the `i2c` interface and the `pwm` interface has been enabled
-on the device. For a Raspberry Pi, add the following lines in to the
-`/boot/config.txt` file. Notice if you are using this for local interface
-testing, **be very careful** with the permissions as the `i2c` and `pwm` may be
-used other systems in the machine (ex: For the air flow fans). Do _NOT_ enable
-these permissions on your personal machine unless you are sure about what the
-permissions would affect. Note that the `dtparam` line must added after the
-kernel loading line.
+Modify the `/boot/config.txt` file so that PWM and I2C interfaces are available:
+add the following lines to the _after_ the kernel loading line:
 
 ```bash
 dtoverlay=pwm-2chan
 dtparam=i2c_arm=on
 ```
 
-Next, change the permission of various devices to avoid running the program as
-root. For the GPIO/I2C and picoscope interface, create new groups indicating the
-usage and add your user to it:
+Next, we create new permission groups to avoid running the master program as
+root. If you are testing this program on your personal machine, do **not** add
+yourself to the `gpio` and `i2c` groups, as these devices are typically reserved
+for temperature monitor and control system on typical computer laptop. Randomly
+changing `i2c` and `gpio` value **will** damage your device.
 
 ```bash
-groupadd -f -r gpio
-usermod -a -G gpio ${USER}
-groupadd -f -r i2c
-usermod -a -G i2c ${USER}
 groupadd -f -r pico
 usermod -a -G pico ${USER}
 groupadd -f -r drs
 usermod -a -G drs ${USER}
+## DO NOT ADD!! unless you are sure of what you are doing!
+# groupadd -f -r gpio
+# usermod -a -G gpio ${USER}
+# groupadd -f -r i2c
+# usermod -a -G i2c ${USER}
 ```
 
-Then create a `udev` rule to change the permission of the relevant hardware. Copy
-the provided rules file to the `/etc/udev/rules.d` directory. A reboot is
-required for the results to take effect.
+Then, copy the custom `udev` rules to expose device IDs to the various groups.
 
 ```bash
 cp external/rules/pico.rules  /etc/udev/rules/
 cp external/rules/drs.rules   /etc/udev/rules/
-cp external/rules/digi.rules  /etc/udev/rules/
+## DO NOT ADD unless you are sure of what you are doing!!
+# cp external/rules/digi.rules  /etc/udev/rules/
 ```
 
-If you are running the control software on your laptop, do **NOT** copy the
-`digi.rules` file to you laptop unless you know what you are doing. Adjustments
-to the hardware permission on typical machines can result in system instability
-and potential hardware damage.
+Reboot the Raspberry Pi board to have everything take effect.
 
-### Compiling the control program
+### Installing software and firmware for the tileboard controller
 
-The package makes use of the CMake package to run the installation.
-
-```bash
-git clone https://github.com/yimuchen/SiPMCalibControl.git
-cd SiPMCalibControl
-
-cmake ./
-cmake --build ./
-
-python3 control.py     # For interactive CLI interface
-python3 gui_control.py # For starting GUI server
-```
-
-### Deployment in non-standard systems for development and debugging
-
-Installation instructions above works for x86 Arch Linux installations, and such
-work for all UNIX based systems assuming all the dependencies are satisfied. See
-the sections above to see the dependencies. In addition, we provide a docker
-image for people looking to develop locally in a non-standard environment.
-
-#### Docker instructions
-
-This is mainly used for testing interface development. While the docker script
-will copy the hardware interface packages for compilation, the interactive
-interface is set up such that it will still operate if the various control
-components are not available.
-
-To build a docker image and start the docker image.
-
-```bash
-docker build --tag sipmcalib_control --platform linux/amd64 --rm ./
-docker run -it -p 9100:9100 sipmcalib_control:latest
-```
-
-This should start an interactive bash session, where once can then start the
-CLI/GUI interfaces with the python commands
-
-```bash
-python control.py
-python gui_control.py
-```
-
-Notice that the files in the docker session are a copy and not a mount, meaning
-that if you should edit the file outside the docker session and rebuild the
-docker session to allow for data to be passed to docker session. If you did not
-modify the C++ files, you should not need to recompile.
-
-## Installing software and firmware for the tileboard controller
-
-The second-largest components of the calibration system is the interface with
-the tileboard controller, used to communicate with the HGCAL systems. The
-requirements here are maintained by the broader HGCAL community, mainly by the
+The tileboard controller used to communicate with the HGCAL systems run on a
+standalone ELM machine running a full operating system. The UMD control system
+communicates with this system over Ethernet, assuming that the various services
+on the tileboard system is operating nominally. Requirements for the tileboard
+controller are maintained by the broader HGCAL community, mainly by the
 University of Minnesota. With most of the instructions found for their
 [read-the-docs page][hgcal-quickstart].
 
@@ -244,6 +82,84 @@ sequence to work would include:
 
 Turn-key solutions for starting/stopping the tileboard control software programs
 are kept in the `scripts/tbcontroller` directory.
+
+### Deploying the docker image
+
+After permissions have been set. Navigate back to the code repository, then
+build and run the docker image:
+
+```bash
+DEVICES=1 ./deploy.sh
+```
+
+The `DEVICES` flag is used to expose all device interfaces to the underlying
+docker image. Do **not** include this flag unless you know what you are doing.
+The first run of this program would be slow as it is generating the docker
+image. Subsequent runs should only upload changes made by the user and recompile
+the repository code if needed. For the initial setup from a clean install, the
+docker image generating is expected to take about 40-50 minutes to fully
+complete. Once the program is complete, you should be greeted with a bash
+prompt, where you can execute the main program:
+
+```bash
+python3 control.py     # For starting interactive CLI
+python3 gui_control.py # For starting GUI server
+```
+
+The bash session is kept for the sake of debugging the deployment environment.
+If you know you want to start up straight into the CLI or the GUI, you can run
+the `./deploy.sh` like:
+
+```bash
+./deploy.sh python3 control.py     # For directly starting the interactive CLI
+# ./deploy.sh python3 gui_control.py # TODO: currently fails to exit nominally
+```
+
+You will automatically exit the docker image one you terminate the CLI/GUI
+session.
+
+## Deployment for software testing
+
+Installation instructions above should works for all UNIX like system assuming
+you can set up the various system permissions. If you are uncertain which
+permissions you can safely set up on the local machine, the program should still
+be run-able without any special permissions (but you will not be able to use any
+of the interface).
+
+To build a docker image and start the docker image.
+
+```bash
+# For mocking a x86 system
+PLATFORM=linux/amd64 ./deploy.sh
+
+# For mocking a aarch64 system
+PLATFORM=linux/arm64 ./deploy.sh
+```
+
+For testing if the new code can run without issues on the target ARM platform
+(RPi3), you will potentially need the
+[`docker-buildx`+`qemu-user-static`][docker-multilib] package combination
+installed for the image builder to work. Beware the cross-platform execution can
+have significant performance penalties, in particular for code compilation. Also
+notice that device interfaces is not guaranteed to work through cross-platform
+docker images (not even the USB based devices). The construction of the docker
+image on a local laptop will take about 40-50 minutes from a clean installation
+on a Raspberry Pi.
+
+Between testing different image types, you will need to clear the `cmake` cache
+files and compiled binary:
+
+```bash
+./clean.sh
+```
+
+Using the provided `deploy.sh` script, the repository directory is mounted to
+the docker image, so edits made outside the docker image will also be reflected
+inside the docker image. While this does mean you can install dependencies on
+the fly in the docker image session, such installation will not be persistent.
+If you are certain that you need a new package. Consider modifying the
+Dockerfile or change the dependency listing files, then restart the `deploy`
+script.
 
 ## Contributing to the code
 
@@ -292,3 +208,5 @@ directories:
 [python-uproot]: https://uproot.readthedocs.io/en/latest/
 [python-yaml]: https://pyyaml.org/wiki/PyYAMLDocumentation
 [hgcal-quickstart]: https://readthedocs.web.cern.ch/display/HGCELE/Tileboard+Tester+V2+Quick+Start+Guide
+[docker]: https://docs.docker.com/
+[docker-multilib]: https://docs.docker.com/build/building/multi-platform/

@@ -103,14 +103,21 @@ if __name__ == '__main__':
   try:
     logger.info("Running set command")
     session.cmd.set.run(args)
-    logger.info("Starting GPIO")
-    session.cmd.gpio.init()
-  except RuntimeError as err:
+  except Exception as err:
     logger.error(str(err))
     logger.warning(
         fmt.oneline_string("""
-          There was error in the setup process, program will continue but will
-          most likely misbehave! Use at your own risk!"""))
+          There was error in the device setup process, program will continue but
+          will most likely misbehave! Use at your own risk!"""))
+  try:
+    logger.info("Starting GPIO")
+    session.cmd.gpio.init()
+  except Exception as err:
+    logger.error(str(err))
+    logger.warning(
+        fmt.oneline_string("""
+          There was error in the GPIO setup, program will continue but will most
+          likely misbehave! Use at your own risk!"""))
 
   session.start_session()  # Starting the session!
   # Notice that this will continue to run until the shutdown signal is sent from

@@ -1,0 +1,15 @@
+# For computation and nicties
+tqdm
+numpy
+scipy
+opencv-python
+
+# For GUI
+flask-socketio
+
+# For tileboard interaction
+pyzmq
+pyyaml
+uproot==4.3.7 # Pinning to uproot4 for now
+awkward==1.10.2
+paramiko

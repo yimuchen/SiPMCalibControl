@@ -64,8 +64,6 @@ import cmod.gcoder as gcoder
 import cmod.board as board
 import cmod.gpio as gpio
 import cmod.visual as visual
-import cmod.pico as pico
-import cmod.drs as drs
 import cmod.fmt as fmt
 import cmod.TBController as tbc
 import numpy as np
@@ -85,7 +83,17 @@ import logging
 import tqdm
 import signal
 
+# Potentially missing package -- PICO
+try:
+  import cmod.pico as pico
+except (ImportError, ModuleNotFoundError) as err:
+  pico = None
 
+# Potentially missing package -- DRS4
+try:
+  import cmod.drs as drs
+except (ImportError, ModuleNotFoundError) as err:
+  drs = None
 class controlsignalhandle(object):
   """
   Simple class for handling signal termination signals emitted by user input
@@ -198,11 +206,11 @@ class controlterm(cmd.Cmd):
 
     # Instances for hardware control
     self.gcoder = gcoder.GCoder.instance()
-    self.board = board.Board()
+    self.board = board.Board(self)
     self.visual = visual.Visual()
-    self.pico = pico.PicoUnit.instance()
     self.gpio = gpio.GPIO.instance()
-    self.drs = drs.DRS.instance()
+    self.pico = pico.PicoUnit.instance() if pico is not None else None
+    self.drs = drs.DRS.instance() if drs is not None else None
     self.tbc = tbc.TBController()
 
     # Session control
@@ -236,9 +244,9 @@ class controlterm(cmd.Cmd):
     python-closing book keeping routines are ran.
     """
     self.gcoder = gcoder.GCoder.close_instance()
-    self.pico = pico.PicoUnit.close_instance()
     self.gpio = gpio.GPIO.close_instance()
-    self.drs = drs.DRS.close_instance()
+    self.pico = pico.PicoUnit.close_instance() if pico is not None else None
+    self.drs = drs.DRS.close_instance() if drs is not None else None
 
   def precmd(self, line):
     """

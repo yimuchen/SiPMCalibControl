@@ -101,14 +101,21 @@ if __name__ == '__main__':
   try:
     logger.info("Running set command")
     cmd.set.run(args)
-    logger.info("Starting GPIO")
-    cmd.gpio.init()
-  except RuntimeError as err:
+  except Exception as err:
     logger.error(str(err))
     logger.warning(
         fmt.oneline_string("""
           There was error in the setup process, program will continue but will
           most likely misbehave! Use at your own risk!"""))
+  try:
+    logger.info("Starting GPIO")
+    cmd.gpio.init()
+  except Exception as err:
+    logger.error(str(err))
+    logger.warning(
+        fmt.oneline_string("""
+          There was error in the GPIO setup, program will continue but will most
+          likely misbehave! Use at your own risk!"""))
 
   cmd.cmdloop()
   del cmd  # This object requires explicit closing!
