@@ -104,7 +104,7 @@ class visualset(cmdbase.controlcmd):
       self.visual.poly_range = args.poly
 
 
-class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
+class visualhscan(cmdbase.hscancmd, visualmeta, cmdbase.rootfilecmd):
   """
   @brief Performing horizontal scan with camera system
   """
@@ -116,7 +116,7 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
   coordinates for fast visual calibration.
   """
 
-  DEFAULT_SAVEFILE = 'vhscan_<BOARDTYPE>_<BOARDID>_<DETID>_<SCANZ>_<TIMESTAMP>.txt'
+  DEFAULT_ROOTFILE = 'vhscan_<BOARDTYPE>_<BOARDID>_<DETID>_<SCANZ>_<TIMESTAMP>.root'
   HSCAN_ZVALUE = 20
   HSCAN_RANGE = 3
   HSCAN_SEPRATION = 0.5
@@ -143,7 +143,6 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
     gantry_y = []
     reco_x = []
     reco_y = []
-
     ## Running over mesh.
     for xval, yval in self.start_pbar(zip(args.x, args.y)):
       self.check_handle()
@@ -159,10 +158,13 @@ class visualhscan(cmdbase.hscancmd, cmdbase.savefilecmd, visualmeta):
         reco_x.append(center.x)
         reco_y.append(center.y)
 
-      self.write_standard_line((center.x, center.y), det_id=args.detid)
+      self.fillroot({
+          "center x": center.x,
+          "center y": center.y
+      },
+                    det_id=args.detid)
       self.pbar_data(center=f'({center.x:.0f}, {center.y:.0f})',
                      sharp=f'({center.s2:1f}, {center.s4:.1f})')
-
     fitx, covar_x = curve_fit(visualhscan.model, np.vstack((gantry_x, gantry_y)),
                               reco_x)
     fity, covar_y = curve_fit(visualhscan.model, np.vstack((gantry_x, gantry_y)),
@@ -454,13 +456,13 @@ class visualsaveframe(cmdbase.controlcmd):
     self.visual.save_image(args.saveimg, args.raw)
 
 
-class visualzscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.savefilecmd,
-                  visualmeta):
+class visualzscan(cmdbase.singlexycmd, cmdbase.zscancmd, visualmeta,
+                  cmdbase.rootfilecmd):
   """
   @brief Scanning focus to calibrate z distance
   """
   VISUAL_OFFSET = True
-  DEFAULT_SAVEFILE = 'vscan_<DETID>_<TIMESTAMP>.txt'
+  DEFAULT_ROOTFILE = 'vscan_<DETID>_<TIMESTAMP>.root'
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -482,9 +484,14 @@ class visualzscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.savefilecmd,
       reco_y.append(center.y)
       reco_a.append(center.area)
       reco_d.append(center.maxmeas)
-
-      self.write_standard_line(
-          (laplace[-1], center.x, center.y, center.area, center.maxmeas),
+      self.fillroot(
+          {
+              "laplace": laplace[-1],
+              "center x": center.x,
+              "center y": center.y,
+              "center area": center.area,
+              "center maxmeas": center.maxmeas
+          },
           det_id=args.detid)
       self.pbar_data(sharpness=f'({center.s2:.1f}, {center.s4:.1f})',
                      reco=f'({center.x:.0f}, {center.y:.0f})',

@@ -174,13 +174,13 @@ class sendhome(cmdbase.controlcmd):
     self.gcoder.sendhome(args.x, args.y, args.z)
 
 
-class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
+class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.rootfilecmd):
   """
   @brief Running horizontal alignment procedure by luminosity readout vs and xy
   grid scan motion.
   """
 
-  DEFAULT_SAVEFILE = 'halign_<BOARDTYPE>_<BOARDID>_<DETID>_<SCANZ>_<TIMESTAMP>.txt'
+  DEFAULT_ROOTFILE = 'halign_<BOARDTYPE>_<BOARDID>_<DETID>_<SCANZ>_<TIMESTAMP>.root'
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -223,16 +223,18 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
     unc = []
     total = len(args.x)
 
+    n = 0
+    test1 = []
+    test2 = []
     ## Running over mesh.
     for xval, yval in self.start_pbar(zip(args.x, args.y)):
       self.check_handle()
       self.move_gantry(xval, yval, args.scanz)
       lumival, uncval = self.readout(args, average=True)
-      self.write_standard_line((lumival, uncval), det_id=args.detid)
+      self.fillroot({"lumival": lumival, "uncval": uncval}, det_id=args.detid)
       self.pbar_data(Lumi=f'{lumival:.2f}+-{uncval:.2f}')
       lumi.append(abs(lumival))
       unc.append(uncval)
-
     # Performing fit
     p0 = (
         max(lumi) * ((args.scanz + 2)**2),  #
@@ -300,13 +302,13 @@ class halign(cmdbase.readoutcmd, cmdbase.hscancmd, cmdbase.savefilecmd):
 
 
 class zscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.readoutcmd,
-            cmdbase.savefilecmd):
+            cmdbase.rootfilecmd):
   """
   Performing the intensity scan give a list of scanning z coordinates and the
   list of biassing power.
   """
 
-  DEFAULT_SAVEFILE = 'zscan_<BOARDTYPE>_<BOARDID>_<DETID>_<TIMESTAMP>.txt'
+  DEFAULT_ROOTFILE = 'zscan_<BOARDTYPE>_<BOARDID>_<DETID>_<TIMESTAMP>.root'
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -336,7 +338,6 @@ class zscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.readoutcmd,
     """
     lumi = []
     unc = []
-
     # Ordering is important! Grouping z values together as the bottle neck is in
     # motion speed
     for z, power in self.start_pbar(
@@ -364,17 +365,15 @@ class zscan(cmdbase.singlexycmd, cmdbase.zscancmd, cmdbase.readoutcmd,
 
       lumi.append(lumival)
       unc.append(uncval)
-
-      self.write_standard_line((lumival, uncval), det_id=args.detid)
+      self.fillroot({"lumival": lumival, "uncval": uncval}, det_id=args.detid)
       self.pbar_data(Lumi=f'{lumival:.2f}+-{uncval:.2f}')
 
 
 class lowlightcollect(cmdbase.singlexycmd, cmdbase.readoutcmd,
-                      cmdbase.savefilecmd):
+                      cmdbase.rootfilecmd):
   """@brief Collection of low light data at a single gantry position, data will
   be collected without averaging."""
-
-  DEFAULT_SAVEFILE = 'lowlight_<BOARDTYPE>_<BOARDID>_<DETID>_<TIMESTAMP>.txt'
+  DEFAULT_ROOTFILE = 'lowlight_<BOARDTYPE>_<BOARDID>_<DETID>_<TIMESTAMP>.root'
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -419,15 +418,17 @@ class lowlightcollect(cmdbase.singlexycmd, cmdbase.readoutcmd,
     for _ in self.start_pbar(range(args.nparts)):
       self.check_handle()
       readout = self.readout(args, average=False)
-      self.write_standard_line(readout, det_id=args.detid)
+      readout = readout.tolist()
+      self.fillroot({"readout": readout}, {"readout": "var * float64"},
+                    det_id=args.detid)
       self.pbar_data(Lumi=f'{readout[-1]:.2}')
 
 
-class timescan(cmdbase.readoutcmd, cmdbase.savefilecmd):
+class timescan(cmdbase.readoutcmd, cmdbase.rootfilecmd):
   """
   Generate a log of the readout in terms relative to time.
   """
-  DEFAULT_SAVEFILE = 'tscan_<TIMESTAMP>.txt'
+  DEFAULT_ROOTFILE = 'tscan_<TIMESTAMP>.root'
 
   def __init__(self, cmd):
     cmdbase.controlcmd.__init__(self, cmd)
@@ -472,9 +473,14 @@ class timescan(cmdbase.readoutcmd, cmdbase.savefilecmd):
       s4 = self.visual.get_latest().s4
       sample_time = time.time_ns()
       timestamp = (sample_time - start_time) / 1e9
-      self.write_standard_line((lumival, uncval, s2, s4),
-                               det_id=-100,
-                               time=timestamp)
+      self.fillroot({
+          "lumival": lumival,
+          "uncval": uncval,
+          "S2": s2,
+          "S4": s4
+      },
+                    time=timestamp,
+                    det_id=-100)
       self.pbar_data(Lumi=f'{lumival:.2f}+-{uncval:.2f}',
                      Sharp=f'({s2:.1f}, {s4:.1f})')
       time.sleep(args.interval)

@@ -82,6 +82,8 @@ import enum
 import logging
 import tqdm
 import signal
+import uproot
+import awkward as ak
 
 # Potentially missing package -- PICO
 try:
@@ -94,6 +96,8 @@ try:
   import cmod.drs as drs
 except (ImportError, ModuleNotFoundError) as err:
   drs = None
+
+
 class controlsignalhandle(object):
   """
   Simple class for handling signal termination signals emitted by user input
@@ -772,6 +776,223 @@ class controlcmd(object):
     return globlist
 
 
+class rootfilecmd(controlcmd):
+  """
+  @brief commands that control saving data to the root file
+  
+  @ingroup cli_design
+  
+  @details Commands for data which needs to be saved to a root file, this is an 
+  update to the old savefilecmd class which only wrote to a text file. All functions
+  that wish to have their default save location overridden should simply change the 
+  DEFAULT_SAVEFILE static variable.
+  
+  The data of timestamp (ms), detector id, gantry coordinates (mm), measured bias voltage (mv),
+  measured SiPM temp (C), and measured pulser board temp (C) will always be in the root file. 
+  Extra branches with more data will be added based on the commands run. 
+  
+  The saveroot string input by the user can also include placeholder strings to have the filename
+  automatically be modified according other input arguments and/or the state of
+  the system. This allows the same command to be used for different
+  configurations while still have the results be saved in distinct files.
+  Placeholders will be specified in the angle braced. For the full list of
+  special placeholders, as well as how the file parsing is handled, see the
+  detailed documentation in the `ctlcmd.cmdbase.savefilecmd.parse` method.
+  """
+  DEFAULT_ROOTFILE = 'SAVEROOT_<TIMESTAMP>'
+
+  def __init__(self, cmd):
+    controlcmd.__init__(self, cmd)
+
+  def add_args(self):
+    group = self.parser.add_argument_group(
+        "root file saving options",
+        """Options for changing the root file location.
+        For more details, see the official documentation.""")
+    group.add_argument('--saveroot',
+                       type=str,
+                       default=self.DEFAULT_ROOTFILE,
+                       help="""File path to save (placeholders in angle braces).
+                       default=%(default)s""")
+
+  def parse(self, args):
+    if not args.saveroot:  # Early exit if savefile is not set
+      self.saveroot = None
+      return args
+    filename = args.saveroot
+
+    # Adding time stamp filenames
+    timestring = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = re.sub('<TIMESTAMP>', timestring, filename, flags=re.IGNORECASE)
+
+    # Adding boardid to the settings
+    filename = re.sub('<BOARDID>',
+                      str(self.board.boardid),
+                      filename,
+                      flags=re.IGNORECASE)
+    # Adding boardtype to the settings
+    filename = re.sub('<BOARDTYPE>',
+                      str(self.board.boardtype),
+                      filename,
+                      flags=re.IGNORECASE)
+
+    # Substituting tokens for argument values
+    for action in self.parser._actions:
+      for string in action.option_strings:
+        string = string.strip('-')
+        if not hasattr(args, string): continue
+        val = ''
+        try:
+          val = action.type(getattr(args, string))
+        except:
+          pass
+        substring = '{0}{1}'.format(string, val)
+        substring = re.sub(r'\.', 'p', substring)
+        filename = re.sub('\\<{0}\\>'.format(string),
+                          substring,
+                          filename,
+                          flags=re.IGNORECASE)
+    self.saveroot = filename
+    return args
+
+  def maketree(self, data, datatypes):
+    """
+    @brief Create the root file and the TTree in the root file
+
+    @details This command creates the root file and creates the TTree with the correct
+    data types and names for each branch of the tree. This also saves some extra basic data 
+    like the time the file was created, the Board_ID and Board_Type. This function is only called once.
+
+    """
+    if datatypes is None:
+      datatypes = {}
+    self.rootfile = uproot.recreate(self.saveroot)
+    standard_dict = {
+        "time": np.float32,
+        "det_id": int,
+        "gantry_x": np.float32,
+        "gantry_y": np.float32,
+        "gantry_z": np.float32,
+        "led_bv": np.float32,
+        "led_temp": np.float32,
+        "sipm_temp": np.float32
+    }
+    self.specific_dict = {**{title: type(data[title]) for title in data}}
+
+    ##manual override if type is not returning a value that root will accept
+    if datatypes:
+      for title in datatypes:
+        self.specific_dict[title] = datatypes[title]
+
+    for title in data:
+      if not title.isidentifier():
+        warnings.warn(
+            "The title " + title +
+            " in the standard data for the TTree DataTree is not an acceptable identifier. The program will continue to run."
+        )
+    for title in self.specific_dict:
+      if not title.isidentifier():
+        warnings.warn(
+            "The title " + title +
+            " in the specific data for the TTree DataTree is not an acceptable identifier. The program will continue to run"
+        )
+
+    self.rootfile.mktree(
+        "DataTree", {
+            **{
+                title: standard_dict[title]
+                for title in standard_dict
+            },
+            **{
+                title: self.specific_dict[title]
+                for title in self.specific_dict
+            }
+        })
+
+    ##add extra data which must only be saved once
+    timestring = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    self.rootfile["run_info/board_id"] = self.board.boardid
+    self.rootfile["run_info/board_type"] = self.board.boardtype
+    self.rootfile["run_info/timestamp"] = timestring
+
+    ##Create apparatus to store data until it is pushed to the root file
+    self.n = 0
+    standarddata = {**{title: [] for title in standard_dict}}
+    specificdata = {**{title: [] for title in self.specific_dict}}
+    self.saveddata = {"standard": standarddata, "specific": specificdata}
+
+  def fillroot(self, data, datatypes=None, time=0.0, det_id=-100):
+    """
+    @brief Fill the root file with the given data, will create a root file on the first call
+
+    @details This command is called to push data to the root file. The first run of this command will create 
+    a root file and the correct TTree based on the input of data and datatypes. The format of data should be 
+    a dictionary with the keys as the branch titles for corresponding data. 
+    datatypes is also a dictionary 
+    
+    whose purpose is to override the rootfilecmd in the case that type() does not work. Branches being filled 
+    will multiple values per call of fill root must set datatypes and must make sure they are inputting a list.
+    Ex: self.fillroot({"testdata":[1,2,3]},datatypes = {"testdata":"var * int64")
+
+    """
+    ##fill data into the root file
+    if not hasattr(self, "rootfile"):
+      self.maketree(data, datatypes)
+
+    if data != "dump":
+      self.saveddata["standard"]["time"].append(time)
+      self.saveddata["standard"]["det_id"].append(det_id)
+      self.saveddata["standard"]["gantry_x"].append(self.gcoder.opx)
+      self.saveddata["standard"]["gantry_y"].append(self.gcoder.opy)
+      self.saveddata["standard"]["gantry_z"].append(self.gcoder.opz)
+      self.saveddata["standard"]["led_bv"].append(self.gpio.adc_read(2))
+      self.saveddata["standard"]["led_temp"].append(self.gpio.ntc_read(0))
+      self.saveddata["standard"]["sipm_temp"].append(self.gpio.rtd_read(1))
+
+      for title1 in data:
+        for title2 in self.saveddata["specific"]:
+          if title1 == title2:
+            self.saveddata["specific"][title2].append(data[title1])
+      self.n += 1
+    ##Only push data to rootfile once multiple sets of data have been collected to improve speed, extending is more efficient that way
+    if self.n % 10 == 0 or (data == "dump" and self.n != 0):
+      for title in self.saveddata["specific"]:
+        ##change nested lists to akward arrays in order to save properly to the tree
+        if isinstance(self.specific_dict[title], str):
+          if "var *" in self.specific_dict[title]:
+            self.saveddata["specific"][title] = ak.Array(
+                self.saveddata["specific"][title])
+
+      self.rootfile["DataTree"].extend({
+          **{
+              title: self.saveddata["standard"][title]
+              for title in self.saveddata["standard"]
+          },
+          **{
+              title: self.saveddata["specific"][title]
+              for title in self.saveddata["specific"]
+          }
+      })
+
+      for title in self.saveddata["standard"]:
+        self.saveddata["standard"][title] = []
+      for title in self.saveddata["specific"]:
+        self.saveddata["specific"][title] = []
+      self.n = 0
+
+  def post_run(self):
+    """
+    @brief Additional steps to run before the completing the command.
+
+    @details As this modifies files on the system, we will always print a verbose
+    message to notify the user of where the save file is. This also dumps any remaining data
+    still in memory to the root file.
+    """
+
+    self.fillroot("dump")
+    self.printmsg(f"Saving results to file [{self.saveroot}]")
+
+
 class savefilecmd(controlcmd):
   """
   @brief commands that will save to a file
@@ -897,6 +1118,7 @@ class savefilecmd(controlcmd):
     message to notify the user of where the save file is. This function also
     handles that the save files are closed nominally.
     """
+
     if not self.savefile: return  # Early exit for if savefile is not set
     self.printmsg(f"Saving results to file [{self.savefile.name}]")
     self.savefile.flush()
