@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(SiPMControl CXX)
 
 ## Compiler settings
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 add_compile_options("-g")
@@ -22,6 +22,7 @@ find_package(pybind11 CONFIG REQUIRED)
 find_package(OpenCV          REQUIRED)
 find_package(Threads         REQUIRED)
 find_package(fmt             REQUIRED)
+find_package(Boost COMPONENTS serialization)
 
 
 ## The DRS4 library, this assumes that the stuff have been added to the
@@ -118,6 +119,17 @@ target_link_libraries( c_visual PRIVATE  c_logger
 target_include_directories(c_visual PRIVATE ${OpenCV_INCLUDE_DIRS}
                                             ${PYTHON_INCLUDE_DIRS} )
 target_include_directories(visual PRIVATE ${OpenCV_INCLUDE_DIRS} )
+
+if( EXISTS "external/hexactrl-sw/" )
+  message("External package for picoscope found! "
+          "Making the picoscope readout interface")
+  pybind11_add_module(_rocv2 SHARED cmod/_rocv2.cc)
+  target_include_directories(_rocv2
+                             PRIVATE
+                             ${PYTHON_INCLUDE_DIRS}
+                             ${CMAKE_HOME_DIRECTORY}/external/hexactrl-sw)
+  target_link_libraries(_rocv2 PRIVATE  ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})
+endif()
 
 ## Add testing binary files
 # if( PICOSCOPE_LIB )
