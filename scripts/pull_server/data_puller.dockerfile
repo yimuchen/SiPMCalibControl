@@ -13,11 +13,12 @@ RUN apt update; \
     apt-get -y install ${MAKE_DEPS} ${PKGS_DEPS} ${ROOT_DEPS} ${PYTHON_DEPS}
 
 
-# Installing ROOT
+# Installing ROOT (as per official root instructions)
 RUN wget https://root.cern/download/root_v6.28.04.Linux-ubuntu22-x86_64-gcc11.3.tar.gz; \
     tar -xzf root_v6.28.04.Linux-ubuntu22-x86_64-gcc11.3.tar.gz;                        \
     source root/bin/thisroot.sh
 ENV ROOTSYS=/srv/root
+
 ## Compiling the client code (Not using git clone here, as hexactrl is in a private repository)
 COPY ./ /srv/hexactrl-sw
 
@@ -27,4 +28,6 @@ RUN mkdir -p hexactrl-sw/build;                                                 
     cmake -DBUILD_CLIENT=ON ../ ; make; make install;                                 \
     patch -u -i ../requirements.patch /srv/hexactrl/hexactrl-script/requirements.txt; \
     python3 -m pip install --break-system-packages -r /srv/hexactrl-sw/hexactrl-script/requirements.txt
+# Additional python paths to use
+ENV PYTHONPATH=$PYTHONPATH:/srv/hexactrl-sw/hexactrl-script/analysis
 
