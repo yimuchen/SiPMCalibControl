@@ -7,11 +7,11 @@ import server.session as ss
 
 # Loading the base command session
 import ctlcmd.cmdbase as cmdbase
-import ctlcmd.gcodercmd as gcodercmd
-import ctlcmd.digicmd as digicmd
-import ctlcmd.visualcmd as visualcmd
-import ctlcmd.picocmd as picocmd
-import ctlcmd.drscmd as drscmd
+#import ctlcmd.gcodercmd as gcodercmd
+#import ctlcmd.digicmd as digicmd
+#import ctlcmd.visualcmd as visualcmd
+#import ctlcmd.picocmd as picocmd
+#import ctlcmd.drscmd as drscmd
 import cmod.fmt as fmt
 import argparse
 import logging  # Additional settings required
