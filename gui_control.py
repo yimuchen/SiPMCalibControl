@@ -3,9 +3,9 @@
 Script used to initiate the GUI server instance. The main documentation will be
 given in the files of the server/ directory
 """
-import server.session as ss
 
-# Loading the base command session
+import gui.server.session as ss
+
 import ctlcmd.cmdbase as cmdbase
 #import ctlcmd.gcodercmd as gcodercmd
 #import ctlcmd.digicmd as digicmd
