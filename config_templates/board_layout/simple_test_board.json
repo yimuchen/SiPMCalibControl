@@ -1,0 +1,30 @@
+{
+  "board_type": "simple_test_board",
+  "description": "Simple single detector elements board that will be used to debug software behavior. Detector element will be placed at the center of the working area of the gantry.",
+  "detectors": [
+    {
+      "readout": [
+        -1,
+        0,
+        0
+      ],
+      "default_coords": [
+        100,
+        100
+      ]
+    },
+    {
+      "readout": [
+        -1,
+        0,
+        1
+      ],
+      "default_coords": [
+        200,
+        200
+      ]
+    }
+  ],
+  "calib_routines": [],
+  "conditions": {}
+}

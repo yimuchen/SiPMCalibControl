@@ -1,0 +1,16 @@
+﻿---
+BasedOnStyle: Mozilla
+AlignConsecutiveAssignments: 'true'
+AlignConsecutiveDeclarations: 'true'
+ColumnLimit: '120'
+PointerAlignment: Left
+ReflowComments: 'false'
+SortIncludes: 'true'
+SpaceBeforeAssignmentOperators: 'true'
+SpaceBeforeInheritanceColon: 'true'
+SpaceBeforeParens: Never
+SpaceBeforeRangeBasedForLoopColon: 'true'
+SpaceInEmptyParentheses: 'false'
+SpacesInAngles: 'false'
+SpacesInParentheses: 'true'
+

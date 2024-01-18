@@ -1,0 +1,18 @@
+name: gantry_control
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # For C/C++ build dependencies, pinning to a older stable version for now
+  - cmake=3.27.9
+  - boost=1.82
+  - gxx=12
+  - pybind11
+  # Python requirements - Pinning to older version of package for now
+  # Explicit requirements should be listed in the
+  - python=3.10 # Pinning to python3.10 for now
+  - numpy
+  - scipy
+  # Python formatting and linting utilities
+  - black
+  - flake8

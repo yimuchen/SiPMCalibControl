@@ -1,0 +1,424 @@
+daq:
+  IdelayStep: '8'
+  NChips: '1'
+  Number_of_events_per_readout: '-1'
+  active_menu : 'randomL1A'
+  elinks_daq:
+    - { name : 'link0', polarity: 1, idcode: 0 }
+    - { name : 'link1', polarity: 0, idcode: 1 }
+  elinks_trg:
+    - { name : 'link0', polarity: 0, idcode: 0 }
+    - { name : 'link1', polarity: 1, idcode: 2 }
+    - { name : 'link2', polarity: 1, idcode: 3 }
+    - { name : 'link3', polarity: 0, idcode: 1 }
+  zmqPushPull_port: '8888'
+  delayScanData_port: '8889'
+  menus:
+    dummy:
+      NEvents: 10000
+      NEventsPerPush: 200
+    randomL1a:
+      NEvents: 10000
+      log2_rand_bx_period: 10
+    randomL1AplusTPG:
+      NEvents: 10000
+      log2_rand_bx_period: 10
+      bx_min: 45
+      trg_fifo_latency: 3
+    externalL1A:
+      NEvents: 10000
+      trg_fifo_latency: 3
+      trgphase_fifo_latency: 15
+      loopBack: true
+      bxCalibExt: 10
+      lengthCalibExt: 2
+      prescale: 0
+    calibAndL1A:
+      NEvents: 1000
+      bxCalib: 10
+      bxL1A: 33
+      lengthCalib: 1
+      lengthL1A: 1
+      prescale: 0
+    calibAndL1AplusTPG:
+      NEvents: 1000
+      bxCalib: 10
+      bxL1A: 33
+      lengthCalib: 1
+      lengthL1A: 1
+      prescale: 0
+      trg_fifo_latency: 3
+    delayScan:
+      maxDelay: 512
+      delayStep: 1
+      idlePattern: '0XACCCCCCC'
+      acquireLength: 1000
+    marsRndL1A:
+      log2_rand_bx_period: 10
+      bx_min: 45
+client:
+  data_push_port: '8888'
+  hw_type: TB
+  outputDirectory: data
+  run_type: default
+  serverIP: tbtester1
+  #run_num: 99999
+roc_s0:
+ sc:
+  DigitalHalf:
+    all:
+      L1Offset: 10
+      IdleFrame: 0xCCCCCCC
+      CalibrationSC: 1
+      Bx_offset: 2
+  GlobalAnalog:
+    all:
+      Rf: 1
+      Cd: 4
+      Delay87: 2
+      Delay9: 2
+      Delay40: 2
+      Delay65: 2
+      Gain_conv: 0x4
+      #dacb_vb_conv: 60
+  MasterTdc:
+    0:
+      GLOBAL_LATENCY_TIME: 10
+  ReferenceVoltage:
+    0:
+      Vbg_1v: 4
+      Inv_vref: 370
+      Noinv_vref: 250
+      Toa_vref: 112
+      Tot_vref: 370
+    1:
+      Vbg_1v: 4
+      Inv_vref: 375
+      Noinv_vref: 250
+      Toa_vref: 112
+      Tot_vref: 370
+  Top:
+    all:
+      BIAS_I_PLL_D: 63
+      EN_HIGH_CAPA: 1
+      EdgeSel_T1: 1
+      phase_ck: 14
+      EN_PhaseShift: 1
+      in_inv_cmd_rx: 0
+      RunL: 1
+      RunR: 1
+  cm:
+    0: 
+      dacb: 33
+      sign_dac: 0
+      trim_inv: 0
+    1: 
+      dacb: 33
+      sign_dac: 0
+      trim_inv: 0
+    2: 
+      dacb: 33
+      sign_dac: 0
+      trim_inv: 0
+    3: 
+      dacb: 33
+      sign_dac: 0
+      trim_inv: 0
+  calib:
+    0: 
+      dacb: 33
+      sign_dac: 0
+      trim_inv: 0
+    1: 
+      dacb: 33
+      sign_dac: 0
+      trim_inv: 0
+  ch:
+    0: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 11
+    1: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 13
+    2: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 10
+    3: 
+      dacb: 28
+      sign_dac: 0
+      trim_inv: 15
+    4: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 12
+    5: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 12
+    6: 
+      dacb: 33
+      sign_dac: 0
+      trim_inv: 10
+    7: 
+      dacb: 27
+      sign_dac: 0
+      trim_inv: 5
+    8: 
+      dacb: 28
+      sign_dac: 0
+      trim_inv: 7
+    9: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 11
+    10: 
+      dacb: 32
+      sign_dac: 0
+      trim_inv: 14
+    11: 
+      dacb: 28
+      sign_dac: 0
+      trim_inv: 12
+    12: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 9
+    13: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 8
+    14: 
+      dacb: 28
+      sign_dac: 0
+      trim_inv: 11
+    15: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 14
+    16: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 10
+    17: 
+      dacb: 27
+      sign_dac: 0
+      trim_inv: 6
+    18: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 9
+    19: 
+      dacb: 31
+      sign_dac: 0
+      trim_inv: 7
+    20: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 20
+    21: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 12
+    22: 
+      dacb: 28
+      sign_dac: 0
+      trim_inv: 4
+    23: 
+      dacb: 31
+      sign_dac: 0
+      trim_inv: 9
+    24: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 8
+    25: 
+      dacb: 32
+      sign_dac: 0
+      trim_inv: 17
+    26: 
+      dacb: 27
+      sign_dac: 0
+      trim_inv: 13
+    27: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 7
+    28: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 6
+    29: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 4
+    30: 
+      dacb: 33
+      sign_dac: 0
+      trim_inv: 7
+    31: 
+      dacb: 27
+      sign_dac: 0
+      trim_inv: 5
+    32: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 7
+    33: 
+      dacb: 31
+      sign_dac: 0
+      trim_inv: 14
+    34: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 12
+    35: 
+      dacb: 28
+      sign_dac: 0
+      trim_inv: 12
+    36: 
+      dacb: 33
+      sign_dac: 0
+      trim_inv: 7
+    37: 
+      dacb: 31
+      sign_dac: 0
+      trim_inv: 10
+    38: 
+      dacb: 28
+      sign_dac: 0
+      trim_inv: 2
+    39: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 11
+    40: 
+      dacb: 31
+      sign_dac: 0
+      trim_inv: 6
+    41: 
+      dacb: 28
+      sign_dac: 0
+      trim_inv: 8
+    42: 
+      dacb: 27
+      sign_dac: 0
+      trim_inv: 2
+    43: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 2
+    44: 
+      dacb: 28
+      sign_dac: 0
+      trim_inv: 8
+    45: 
+      dacb: 28
+      sign_dac: 0
+      trim_inv: 0
+    46: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 8
+    47: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 10
+    48: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 7
+    49: 
+      dacb: 32
+      sign_dac: 0
+      trim_inv: 8
+    50: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 7
+    51: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 4
+    52: 
+      dacb: 31
+      sign_dac: 0
+      trim_inv: 8
+    53: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 10
+    54: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 5
+    55: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 10
+    56: 
+      dacb: 31
+      sign_dac: 0
+      trim_inv: 9
+    57: 
+      dacb: 28
+      sign_dac: 0
+      trim_inv: 10
+    58: 
+      dacb: 33
+      sign_dac: 0
+      trim_inv: 12
+    59: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 11
+    60: 
+      dacb: 28
+      sign_dac: 0
+      trim_inv: 12
+    61: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 6
+    62: 
+      dacb: 31
+      sign_dac: 0
+      trim_inv: 7
+    63: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 3
+    64: 
+      dacb: 31
+      sign_dac: 0
+      trim_inv: 12
+    65: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 6
+    66: 
+      dacb: 32
+      sign_dac: 0
+      trim_inv: 9
+    67: 
+      dacb: 28
+      sign_dac: 0
+      trim_inv: 8
+    68: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 12
+    69: 
+      dacb: 30
+      sign_dac: 0
+      trim_inv: 9
+    70: 
+      dacb: 31
+      sign_dac: 0
+      trim_inv: 8
+    71: 
+      dacb: 29
+      sign_dac: 0
+      trim_inv: 7

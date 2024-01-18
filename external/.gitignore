@@ -1,6 +1,0 @@
-*
-!.gitignore
-!rules/
-!rules/*.rules
-!boot/*.txt
-!fetch_external.sh
