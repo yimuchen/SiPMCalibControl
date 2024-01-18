@@ -6,22 +6,15 @@ requested readout method
 
 """
 
-from .session import Session
-from .board import ReadoutMode
-from .format import _str_
-
+import argparse
 import enum
 import time
-import argparse
+
 import numpy
 
-
-"""
-
-Simplifying readout routine arguments. Implementation of the readout arguments
-are given in the readout.py module
-
-"""
+from .board import ReadoutMode
+from .format import _str_
+from .session import Session
 
 
 def add_readout_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
@@ -136,7 +129,7 @@ def _read_drs(session, samples, channel, **kwargs):
     will contiously fire the trigger until collections have been completed.
     """
     val = []
-    for _ in range(args.samples):
+    for _ in range(samples):
         session.hw.drs_startcollect()
         while not session.hw.drs_is_ready():
             _fire_trigger(session, n=10, wait=100)
@@ -195,10 +188,8 @@ def _read_model(session, **kwargs):
     r0 = ((x - det_x) ** 2 + (y - det_y) ** 2) ** 0.5
 
     if _is_counting(session, **kwargs):
-        ## Reading a SiPM-like output,
         return _read_sipm_model(r0, z, samples)
     else:
-        ## This is a linear photo diode readout
         return _read_diode_model(r0, z, samples)
 
 

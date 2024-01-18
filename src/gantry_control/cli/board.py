@@ -164,7 +164,6 @@ class Detector(object):
                 ),
             }
         )
-        ## Additional parsing for readout methods and default coordinates
 
         return det
 
@@ -181,14 +180,14 @@ class Detector(object):
         """
         # Getting the latest calibrated result, of a particular process. The key
         # can be used to specify th
-        l = [x for x in self.calibrated if x.process == process]
+        process_list = [x for x in self.calibrated if x.process == process]
 
-        if len(l) == 0:
+        if len(process_list) == 0:
             return None
         elif key is None:
-            return l[-1]
+            return process_list[-1]
         else:
-            return sorted(l, key=key)[0]
+            return sorted(process_list, key=key)[0]
 
     # Adding the per detector calibration results
     def _add_lumi_result(
@@ -213,8 +212,17 @@ class Detector(object):
         # TODO: properly fix z ordering
         return self.get_latest_calibrated("halign", key=None)
 
-    def has_lumi_overlap(self, z) -> bool:
-        l = [x for x in self.calibrated if x.process == "halign" and x.is_overlap(z)]
+    def has_lumi_overlap(self, z: float) -> bool:
+        return (
+            len(
+                [
+                    x
+                    for x in self.calibrated
+                    if x.process == "halign" and x.is_overlap(z)
+                ]
+            )
+            > 0
+        )
         return len(l) > 0
 
     @property
@@ -523,7 +531,7 @@ class Conditions:
         # sort the file names by date if the format ofd the filename is '%Y%m%d-%H%M'.json
         if len(file_names) > 0:
             return sorted(
-                file_name,
+                file_names,
                 key=lambda x: datetime.datetime.strptime(
                     os.path.basename(x), f"{_timestamp_fmt_}.json"
                 ),

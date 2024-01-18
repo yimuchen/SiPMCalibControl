@@ -11,7 +11,8 @@ dependencies = [
   "awkward==1.10.4",
   "pyyaml",
   "aiohttp",
-  "flask-socketio"
+  "flask-socketio",
+  "tqdm",
 ]
 dynamic = ["version"]
 

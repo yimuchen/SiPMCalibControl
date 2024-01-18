@@ -11,8 +11,6 @@ from scipy.optimize import curve_fit
 import time
 
 
-
-
 class lowlightcollect(cmdbase.singlexycmd, cmdbase.readoutcmd, cmdbase.rootfilecmd):
     """@brief Collection of low light data at a single gantry position, data will
     be collected without averaging."""

@@ -6,10 +6,10 @@
   the some seperation parameters and powering configuration.
 
 """
-import numpy as np
 import time
-from scipy import stats
-from scipy import special
+
+import numpy as np
+from scipy import special, stats
 
 
 ### Helper function and classes
@@ -21,8 +21,6 @@ def _pwm_multiplier(pwm):
     testing the system offline.
     """
     return 0.5 * (1 + pwm**2)
-
-
 
 
 class DarkCurrentDistribution(stats.rv_continuous):
