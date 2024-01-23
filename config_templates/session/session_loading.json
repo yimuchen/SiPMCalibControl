@@ -1,6 +1,3 @@
 {
-  "hw_functionality": [
-    "gcoder",
-    "camera"
-  ]
+  "hw_functionality": ["gcoder", "camera"]
 }

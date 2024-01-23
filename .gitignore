@@ -8,6 +8,7 @@
 **/*.exe
 __pycache__
 **/__pycache__/**
+src/gantry_control/version.py
 
 # Swap files
 *.swp
