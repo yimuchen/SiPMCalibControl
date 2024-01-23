@@ -1,10 +1,10 @@
-from flask import Flask, request, jsonify
-from flask_socketio import SocketIO, emit
-from flask_cors import CORS
-
-import threading
-import numpy as np
+import os
 import time
+
+import numpy as np
+import tqdm
+from flask import Flask, jsonify, render_template, request
+from flask_socketio import SocketIO
 
 
 class GUISession(object):
@@ -12,18 +12,29 @@ class GUISession(object):
 
     def __init__(self):
         print("Creating object!!")
-        self.app = Flask("GantryControlUI_Server")
+
+        js_client_path = os.path.abspath(
+            os.path.dirname(__file__) + "../../../gui_client/build/"
+        )
+
+        self.app = Flask(
+            "Gantry Control UI",
+            template_folder=js_client_path,
+            static_folder=os.path.join(js_client_path, "static"),
+        )
         self.app.config["SECRET_KEY"] = "secret!"
         # CORS(self.app, resources={r"/*": {"origins": "*"}})
         self.socket = SocketIO(self.app, cors_allowed_origins="*")
 
-        ## Register methods various connection methods
+        # Registering the URLs allowed for the connection
+        self.app.add_url_rule("/", view_func=self.view_main_page)
+
+        # Register methods various connection methods
         self.socket.on_event("connect", self.connect)
         self.socket.on_event("disconnect", self.disconnect)
 
         # Additional flags for keeping track of the server loop
         self._server_active = False
-        print("creating thread")
 
     def run_server(self):
         self._server_active = True
@@ -68,6 +79,9 @@ class GUISession(object):
         for i in session.make_pbar():
             session.check_terminate()
             time.sleep(1)  # Forcing this method to be slow
+
+    def view_main_page(self):
+        return render_template("index.html")
 
 
 def make_telemetry_data(session):
