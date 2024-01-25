@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useGlobalContext } from '../../contexts/GlobalContext';
-
-// import { Types } from '../../utils/types';
+import { useGlobalSession } from '../../session';
 
 import Detector from './components/Detector';
+import Actions from "./components/Actions";
+
 
 type Props = {};
 
 const Board = (props: Props) => {
-  const { socketInstance } = useGlobalContext();
-  const [board, setBoard] = [null,null] //useState<Types.Board | null>(null);
+  const { socketInstance } = useGlobalSession();
+  const [board, setBoard] = [null, null] //useState<Types.Board | null>(null);
 
   /**
    * Getting the latest board.
@@ -27,13 +27,16 @@ const Board = (props: Props) => {
         socketInstance.off('board-update');
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socketInstance]);
+
+  const mytest = (evt: any) => {
+    console.log("client side action test")
+  }
 
   return (
     <section>
       <h2>Tileboard</h2>
-      {/* code to display a board in the form of a square, with each object in the board.detectors list being one cell  */}
+      <Actions />
       <div>
         {/*board?.detectors.map((detector: Types.BoardDetector) => (
           <Detector key={detector.id} detector={detector} />

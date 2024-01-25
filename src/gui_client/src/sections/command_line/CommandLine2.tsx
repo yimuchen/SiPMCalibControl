@@ -1,6 +1,6 @@
 import React from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
-import { useGlobalContext } from '../../contexts/GlobalContext';
+import { useGlobalSession } from '../../session';
 
 import styles from './styles/CommandLine.module.scss';
 
@@ -11,7 +11,7 @@ interface FormValues {
 }
 
 const CommandLine2 = (props: Props) => {
-  const { socketInstance } = useGlobalContext();
+  const { socketInstance } = useGlobalSession();
   // const [command, setCommand] = useState<string>(''); // command to send to server
 
   const initialValues: FormValues = { command: '' };

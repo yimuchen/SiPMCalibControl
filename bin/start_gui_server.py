@@ -1,7 +1,9 @@
 import logging
 
-from gantry_control.gui_server.session import GUISession
+import gantry_control.gui_server as server
 
 if __name__ == "__main__":
-    s = GUISession(logger=logging.getLogger("GUITest"))
-    s.run_server()
+    session = server.session.GUISession(logger=logging.getLogger("GUITest"))
+    server.view.register_view_methods(session)
+    server.action_socket.register_action_sockets(session)
+    server.run_server(session)

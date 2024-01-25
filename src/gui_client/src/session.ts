@@ -1,31 +1,44 @@
-// /**
-//  * session.ts
-//  *
-//  * Defining the client side session instance. Session will be declared as a
-//  * variable container, and all function will use this same instance. Function
-//  * attempting to synchronize information between the client and server side as
-//  * close as possible is defined in js/synchronize.js.
-//  *
-//  * In this file, we also provide functions will be commonly used by the client
-//  * side functions.
-//  */
-// class Session {
-//   // Static variable for global objects
-//   static SESSION_IDLE = 0;
-//   static SESSOIN_RUNNING_CMD = 1;
+/*
+* This is the master client session state variable. The contents of this item
+* should directly mirror what is implemented in the python server GUISession
+* item. With roughtly matching data types. The Python will implement JS data
+* types as dictionaries of various plain types.
+*/
+// External requirements
+import { createContext, useContext } from 'react';
+import type { Socket } from 'socket.io-client';
 
-//   // Variables used for storing the socket.io connection.
-//   constructor() {
-//     this.socketio = null;
+export type Board = {}; // TODO!!
+export type Condition = {}; // TODO!!
 
-//     // This is the array for storing the logging entries. As these array logs are
-//     // also used display element generation, we will also set a maximum length
-//     // here and have the log entries be a first-in-first-out dequeue.
-//     this.monitor_max_length = 1024;
-//     this.monitor_log = [];
-//     this.session_max_length = 65536;
-//     this.session_log = [];
-//   }
-// }
+export type TelemetryEntry = {
+  timestamp: string;
+  sipm_bias: number;
+  sipm_temp: number;
+  gantry_coord: [number, number, number]
+};
 
-export {};
+
+// The type  and the corresponding construction (for React Hooks)
+export type SessionType = {
+  socketInstance: Socket | null;
+  setSocketInstance: (c: Socket | null) => void;
+  sessionState: string | null;
+  setSessionState: (c: string | null) => void;
+
+  // Common items
+  telemetryLogs: TelemetryEntry[];
+  setTelemetryLogs: (c: TelemetryEntry[]) => void;
+};
+
+export const GlobalSessionContext = createContext<SessionType>({
+  socketInstance: null,
+  setSocketInstance: () => { },
+  sessionState: null,
+  setSessionState: () => { },
+  telemetryLogs: [],
+  setTelemetryLogs: () => { },
+});
+
+export const useGlobalSession = () => useContext(GlobalSessionContext);
+

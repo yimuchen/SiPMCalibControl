@@ -16,5 +16,5 @@ dependencies:
   # Python formatting and linting utilities
   - black
   - flake8
-  # Required for nodejs 
+  # Required for nodejs
   - nodejs=18.18.2

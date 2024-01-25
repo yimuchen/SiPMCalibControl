@@ -1,10 +1,10 @@
 import React from 'react';
-import { useGlobalContext } from '../../../contexts/GlobalContext';
+import { useGlobalSession } from '../../../session';
 
 type Props = {};
 
 const SystemStatus = (props: Props) => {
-  const { sessionState } = useGlobalContext();
+  const { sessionState } = useGlobalSession();
 
   return (
     <div>

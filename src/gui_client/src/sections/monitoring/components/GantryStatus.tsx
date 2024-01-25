@@ -1,30 +1,30 @@
 import React, { useEffect } from 'react';
 
 // import relevant types from utils/types.ts
-import { MonitorLog, MonitorLogs } from '../../../utils/types';
+import { TelemetryEntry } from '../../../session';
 
-type Props = { monitorLogs: MonitorLogs };
+type Props = { telemetryLogs: TelemetryEntry[] };
 
-const GantryStatus = ({ monitorLogs }: Props) => {
-  const [lastMonitorLog, setLastMonitorLog] = React.useState<MonitorLog | null>(null);
+const GantryStatus = ({ telemetryLogs }: Props) => {
+  const [lastEntry, setLastEntry] = React.useState<TelemetryEntry | null>(null);
 
   useEffect(() => {
-    if (monitorLogs.length === 0) {
-      setLastMonitorLog(null);
+    if (telemetryLogs.length === 0) {
+      setLastEntry(null);
     } else {
-      setLastMonitorLog(monitorLogs[monitorLogs.length - 1]);
+      setLastEntry(telemetryLogs[telemetryLogs.length - 1]);
     }
-  }, [monitorLogs]);
+  }, [telemetryLogs]);
 
   return (
     <div>
       <h3>Gantry Status</h3>
       <div>
-        {lastMonitorLog ? (
+        {lastEntry ? (
           <span>
-            Gantry Coordinates: ({lastMonitorLog.gantry_coord[0].toFixed(1) || 'unknown'},
-            {lastMonitorLog.gantry_coord[1].toFixed(1) || 'unknown'},
-            {lastMonitorLog.gantry_coord[2].toFixed(1) || 'unknown'})
+            Gantry Coordinates: ({lastEntry.gantry_coord[0].toFixed(1) || 'unknown'},
+            {lastEntry.gantry_coord[1].toFixed(1) || 'unknown'},
+            {lastEntry.gantry_coord[2].toFixed(1) || 'unknown'})
           </span>
         ) : (
           <p>Cannot be determined. Please check system status or try re-connecting.</p>

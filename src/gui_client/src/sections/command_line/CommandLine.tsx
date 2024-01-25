@@ -1,6 +1,6 @@
 import React from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { useGlobalContext } from '../../contexts/GlobalContext';
+import { useGlobalSession } from '../../session';
 
 import styles from './styles/CommandLine.module.css';
 
@@ -11,7 +11,7 @@ interface FormValues {
 }
 
 const CommandLine = (props: Props) => {
-  const { socketInstance } = useGlobalContext();
+  const { socketInstance } = useGlobalSession();
 
   const {
     register,
