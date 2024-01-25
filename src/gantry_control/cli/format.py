@@ -5,14 +5,15 @@ Utility functions for formatting the string outputs and processing to be more
 pleasant.
 """
 import datetime
+from typing import List, Optional
+
 import numpy
-from typing import Optional, List
 
 
 def make_color_text(message: str, colorcode: int) -> str:
     """
-    Adding ASCII color headers around message string. More details regarding the
-    ASCII code for string colors can be found [here][ascii].
+    Adding ASCII color headers around message string. More details regarding
+    the ASCII code for string colors can be found [here][ascii].
 
     [ascii]: https://en.wikipedia.org/wiki/ANSI_escape_code
     """
@@ -80,9 +81,9 @@ def prompt_input(message: str, allowed: Optional[List[str]] = None) -> str:
 
 def prompt_yn(question: str, default: Optional[bool] = None) -> bool:
     """
-    Present a yes/no question and prompt a question to the user and return their
-    answer. The default can be used for a default yes/no result if user does not
-    provide an explicit input.
+    Present a yes/no question and prompt a question to the user and return
+    their answer. The default can be used for a default yes/no result if user
+    does not provide an explicit input.
     """
     valid_map = {"yes": True, "ye": True, "y": True, "no": False, "n": False}
 

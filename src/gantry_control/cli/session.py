@@ -4,26 +4,26 @@ Containers for storing session information (such as progress to the calibration
 system)
 
 """
+import argparse
+import json
+import logging
+import os
+from dataclasses import dataclass
+from typing import Dict, Iterable, List, Optional, Union
+
 import gmqclient
+import tqdm
 
 from .board import Board, Conditions
 from .format import _str_, str_to_time
 
-from dataclasses import dataclass
-from typing import Optional, List, Dict, Iterable, Union
-import logging
-import argparse
-import enum
-import os
-import tqdm
-
 
 @dataclass
 class Session(object):
-    hw: gmqclient.HWControlClient
+    hw: Optional[gmqclient.HWControlClient]
     logger: logging.Logger
-    board: Board
-    conditions: Conditions
+    board: Optional[Board]
+    conditions: Optional[Conditions]
 
     max_x: int = 350
     max_y: int = 350

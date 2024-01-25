@@ -25,8 +25,9 @@ def __run_dir_check__():
         raise ValueError(
             _str_(
                 f"""
-                Template directory [{TEMPLATE_DIR}] not found! You probably need
-                to run the script [SiPMCalibControl/scripts/make_directories.py]
+                Template directory [{TEMPLATE_DIR}] not found! You probably
+                need to run the script
+                [SiPMCalibControl/scripts/make_directories.py]
                 """
             )
         )
@@ -47,8 +48,8 @@ class CalibratedResult:
     """
     Generated entry for summarizing calibration results, the core results will
     all be stored in the "data" entry. Specialized inheritance classes will be
-    used for user-friendly translation of the results. (Inheritance should never
-    attempt to extend the data entries)
+    used for user-friendly translation of the results. Inheritance should never
+    attempt to extend the data entries.
     """
 
     process: str = ""

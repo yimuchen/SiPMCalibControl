@@ -6,13 +6,13 @@ Method for scanning the detector center
 
 """
 
-import gantry_control.cli as control_cli
+import time
+from typing import Tuple
 
 import numpy as np
 import scipy.optimize
-import time
 
-from typing import Tuple
+import gantry_control.cli as control_cli
 
 
 def _model_profile(xydata, N, x0, y0, z, p):
@@ -85,7 +85,7 @@ def lumi_hscan_updating(
     fit_y = kwargs.get("fit_y")
     z = kwargs.get("scanz")
     file = kwargs.get("rootfile")
-    ## Saving session information
+    # Saving session information
     coords = (fit_x, fit_y)
 
     def _update():
@@ -108,8 +108,9 @@ def lumi_hscan_updating(
 
 
 if __name__ == "__main__":
-    import sys, os
     import logging
+    import os
+    import sys
 
     # Declaring logging to keep everything by default
     logging.root.setLevel(logging.NOTSET)
