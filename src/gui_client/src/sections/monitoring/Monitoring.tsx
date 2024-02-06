@@ -3,27 +3,18 @@ import { useGlobalSession, TelemetryEntry } from '../../session';
 import TelemetryData from './components/TelemetryData';
 import VisualSystem from './components/VisualSystem';
 import GantryStatus from './components/GantryStatus';
-import SystemStatus from './components/SystemStatus';
+import ActionStatus from './components/ActionStatus';
 import { useEffect } from 'react';
 
 
 const Monitoring = () => {
-  const { socketInstance, telemetryLogs, setTelemetryLogs } = useGlobalSession();
+  const { telemetryLogs } = useGlobalSession();
 
-  // Defining all the client-server interaction commont to the monitoring status here
-  useEffect(() => {
-    if (socketInstance) {
-      socketInstance.on('update-session-telemetry', update_telemetry_entry);
-    }
-  }, [socketInstance, telemetryLogs]);
-
-  // Update function needs to be declared separately
-  const update_telemetry_entry = (data: TelemetryEntry[]) => { setTelemetryLogs(data); }
 
   return (
     <div>
       <h2>Monitoring</h2>
-      <SystemStatus />
+      <ActionStatus />
       <GantryStatus telemetryLogs={telemetryLogs} />
       <TelemetryData
         telemetryLogs={telemetryLogs}

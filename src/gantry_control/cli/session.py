@@ -8,11 +8,11 @@ import argparse
 import json
 import logging
 import os
-from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional, Union
+import time
+from dataclasses import dataclass, field
+from typing import Callable, Dict, List, Optional, Union
 
 import gmqclient
-import tqdm
 
 from .board import Board, Conditions
 from .format import _str_, str_to_time
@@ -20,17 +20,29 @@ from .format import _str_, str_to_time
 
 @dataclass
 class Session(object):
+    # Main attribues to for handling the session
     hw: Optional[gmqclient.HWControlClient]
     logger: logging.Logger
     board: Optional[Board]
     conditions: Optional[Conditions]
 
+    # Addtional variable for that is required
     max_x: int = 350
     max_y: int = 350
     max_z: int = 350
 
+    # Addtional methods to handle progress monitoring. Mainly required for the
+    # GUI session. The cli-session will likely keep this method blank. Function
+    # signature should be (Session, tqdm object)
+    _progress_halt_methods: List[Callable] = field(default_factory=lambda: [])
+    _progress_update_methods: List[Callable] = field(default_factory=lambda: [])
+
     def init(self, **kwargs) -> None:
-        if kwargs.get("session_json"):  # Early exit if specifying directly from session
+        """
+        Initializing the various connections and hardware requirements
+        """
+        if kwargs.get("session_json"):
+            # Early exit if specifying directly from json
             self.init_from_json(kwargs.get("session_json"))
             return
         # Individual parsing
@@ -87,11 +99,6 @@ class Session(object):
         else:
             self.board = Board.from_json(board_file)
 
-    def make_progress_bar(self, data: Iterable) -> tqdm.tqdm:
-        # For the cli-interface just spawn a simple tqdm instance
-        self.pbar = tqdm.tqdm(data)
-        return self.pbar
-
     def update_pbar_data(self, **kwargs: Dict[str, str]) -> None:
         self.pbar.set_postfix(
             {
@@ -103,9 +110,18 @@ class Session(object):
             }
         )
 
+    # TODO: Do we need to check for closing methods on exit?
     # def __del__(self):
     #     if isinstance(self.hw, gmqclient.HWControlClient):
     #         self.hw.socket.close()
+
+    def sleep(self, t: float):
+        """
+        Method for sleeping the progress thread. This should be handle via the
+        session in case there are multi-threaded uses cases. For the
+        cli-session, a simple time.sleep call can be used.
+        """
+        time.sleep(t)
 
 
 def load_blank_session(logger: logging.Logger):

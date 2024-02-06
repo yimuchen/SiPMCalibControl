@@ -260,7 +260,7 @@ class Board(object):
     description: str = ""
     id_unique: int = -1
     detectors: List[Detector] = field(default_factory=lambda: [])
-    ## This is for the board conditions (ex. pedestal/timing settings... etc)
+    # This is for the board conditions (ex. pedestal/timing settings... etc)
     calib_routines: List = field(default_factory=lambda: [])
     conditions: Dict = field(default_factory=lambda: {})
 
@@ -456,7 +456,6 @@ class Conditions:
     use_count: int = 0
     mismatch_history: List = field(default_factory=lambda: [])
 
-    # loads gantry conditions from a file and returns True if successful, False otherwise
     @classmethod
     def from_json(cls, filename):
         cond = Conditions(**json.load(open(filename, "r")))
@@ -510,7 +509,7 @@ class Conditions:
     @classmethod
     def save_directory(cls):
         """
-        Making the string represent the gantry conditions storage dire\ctory.
+        Making the string represent the gantry conditions storage directory.
         """
         return "calib_progress/default_store/"
 
@@ -519,14 +518,15 @@ class Conditions:
         Returning the string corresponding to the filename for a new set of
         gantry conditions.
         """
-        self.filename = os.path.join(self.save_directory(), f"{_timestamp_()}.json")
+        self.filename = os.path.join(
+            self.save_directory(), f"{_timestamp_()}.json")
         return self.filename
 
     @classmethod
     def latest_conditions_filename(cls) -> Optional[str]:
         """
-        Returning the string corresponding to the filename for the latest set of
-        gantry conditions.
+        Returning the string corresponding to the filename for the latest set
+        of gantry conditions.
         """
         file_names = os.listdir(cls.save_directory())
         # sort the file names by date if the format ofd the filename is '%Y%m%d-%H%M'.json

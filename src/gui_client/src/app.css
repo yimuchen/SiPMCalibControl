@@ -1,4 +1,4 @@
-.mainContainer {
+.bodyContainer {
   display: flex;
   flex-direction: row;
   /* align-items: center; */
@@ -6,10 +6,16 @@
   width: 100%;
   flex-wrap: wrap;
   /* add space between items */
-  gap: 0.25rem;
+  gap: 0.25em;
 }
 
-.centerContainer {
+.monitorContainer {
+  /* make this flex item take 30% of the width of the main parent flexbox container */
+  flex-basis: 38%;
+  border: green 2px solid;
+}
+
+.boardviewContainer {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -20,14 +26,36 @@
   /* gap: 0.25rem; */
 }
 
-.monitoring {
-  /* make this flex item take 30% of the width of the mmain parent flexbox container */
-  flex-basis: 20%;
-  border: green 2px solid;
-}
 
 .calibration {
   flex-basis: 20%;
   align-self: strech;
   border: red 2px solid;
+}
+
+.overlayFloat{
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  min-width: 1000px;
+  max-height: 800px;
+  z-index: 10000; /*Keep above everything!*/
+  padding: 20px;
+  overflow: scroll;
+}
+
+.overlayFloat .floatClose {
+  position:absolute;
+  top: 5px;
+  right: 5px;
+}
+
+table, th, td {
+  padding: 4px 2px;
+}
+
+.hcentering {
+  margin: 0 auto;
 }

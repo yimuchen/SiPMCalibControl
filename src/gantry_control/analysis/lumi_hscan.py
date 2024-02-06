@@ -37,7 +37,9 @@ def lumi_hscan(
 
     # Obtained data over meshgrid
     try:
-        for _x, _y in session.make_progress_bar(control_cli.format.loop_mesh(x, y)):
+        for _x, _y in control_cli.session_iterate(
+            session, control_cli.format.loop_mesh(x, y)
+        ):
             session.hw.move_to(x=_x, y=_y, z=z)
             lumi, unc = control_cli.readout.obtain_readout(
                 session, average=True, **kwargs

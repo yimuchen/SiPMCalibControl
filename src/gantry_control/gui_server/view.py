@@ -24,3 +24,17 @@ def register_view_methods(session: GUISession):
     @session.app.route("/test/<testval>")
     def view_test(testval: str):
         return jsonify({"response": "test response!", "inputval": testval})
+
+    @session.app.route("/download/<filetype>/<content>")
+    def download_content(filetype: str, content: str):
+        # Filtering for the understood content
+        if content == "actionLog":
+            content = session.action_log
+        else:
+            raise ValueError("Corresponding contents was not found!!")
+
+        # Converting the target file content
+        if filetype == "json":
+            return jsonify(content)
+        else:
+            raise ValueError("Unknown format requested!!")

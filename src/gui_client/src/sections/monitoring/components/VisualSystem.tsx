@@ -1,12 +1,11 @@
-import React from 'react';
-import { useGlobalSession } from '../../../session';
+// import React from 'react';
+// import { useGlobalSession } from '../../../session';
 
-type Props = {};
+const VisualSystem = () => {
+  //const { socketInstance } = useGlobalSession();
 
-const VisualSystem = (props: Props) => {
-  const { socketInstance } = useGlobalSession();
-
-  return <h3>Visual System</h3>;
+  return (<div><h3>Visual System</h3>
+  </div>);
 };
 
 export default VisualSystem;
