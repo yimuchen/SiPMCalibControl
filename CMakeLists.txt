@@ -15,6 +15,7 @@ set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/src/gantry_control/tbc)
 
 ## Finding common required binary
+find_package(Threads         REQUIRED)
 find_package(PythonLibs    3 REQUIRED)
 find_package(PythonInterp  3 REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)

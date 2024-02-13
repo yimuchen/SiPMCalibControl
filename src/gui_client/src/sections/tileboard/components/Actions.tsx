@@ -1,91 +1,87 @@
+/**
+ * Sending action request to the backend. Notice the forms should be made to
+ * matche the function methods defined in the action_socket.py corresponding
+ * backend methods.
+ */
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useGlobalSession } from '../../../session';
+import { ActionSubmit, SubmitActionRequest } from '../../../utils/common';
 
 const TestAJAXAction = () => {
   const { register, handleSubmit } = useForm();
   const onSubmit = (data: any) => {
-    fetch(`test/${data.plotFile}`).then(res => res.json())
+    fetch(`test/${data.plotFile}`)
+      .then((res) => res.json())
       .then(
         (result) => {
-          console.log(result)
+          console.log(result);
         },
-        (error) => { // What to do if this is wrong!!
-          console.log("Recieved ERROR!!");
+        (error) => {
+          // What to do if this is wrong!!
+          console.log('Recieved ERROR!!');
           console.log(error);
-        }
-      )
+        },
+      );
   };
 
   return (
     <>
       <span>AJAX request test field</span>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <input {...register("plotFile")} />
-        <input type="submit" value="Get AJAX request" />
+        <input {...register('plotFile')} />
+        <input type='submit' value='Get AJAX request' />
       </form>
     </>
   );
 };
 
+const GMQMakeConnection = () => {
+  const { socketInstance } = useGlobalSession();
+  const { register, handleSubmit } = useForm();
 
-type ActionSubmitProp = {
-  value: string
-}
-
-const ActionSubmit = (prop: ActionSubmitProp) => {
-  const { actionAllowed } = useGlobalSession();
-  return <input disabled={!actionAllowed} type="submit" value={prop.value} />
-}
-
-type ActionRequest = {
-  name: string;
-  args: any;
-}
+  const submitConnection = (data: any) => {
+    SubmitActionRequest(socketInstance, 'gmq_connect', data);
+  };
+  return (
+    <form onSubmit={handleSubmit(submitConnection)}>
+      Host: <input {...register('host')} />
+      Port: <input {...register('port')} />
+      <ActionSubmit value='Connect' />
+    </form>
+  );
+};
 
 const TestSingleShotAction = () => {
   const { socketInstance } = useGlobalSession();
   const { register, handleSubmit } = useForm();
   const onSubmit = (data: any) => {
-    if (socketInstance) {
-      const request: ActionRequest = { name: 'single-shot-test', args: data };
-      socketInstance.emit("run-action", request);
-    }
-  }
+    SubmitActionRequest(socketInstance, 'single-shot-test', data);
+  };
 
   return (
-    <span>
-      <h2>Single shot action test</h2>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <input {...register("line")} />
-        <ActionSubmit value="Run single shot command" />
-      </form>
-    </span>
+    <tr>
+      <td>
+        <b>Single shot action test</b>
+      </td>
+      <td>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <input {...register('line')} />
+          <ActionSubmit value='Run single shot command' />
+        </form>
+      </td>
+    </tr>
   );
-}
-
-const ActionInterupt = () => {
-  const { socketInstance } = useGlobalSession();
-  const { handleSubmit } = useForm();
-  const onSubmit = (data: any) => {
-    if (socketInstance) { socketInstance.emit("user-interupt"); }
-
-  }
-  return (
-    <span>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <input type="submit" value="!!!!" />
-      </form>
-    </span >)
-}
-
+};
 
 const Actions = () => {
-  return (<div>
-    <TestAJAXAction /><br />
-    <TestSingleShotAction />
-    <ActionInterupt />
-  </div >
+  return (
+    <div>
+      <table></table>
+      <TestSingleShotAction />
+      <TestAJAXAction />
+      <br />
+    </div>
   );
 };
 

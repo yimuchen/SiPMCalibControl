@@ -6,10 +6,13 @@ make sense. Notice that register_view_methods should be called after the
 initialization of the GUISession instance of interest.
 
 """
+import io
 import os
 
-from flask import jsonify, render_template
+import cv2
+from flask import Response, jsonify, render_template
 
+from ..cli.format import logrecord_to_dict, logrecord_to_line
 from .session import GUISession  # Just for typing
 
 
@@ -30,11 +33,57 @@ def register_view_methods(session: GUISession):
         # Filtering for the understood content
         if content == "actionLog":
             content = session.action_log
+        elif content == "messageLog":
+            content = session._mem_handlers.record_list
+            if filetype == "json":
+                content = [logrecord_to_dict(x) for x in content]
+            else:
+                content = "\n".join([logrecord_to_line(x) for x in content])
         else:
             raise ValueError("Corresponding contents was not found!!")
 
         # Converting the target file content
         if filetype == "json":
             return jsonify(content)
+        elif filetype == "text":
+            return content
         else:
             raise ValueError("Unknown format requested!!")
+
+    @session.app.route("/visual_current")
+    def visual_current():
+        """
+        Returning the current gantry visual system captured image. Reference
+        for how the Reponse object is written can be found here:
+        https://medium.com/datadriveninvestor/video-streaming-using-flask-and-opencv-c464bf8473d6
+        """
+
+        def make_jpeg_image_byte(image):
+            """Additional wrapping strings around JPEG image byte strings"""
+            return b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + image + b"\r\n"
+
+        def default_image():
+            """What image to show if visual is not available"""
+            default_img_path = os.path.abspath(
+                os.path.join(
+                    os.path.basename(__file__), "../../gui_client/public/visual_off.jpg"
+                )
+            )
+            default_image_io = io.BytesIO(
+                cv2.imencode(".jpg", cv2.imread(default_img_path, 0))[1]
+            )
+            return make_jpeg_image_byte(default_image_io.read())
+
+        def current_image_bytes():
+            """Continuous loop of getting the current image"""
+            while True:  # This function will always generate a return
+                try:
+                    yield make_jpeg_image_byte(session.cmd.visual.get_image_bytes())
+                except Exception:  # For any error falback to default
+                    yield default_image()
+                session.sleep(0.1)  # Refresh interval (in seconds)
+
+        return Response(
+            current_image_bytes(),
+            mimetype="multipart/x-mixed-replace; boundary=frame",
+        )

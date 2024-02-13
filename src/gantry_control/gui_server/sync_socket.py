@@ -1,5 +1,7 @@
+from ..cli.format import logrecord_to_dict
 from ..cli.progress_monitor import TqdmCustom
-from .session import ActionEntry, ActionStatus, GUISession, TelemetryEntry
+from .session import (ActionEntry, ActionStatus, GUISession, HardwareStatus,
+                      TelemetryEntry)
 
 
 def sync_full_session(session: GUISession):
@@ -7,7 +9,9 @@ def sync_full_session(session: GUISession):
     Synchronising all items. This should be run when a new client is connection
     """
     sync_telemetry_full(session)
+    sync_logging_full(session)
     sync_action_full(session)
+    sync_hardware_status(session)
     sync_board_status(session)
 
 
@@ -61,6 +65,55 @@ def sync_telemetry_full(session: GUISession):
 def sync_telemetry_append(session: GUISession, entry: TelemetryEntry):
     session.telemetry_logger.append(entry)
     session.socket.emit("update-session-telemetry-append", entry.__dict__)
+
+
+"""
+Syncing the hardware control status mode
+"""
+
+
+def sync_hardware_status(session: GUISession):
+    """
+    Simple string for connecting to summarize the hardware connection status
+    """
+
+    def _make_gantryHW_status():
+        hw = session.hw
+        if hw is None:
+            return None
+        if hw.socket.closed:
+            return None
+        return f"{hw._host}:{hw._port}"
+
+    def _make_tileboard_status():
+        # TODO properly implement tileboard testing status
+        return None
+        tbt = session.tbt
+        if tbt is None:
+            return None
+        if tbt.socket.closed():
+            return None
+        return None
+
+    session.socket.emit(
+        "update-session-hardware-status",
+        HardwareStatus(
+            gantryHW=_make_gantryHW_status(), tileboardHW=_make_tileboard_status()
+        ).__dict__,
+    )
+
+
+"""
+Syncing the logging message entries
+"""
+
+
+def sync_logging_full(session: GUISession):
+    """Individual messages will be handled by the SocketHandler instance"""
+    session.socket.emit(
+        "update-message-logging-full",
+        [logrecord_to_dict(x) for x in session._mem_handlers.record_list],
+    )
 
 
 """

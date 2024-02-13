@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useGlobalSession } from '../../session';
 
 //import Detector from './components/Detector';
-import Actions from "./components/Actions";
-
+import Actions from './components/Actions';
 
 type Props = {};
 
@@ -16,7 +15,6 @@ const Board = (props: Props) => {
   useEffect(() => {
     console.log('board changed!!', sessionBoard);
   }, [sessionBoard]);
-
 
   return (
     <section>

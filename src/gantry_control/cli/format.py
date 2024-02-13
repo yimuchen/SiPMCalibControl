@@ -5,7 +5,9 @@ Utility functions for formatting the string outputs and processing to be more
 pleasant.
 """
 import datetime
-from typing import List, Optional
+import logging
+import time
+from typing import Dict, List, Optional
 
 import numpy
 
@@ -114,3 +116,35 @@ def loop_mesh(*args):
 
     array_list = numpy.meshgrid(*args)
     return numpy.vstack([x.ravel() for x in array_list]).T
+
+
+"""
+Methods for casting logging record to other containers
+"""
+
+__all_logging_levels__ = {
+    # Integer to string casting
+    val: k
+    for k, val in logging.__dict__.items()
+    if k.upper() == k and type(val) is int
+}
+
+
+def logrecord_to_dict(record: logging.LogRecord) -> Dict[str, str]:
+    return {
+        "time": _timestamp_(
+            datetime.datetime.fromtimestamp(time.mktime(time.localtime(record.created)))
+        ),
+        "name": record.name,
+        "level": __all_logging_levels__[record.levelno],
+        "msg": _str_(record.msg),
+        "args": record.args,
+    }
+
+
+def logrecord_to_line(record: logging.LogRecord) -> str:
+    rec_dict = logrecord_to_dict(record)
+    line = "{time}:::{name}:::{level}:::{msg}".format(**rec_dict)
+    if rec_dict["args"]:  # For non empty arguments
+        line += f':::{_str_(str(rec_dict["args"]))}'
+    return line

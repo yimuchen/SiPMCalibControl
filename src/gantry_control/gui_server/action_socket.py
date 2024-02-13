@@ -5,24 +5,47 @@ Here we rely on the decorator pattern, so the register session function will
 need to be called after the GUISession object is initialized
 
 """
-import os
-import signal
+
+import gmqclient
 
 from ..cli.format import _timestamp_
 from ..cli.progress_monitor import session_iterate
 from .session import (ActionCode, ActionEntry, ActionStatus,  # For typing
                       GUISession)
 from .sync_socket import (sync_action_append, sync_action_status_update,
-                          sync_full_session)
+                          sync_full_session, sync_hardware_status)
 
 
 # Actual methods to processing
 def test_single_shot(session: GUISession, line):
     """This is a simple test"""
-    print("Got single shot command!!")
+    session.logger.info("Running single shot testing!!")
     for char in session_iterate(session, line):
-        print("Got characters", char)
+        session.logger.warn(f"Got characters {char}")
         session.sleep(1)
+
+
+def gmq_disconnect(session: GUISession):
+    """"""
+    session.logger.info("Disconnected from GMQ server")
+    if session.hw is not None:
+        session.hw.close()
+    session.hw = None
+    sync_hardware_status(session)
+
+
+def gmq_connect(session: GUISession, host: str, port: int):
+    """Connection to Gantry MQ system"""
+    session.logger.info(f"Attempting to connect to GMQ server {host}:{port}")
+    if session.hw is not None:
+        session.hw.close()
+    session.hw = gmqclient.create_default_client(host, port)
+    session.hw.claim_operator()
+    sync_hardware_status(session)
+
+
+def gantry_move_to(session: GUISession, x: float, y: float, z: float):
+    session.hw.move_to(x=x, y=y, z=z)
 
 
 # Main methods to keep track of the client-side requested action.
@@ -36,7 +59,7 @@ def start_action(session: GUISession, name, **kwargs):
                     status=ActionCode.RUNNING, timestamp=_timestamp_(), message=""
                 )
             ],
-            **kwargs
+            **kwargs,
         ),
     )
 
@@ -54,18 +77,26 @@ def halt_from_gui_user(session: GUISession):
 
 
 # Main methods to be exposed via the socket interface
-__run_action_method_map__ = {"single-shot-test": test_single_shot}
+__run_action_method_map__ = {
+    # Testing actions (should probably be removed for production)
+    "single-shot-test": test_single_shot,
+    # Connecting to the various hardware controller clients
+    "gmq_disconnect": gmq_disconnect,
+    "gmq_connect": gmq_connect,
+    # Simple control instructions
+    "gantry_move_to": gantry_move_to,
+}
 
 
 def register_action_sockets(session: GUISession):
     @session.socket.on("connect")
     def connect():
-        print("Connected!!")
+        session.logger.info("socketio connected!!")
         sync_full_session(session)
 
     @session.socket.on("disconnect")
     def disconnect():
-        print("Disconnected")
+        session.logger.info("Socketio disconnected.")
 
     @session.socket.on("run-action")
     def run_action(msg):
@@ -89,23 +120,23 @@ def register_action_sockets(session: GUISession):
             if action_name in __run_action_method_map__:
                 __run_action_method_map__[action_name](session, **action_args)
             else:
-                print("Got entries", action_name, action_args)
-                session.socket.sleep(5)
+                session.logger.info(f"Got entries {msg}")
+                session.sleep(5)
                 raise ValueError("Unrecognized action", action_name)
         except KeyboardInterrupt:
-            print("User interupted!!")
+            session.logger.error("User interupted!!")
             return_status = ActionCode.USER_INTERUPT
         except Exception as err:  # Catch all other exceptions!
             # TODO: pass error message to user
-            print("Caught exception", err)
+            session.logger.error(f"Caught exception ({type(err)}: {err})")
+            session.logger.error(f"User input values ({msg})")
             return_status = ActionCode.SYSTEM_ERROR
         finally:
-            print("Completing action", return_status)
+            session.logger.info(f"Completing action [{action_name}]")
             session._user_interupt = False  # Always release!!
             complete_action(session, status=return_status)
 
     @session.socket.on("user-interupt")
     def user_interupt():
-        print("Raising the user interupt flag!!!")
-        # os.kill(os.getpid(), signal.SIGINT)
+        session.logger.error("Raising the user interupt flag!!!")
         session._user_interupt = True

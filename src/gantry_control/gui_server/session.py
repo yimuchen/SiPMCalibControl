@@ -22,14 +22,19 @@ import gmqclient
 # Additional data classes. Corresponding containers should be implemented in
 # the gui_client/src/session.ts type definition
 from ..cli.board import Board, Conditions
+from ..cli.loghandle import MemHandler, SocketHandler
 from ..cli.session import Session
 
 
 @dataclass
 class TelemetryEntry:
     timestamp: str
-    sipm_bias: float
-    sipm_temp: float
+    tb_sipm_bias: float
+    tb_led_bias: float
+    tb_temp: float
+    gmq_pulser_temp: float
+    gmq_pulser_lv: float
+    gmq_pulser_hv: float
     gantry_coord: Tuple[float, float, float]
 
 
@@ -73,6 +78,12 @@ class ActionEntry:
         }
 
 
+@dataclass
+class HardwareStatus:
+    gantryHW: Optional[str]
+    tileboardHW: Optional[str]
+
+
 class GUISession(Session):
     """Overloading to handle sessions for session progress"""
 
@@ -100,6 +111,15 @@ class GUISession(Session):
         # Adding additional messages for the current progress
         self.telemetry_logger = collections.deque([], maxlen=1024)
         self.action_log: List[ActionEntry] = []
+
+        # Log message handling that allows for messages to be passed to the
+        # connected clients
+        self._mem_handlers = MemHandler(capacity=4096)
+        self._socket_handler = SocketHandler(
+            self.socket, "update-message-logging-append"
+        )
+        self.logger.addHandler(self._mem_handlers)
+        self.logger.addHandler(self._socket_handler)
 
         # Additional flags for keeping track of the server loop can global
         # signaling
