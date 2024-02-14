@@ -8,6 +8,4 @@ if __name__ == "__main__":
     logger = logging.getLogger("GUISession")
 
     session = server.session.GUISession(logger=logger)
-    server.view.register_view_methods(session)
-    server.action_socket.register_action_sockets(session)
     server.run_server(session)

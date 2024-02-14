@@ -2,7 +2,7 @@
 import numpy
 
 from ..cli.format import _timestamp_
-from . import action_socket, session, sync_socket, view
+from . import action, session, sync, view
 
 
 def run_server(session_instance: session.GUISession, host="localhost", port=9100):
@@ -11,14 +11,17 @@ def run_server(session_instance: session.GUISession, host="localhost", port=9100
     """
 
     # Addtional function to register to the GUI session
-    session_instance._progress_halt_methods.append(action_socket.halt_from_gui_user)
-    session_instance._progress_update_methods.append(sync_socket.sync_action_progress)
+    session_instance._progress_halt_methods.append(action.halt_from_gui_user)
+    session_instance._progress_update_methods.append(sync.action.sync_action_progress)
+
+    action.register_action_sockets(session_instance)
+    view.register_view_methods(session_instance)
 
     def _run_telemetry_heartbeat() -> None:
         while session_instance._server_active:
-            # Getting the various telemetry streams. Set to `NAN for none data` if the data
-            # is not retrieveable
-            sync_socket.sync_telemetry_append(
+            # Getting the various telemetry streams. Set to `NAN for none data`
+            # if the data is not retrieveable
+            sync.telemetry.sync_telemetry_append(
                 session_instance,
                 session.TelemetryEntry(
                     timestamp=_timestamp_(),
@@ -29,13 +32,13 @@ def run_server(session_instance: session.GUISession, host="localhost", port=9100
             )
             session_instance.sleep(2.0)
 
-    action_socket.start_action(session_instance, name="server-start-up")
+    action._start_action(session_instance, name="server-start-up")
     session_instance._server_active = True
     # Starting some additional item
     telemetry_thread = session_instance.socket.start_background_task(
         target=_run_telemetry_heartbeat
     )
-    action_socket.complete_action(session_instance)
+    action._complete_action(session_instance)
     print(session_instance.action_log)
 
     # Debug MUST BE FALSE!! To

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGlobalSession } from '../../../session';
-
+import { BoardActions } from './actions/BoardActions';
 type TileboardViewProp = {
   showDetector: number | null;
   setShowDetector: (c: number | null) => void;
@@ -82,7 +82,7 @@ export const TileboardView = ({ showDetector, setShowDetector }: TileboardViewPr
   };
 
   return (
-    <>
+    <div style={{ display: 'grid' }}>
       <h4>Board overview</h4>
       <span>Board type: {sessionBoard.board_type}</span>
       <span>Board ID: {sessionBoard.id_unique}</span>
@@ -93,7 +93,8 @@ export const TileboardView = ({ showDetector, setShowDetector }: TileboardViewPr
           </svg>
         </g>
       </div>
-    </>
+      <BoardActions />
+    </div>
   );
 };
 
