@@ -33,7 +33,6 @@ const GantryStatus = () => {
         );
       }
     }
-    console.log('Gantry available', gantryAvailable);
   }, [telemetryLogs]);
 
   const moveGantry = (data: any) => {
@@ -45,50 +44,31 @@ const GantryStatus = () => {
   };
 
   return (
-    <div>
-      <h3>Subsystem - Gantry Status</h3>
-      <div>
-        <table>
-          <tr>
-            <td>Gantry coordinate</td>
-            <td>{statusString}</td>
-          </tr>
+    <div className='tablediv'>
+      <div className='tbrowdiv'>
+        <div className='tbcelldiv' style={{ maxWidth: '200px' }}>
+          <b>Coordinate</b>
+          <br />
+          {statusString}
+        </div>
+        <div className='tbcelldiv'>
           {gantryAvailable ? (
-            <tr>
-              <td></td>
-              <td>
-                <form onSubmit={handleSubmit(moveGantry)}>
-                  <table>
-                    <tr>
-                      <td>x:</td>
-                      <input {...register('x')} />
-                    </tr>
-                    <tr>
-                      <td>y:</td>
-                      <td>
-                        <input {...register('y')} />
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>z:</td>
-                      <td>
-                        <input {...register('z')} />
-                      </td>
-                    </tr>
-                    <tr>
-                      <td></td>
-                      <td>
-                        <ActionSubmit value='move gantry' key='move-gantry' />
-                      </td>
-                    </tr>
-                  </table>
-                </form>
-              </td>
-            </tr>
+            <div>
+              <form onSubmit={handleSubmit(moveGantry)}>
+                x:
+                <input {...register('x')} style={{ width: '5em' }} />
+                y:
+                <input {...register('y')} style={{ width: '5em' }} />
+                z:
+                <input {...register('z')} style={{ width: '5em' }} />
+                <br />
+                <ActionSubmit value='move gantry' key='move-gantry' />
+              </form>
+            </div>
           ) : (
             <></>
           )}
-        </table>
+        </div>
       </div>
     </div>
   );

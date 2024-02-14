@@ -13,7 +13,8 @@ from ..cli.progress_monitor import session_iterate
 from .session import (ActionCode, ActionEntry, ActionStatus,  # For typing
                       GUISession)
 from .sync_socket import (sync_action_append, sync_action_status_update,
-                          sync_full_session, sync_hardware_status)
+                          sync_board_status, sync_full_session,
+                          sync_hardware_status)
 
 
 # Actual methods to processing
@@ -46,6 +47,11 @@ def gmq_connect(session: GUISession, host: str, port: int):
 
 def gantry_move_to(session: GUISession, x: float, y: float, z: float):
     session.hw.move_to(x=x, y=y, z=z)
+
+
+def start_new_session(session: GUISession, board_type: str, board_id: str):
+    session._init_board(f"++{board_type}@{board_id}")
+    sync_board_status(session)
 
 
 # Main methods to keep track of the client-side requested action.
@@ -85,6 +91,8 @@ __run_action_method_map__ = {
     "gmq_connect": gmq_connect,
     # Simple control instructions
     "gantry_move_to": gantry_move_to,
+    # Starting a new session 
+    "start-new-session": start_new_session,
 }
 
 

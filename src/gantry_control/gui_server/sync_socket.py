@@ -126,4 +126,4 @@ def sync_board_status(session: GUISession):
     if session.board is None:
         session.socket.emit("sync-board", None)
     else:
-        session.socket.emit("sync-board", session.board.__dict__)
+        session.socket.emit("sync-board", session.board.to_json())

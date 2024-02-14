@@ -62,7 +62,6 @@ export const TempMonitorStatus = () => {
 
   return (
     <div>
-      <h3>Subsystem - Temperature monitoring</h3>
       <ResponsiveContainer width='100%' height={200} key={`rc_${plotData.slice(-100).length}`}>
         <LineChart {...outerLayout} data={plotData.slice(-100)}>
           <CartesianGrid strokeDasharray='3 3' />
@@ -175,7 +174,6 @@ export const VoltMonitorStatus = () => {
   // Creating the plotting scripts using the data set
   return (
     <div>
-      <h3>Subsystem - Voltage monitor</h3>
       <ResponsiveContainer
         width='100%'
         height={200}

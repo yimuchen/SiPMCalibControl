@@ -6,8 +6,10 @@ make sense. Notice that register_view_methods should be called after the
 initialization of the GUISession instance of interest.
 
 """
+import glob
 import io
 import os
+import pathlib
 
 import cv2
 from flask import Response, jsonify, render_template
@@ -49,6 +51,18 @@ def register_view_methods(session: GUISession):
             return content
         else:
             raise ValueError("Unknown format requested!!")
+
+    @session.app.route("/boardtypes")
+    def boardtypes():
+        currentpath = os.path.dirname(__file__)
+        boardpath = os.path.join(currentpath, "../../../config_templates/board_layout")
+        boardfiles = glob.glob(os.path.join(os.path.abspath(boardpath), "*.json"))
+        boardnames = [pathlib.Path(os.path.basename(x)).stem for x in boardfiles]
+        return jsonify(boardnames)
+
+    @session.app.route("/existingsessions")
+    def existingsession():
+        return jsonify([])
 
     @session.app.route("/visual_current")
     def visual_current():

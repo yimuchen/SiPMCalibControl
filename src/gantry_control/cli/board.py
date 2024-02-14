@@ -15,8 +15,9 @@ from typing import Dict, List, Optional, Tuple
 from .format import (_str_, _timestamp_, _timestamp_fmt_, _value_rounding,
                      str_to_time, time_to_str)
 
-TEMPLATE_DIR = os.path.abspath("calib_progress/templates/")
-DEFAULT_STORE_PATH = os.path.abspath("calib_progress/default_store")
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+TEMPLATE_DIR = os.path.join(PROJECT_ROOT, "config_templates/board_layout/")
+DEFAULT_STORE_PATH = os.path.join(PROJECT_ROOT, "results/")
 
 
 #### TEMPLATE DIRECTORY #####
@@ -176,11 +177,12 @@ class Detector(object):
 
     def get_latest_calibrated(self, process: str, key=None):
         """
-        Getting the latest calibration result of a particular process. The key argument
-        can be used to specify a function to order the processes of interest.
+        Getting the latest calibration result of a particular process. The key
+        argument can be used to specify a function to order the processes of
+        interest.
         """
-        # Getting the latest calibrated result, of a particular process. The key
-        # can be used to specify th
+        # Getting the latest calibrated result, of a particular process. The
+        # key can be used to specify th
         process_list = [x for x in self.calibrated if x.process == process]
 
         if len(process_list) == 0:
@@ -224,7 +226,6 @@ class Detector(object):
             )
             > 0
         )
-        return len(l) > 0
 
     @property
     def mode(self):
@@ -307,15 +308,15 @@ class Board(object):
                 raise ValueError(
                     "board id must be specified with the ++<board_type>@<board_id> format"
                 )
-            layout_path = os.path.join(TEMPLATE_DIR, "board_layout")
+            print(os.listdir(TEMPLATE_DIR), board_type, board_id)
             board_files = [
-                os.path.join(layout_path, x)
-                for x in os.listdir(layout_path)
+                os.path.join(TEMPLATE_DIR, x)
+                for x in os.listdir(TEMPLATE_DIR)
                 if x == f"{board_type}.json"
             ]
             if len(board_files) == 0:
                 raise ValueError(
-                    f"No template of board type {board_type} found in {layout_path}"
+                    f"No template of board type {board_type} found in {TEMPLATE_DIR}"
                 )
             else:
                 board = Board.from_json(board_files[0])
@@ -489,7 +490,8 @@ class Conditions:
                 return False
         return True
 
-    # define get, calculate functions for the data quality(long term) conditions and the board conditions
+    # define get, calculate functions for the data quality(long term)
+    # conditions and the board conditions
     def get_board_conditions(self):
         pass
 
@@ -518,8 +520,7 @@ class Conditions:
         Returning the string corresponding to the filename for a new set of
         gantry conditions.
         """
-        self.filename = os.path.join(
-            self.save_directory(), f"{_timestamp_()}.json")
+        self.filename = os.path.join(self.save_directory(), f"{_timestamp_()}.json")
         return self.filename
 
     @classmethod
@@ -529,7 +530,8 @@ class Conditions:
         of gantry conditions.
         """
         file_names = os.listdir(cls.save_directory())
-        # sort the file names by date if the format ofd the filename is '%Y%m%d-%H%M'.json
+        # sort the file names by date if the format of the filename is
+        # '%Y%m%d-%H%M'.json
         if len(file_names) > 0:
             return sorted(
                 file_names,

@@ -18,8 +18,9 @@ import {
 } from '../session';
 
 // Importing display sections
-import Monitoring from './monitoring/Monitoring';
-import Tileboard from './tileboard/Tileboard';
+import SystemStatus from './systemstatus/SystemStatus';
+import TileboardContainer from './tileboard/TileboardContainer';
+import MessageBox from './message/MessageBox';
 
 // Importing the various data types
 //
@@ -165,14 +166,19 @@ const App = () => {
         {loading ? (
           <div>Loading....</div>
         ) : (
-          <div className='bodyContainer'>
-            <div className='monitorContainer'>
-              <Monitoring />
+          <>
+            <div className='messageContainer'>
+              <MessageBox />
             </div>
-            <div className='boardviewContainer'>
-              <Tileboard />
+            <div className='bodyContainer'>
+              <div className='statusContainer'>
+                <SystemStatus />
+              </div>
+              <div className='boardviewContainer'>
+                <TileboardContainer />
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </GlobalSessionContext.Provider>

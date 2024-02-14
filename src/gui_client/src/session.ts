@@ -18,7 +18,7 @@ export type CalibrationResult = {
 
 export type Detector = {
   readout: number[];
-  default_coordinates: [number, number];
+  default_coords: [number, number];
   calibrated: CalibrationResult[];
 };
 
