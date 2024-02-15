@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useGlobalSession } from '../../../session';
 import { BoardActions } from './actions/BoardActions';
 type TileboardViewProp = {
-  showDetector: number | null;
-  setShowDetector: (c: number | null) => void;
+  showDetector: number;
+  setShowDetector: (c: number) => void;
 };
 export const TileboardView = ({ showDetector, setShowDetector }: TileboardViewProp) => {
   const { sessionBoard } = useGlobalSession();

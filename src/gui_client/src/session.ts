@@ -22,6 +22,18 @@ export type Detector = {
   calibrated: CalibrationResult[];
 };
 
+export type BoardCalibSingleResults = {
+  status: number;
+  message: string;
+};
+
+export type BoardCalib = {
+  process: string;
+  datafile: string;
+  board_summary: string;
+  detector_summary: BoardCalibSingleResults[];
+};
+
 export type Condition = {}; // TODO!!
 export type Board = {
   filename: string;
@@ -29,6 +41,7 @@ export type Board = {
   description: string;
   id_unique: number;
   detectors: Detector[];
+  board_routines: BoardCalib[];
 }; // TODO!!
 
 /** Additional entries for maintingly GUI client interaction */

@@ -51,6 +51,7 @@ __run_action_method_map__ = {
     "gantry_move_to": hardware.gantry_move_to,
     # Starting a new session
     "start-new-session": board.start_new_session,
+    "load-session": board.load_session,
 }
 
 

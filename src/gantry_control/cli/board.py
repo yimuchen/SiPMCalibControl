@@ -154,7 +154,7 @@ class Detector(object):
     calibrated: List[CalibratedResult] = field(default_factory=lambda: [])
 
     @classmethod
-    def from_json(cls, jsonmap):
+    def from_jsonmap(cls, jsonmap):
         det = Detector(
             **{
                 **jsonmap,
@@ -248,6 +248,39 @@ class Detector(object):
 
 
 @dataclass
+class BoardCalibSingleResult(object):
+    status: int = 0
+    message: str = ""
+
+
+@dataclass
+class BoardCalib(object):
+    process: str = ""
+    datafile: str = ""
+    board_summary: str = ""
+    detector_summary: List[BoardCalibSingleResult] = field(default_factory=lambda: [])
+
+    def to_json(self):
+        return {
+            **self.__dict__,
+            **dict(detector_summary=[x.__dict__ for x in self.detector_summary]),
+        }
+
+    @classmethod
+    def from_jsonmap(cls, jsonmap):
+        return BoardCalib(
+            **{
+                **jsonmap,
+                **dict(
+                    detector_summary=[
+                        BoardCalibSingleResult(**x) for x in jsonmap["detector_summary"]
+                    ]
+                ),
+            }
+        )
+
+
+@dataclass
 class Board(object):
     """
     Class for storing a board configuration which includes:
@@ -262,7 +295,7 @@ class Board(object):
     id_unique: int = -1
     detectors: List[Detector] = field(default_factory=lambda: [])
     # This is for the board conditions (ex. pedestal/timing settings... etc)
-    calib_routines: List = field(default_factory=lambda: [])
+    board_routines: List[BoardCalib] = field(default_factory=lambda: [])
     conditions: Dict = field(default_factory=lambda: {})
 
     def clear(self):
@@ -271,17 +304,28 @@ class Board(object):
         self.description = ""
         self.id_unique = -1
         self.detectors = []
-        self.calib_routines = []
+        self.board_routines = []
         self.conditions = {}
 
     @classmethod
     def from_json(cls, json_file):
-        """Loading from a file"""
         jsonmap = json.load(open(json_file, "r"))
+        b = cls.from_jsonmap(jsonmap)
+        b.filename = os.path.basename(json_file)
+        return b
+
+    @classmethod
+    def from_jsonmap(cls, jsonmap):
+        """Loading from a file"""
         b = Board(
             **{
                 **jsonmap,
-                **dict(detectors=[Detector.from_json(x) for x in jsonmap["detectors"]]),
+                **dict(
+                    detectors=[Detector.from_jsonmap(x) for x in jsonmap["detectors"]],
+                    board_routines=[
+                        BoardCalib.from_jsonmap(x) for x in jsonmap["board_routines"]
+                    ],
+                ),
             }
         )
 
@@ -289,8 +333,6 @@ class Board(object):
         assert b.board_type != "", "Board type needs to be specified"
         assert len(b.detectors) > 0, "At least 1 detector needs to be specified"
         assert b.description != "", "Board should have a description"
-
-        b.filename = json_file
 
         return b
 
@@ -338,17 +380,12 @@ class Board(object):
             ]
             if board_id:  # Additional board type parsing
                 board_files = [
-                    x for x in board_files if f"_{board_id}_" in os.path.basename(x)
+                    x for x in board_files if f"@{board_id}" in os.path.basename(x)
                 ]
+                assert len(board_files) > 0, "No file found"
+                assert len(board_files) < 2, "Multiple files found"
 
-            # Getting the latest assuming standard time stamp notation
-            board_files.sort(
-                key=lambda x: str_to_time(
-                    os.path.basename(x).split("_")[-1].replace(".json", "")
-                )
-            )
-            if len(board_files):
-                board = Board.from_json(board_files[-1])
+                return Board.from_json(board_files[0])
                 return board
             else:
                 return cls.auto_resolve_jsonfile(target="+" + target)
@@ -360,7 +397,10 @@ class Board(object):
     def to_json(self):
         return {
             **self.__dict__,
-            **dict(detectors=[x.to_json() for x in self.detectors]),
+            **dict(
+                detectors=[x.to_json() for x in self.detectors],
+                board_routines=[x.to_json() for x in self.board_routines],
+            ),
         }
 
     def save_board(self, filename: str = ""):
@@ -371,8 +411,7 @@ class Board(object):
         if self.filename == "" or "templates" in self.filename:
             self.filename = os.path.join(
                 DEFAULT_STORE_PATH,
-                "_".join([self.board_type, str(self.id_unique), _timestamp_()])
-                + ".json",
+                "@".join([self.board_type, str(self.id_unique)]) + ".json",
             )
 
         with open(self.filename, "w") as f:

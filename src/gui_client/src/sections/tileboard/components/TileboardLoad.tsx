@@ -46,7 +46,7 @@ const LoadNewSession = () => {
   };
 
   useEffect(() => {
-    fetch(`/boardtypes`)
+    fetch(`/config/boardTypes`)
       .then((res) => res.json())
       .then(
         (result) => {
@@ -94,7 +94,7 @@ const LoadExistingSession = () => {
   };
 
   useEffect(() => {
-    fetch(`/existingsessions`)
+    fetch(`/config/savedSessions`)
       .then((res) => res.json())
       .then(
         (result) => {

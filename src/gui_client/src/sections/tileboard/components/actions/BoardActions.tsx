@@ -11,6 +11,7 @@ export const BoardActions = () => {
         <TestSingleShotAction />
         <TestAJAXAction />
         <PedestalNormalizeAction />
+        <OnboardSPSAction />
       </div>
     </>
   );
@@ -75,7 +76,8 @@ const PedestalNormalizeAction = () => {
   const { register, handleSubmit } = useForm();
 
   useEffect(() => {
-    fetch(`/availableConfigs`)
+    // Getting the template
+    fetch(`/config/templateYAMLs`)
       .then((res) => res.json())
       .then(
         (result) => {
@@ -87,6 +89,13 @@ const PedestalNormalizeAction = () => {
           console.log(error);
         },
       );
+
+    if (sessionBoard) {
+      const process = sessionBoard.board_routines.filter((x) => x.process == 'pedestal');
+      if (process.length > 0) {
+        setCurrentStatus(process[0].board_summary);
+      }
+    }
   }, [sessionBoard]);
 
   const submitRunRequest = (data: any) => {
@@ -110,6 +119,40 @@ const PedestalNormalizeAction = () => {
               <option value={x}>{x}</option>
             ))}
           </select>
+          <ActionSubmit value='Run' />
+        </form>
+      </div>
+    </div>
+  );
+};
+const OnboardSPSAction = () => {
+  const { socketInstance, sessionBoard } = useGlobalSession();
+  const [currentStatus, setCurrentStatus] = useState<string>('(Not done)');
+  const [configList, setConfigList] = useState<string[]>([]);
+  const { register, handleSubmit } = useForm();
+
+  const submitRunRequest = (data: any) => {
+    SubmitActionRequest(socketInstance, 'run-sps', data);
+  };
+
+  return (
+    <div className='tbrowdiv'>
+      <div className='tbcelldiv'>
+        <b>SPS scan (on-board LED)</b>
+        <br />
+        {currentStatus}
+      </div>
+      <div className='tbcelldiv' style={{ display: 'flex' }}>
+        <form onSubmit={handleSubmit(submitRunRequest)}>
+          <select {...register('baseconfig')}>
+            <option value='' selected disabled hidden>
+              -- Base configuration --
+            </option>
+            {configList.map((x: string) => (
+              <option value={x}>{x}</option>
+            ))}
+          </select>
+          <ActionSubmit value='Run' />
         </form>
       </div>
     </div>

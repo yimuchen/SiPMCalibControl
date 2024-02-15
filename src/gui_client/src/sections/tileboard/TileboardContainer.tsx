@@ -8,7 +8,7 @@ import LoadTileBoard from './components/TileboardLoad';
 
 const TileBoardContainer = () => {
   const { sessionBoard } = useGlobalSession();
-  const [showDetector, setShowDetector] = useState<number | null>(null);
+  const [showDetector, setShowDetector] = useState<number>(0);
 
   useEffect(() => {
     console.log('board changed!!', sessionBoard);
