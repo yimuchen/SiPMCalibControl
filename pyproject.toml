@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling>=1.17.1", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gantry_control"
+authors = [{ name = "Yi-Mu Chen", email = "yimuchen@umd.edu" }]
+dependencies = [
+  "gmqclient", # From GantryMQ package
+  "uproot==4.3.7",
+  "awkward==1.10.4",
+  "pyyaml",
+  "flask-socketio", # Main server
+  "eventlet", # Required for client-hot loading
+  "tqdm",
+]
+dynamic = ["version"]
+
+### The following is for the construction of the package using hatchling
+[tool.hatch.version]
+source = "vcs"
+path = "src/gantry_control/__init__.py"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/gantry_control/version.py"
+
+[tool.setuptools_scm]
+write_to = "src/gantry_control/_version.py"

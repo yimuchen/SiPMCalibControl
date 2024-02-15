@@ -1,0 +1,25 @@
+{
+  "board_type": "SYS_SINGLE",
+  "description": "Test board with random detectors info",
+  "id_unique": 12345678,
+  "detectors": [
+    {
+      "readout": [-1, 0, 0],
+      "default_coords": [20, 25],
+      "calibrated": [
+        {
+          "process": "halign",
+          "file": "/srv/output/halign.root",
+          "timestamp": "20220811-001122",
+          "data": [5, 21, 24, 22, 23]
+        }
+      ]
+    }
+  ],
+  "conditions": {
+    "Yaml": "/srv/config.yaml",
+    "pedestal_flattening": {},
+    "timing_phase_bit": {},
+    "gain_adjustments": {}
+  }
+}

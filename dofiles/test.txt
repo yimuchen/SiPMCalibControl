@@ -1,0 +1,1 @@
+halign -f mytest.txt --wipefile --power 0.1 -x 70 -y 115 -z 0.2 --samples 500 --mode 3 --channel 0 --intstart 32 --intstop 162 --pedstart 2 --pedstop 32
