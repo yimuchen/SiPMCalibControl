@@ -20,7 +20,7 @@ conda activate gantry_control
 
 # Compiling the custom code for interacting with n-tuples
 cd SiPMCalibControl
-cmake ./ && cmake --build ./
+CXX=$(which g++) LD_LIBRARY_PATH=${CONDA_PREFIX}/lib/ cmake ./ && cmake --build ./
 cd ..
 
 # Installing the control software python to the environment, must be in this order
